@@ -23,6 +23,13 @@ use Throwable;
  */
 final class CompanyProfileSnapshotService
 {
+    private CompanyReportLogoValueResolver $reportLogo;
+
+    public function __construct(?CompanyReportLogoValueResolver $reportLogo = null)
+    {
+        $this->reportLogo = $reportLogo ?? new CompanyReportLogoValueResolver();
+    }
+
     /** @param array<string,mixed> $bookingContext */
     public function get(array $bookingContext = []): array
     {
@@ -57,7 +64,7 @@ final class CompanyProfileSnapshotService
                 'phone' => $this->text($company, 'phone'),
                 'email' => $this->text($company, 'email'),
                 'website' => $this->text($company, 'website'),
-                'logo' => $this->logoUrl($this->raw($company, 'report_logo')),
+                'logo' => $this->logoUrl($this->reportLogo->resolve($company)),
                 'footer' => $this->text($company, 'voucher_footer_html'),
             ];
         } catch (Throwable $e) {
@@ -167,6 +174,9 @@ final class CompanyProfileSnapshotService
         }
 
         $path = trim($stored);
+        if (preg_match('/^[A-Za-z]:[\\\\\/]/', $path) === 1) {
+            return null;
+        }
         if (str_starts_with($path, 'https://') || str_starts_with($path, 'http://')) {
             return $path;
         }

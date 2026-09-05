@@ -1,4 +1,12 @@
-# ERP-11.3.156 Code Audit
+# ERP-11.3.157 Code Audit
+
+## ERP-11.3.157 voucher logo-only correction
+
+- Live read-only comparison proved the voucher emitted no Company `<img>` and immediately rendered `EG`, while the same Company Profile emitted one complete 180×180 JPEG data URI.
+- Root cause was value extraction: the voucher adapter read only the raw upload request attribute instead of the native Company model's proven computed report-logo presentation value/storage member.
+- `CompanyReportLogoValueResolver` now prefers the safe zero-argument native report-logo presentation helper, then the exact `report_logo` attribute, then a native report-logo storage member. The existing URL/data/binary normalization remains the only rendering conversion.
+- Blank values still render the initials fallback; invalid Windows filesystem paths are rejected; broken web images retain the existing `onerror` fallback.
+- Company identity/footer, Saudi/IATA, passenger Visa mapping, travel sections, QR, references, and A4 CSS were not changed. No migration was added.
 
 ## Canonical workspace cleanup
 

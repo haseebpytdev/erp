@@ -2,10 +2,12 @@
 
 require_once __DIR__.'/../../app/Services/Operations/ClientVoucherFooterResolver.php';
 require_once __DIR__.'/../../app/Services/Operations/VisaMasterRelationshipResolver.php';
+require_once __DIR__.'/../../app/Services/Organization/CompanyReportLogoValueResolver.php';
 require_once __DIR__.'/../../app/Services/Organization/CompanyProfileSnapshotService.php';
 
 use App\Services\Operations\ClientVoucherFooterResolver;
 use App\Services\Operations\VisaMasterRelationshipResolver;
+use App\Services\Organization\CompanyReportLogoValueResolver;
 use App\Services\Organization\CompanyProfileSnapshotService;
 
 $checks = 0;
@@ -36,5 +38,17 @@ $dataLogo = 'data:image/jpeg;base64,'.base64_encode("\xFF\xD8\xFFtest");
 $assert($logoMethod->invoke($profile, $dataLogo) === $dataLogo, 'saved native data-URI logo renders unchanged');
 $assert(str_starts_with((string) $logoMethod->invoke($profile, "\x89PNG\x0D\x0A\x1A\x0Atest"), 'data:image/png;base64,'), 'saved binary logo becomes a print-safe data URI');
 $assert($logoMethod->invoke($profile, null) === null, 'missing Company Profile logo permits the fallback mark');
+$assert($logoMethod->invoke($profile, 'C:\\local\\company-logo.jpg') === null, 'local Windows paths never leak into a production logo URL');
+
+$nativeLogo = new class($dataLogo) {
+    public function __construct(private readonly string $value) {}
+    public function getAttribute(string $name): mixed { return $name === 'report_logo' ? null : null; }
+    public function reportLogoDataUri(): string { return $this->value; }
+    public function getAttributes(): array { return ['report_logo_blob' => '']; }
+};
+$logoValue = new CompanyReportLogoValueResolver();
+$assert($logoValue->resolve($nativeLogo) === $dataLogo, 'native Company report-logo presentation helper is reused when the upload request attribute is blank');
+$assert($logoValue->resolve(['report_logo' => '']) === null, 'blank report_logo produces no image value');
+$assert($logoValue->resolve(['report_logo_blob' => "\xFF\xD8\xFFstored"]) === "\xFF\xD8\xFFstored", 'native report-logo storage member is discovered without inventing a URL prefix');
 
 echo "ERP-11.3.156 Company Profile data regression checks passed: {$checks}\n";

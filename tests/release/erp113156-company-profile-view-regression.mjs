@@ -8,17 +8,18 @@ const view = read('resources/views/operations/bookings/general-client-voucher-v1
 const controller = read('app/Http/Controllers/Operations/GeneralBookingVoucherPreviewController.php');
 const cashVoucher = read('app/Http/Controllers/Accounting/CashVoucherController.php');
 const profile = read('app/Services/Organization/CompanyProfileSnapshotService.php');
+const logoResolver = read('app/Services/Organization/CompanyReportLogoValueResolver.php');
 const repository = read('app/Services/Operations/LegacyVisaTravelMasterRepository.php');
 const relationship = read('app/Services/Operations/VisaMasterRelationshipResolver.php');
 let checks = 0;
 const has = (text, value, message) => { assert.ok(text.includes(value), message); checks++; };
 const lacks = (text, value, message) => { assert.ok(!text.includes(value), message); checks++; };
 
-assert.equal(read('VERSION.txt').trim(), 'v1.1.33.156-ERP11.3.156'); checks++;
+assert.match(read('VERSION.txt').trim(), /^v1\.1\.33\.(?:15[6-9]|1[6-9]\d|[2-9]\d\d)-ERP11\.3\.(?:15[6-9]|1[6-9]\d|[2-9]\d\d)$/); checks++;
 has(profile, "'App\\\\Models\\\\Company'", 'native App Models Company is the model authority');
 has(profile, "Schema::hasTable('companies')", 'native companies table is the only profile table authority');
 has(profile, "$this->text($company, 'name')", 'native name field drives the voucher identity');
-has(profile, "$this->raw($company, 'report_logo')", 'native report_logo field drives the voucher logo');
+has(profile, '$this->reportLogo->resolve($company)', 'native report-logo presentation value drives the voucher logo');
 has(profile, "$this->text($company, 'voucher_footer_html')", 'native voucher_footer_html drives Company fallback');
 has(profile, "$bookingContext['company_id']", 'booking company scope is first authority');
 has(profile, "DB::table('branches')->where('id', $branchId)->value('company_id')", 'branch inherits its owning company');
@@ -30,6 +31,11 @@ has(controller, '$company->get($bookingData)', 'voucher passes booking scope int
 has(cashVoucher, '$this->companyProfile->get((array) $row)', 'cash-voucher print also passes its record scope');
 has(view, "@if(!empty($company['logo']))", 'real logo is checked before fallback');
 has(view, 'onerror="this.hidden=true;this.nextElementSibling.hidden=false"', 'fallback appears only when a real logo cannot render');
+assert.equal((view.match(/<img class="logo"/g) ?? []).length, 1, 'voucher contains exactly one Company logo image'); checks++;
+has(logoResolver, "attribute($company, 'report_logo')", 'exact report_logo value remains a supported authority');
+has(logoResolver, 'nativePresentationValue($company)', 'native working Company presentation helper is reused');
+has(logoResolver, "str_contains($normalized, 'report') && str_contains($normalized, 'logo')", 'native report-logo storage member is resolved when the request attribute is computed elsewhere');
+has(profile, "preg_match('/^[A-Za-z]:", 'Windows filesystem paths are rejected');
 has(view, "{{ $company['name'] }}", 'header name comes from resolved Company Profile');
 lacks(view, '>Easy Group Of Travels<', 'voucher has no hard-coded company name');
 has(repository, "['voucher_footer_html']", 'native Pakistan IATA footer field is read exactly');
