@@ -3104,6 +3104,35 @@ html.et-general-progressive-step1-11390:not(.etgp-step1-ready-11390):not(.etgp-s
   .etgp-hotel-grid-scroll-113127{overflow-x:auto}
   .etgp-hotel-grid-113127{min-width:1160px}
 }
+
+/* Final Air/Transport/Visa column-fit contract. */
+.etgp-air-fare-table-113108 th:nth-child(1){width:7%!important;white-space:nowrap!important}
+.etgp-air-fare-table-113108 th:nth-child(7),.etgp-air-fare-table-113108 th:nth-child(8){width:19.25%!important}
+
+.etgp-transport-grid-113139{
+  grid-template-columns:22px minmax(115px,1.15fr) minmax(145px,1.4fr) 76px 38px 72px 66px 72px 92px 82px 48px!important;
+}
+.etgp-transport-grid-head-113139>div{white-space:nowrap!important}
+.etgp-transport-remove-113139{
+  width:38px!important;min-width:38px!important;height:35px!important;padding:0!important;
+  border:1px solid #efcaca!important;border-radius:6px!important;background:#fff7f7!important;
+  color:#b42318!important;font-size:15px!important;line-height:1!important;justify-self:center;
+}
+.etgp-transport-remove-113139:hover{background:#fff0f0!important;border-color:#e8b2b2!important}
+
+.etgp-visa-grid-113142{
+  grid-template-columns:28px minmax(130px,1.35fr) 72px 78px minmax(105px,1fr) minmax(105px,1fr) 76px 82px 96px 92px 56px!important;
+  column-gap:7px!important;
+}
+.etgp-visa-grid-head-113142>div{white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
+.etgp-visa-grid-head-113142>input,.etgp-visa-main-row-113142>input[type="checkbox"]{justify-self:center;margin:0!important}
+.etgp-visa-passenger-113142{padding-left:2px!important}
+.etgp-visa-table-113142{overflow-x:hidden!important}
+@media(max-width:900px){
+  .etgp-transport-grid-113139{grid-template-columns:22px repeat(2,minmax(0,1fr))!important}
+  .etgp-visa-grid-113142{grid-template-columns:28px repeat(2,minmax(0,1fr))!important}
+  .etgp-visa-table-113142{overflow-x:auto!important}
+}
 @media(max-width:720px){
   .etgp-product-shell-head{align-items:flex-start}
   .etgp-product-shell-controls-113127{flex-direction:column;align-items:stretch}

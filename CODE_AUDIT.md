@@ -153,9 +153,19 @@ Authority map: `BOOKING_MODEL=bookings`; `BOOKING_STATUS_FIELD=first native appr
 This is an overlay, not a complete Laravel checkout. It has no `composer.json`, `artisan`, `vendor/`, `.env`, base native Travel Masters controller/view, or local database. `.151` live read-only UAT passed the repaired relationship chain. The `.152` modal requires manual deployment for visual and real-booking browser UAT.
 # ERP-11.3.161 master correction pass (unpackaged)
 
+## Final Air persistence re-audit
+
+- A controlled live save against `BK-2026-000054` disproved the earlier compatibility-field conclusion. Live booking ID is `13`; Air ticket detail IDs are `10`–`14`.
+- Before save, the controller and dropdown both reported Vendor ID `0`. A normal PUT to `/system/erp-bookings/13/air-product` sent `common.supplier_id=19` (`Pak Al Hashir International Travel and Tours`) and returned HTTP 200, but the immediate save response still reported `common.supplier_id=0`; all five returned ticket rows also reported zero. The failure is therefore at physical SAVE, before reload/hydration.
+- Live ticket rows exposed no usable vendor relation and no commercial JSON metadata. Alias expansion cannot persist a value where no service-scoped column exists.
+- Architecture decision: `booking_services.vendor_id` is now the single Air Vendor authority. A conditional migration creates it only when absent. The controller writes and reloads this exact column; if migrations are missing, save is blocked with a clear validation error rather than falsely succeeding.
+- `supplier_costings.supplier_id` was rejected as authority because it belongs to downstream accounting documents, not the booking Air service/PNR.
+- The migration is required. The corrected equality chain cannot be truthfully marked complete until this migration/code is deployed to a controlled environment and the live lifecycle is repeated.
+- Added final UI corrections: one-line PNR Fare Type, compact Transport Vehicle/BRN widths, one-line Exchange Rate, Hotel-matching Transport X action, and an 11-column Visa grid with a dedicated 28px checkbox column, aligned passenger content, nowrap headers, and visible Actions.
+
 - Audited the existing `Easy_Ticket_Travel_ERP_ERP11_3_161_DIRECT_UPLOAD(1).zip` against `CURRENT`. The active General Booking JS/CSS, Air controller, commercial resolver, Review view, booking-focus JS, and workspace presenter were byte-identical. The `.161` builder was not stale; the requested corrections had not been implemented in that release.
 - Confirmed runtime authority: `GeneralProgressiveBookingAssetController` serves `public/erp11390/general-progressive-step1.js` and `.css`; `GeneralBookingReviewController` renders `general-booking-review-v113160`; Air routes target `GeneralBookingAirProductController`.
-- Corrected the Air vendor persistence mismatch. The UI already submitted `common.supplier_id`; the service writer now uses the physical schema contract and the native vendor relation family `vendor_id`, `supplier_id`, `service_partner_id`, consistent with `AdaptiveBookingWriter`. Save responses return the freshly persisted `common` snapshot and hydration remains ID-first.
+- The preliminary compatibility-field approach was superseded by the controlled live proof above; it could not persist because the required physical service-scoped field did not exist.
 - Kept the shared `BookingCommercialCompletenessResolver` as the server authority for cost-positive vendor enforcement and Review completeness. No issuance or Travel Ready requirement was introduced.
 - Added one shared subsection typography contract to Passenger Tickets, PNR Fare Commercials, Hotel Stays, Transport Services, and Visa Services. Visa/Hotel controls, table headers, badges, and Answer values now have readable compact sizing.
 - Rebalanced Hotel Stays within the normal desktop canvas and reserved a 48px action column with a 38x35 remove control.

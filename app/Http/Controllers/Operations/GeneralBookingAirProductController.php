@@ -26,6 +26,8 @@ use Throwable;
  */
 final class GeneralBookingAirProductController extends Controller
 {
+    private const AIR_VENDOR_COLUMN = 'vendor_id';
+
     public function show(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
@@ -747,11 +749,6 @@ final class GeneralBookingAirProductController extends Controller
             $this->putAllowEmpty($row, $columns, ['passenger_name', 'traveller_name', 'traveler_name', 'full_name', 'name'], $passenger['name']);
 
             $supplierId = (int) ($common['supplier_id'] ?? 0);
-            // Supplier/vendor IDs are NOT saturated because installations can
-            // keep both columns with different foreign-key masters. Use the
-            // authoritative first installed relation only; names are safe aliases.
-            if ($supplierId > 0) $this->put($row, $columns, ['vendor_id', 'supplier_id', 'service_partner_id'], $supplierId);
-            $this->putAllAllowEmpty($row, $columns, ['supplier_name', 'vendor_name'], trim((string) ($common['supplier_name'] ?? '')));
 
             $basicRateValue = $this->money($commercial['customer_base_fare'] ?? ($commercial['basic_rate'] ?? 0));
             $taxValue = $this->money($commercial['customer_taxes'] ?? ($commercial['taxes'] ?? 0));
@@ -927,11 +924,12 @@ final class GeneralBookingAirProductController extends Controller
         $source = trim((string) ($first['booking_source'] ?? ''));
         $status = strtoupper(trim((string) ($first['status'] ?? '')));
         $issueDate = trim((string) ($first['issue_date'] ?? ''));
-        $supplierId = (int) ($first['supplier_id'] ?? 0);
-        $supplierName = trim((string) ($first['supplier_name'] ?? ''));
-        $serviceVendorMeta = $this->vendorMetaFromRow($serviceRow, $serviceColumns);
-        $serviceSupplierId = $this->firstPositiveInt($serviceRow, ['vendor_id', 'supplier_id', 'service_partner_id']);
-        $serviceSupplierName = $this->firstNonEmpty($serviceRow, ['supplier_name', 'vendor_name']);
+        $supplierId = (int) ($serviceRow[self::AIR_VENDOR_COLUMN] ?? 0);
+        $supplierName = '';
+        if ($supplierId > 0) {
+            $vendor = collect($this->supplierOptions())->firstWhere('id', $supplierId);
+            $supplierName = trim((string) ($vendor['name'] ?? ''));
+        }
 
         return [
             'pnr' => $pnr !== '' ? $pnr : $this->stringFrom($serviceRow, $serviceColumns, ['pnr', 'gds_pnr', 'record_locator']),
@@ -939,8 +937,8 @@ final class GeneralBookingAirProductController extends Controller
             'booking_source' => $source !== '' ? $source : $this->stringFrom($serviceRow, $serviceColumns, ['booking_source', 'gds_source', 'source']),
             'ticket_status' => $status !== '' ? $status : (strtoupper($this->stringFrom($serviceRow, $serviceColumns, ['ticket_status'])) ?: 'BOOKED'),
             'issue_date' => $issueDate !== '' ? $issueDate : $this->dateOnly($this->valueFrom($serviceRow, $serviceColumns, ['issue_date', 'ticket_issue_date', 'issued_at'])),
-            'supplier_id' => $supplierId > 0 ? $supplierId : ($serviceSupplierId > 0 ? $serviceSupplierId : (int) ($serviceVendorMeta['id'] ?? 0)),
-            'supplier_name' => $supplierName !== '' ? $supplierName : ($serviceSupplierName !== '' ? $serviceSupplierName : trim((string) ($serviceVendorMeta['name'] ?? ''))),
+            'supplier_id' => $supplierId,
+            'supplier_name' => $supplierName,
         ];
     }
 
@@ -1263,22 +1261,14 @@ final class GeneralBookingAirProductController extends Controller
     {
         if ($serviceId <= 0 || ! Schema::hasTable('booking_services')) return;
         $columns = $this->physicalColumnListing('booking_services');
+        if (! in_array(self::AIR_VENDOR_COLUMN, $columns, true)) {
+            throw ValidationException::withMessages([
+                'common.supplier_id' => 'The native Air Vendor field is unavailable. Run pending database migrations before saving Air commercial data.',
+            ]);
+        }
         $update = [];
         $supplierId = (int) ($common['supplier_id'] ?? 0);
-        if ($supplierId > 0) $this->put($update, $columns, ['vendor_id', 'supplier_id', 'service_partner_id'], $supplierId);
-        $this->putAllAllowEmpty($update, $columns, ['supplier_name', 'vendor_name'], trim((string) ($common['supplier_name'] ?? '')));
-        // ERP-11.3.132: preserve/read vendor context through the first
-        // JSON-capable metadata alias, not merely the first installed meta-like
-        // column (which can be unrelated non-JSON text on older installs).
-        foreach (['meta', 'metadata', 'extra_data', 'details_json', 'attributes'] as $metaField) {
-            if (! in_array($metaField, $columns, true)) continue;
-            try {
-                $currentMeta = DB::table('booking_services')->where('id', $serviceId)->value($metaField);
-                if ($currentMeta !== null) $update[$metaField] = $currentMeta;
-            } catch (Throwable) {
-            }
-        }
-        $this->writeVendorMeta($update, $columns, $supplierId, trim((string) ($common['supplier_name'] ?? '')));
+        $update[self::AIR_VENDOR_COLUMN] = $supplierId > 0 ? $supplierId : null;
         $this->putAllowEmpty($update, $columns, ['pnr', 'gds_pnr', 'record_locator'], trim((string) ($common['pnr'] ?? '')));
         $this->putAllowEmpty($update, $columns, ['airline_pnr', 'supplier_pnr'], trim((string) ($common['airline_pnr'] ?? '')));
         $serviceTicketStatus = strtoupper((string) ($common['ticket_status'] ?? 'BOOKED'));

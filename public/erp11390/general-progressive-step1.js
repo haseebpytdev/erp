@@ -1698,7 +1698,7 @@ var etgpTransportRender113139=function(host,data,bookingId){
 
   var scroll=create('div','etgp-transport-grid-scroll-113139');
   var header=create('div','etgp-transport-grid-113139 etgp-transport-grid-head-113139');
-  ['#','Transport Company *','Route / Rate Card','Vehicle Type','Qty','BRN / Reference','Sale PKR','Cost Rate','Exchange Rate','Answer PKR',''].forEach(function(label){header.appendChild(create('div','',label));});
+  ['#','Transport Company *','Route / Rate Card','Vehicle Type','Qty','BRN / Reference','Sale PKR','Cost Rate','Exchange Rate','Answer PKR','Action'].forEach(function(label){header.appendChild(create('div','',label));});
   scroll.appendChild(header);
   var body=create('div','etgp-transport-rows-113139');scroll.appendChild(body);block.appendChild(scroll);
 
@@ -1789,7 +1789,7 @@ var etgpTransportRender113139=function(host,data,bookingId){
 
     var fx=makeInput(saved.exchange_rate===undefined?'':saved.exchange_rate,'number','0.000000');fx.min='0';fx.step='0.000001';fx.readOnly=true;row.appendChild(fx);
     var answer=create('div','etgp-transport-answer-113139');row.appendChild(answer);
-    var remove=create('button','etgp-transport-remove-113139','Remove');remove.type='button';remove.title='Remove transport service';row.appendChild(remove);
+    var remove=create('button','etgp-hotel-remove-113127 etgp-transport-remove-113139','×');remove.type='button';remove.title='Remove Transport Service';row.appendChild(remove);
     entry.appendChild(row);
 
     var detail=create('div','etgp-transport-detail-113140');

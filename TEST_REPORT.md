@@ -135,6 +135,14 @@ The overlay has no complete Laravel runtime/database or browser-print engine. Re
 - Production deployment/UAT: pending manual `.159` deployment.
 # ERP-11.3.161 master correction validation (unpackaged)
 
+## Final persistence/UI recheck
+
+- Controlled live baseline: PUT payload Vendor ID `19`; HTTP `200`; immediate controller/save response Vendor ID `0`. This proves the deployed defect is SAVE-stage and provides the pre-migration failing baseline.
+- PHP syntax: `124` files passed, `0` failed.
+- Regression/static groups: `13` passed, `0` failed (`606` assertions total).
+- Updated master correction blocker: `41` assertions passed, including one exact Air authority, conditional migration, exact save/reload mapping, PNR nowrap, Transport compact action/headers, and Visa 11-column alignment/nowrap/no-desktop-scroll rules.
+- Post-migration end-to-end equality remains deployment UAT because this task explicitly forbids deployment. It is not reported as a completed live PASS.
+
 - PHP syntax: `123` files passed, `0` failed.
 - JavaScript syntax: General Booking and booking-focus assets passed.
 - Regression/static groups: `13` passed, `0` failed (`592` assertions total).
