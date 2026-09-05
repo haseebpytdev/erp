@@ -21,6 +21,8 @@ has(air, '$supplierId = (int) ($serviceRow[self::AIR_VENDOR_COLUMN] ?? 0)', 'Air
 has(air, "'common' => $this->commonSnapshot(", 'Air save response returns persisted common snapshot');
 has(ui, 'Select Vendor / Supplier before saving Air commercial data.', 'client validation is explicit');
 has(air, "airVendorErrors($common, $fareCommercials)", 'server validation uses shared commercial resolver');
+has(air, '$hasVendorCost && $supplierId <= 0', 'cost-positive Air save requires stable Vendor ID');
+has(air, "Select a valid Vendor / Supplier from the existing ERP Vendor authority.", 'arbitrary Vendor IDs are rejected');
 
 for (const title of ['Passenger Tickets','PNR Fare Commercials','Hotel Stays','Transport Services','Visa Services']) {
   has(ui, title, `${title} exists`);

@@ -138,13 +138,28 @@ final class GeneralBookingAirProductController extends Controller
 
         $common = (array) ($data['common'] ?? []);
         if (trim((string) ($common['pnr'] ?? '')) !== ''
-            && (int) ($common['supplier_id'] ?? 0) <= 0
-            && trim((string) ($common['supplier_name'] ?? '')) === '') {
+            && (int) ($common['supplier_id'] ?? 0) <= 0) {
             throw ValidationException::withMessages([
-                'common.supplier_id' => 'Select Vendor / Supplier before saving this PNR.',
+                'common.supplier_id' => 'Select Vendor / Supplier before saving Air commercial data.',
             ]);
         }
         $fareCommercials = $this->normalizeFareCommercials((array) ($data['fare_commercials'] ?? []), $passengers);
+        $supplierId = (int) ($common['supplier_id'] ?? 0);
+        $hasVendorCost = collect($fareCommercials)->contains(
+            static fn (array $row): bool => (float) ($row['cost_price'] ?? 0) > 0
+        );
+        if ($hasVendorCost && $supplierId <= 0) {
+            throw ValidationException::withMessages([
+                'common.supplier_id' => 'Select Vendor / Supplier before saving Air commercial data.',
+            ]);
+        }
+        if ($supplierId > 0 && ! collect($this->supplierOptions())->contains(
+            static fn (array $vendor): bool => (int) ($vendor['id'] ?? 0) === $supplierId
+        )) {
+            throw ValidationException::withMessages([
+                'common.supplier_id' => 'Select a valid Vendor / Supplier from the existing ERP Vendor authority.',
+            ]);
+        }
         $vendorErrors = app(BookingCommercialCompletenessResolver::class)->airVendorErrors($common, $fareCommercials);
         if ($vendorErrors) {
             throw ValidationException::withMessages(['common.supplier_id' => $vendorErrors]);

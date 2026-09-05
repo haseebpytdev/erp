@@ -135,6 +135,14 @@ The overlay has no complete Laravel runtime/database or browser-print engine. Re
 - Production deployment/UAT: pending manual `.159` deployment.
 # ERP-11.3.161 master correction validation (unpackaged)
 
+## Air Vendor migration finalization gate
+
+- Disposable SQLite pre-migration lifecycle: `13` assertions passed. Column absent before migration; created successfully; legacy NULL and existing rows preserved; second run safe; selected/request/database/reload/hydration values all `19`; unrelated product-table writes preserved the value; local rollback passed.
+- Server validation now requires a positive stable Vendor ID for cost-positive Air data and rejects IDs absent from the existing ERP Vendor dropdown authority.
+- PHP syntax: `125` files passed, `0` failed.
+- Regression/static groups: `14` passed, `0` failed (`621` assertions total): 6 PHP groups and 8 JavaScript groups.
+- This is a local release gate only. No package, version increment, migration against live, or deployment was performed.
+
 ## Final persistence/UI recheck
 
 - Controlled live baseline: PUT payload Vendor ID `19`; HTTP `200`; immediate controller/save response Vendor ID `0`. This proves the deployed defect is SAVE-stage and provides the pre-migration failing baseline.

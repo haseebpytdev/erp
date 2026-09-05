@@ -153,6 +153,13 @@ Authority map: `BOOKING_MODEL=bookings`; `BOOKING_STATUS_FIELD=first native appr
 This is an overlay, not a complete Laravel checkout. It has no `composer.json`, `artisan`, `vendor/`, `.env`, base native Travel Masters controller/view, or local database. `.151` live read-only UAT passed the repaired relationship chain. The `.152` modal requires manual deployment for visual and real-booking browser UAT.
 # ERP-11.3.161 master correction pass (unpackaged)
 
+## Air Vendor migration finalization
+
+- Verified the conditional `booking_services.vendor_id` migration against a real disposable SQLite database representing the pre-migration schema. Existing rows survived up, repeat-up, and local down testing.
+- Verified actual persisted lifecycle values in the disposable database: selected `19` → nested request `19` → stored `19` → fresh-query controller value `19` → hydration string `19`.
+- Tightened the real controller gate: cost-positive Air data requires a positive ID, and every supplied ID must exist in `UnifiedGroupPackageDataSource::vendors()`—the same authority that populates the dropdown.
+- Missing physical migration already produces a controlled validation failure; new writes use NULL, never zero, for no Vendor.
+
 ## Final Air persistence re-audit
 
 - A controlled live save against `BK-2026-000054` disproved the earlier compatibility-field conclusion. Live booking ID is `13`; Air ticket detail IDs are `10`–`14`.
