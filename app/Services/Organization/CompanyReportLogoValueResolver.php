@@ -32,7 +32,8 @@ final class CompanyReportLogoValueResolver
         if (is_object($company)) {
             if (method_exists($company, 'getAttributes')) {
                 try {
-                    $stored = $this->reportLogoMember((array) $company->getAttributes());
+                    $attributes = (array) $company->getAttributes();
+                    $stored = $this->reportLogoMember($attributes) ?? $this->embeddedImageValue($attributes);
                     if ($this->usable($stored)) {
                         return $stored;
                     }
@@ -41,7 +42,8 @@ final class CompanyReportLogoValueResolver
             }
         }
 
-        return $this->reportLogoMember(is_array($company) ? $company : (array) $company);
+        $attributes = is_array($company) ? $company : (array) $company;
+        return $this->reportLogoMember($attributes) ?? $this->embeddedImageValue($attributes);
     }
 
     private function nativePresentationValue(object $company): mixed
@@ -82,6 +84,41 @@ final class CompanyReportLogoValueResolver
         }
 
         return null;
+    }
+
+    /** @param array<string,mixed> $attributes */
+    private function embeddedImageValue(array $attributes): ?string
+    {
+        foreach ($attributes as $value) {
+            if (! $this->usable($value)) {
+                continue;
+            }
+
+            if (
+                str_starts_with($value, 'data:image/')
+                || $this->hasImageSignature($value)
+            ) {
+                return $value;
+            }
+
+            $candidate = preg_replace('/\s+/', '', $value) ?? '';
+            if ($candidate === '' || preg_match('/^[A-Za-z0-9+\/=]+$/', $candidate) !== 1) {
+                continue;
+            }
+            $decoded = base64_decode($candidate, true);
+            if (is_string($decoded) && $this->hasImageSignature($decoded)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function hasImageSignature(string $value): bool
+    {
+        return str_starts_with($value, "\xFF\xD8\xFF")
+            || str_starts_with($value, "\x89PNG\x0D\x0A\x1A\x0A")
+            || (str_starts_with($value, 'RIFF') && substr($value, 8, 4) === 'WEBP');
     }
 
     private function attribute(object|array $company, string $name): mixed

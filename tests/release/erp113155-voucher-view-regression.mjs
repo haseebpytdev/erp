@@ -39,7 +39,7 @@ lacks(view, '{{ $publicVoucherUrl }}<', 'raw public URL is never printed');
 has(controller, 'safeVoucherUrl(', 'saved QR/public URLs are sanitized');
 has(controller, "$passengerVisaMap->build($visaRows)", 'controller delegates stable Visa mapping');
 has(controller, "$footerResolver->resolve($visaRows", 'controller delegates exclusive footer priority');
-has(repository, "['voucher_footer_html']", 'exact native Pakistan IATA/KSA contact footer field is reused');
+has(repository, "['voucher_footer_html']", 'exact native Saudi Company footer field is reused');
 has(visa, "'saudi_company_footer' =>", 'saved Saudi master relationship exposes footer to voucher');
 
 for (const forbidden of ['vendor_cost_pkr', 'cost_currency', 'cost_rate', 'exchange_rate', 'margin_pkr', 'vendor_id', 'supplier accounting']) lacks(view, forbidden, `client voucher excludes ${forbidden}`);

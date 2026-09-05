@@ -4,11 +4,13 @@ require_once __DIR__.'/../../app/Services/Operations/ClientVoucherFooterResolver
 require_once __DIR__.'/../../app/Services/Operations/VisaMasterRelationshipResolver.php';
 require_once __DIR__.'/../../app/Services/Organization/CompanyReportLogoValueResolver.php';
 require_once __DIR__.'/../../app/Services/Organization/CompanyProfileSnapshotService.php';
+require_once __DIR__.'/../../app/Http/Middleware/PresentCompanyVoucherFooterAuthority.php';
 
 use App\Services\Operations\ClientVoucherFooterResolver;
 use App\Services\Operations\VisaMasterRelationshipResolver;
 use App\Services\Organization\CompanyReportLogoValueResolver;
 use App\Services\Organization\CompanyProfileSnapshotService;
+use App\Http\Middleware\PresentCompanyVoucherFooterAuthority;
 
 $checks = 0;
 $assert = static function (bool $condition, string $message) use (&$checks): void {
@@ -23,6 +25,7 @@ $assert($footer->resolve([['saudi_company_footer' => '']], 'Company contacts') =
 $assert($footer->resolve([['saudi_company_footer' => " \n\t "]], 'Company contacts') === 'Company contacts', 'whitespace relationship footer falls back to Company Profile');
 $assert($footer->resolve([], '') === '', 'both empty omit the footer');
 $assert($footer->resolve([['saudi_company_footer' => '<strong onclick="bad()">KSA</strong><script>bad()</script>']], '') === '<strong>KSA</strong>bad()', 'saved HTML keeps approved formatting and strips unsafe tags/attributes');
+$assert($footer->resolve([['pakistani_iata_footer' => 'IATA must not win']], 'Company contacts') === 'Company contacts', 'Pakistan IATA footer is not an authority for this voucher flow');
 
 $relationship = new VisaMasterRelationshipResolver();
 $resolved = $relationship->resolve(
@@ -30,7 +33,13 @@ $resolved = $relationship->resolve(
     [['id' => 3, 'master_key' => 'travel_voucher_partners:3', 'source_table' => 'travel_voucher_partners', 'name' => 'Saudi Company', 'linked_iata_id' => 2]],
     [['id' => 15, 'name' => 'Vendor']]
 );
-$assert(($resolved['saudis'][0]['voucher_footer'] ?? '') === 'IATA contact', 'native Pakistan IATA footer propagates through the selected Saudi relationship');
+$assert(($resolved['saudis'][0]['voucher_footer'] ?? '') === '', 'native Pakistan IATA footer does not propagate through the Saudi relationship');
+$resolvedSaudi = $relationship->resolve(
+    [['id' => 2, 'master_key' => 'travel_voucher_partners:2', 'source_table' => 'travel_voucher_partners', 'name' => 'Pakistan IATA', 'vendor_id' => 15, 'voucher_footer' => 'IATA ignored']],
+    [['id' => 3, 'master_key' => 'travel_voucher_partners:3', 'source_table' => 'travel_voucher_partners', 'name' => 'Saudi Company', 'linked_iata_id' => 2, 'voucher_footer' => 'Saudi wins']],
+    [['id' => 15, 'name' => 'Vendor']]
+);
+$assert(($resolvedSaudi['saudis'][0]['voucher_footer'] ?? '') === 'Saudi wins', 'saved Saudi Company footer remains the relationship authority');
 
 $profile = new CompanyProfileSnapshotService();
 $logoMethod = new ReflectionMethod($profile, 'logoUrl');
@@ -50,5 +59,11 @@ $logoValue = new CompanyReportLogoValueResolver();
 $assert($logoValue->resolve($nativeLogo) === $dataLogo, 'native Company report-logo presentation helper is reused when the upload request attribute is blank');
 $assert($logoValue->resolve(['report_logo' => '']) === null, 'blank report_logo produces no image value');
 $assert($logoValue->resolve(['report_logo_blob' => "\xFF\xD8\xFFstored"]) === "\xFF\xD8\xFFstored", 'native report-logo storage member is discovered without inventing a URL prefix');
+$assert($logoValue->resolve(['native_image_payload' => "\xFF\xD8\xFFstored"]) === "\xFF\xD8\xFFstored", 'embedded Company image bytes resolve even when the base model uses a non-public storage member name');
+
+$copy = new PresentCompanyVoucherFooterAuthority();
+$corrected = $copy->correct('Voucher footer priority: Voucher-specific Footer &rarr; Selected Pakistan Visa / IATA Footer &rarr; Company Default Footer.');
+$assert(str_contains($corrected, 'Saudi Company Footer → Company Default Footer.'), 'Company Profile help copy states the approved Saudi-to-Company priority');
+$assert(! str_contains($corrected, 'Pakistan Visa / IATA Footer'), 'Company Profile help copy removes Pakistan IATA footer priority');
 
 echo "ERP-11.3.156 Company Profile data regression checks passed: {$checks}\n";

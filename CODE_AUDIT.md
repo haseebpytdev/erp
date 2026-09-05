@@ -1,4 +1,11 @@
-# ERP-11.3.157 Code Audit
+# ERP-11.3.158 Code Audit
+
+## ERP-11.3.158 final logo/footer authority correction
+
+- Company report-logo extraction now recognizes the native helper, exact attribute/storage member, and image-shaped embedded data already used by the working Company Profile preview.
+- The selected Saudi Company row's `voucher_footer_html` is the only relationship-level footer authority. Pakistan IATA footer propagation was removed.
+- A narrow GET-only Company Profile response presenter corrects the native help copy without replacing its controller, form, persistence, or authorization.
+- All other voucher layout/data behavior remains unchanged; no migration was added.
 
 ## ERP-11.3.157 voucher logo-only correction
 

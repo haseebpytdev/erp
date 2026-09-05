@@ -11,6 +11,8 @@ const profile = read('app/Services/Organization/CompanyProfileSnapshotService.ph
 const logoResolver = read('app/Services/Organization/CompanyReportLogoValueResolver.php');
 const repository = read('app/Services/Operations/LegacyVisaTravelMasterRepository.php');
 const relationship = read('app/Services/Operations/VisaMasterRelationshipResolver.php');
+const footerCopy = read('app/Http/Middleware/PresentCompanyVoucherFooterAuthority.php');
+const routes = read('routes/erp103179.php');
 let checks = 0;
 const has = (text, value, message) => { assert.ok(text.includes(value), message); checks++; };
 const lacks = (text, value, message) => { assert.ok(!text.includes(value), message); checks++; };
@@ -38,8 +40,12 @@ has(logoResolver, "str_contains($normalized, 'report') && str_contains($normaliz
 has(profile, "preg_match('/^[A-Za-z]:", 'Windows filesystem paths are rejected');
 has(view, "{{ $company['name'] }}", 'header name comes from resolved Company Profile');
 lacks(view, '>Easy Group Of Travels<', 'voucher has no hard-coded company name');
-has(repository, "['voucher_footer_html']", 'native Pakistan IATA footer field is read exactly');
-has(relationship, "$saudi['voucher_footer'] = trim((string) ($iata['voucher_footer'] ?? ''))", 'linked IATA footer reaches the Saudi booking relationship');
+has(repository, "['voucher_footer_html']", 'native shared-table Saudi footer field is read exactly');
+lacks(relationship, "$saudi['voucher_footer'] = trim((string) ($iata['voucher_footer'] ?? ''))", 'linked IATA footer never reaches the Saudi booking relationship');
+has(footerCopy, 'Saudi Company Footer → Company Default Footer.', 'Company Profile help text states the approved two-level rule');
+has(footerCopy, 'organization/company', 'help-text correction is scoped only to Company Profile');
+has(routes, 'PresentCompanyVoucherFooterAuthority::class', 'native Company Profile GET receives the narrow presentation correction');
+has(logoResolver, 'embeddedImageValue($attributes)', 'native embedded image value can be reused without a guessed URL convention');
 has(view, '{!! nl2br($resolvedVoucherFooter) !!}', 'approved saved footer HTML is visible');
 assert.equal((view.match(/class="voucher-footer-text"/g) ?? []).length, 1, 'one footer rendering only'); checks++;
 const instructions = view.indexOf('<div class="instructions">');

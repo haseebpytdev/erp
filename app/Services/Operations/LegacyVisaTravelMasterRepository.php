@@ -130,15 +130,6 @@ final class LegacyVisaTravelMasterRepository
                         'default_supplier', 'default_vendor', 'vendor', 'supplier', 'vendor_account', 'supplier_account',
                     ]));
                     $base['iata_number'] = trim((string) $this->value($row, $extra, $columns, ['iata_number', 'iata_no', 'iata_code', 'iata'], ''));
-                    // Native Travel Masters authority: the Pakistan Visa / IATA
-                    // form persists its voucher contact block in this exact field.
-                    $base['voucher_footer'] = trim((string) $this->value(
-                        $row,
-                        $extra,
-                        $columns,
-                        ['voucher_footer_html'],
-                        ''
-                    ));
                     $iatas[] = $base;
                     continue;
                 }
@@ -162,6 +153,16 @@ final class LegacyVisaTravelMasterRepository
                 ], $this->relationReference($row, $extra, $columns, [
                     'pakistani_iata', 'pakistan_iata', 'linked_iata', 'iata_partner', 'visa_operator', 'linked_operator',
                 ])));
+                // Footer authority belongs to the selected Saudi Company row.
+                // travel_voucher_partners is shared, so use this exact column
+                // from the Saudi record rather than inheriting the IATA value.
+                $base['voucher_footer'] = trim((string) $this->value(
+                    $row,
+                    $extra,
+                    $columns,
+                    ['voucher_footer_html'],
+                    ''
+                ));
                 $saudis[] = $base;
             }
         }

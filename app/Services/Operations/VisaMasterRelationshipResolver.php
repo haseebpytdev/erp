@@ -96,9 +96,6 @@ final class VisaMasterRelationshipResolver
             $saudi['pakistani_iata_name'] = (string) (($iata['name'] ?? '') ?: '—');
             $saudi['vendor_id'] = (int) ($iata['vendor_id'] ?? 0);
             $saudi['vendor_name'] = (string) (($iata['vendor_name'] ?? '') ?: '—');
-            // Surface the linked native Pakistan Visa / IATA contact footer on
-            // the resolved Saudi relationship consumed by Visa booking rows.
-            $saudi['voucher_footer'] = trim((string) ($iata['voucher_footer'] ?? ''));
             $saudi['status'] = $iata === null
                 ? 'IATA LINK REQUIRED'
                 : ($saudi['vendor_id'] > 0 ? 'READY' : 'VENDOR LINK REQUIRED');

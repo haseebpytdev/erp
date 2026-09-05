@@ -48,6 +48,7 @@ use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentChartOfAccountsWorkspace;
 use App\Http\Middleware\PresentAccountingReportsWorkspace;
 use App\Http\Middleware\PresentVisaManagementTravelMasterLink;
+use App\Http\Middleware\PresentCompanyVoucherFooterAuthority;
 use App\Http\Middleware\EnforceErpRoleScopedAccess;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
@@ -466,6 +467,18 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     }
 
     $route->middleware(PresentAccountingReportsWorkspace::class);
+});
+
+// Native Company Profile source is owned by the installed base application.
+// Attach one presentation-only copy correction without replacing its route,
+// controller, form, persistence, or authorization.
+Event::listen(RouteMatched::class, function (RouteMatched $event): void {
+    if (
+        $event->route->uri() === 'organization/company'
+        && in_array('GET', $event->route->methods(), true)
+    ) {
+        $event->route->middleware(PresentCompanyVoucherFooterAuthority::class);
+    }
 });
 
 /*
