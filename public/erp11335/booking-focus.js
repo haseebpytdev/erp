@@ -134,6 +134,18 @@ var pageRegisterLink=Array.prototype.slice.call(
 
 var reviewHeaderActions=document.querySelector('[data-et-booking-review-header-actions="1"]');
 if(reviewHeaderActions){
+  var reviewRoot=document.querySelector('[data-et-booking-review-root="1"]');
+  document.documentElement.classList.add('et-booking-review-workspace-161');
+  if(reviewRoot){
+    var bookingReference=String(reviewRoot.getAttribute('data-booking-reference')||'Booking');
+    var bookingCompany=String(reviewRoot.getAttribute('data-booking-company')||'');
+    var bookingBranch=String(reviewRoot.getAttribute('data-booking-branch')||'');
+    var nativePageHeader=document.querySelector('.page-header');
+    var nativePageTitle=nativePageHeader&&nativePageHeader.querySelector('h1,h2,.page-title');
+    if(nativePageTitle)nativePageTitle.textContent=bookingReference;
+    var nativeSubtitle=nativePageHeader&&nativePageHeader.querySelector('.text-muted,.page-pretitle,small');
+    if(nativeSubtitle)nativeSubtitle.textContent=[bookingCompany,bookingBranch].filter(Boolean).join(' · ');
+  }
   /* Move the existing shared Menu and native Booking Register destination into
    * the Review title row; do not recreate menu contents or route authority. */
   toolbar.classList.add('et-booking-focus-fallback-inline');

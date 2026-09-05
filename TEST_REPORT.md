@@ -133,3 +133,13 @@ The overlay has no complete Laravel runtime/database or browser-print engine. Re
 - Fallback initials footprint: `80 x 80 px`.
 - Preview/print authority: one shared voucher view and stylesheet.
 - Production deployment/UAT: pending manual `.159` deployment.
+# ERP-11.3.161 master correction validation (unpackaged)
+
+- PHP syntax: `123` files passed, `0` failed.
+- JavaScript syntax: General Booking and booking-focus assets passed.
+- Regression/static groups: `13` passed, `0` failed (`592` assertions total).
+- New release blocker `erp113161-master-correction-regression.mjs`: `27` assertions passed for Air stable-ID payload/persistence/reload contract, backend validation, shared product typography, Visa readability, Hotel action geometry/desktop overflow, and Review shell/navigation authority.
+- Existing PHP groups: `5` passed, `0` failed.
+- Existing/new JavaScript groups: `8` passed, `0` failed.
+- `.161` package comparison: all seven audited runtime-critical files were hash-identical before this correction; the package was synchronized but did not contain these newly requested changes.
+- Live production was not mutated. The in-app browser did not expose a controllable tab during this run, so no live save was claimed; persistence is covered by source-contract and regression assertions pending deployment UAT.

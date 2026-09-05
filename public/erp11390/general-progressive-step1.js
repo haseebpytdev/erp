@@ -775,7 +775,7 @@ var etgpAirSelect113106=function(label,value,options){
 };
 
 var etgpAirSubhead113106=function(title,note){
-  var head=create('div','etgp-air-subhead-113106');
+  var head=create('div','etgp-air-subhead-113106 etgp-product-subsection-161');
   var copy=create('div','etgp-air-subhead-copy-113106');
   copy.appendChild(create('h4','etgp-air-subtitle-113106',title));
   if(note)copy.appendChild(create('p','etgp-air-subnote-113106',note));
@@ -1126,7 +1126,7 @@ var etgpAirRender113106=function(host,data,bookingId){
 
   /* Passenger tickets */
   var ticketsBlock=create('section','etgp-air-block-113106');
-  ticketsBlock.appendChild(etgpAirSubhead113106('Passenger Tickets','Enter the first ticket number and the following blank ticket numbers auto-increment. Staff can edit any generated number. Passenger status follows the PNR Ticket Status.'));
+  var passengerTicketsHeading=etgpAirSubhead113106('Passenger Tickets','Enter the first ticket number and the following blank ticket numbers auto-increment. Staff can edit any generated number. Passenger status follows the PNR Ticket Status.');passengerTicketsHeading.classList.add('etgp-product-subsection-161');ticketsBlock.appendChild(passengerTicketsHeading);
   var ticketWrap=create('div','etgp-air-ticket-wrap-113106');
   var table=create('table','table etgp-air-ticket-table-113106 etgp-air-ticket-table-113123');
   var thead=create('thead','');
@@ -1221,7 +1221,7 @@ var etgpAirRender113106=function(host,data,bookingId){
 
   /* ERP-11.3.109 — compact one-row fare commercial matrix; Taxes = Cost Price - Basic Rate */
   var commercial=create('section','etgp-air-block-113106 etgp-air-commercial-113108');
-  commercial.appendChild(etgpAirSubhead113106('PNR Fare Commercials','One row per fare type. Taxes = Cost Price - Basic Rate. Vendor Minus and Customer Minus are always calculated against Basic Rate.'));
+  var pnrCommercialHeading=etgpAirSubhead113106('PNR Fare Commercials','One row per fare type. Taxes = Cost Price - Basic Rate. Vendor Minus and Customer Minus are always calculated against Basic Rate.');pnrCommercialHeading.classList.add('etgp-product-subsection-161');commercial.appendChild(pnrCommercialHeading);
 
   var commercialWrap=create('div','etgp-air-fare-wrap-113108');
   var commercialTable=create('table','etgp-air-fare-table-113108');
@@ -1392,6 +1392,7 @@ var etgpAirRender113106=function(host,data,bookingId){
       feedback.hidden=false;feedback.className='etgp-air-feedback-113106 is-success';feedback.textContent=result.message||'Tickets / Flight Data saved.';
       var summaryResult=result.summary||{};
       etgpAirApplySummaryKpis113124(summaryResult,currency);
+      if(result.common&&Number(result.common.supplier_id||0)>0&&suppliers.length)supplierControl.select.value=String(result.common.supplier_id);
       etgpRefreshPersistedBookingState113153(bookingId);
     }).catch(function(error){
       feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=error&&error.message?error.message:'Tickets / Flight Data could not be saved.';
@@ -1503,12 +1504,12 @@ var etgpHotelRender113127=function(host,data,bookingId){
   var rows=[];
   var block=create('div','etgp-hotel-block-113127');
   var head=create('div','etgp-hotel-head-113127');
-  var headCopy=create('div','');headCopy.appendChild(create('h4','etgp-hotel-title-113127','Hotel Stays'));headCopy.appendChild(create('p','etgp-hotel-note-113127','One line per hotel. City filters Hotel Name; Nights and Answer calculate automatically.'));
+  var headCopy=create('div','etgp-product-subsection-161');headCopy.appendChild(create('h4','etgp-hotel-title-113127','Hotel Stays'));headCopy.appendChild(create('p','etgp-hotel-note-113127','One line per hotel. City filters Hotel Name; Nights and Answer calculate automatically.'));
   var add=create('button','btn btn-light etgp-hotel-add-113127','+ Add Hotel Stay');add.type='button';
   head.appendChild(headCopy);head.appendChild(add);block.appendChild(head);
   var scroll=create('div','etgp-hotel-grid-scroll-113127');
   var header=create('div','etgp-hotel-grid-113127 etgp-hotel-grid-head-113127');
-  ['#','City','Vendor *','Hotel Name','C Number','R Type','Board','Check In','Check Out','Nights','Sale','Cost','Answer',''].forEach(function(label){header.appendChild(create('div','',label));});
+  ['#','City','Vendor *','Hotel Name','C Number','R Type','Board','Check In','Check Out','Nights','Sale','Cost','Answer','Action'].forEach(function(label){header.appendChild(create('div','',label));});
   scroll.appendChild(header);
   var body=create('div','etgp-hotel-rows-113127');scroll.appendChild(body);block.appendChild(scroll);
 
@@ -1554,7 +1555,7 @@ var etgpHotelRender113127=function(host,data,bookingId){
     var sale=makeInput(stay.sale_rate||0,'number');sale.min='0';sale.step='0.01';row.appendChild(sale);
     var cost=makeInput(stay.cost_rate||0,'number');cost.min='0';cost.step='0.01';row.appendChild(cost);
     var answer=create('div','etgp-hotel-answer-113127');row.appendChild(answer);
-    var remove=create('button','etgp-hotel-remove-113127','×');remove.type='button';remove.title='Remove hotel stay';row.appendChild(remove);
+    var remove=create('button','etgp-hotel-remove-113127','×');remove.type='button';remove.title='Remove Hotel Stay';row.appendChild(remove);
     body.appendChild(row);
     var controls={row:row,city:city,vendor:vendor,hotel:hotel,hotelList:hotelList,confirmation:confirmation,room:room,board:board,checkIn:checkIn,checkOut:checkOut,nights:nights,sale:sale,cost:cost,answer:answer};rows.push(controls);refreshHotelList(controls);
     city.addEventListener('input',function(){refreshHotelList(controls);});
@@ -1687,7 +1688,7 @@ var etgpTransportRender113139=function(host,data,bookingId){
 
   var block=create('div','etgp-transport-block-113139');
   var head=create('div','etgp-transport-head-113139');
-  var headCopy=create('div','etgp-transport-head-copy-113139');
+  var headCopy=create('div','etgp-transport-head-copy-113139 etgp-product-subsection-161');
   headCopy.appendChild(create('h4','etgp-transport-title-113139','Transport Services'));
   var countChip=create('span','etgp-transport-count-113139','Transport Services: 0');headCopy.appendChild(countChip);
   var headActions=create('div','etgp-transport-head-actions-113139');
@@ -2105,7 +2106,7 @@ var etgpVisaRender113142=function(host,data,bookingId){
 
   var block=create('div','etgp-visa-block-113142');host.appendChild(block);
   var head=create('div','etgp-visa-head-113142');
-  var titleWrap=create('div','etgp-visa-title-wrap-113142');titleWrap.appendChild(create('div','etgp-visa-title-113142','Visa Services'));
+  var titleWrap=create('div','etgp-visa-title-wrap-113142 etgp-product-subsection-161');titleWrap.appendChild(create('div','etgp-visa-title-113142','Visa Services'));
   var count=create('span','etgp-visa-count-113142','Visa Services: '+rows.length);titleWrap.appendChild(count);head.appendChild(titleWrap);
   var actions=create('div','etgp-visa-head-actions-113142');
   var setup=create('a','etgp-visa-btn-113142','Visa Setup / Rates');setup.href=String(data.setup_url||('/master-data/travel-masters/visa-management?booking='+bookingId));setup.target='_blank';actions.appendChild(setup);

@@ -214,6 +214,10 @@ final class GeneralBookingAirProductController extends Controller
             'tickets' => $result['tickets'],
             'fare_commercials' => $result['fare_commercials'],
             'summary' => $result['summary'],
+            'common' => $this->commonSnapshot(
+                $result['tickets'],
+                (array) (DB::table('booking_services')->where('id', (int) $result['service']['id'])->first() ?? [])
+            ),
         ]);
     }
 
@@ -585,7 +589,7 @@ final class GeneralBookingAirProductController extends Controller
                 $customer = $this->ticketCustomerTotal($data, $columns);
                 $supplier = $this->ticketSupplierTotal($data, $columns);
                 $commercialMeta = $this->commercialMetaFromRow($data, $columns);
-                $nativeSupplierId = $this->firstPositiveInt($data, ['supplier_id', 'vendor_id']);
+                $nativeSupplierId = $this->firstPositiveInt($data, ['vendor_id', 'supplier_id', 'service_partner_id']);
                 $nativeSupplierName = $this->firstNonEmpty($data, ['supplier_name', 'vendor_name']);
 
                 return [
@@ -746,7 +750,7 @@ final class GeneralBookingAirProductController extends Controller
             // Supplier/vendor IDs are NOT saturated because installations can
             // keep both columns with different foreign-key masters. Use the
             // authoritative first installed relation only; names are safe aliases.
-            if ($supplierId > 0) $this->put($row, $columns, ['supplier_id', 'vendor_id'], $supplierId);
+            if ($supplierId > 0) $this->put($row, $columns, ['vendor_id', 'supplier_id', 'service_partner_id'], $supplierId);
             $this->putAllAllowEmpty($row, $columns, ['supplier_name', 'vendor_name'], trim((string) ($common['supplier_name'] ?? '')));
 
             $basicRateValue = $this->money($commercial['customer_base_fare'] ?? ($commercial['basic_rate'] ?? 0));
@@ -926,7 +930,7 @@ final class GeneralBookingAirProductController extends Controller
         $supplierId = (int) ($first['supplier_id'] ?? 0);
         $supplierName = trim((string) ($first['supplier_name'] ?? ''));
         $serviceVendorMeta = $this->vendorMetaFromRow($serviceRow, $serviceColumns);
-        $serviceSupplierId = $this->firstPositiveInt($serviceRow, ['supplier_id', 'vendor_id']);
+        $serviceSupplierId = $this->firstPositiveInt($serviceRow, ['vendor_id', 'supplier_id', 'service_partner_id']);
         $serviceSupplierName = $this->firstNonEmpty($serviceRow, ['supplier_name', 'vendor_name']);
 
         return [
@@ -1258,10 +1262,10 @@ final class GeneralBookingAirProductController extends Controller
     private function syncAirServiceContext(int $serviceId, array $common): void
     {
         if ($serviceId <= 0 || ! Schema::hasTable('booking_services')) return;
-        $columns = Schema::getColumnListing('booking_services');
+        $columns = $this->physicalColumnListing('booking_services');
         $update = [];
         $supplierId = (int) ($common['supplier_id'] ?? 0);
-        if ($supplierId > 0) $this->put($update, $columns, ['supplier_id', 'vendor_id'], $supplierId);
+        if ($supplierId > 0) $this->put($update, $columns, ['vendor_id', 'supplier_id', 'service_partner_id'], $supplierId);
         $this->putAllAllowEmpty($update, $columns, ['supplier_name', 'vendor_name'], trim((string) ($common['supplier_name'] ?? '')));
         // ERP-11.3.132: preserve/read vendor context through the first
         // JSON-capable metadata alias, not merely the first installed meta-like

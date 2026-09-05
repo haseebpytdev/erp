@@ -3472,3 +3472,49 @@ html.et-general-progressive-step1-11390:not(.etgp-step1-ready-11390):not(.etgp-s
 .etgp-visa-pax-modal-113152{width:min(840px,96vw);overflow:hidden}.etgp-visa-pax-modal-113152 .etgp-visa-modal-body-113142{padding:14px}.etgp-visa-pax-search-113152{margin:0!important}.etgp-visa-pax-toolbar-113152{margin:10px 0!important;padding:0 2px}.etgp-visa-clear-113152{border:0;background:transparent;color:#51657d;font-size:10px;font-weight:800;padding:6px 7px;cursor:pointer}.etgp-visa-picked-113152{margin-left:auto!important;padding:5px 9px;border-radius:999px;background:#edf4fc;color:#1d5f9f!important;font-size:9px!important}.etgp-visa-pax-table-113152{border:1px solid #dfe7f0;border-radius:9px;overflow:hidden}.etgp-visa-pax-row-113152{display:grid!important;grid-template-columns:34px minmax(0,1.55fr) minmax(0,1fr) 88px;gap:10px;align-items:center}.etgp-visa-pax-head-113152{padding:7px 10px;background:#f5f8fc;color:#63748a;font-size:8px;font-weight:900;text-transform:uppercase;border-bottom:1px solid #dfe7f0}.etgp-visa-pax-body-113152{border:0!important;border-radius:0!important;max-height:390px;overflow-y:auto!important;overflow-x:hidden!important}.etgp-visa-pax-option-113142.etgp-visa-pax-row-113152{grid-template-columns:34px minmax(0,1.55fr) minmax(0,1fr) 88px;padding:8px 10px;min-height:38px}.etgp-visa-pax-name-113152{font-size:10px!important;overflow-wrap:anywhere}.etgp-visa-pax-passport-113152{display:block!important;font-size:9px;color:#62748a;overflow-wrap:anywhere}.etgp-visa-fare-badge-113152{display:inline-flex!important;width:max-content;max-width:100%;align-items:center;justify-content:center;padding:3px 7px;border-radius:999px;background:#eaf2fb;color:#245d96;font-size:8px;font-weight:900;line-height:1}.etgp-visa-pax-footer-113152{display:grid;grid-template-columns:minmax(170px,1fr) auto minmax(230px,1fr);gap:12px;align-items:center;margin-top:12px}.etgp-visa-pax-showing-113152{font-size:9px;color:#64758b}.etgp-visa-pax-pager-113152{margin:0!important}.etgp-visa-pax-footer-actions-113152{display:flex;justify-content:flex-end;gap:7px}.etgp-visa-pax-footer-actions-113152 .etgp-visa-btn-113142:disabled{opacity:.55;cursor:not-allowed}@media(max-width:700px){.etgp-visa-modal-overlay-113142{padding:8px}.etgp-visa-pax-modal-113152{width:100%;max-height:94vh}.etgp-visa-pax-row-113152,.etgp-visa-pax-option-113142.etgp-visa-pax-row-113152{grid-template-columns:26px minmax(0,1.3fr) minmax(0,.9fr) 62px;gap:6px;padding-left:7px;padding-right:7px}.etgp-visa-pax-head-113152{font-size:7px}.etgp-visa-pax-footer-113152{grid-template-columns:1fr auto}.etgp-visa-pax-showing-113152{grid-column:1/-1}.etgp-visa-pax-footer-actions-113152{justify-content:flex-end}.etgp-visa-pax-footer-actions-113152 .etgp-visa-btn-113142{padding-left:8px;padding-right:8px}}
 @media(max-width:1250px){.etgp-visa-grid-113142{grid-template-columns:18px 20px minmax(95px,1.3fr) minmax(68px,.8fr) minmax(60px,.7fr) minmax(74px,.85fr) minmax(74px,.85fr) minmax(65px,.75fr) minmax(66px,.75fr) 60px 60px 66px 50px;gap:3px}.etgp-visa-main-row-113142{font-size:7px}.etgp-visa-detail-113142{grid-template-columns:repeat(4,minmax(0,1fr));padding-left:35px}}
 @media(max-width:880px){.etgp-visa-head-113142{align-items:flex-start;flex-direction:column}.etgp-visa-head-actions-113142{justify-content:flex-start}.etgp-visa-grid-head-113142{display:none}.etgp-visa-grid-113142{grid-template-columns:18px 22px repeat(2,minmax(0,1fr));gap:5px}.etgp-visa-main-row-113142>*{min-width:0}.etgp-visa-detail-113142{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.etgp-visa-summary-113142{grid-template-columns:1fr}.etgp-visa-tools-113142{grid-template-columns:1fr}.etgp-visa-shown-113142{white-space:normal}}
+
+/* ERP-11.3.161 controlled correction: one readable inner-product hierarchy. */
+.etgp-product-subsection-161 .etgp-air-subtitle-113106,
+.etgp-product-subsection-161 .etgp-hotel-title-113127,
+.etgp-product-subsection-161 .etgp-transport-title-113139,
+.etgp-product-subsection-161 .etgp-visa-title-113142{
+  color:#17243a!important;font-size:14px!important;font-weight:700!important;line-height:1.25!important;
+}
+.etgp-product-subsection-161 .etgp-air-subnote-113106,
+.etgp-product-subsection-161 .etgp-hotel-note-113127{
+  color:#68778c!important;font-size:12px!important;line-height:1.35!important;
+}
+.etgp-air-ticket-table-113106 th,.etgp-air-fare-table-113108 th,
+.etgp-hotel-grid-head-113127,.etgp-transport-grid-head-113139,.etgp-visa-grid-head-113142{
+  font-size:11.5px!important;font-weight:700!important;line-height:1.2!important;
+}
+.etgp-air-field-113106 .form-control,.etgp-air-field-113106 .form-select,
+.etgp-air-ticket-table-113106 .form-control,.etgp-air-ticket-table-113106 .form-select,
+.etgp-air-fare-table-113108 .form-control,.etgp-air-fare-table-113108 .form-select,
+.etgp-hotel-row-113127 .form-control,.etgp-hotel-row-113127 .form-select,
+.etgp-transport-row-113139 .form-control,.etgp-transport-row-113139 .form-select,
+.etgp-visa-main-row-113142 .form-control,.etgp-visa-main-row-113142 .form-select,
+.etgp-visa-detail-113142 .form-control,.etgp-visa-detail-113142 .form-select{
+  font-size:12.5px!important;line-height:1.2!important;
+}
+.etgp-air-answer-113108,.etgp-hotel-answer-113127,.etgp-transport-answer-113139,
+.etgp-visa-answer-113142,.etgp-visa-summary-item-113142 span,.etgp-visa-summary-item-113142 strong{
+  font-size:11.5px!important;font-weight:700!important;line-height:1.15!important;
+}
+.etgp-transport-count-113139,.etgp-visa-count-113142{font-size:11px!important;font-weight:700!important}
+.etgp-visa-main-row-113142{font-size:12.5px!important;line-height:1.2!important}
+.etgp-visa-passenger-113142 strong,.etgp-visa-passenger-113142 span{font-size:12.5px!important;line-height:1.2!important}
+.etgp-visa-detail-field-113142 label{font-size:11.5px!important;font-weight:700!important}
+
+/* Hotel row: reserve the final action cell inside the normal 1280px canvas. */
+.etgp-hotel-grid-113127{
+  grid-template-columns:40px 72px 100px minmax(112px,1fr) 82px 72px 50px 92px 92px 46px 70px 70px 100px 48px!important;
+  gap:5px!important;min-width:0!important;
+}
+.etgp-hotel-grid-scroll-113127{overflow-x:hidden!important}
+.etgp-hotel-answer-113127{white-space:normal!important;width:100%;min-width:0}
+.etgp-hotel-remove-113127{width:38px!important;min-width:38px!important;height:35px!important;justify-self:center}
+@media(max-width:1220px){
+  .etgp-hotel-grid-scroll-113127{overflow-x:auto!important}
+  .etgp-hotel-grid-113127{min-width:1120px!important}
+}

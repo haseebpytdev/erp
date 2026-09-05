@@ -151,3 +151,13 @@ Authority map: `BOOKING_MODEL=bookings`; `BOOKING_STATUS_FIELD=first native appr
 ## Known boundary
 
 This is an overlay, not a complete Laravel checkout. It has no `composer.json`, `artisan`, `vendor/`, `.env`, base native Travel Masters controller/view, or local database. `.151` live read-only UAT passed the repaired relationship chain. The `.152` modal requires manual deployment for visual and real-booking browser UAT.
+# ERP-11.3.161 master correction pass (unpackaged)
+
+- Audited the existing `Easy_Ticket_Travel_ERP_ERP11_3_161_DIRECT_UPLOAD(1).zip` against `CURRENT`. The active General Booking JS/CSS, Air controller, commercial resolver, Review view, booking-focus JS, and workspace presenter were byte-identical. The `.161` builder was not stale; the requested corrections had not been implemented in that release.
+- Confirmed runtime authority: `GeneralProgressiveBookingAssetController` serves `public/erp11390/general-progressive-step1.js` and `.css`; `GeneralBookingReviewController` renders `general-booking-review-v113160`; Air routes target `GeneralBookingAirProductController`.
+- Corrected the Air vendor persistence mismatch. The UI already submitted `common.supplier_id`; the service writer now uses the physical schema contract and the native vendor relation family `vendor_id`, `supplier_id`, `service_partner_id`, consistent with `AdaptiveBookingWriter`. Save responses return the freshly persisted `common` snapshot and hydration remains ID-first.
+- Kept the shared `BookingCommercialCompletenessResolver` as the server authority for cost-positive vendor enforcement and Review completeness. No issuance or Travel Ready requirement was introduced.
+- Added one shared subsection typography contract to Passenger Tickets, PNR Fare Commercials, Hotel Stays, Transport Services, and Visa Services. Visa/Hotel controls, table headers, badges, and Answer values now have readable compact sizing.
+- Rebalanced Hotel Stays within the normal desktop canvas and reserved a 48px action column with a 38x35 remove control.
+- Reused the 1280px booking workspace canvas on Review, compacted its title rhythm, and made the native page header show dynamic booking identity rather than Dashboard. Existing shared Menu and Booking Register injection remains authoritative.
+- No migration, version increment, ZIP, DEPLOY copy, or production modification was made.
