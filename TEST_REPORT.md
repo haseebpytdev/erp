@@ -1,4 +1,14 @@
-# ERP-11.3.160 Test Report
+# ERP-11.3.161 Test Report
+
+## ERP-11.3.161 release-candidate verification
+
+- Cumulative regression/static groups: `12` passed; `0` failed (`565` assertions).
+- Commercial Vendor authority executable assertions: `16` passed.
+- Booking Review/static integration assertions: `62` passed.
+- PHP syntax: `146` files passed; `0` failed.
+- JavaScript syntax: `10` files passed; `0` failed.
+- New migrations: `0`.
+- Production deployment/UAT: pending manual deployment.
 
 ## Local commercial Vendor validation
 

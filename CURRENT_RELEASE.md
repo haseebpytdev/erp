@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.160
-APPLICATION_VERSION=v1.1.33.160-ERP11.3.160
+CURRENT_VERSION=ERP-11.3.161
+APPLICATION_VERSION=v1.1.33.161-ERP11.3.161
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.160
+LAST_PACKAGED_RELEASE=ERP-11.3.161
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -51,3 +51,7 @@ Commercial-status and approval-gate rules in one booking commercial-completeness
 resolver. Positive supplier cost now requires its existing Vendor authority.
 Travel issuance/readiness remains a separate resolver. No version increment,
 migration or package was created.
+
+ERP-11.3.161 release candidate packages the shared commercial Vendor authority:
+positive supplier costs require an existing cost owner across Air, Hotel,
+Transport and Visa; Review status and approval consume the same resolver.
