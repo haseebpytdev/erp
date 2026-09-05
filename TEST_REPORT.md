@@ -1,5 +1,17 @@
 # ERP-11.3.160 Test Report
 
+## Local commercial Vendor validation
+
+- Central commercial resolver executable cases: `16` passed, covering Air, Hotel multi-row errors, Transport, Visa chain, legacy 3/5, corrected 5/5, approval reasons and PendingTravel separation.
+- Booking Review/static integration assertions: `62` passed.
+- Cumulative regression/static groups: `12` passed; `0` failed (`565` assertions).
+- PHP syntax: `146` files passed; `0` failed.
+- JavaScript syntax: `10` files passed; `0` failed.
+- Duplicate-logic audit: Review and approval inline commercial checklist was removed; all four save controllers invoke the same resolver.
+- Full framework/database request tests remain unavailable because this overlay has no `artisan` or `composer.json`; no such result is claimed.
+- New migrations: `0`.
+- Package created/updated: `NO`.
+
 ## Local Booking Review & Process validation
 
 - Dedicated static regression covers route/auth, native authorities, service cards, Hotel names/city/nights, commercial/process summaries, approval/locking/reopen, readiness gating, notes privacy, responsive color UI and bounded summaries: `44` passed.

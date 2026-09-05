@@ -45,3 +45,9 @@ ERP-11.3.160 release candidate: consolidates that Booking Review implementation,
 opens Preview/Review links in new tabs, moves the existing native Menu and
 Booking Register controls into the width-aligned title toolbar, and removes the
 redundant text checklist below the five service cards. No migration is added.
+
+Local development after `.160`: consolidates product-save, Review-card,
+Commercial-status and approval-gate rules in one booking commercial-completeness
+resolver. Positive supplier cost now requires its existing Vendor authority.
+Travel issuance/readiness remains a separate resolver. No version increment,
+migration or package was created.

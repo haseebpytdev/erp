@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
+use App\Services\Operations\BookingCommercialCompletenessResolver;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,7 +67,7 @@ final class GeneralBookingHotelProductController extends Controller
         $bookingRow = $this->assertBooking($booking);
         $data = $request->validate([
             'stays' => ['required', 'array', 'min:1', 'max:30'],
-            'stays.*.vendor_id' => ['required', 'integer', 'min:1'],
+            'stays.*.vendor_id' => ['nullable', 'integer', 'min:0'],
             'stays.*.vendor_name' => ['nullable', 'string', 'max:255'],
             'stays.*.city_id' => ['nullable', 'integer', 'min:1'],
             'stays.*.city' => ['required', 'string', 'max:120'],
@@ -92,6 +93,10 @@ final class GeneralBookingHotelProductController extends Controller
                 'hotel' => 'The native booking service store is not available on this ERP installation.',
             ]);
         }
+        $vendorErrors = app(BookingCommercialCompletenessResolver::class)->hotelVendorErrors((array) $data['stays']);
+        if ($vendorErrors) {
+            throw ValidationException::withMessages(['hotel_vendor' => $vendorErrors]);
+        }
 
         $stage = 'Hotel service';
         try {
@@ -105,7 +110,7 @@ final class GeneralBookingHotelProductController extends Controller
                 foreach ($this->supplierOptions() as $vendorOption) $vendorMap[(int) $vendorOption['id']] = (string) $vendorOption['name'];
                 foreach ((array) $data['stays'] as $index => $raw) {
                     $vendorId = (int) ($raw['vendor_id'] ?? 0);
-                    if ($vendorId <= 0 || ! isset($vendorMap[$vendorId])) {
+                    if ($vendorId > 0 && ! isset($vendorMap[$vendorId])) {
                         throw ValidationException::withMessages(["stays.$index.vendor_id" => 'Select a valid Vendor / Supplier for this Hotel stay.']);
                     }
                     $checkIn = new \DateTimeImmutable((string) $raw['check_in']);
@@ -134,7 +139,7 @@ final class GeneralBookingHotelProductController extends Controller
 
                     $normalized[] = [
                         'vendor_id' => $vendorId,
-                        'vendor_name' => $vendorMap[$vendorId],
+                        'vendor_name' => $vendorId > 0 ? $vendorMap[$vendorId] : '',
                         'city_id' => (int) ($city['id'] ?? 0) ?: null,
                         'city' => (string) ($city['name'] ?? trim((string) $raw['city'])),
                         'hotel_id' => (int) ($hotel['id'] ?? 0) ?: null,

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
+use App\Services\Operations\BookingCommercialCompletenessResolver;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -116,6 +117,9 @@ final class GeneralBookingTransportProductController extends Controller
                 throw ValidationException::withMessages(["transports.$index.vehicle_type" => 'Select a Vehicle Type.']);
             }
             $vendorId = max(0, (int) ($raw['vendor_id'] ?? 0));
+            if ($vendorId > 0 && ! isset($supplierMap[$vendorId])) {
+                throw ValidationException::withMessages(["transports.$index.vendor_id" => 'Select a valid Transport Company / Vendor from the existing supplier authority.']);
+            }
             $company = trim((string) ($raw['company_name'] ?? ''));
             if ($vendorId > 0 && isset($supplierMap[$vendorId]) && $company === '') $company = $supplierMap[$vendorId];
             $sale = round((float) ($raw['sale_amount'] ?? 0), 2);
@@ -175,6 +179,11 @@ final class GeneralBookingTransportProductController extends Controller
                 'margin' => round($sale - $cost, 2),
                 'notes' => trim((string) ($raw['notes'] ?? '')),
             ];
+        }
+
+        $vendorErrors = app(BookingCommercialCompletenessResolver::class)->transportVendorErrors($normalized);
+        if ($vendorErrors) {
+            throw ValidationException::withMessages(['transport_vendor' => $vendorErrors]);
         }
 
         $stage = 'Transport service';

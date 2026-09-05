@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\LegacyVisaTravelMasterRepository;
+use App\Services\Operations\BookingCommercialCompletenessResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -185,6 +186,11 @@ final class GeneralBookingVisaProductController extends Controller
                 }
             }
             $normalized[] = $normalizedRow;
+        }
+
+        $vendorErrors = app(BookingCommercialCompletenessResolver::class)->visaVendorErrors($normalized);
+        if ($vendorErrors) {
+            throw ValidationException::withMessages(['visa_vendor' => $vendorErrors]);
         }
 
         DB::transaction(function () use ($booking, $normalized, $bookingRow): void {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
+use App\Services\Operations\BookingCommercialCompletenessResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
@@ -142,6 +143,10 @@ final class GeneralBookingAirProductController extends Controller
             ]);
         }
         $fareCommercials = $this->normalizeFareCommercials((array) ($data['fare_commercials'] ?? []), $passengers);
+        $vendorErrors = app(BookingCommercialCompletenessResolver::class)->airVendorErrors($common, $fareCommercials);
+        if ($vendorErrors) {
+            throw ValidationException::withMessages(['common.supplier_id' => $vendorErrors]);
+        }
 
         $nativeStage = 'Air service';
         try {

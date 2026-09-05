@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\BookingTravelReadinessResolver;
+use App\Services\Operations\BookingCommercialCompletenessResolver;
 use App\Services\Operations\GroupUmrahEditAuthority;
 use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Operations\NativeSalesInvoiceInspector;
@@ -17,13 +18,14 @@ use Throwable;
 
 final class GeneralBookingReviewController extends Controller
 {
-    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, BookingTravelReadinessResolver $readiness, GroupUmrahEditAuthority $authority): View
+    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, BookingTravelReadinessResolver $readiness, BookingCommercialCompletenessResolver $commercialResolver, GroupUmrahEditAuthority $authority): View
     {
         $row = $this->booking($booking);
         $snapshots = $this->snapshots($request, $booking);
         $selected = $this->selected($snapshots);
         $commercial = $this->commercial($row, $snapshots);
-        $checklist = $this->checklist($snapshots, $selected);
+        $commercialState = $commercialResolver->resolve($selected, ...array_values($snapshots));
+        $checklist = $commercialState['items'];
         $travel = $readiness->resolve($row, $selected, ...array_values($snapshots));
         $invoice = $invoices->summary($booking);
         $passengers = (array) ($snapshots['air']['passengers'] ?? $snapshots['visa']['passengers'] ?? []);
@@ -34,7 +36,7 @@ final class GeneralBookingReviewController extends Controller
             'passengerSummary' => $this->passengerSummary($passengers), 'airSummary' => $this->airSummary($snapshots['air']),
             'hotelSummary' => $this->hotelSummary($snapshots['hotel']), 'transportSummary' => $this->transportSummary($snapshots['transport']),
             'visaSummary' => $this->visaSummary($snapshots['visa']), 'commercial' => $commercial,
-            'selected' => $selected, 'checklist' => $checklist, 'completion' => $this->completion($checklist),
+            'selected' => $selected, 'checklist' => $checklist, 'completion' => ['done'=>$commercialState['passed_count'],'total'=>$commercialState['applicable_count'],'percent'=>$commercialState['applicable_count']?(int)round($commercialState['passed_count']/$commercialState['applicable_count']*100):0],
             'approvalStatus' => $this->approvalStatus($row), 'travel' => $travel,
             'accounting' => $this->accounting($invoice), 'payment' => $this->payment($booking, $commercial['final_sale_total']),
             'specialInstructions' => $this->first($row, ['special_instructions','voucher_instructions','client_instructions','notes','remarks','description']),
@@ -61,9 +63,8 @@ final class GeneralBookingReviewController extends Controller
         $statusField = $this->firstColumn($columns, ['approval_status','workflow_status','booking_status','status']);
         abort_unless($statusField, 422, 'The native booking workflow status field is unavailable.');
         if ($action === 'submit') {
-            $snapshots = $this->snapshots($request, $booking); $checklist = $this->checklist($snapshots, $this->selected($snapshots));
-            $errors = array_values(array_filter(array_map(fn ($item) => $item['complete'] ? null : $item['message'], $checklist)));
-            if ($errors) return back()->withErrors(['review' => 'Cannot send for approval: '.implode(' ', $errors)]);
+            $snapshots = $this->snapshots($request, $booking); $state=app(BookingCommercialCompletenessResolver::class)->resolve($this->selected($snapshots),...array_values($snapshots));
+            if (!$state['complete']) return back()->withErrors(['review' => 'Cannot send for approval: '.implode(' ', $state['reasons'])]);
             $this->setStatus($booking, $statusField, 'pending_approval', $columns, $request);
             return back()->with('review_success', 'Booking sent for approval.');
         }
@@ -98,15 +99,6 @@ final class GeneralBookingReviewController extends Controller
     ]; }
     private function safe(callable $fn): array { try{$v=$fn();return is_array($v)?$v:[];}catch(Throwable $e){report($e);return [];} }
     private function selected(array $s): array { $r=[]; if(($s['air']['itinerary']??[])||($s['air']['tickets']??[]))$r[]='air';if($s['hotel']['stays']??[])$r[]='hotel';if($s['transport']['transports']??[])$r[]='transport';if($s['visa']['visa_rows']??[])$r[]='visa';return $r; }
-    private function checklist(array $s,array $selected): array {
-        $pass=(array)($s['air']['passengers']??$s['visa']['passengers']??[]);$items=['passengers'=>['label'=>'Passengers','complete'=>count($pass)>0,'message'=>'Add at least one passenger.']];
-        if(in_array('air',$selected,true)){ $rows=(array)($s['air']['itinerary']??[]);$ok=$rows&&$this->rowsHave($rows,[['from'],['to'],['departure_at'],['flight_number','airline_code','airline']])&&(float)($s['air']['summary']['customer_total']??0)>0&&(float)($s['air']['summary']['supplier_total']??0)>0;$items['air']=['label'=>'Air','complete'=>$ok,'message'=>'Complete the saved Air itinerary, customer fare and supplier cost.']; }
-        if(in_array('hotel',$selected,true)){ $rows=(array)($s['hotel']['stays']??[]);$ok=$rows&&$this->rowsHave($rows,[['hotel_name'],['city'],['check_in'],['check_out']])&&(float)($s['hotel']['summary']['customer_total']??0)>0&&(float)($s['hotel']['summary']['vendor_total']??0)>0;$items['hotel']=['label'=>'Hotel','complete'=>$ok,'message'=>'Complete Hotel names, dates, cities, customer total and vendor cost.']; }
-        if(in_array('transport',$selected,true)){ $rows=(array)($s['transport']['transports']??[]);$ok=$rows&&$this->rowsHave($rows,[['company_name'],['route_name'],['vehicle_type']])&&(float)($s['transport']['summary']['customer_total']??0)>0&&(float)($s['transport']['summary']['vendor_total']??0)>0;$items['transport']=['label'=>'Transport','complete'=>$ok,'message'=>'Complete Transport company, route, vehicle, customer total and vendor cost.']; }
-        if(in_array('visa',$selected,true)){ $rows=(array)($s['visa']['visa_rows']??[]);$ok=$rows&&$this->rowsHave($rows,[['visa_rate_id','rate_card_id'],['sale_pkr'],['vendor_cost_pkr'],['saudi_company_name','saudi_company_name_snapshot'],['pakistani_iata_name','pakistani_iata_name_snapshot']]);$items['visa']=['label'=>'Visa Commercial','complete'=>$ok,'message'=>'Complete Visa rate, relationship, customer sale and vendor cost for every Visa passenger.']; }
-        return $items;
-    }
-    private function completion(array $items): array{$total=count($items);$done=count(array_filter($items,fn($x)=>$x['complete']));return ['done'=>$done,'total'=>$total,'percent'=>$total?(int)round($done/$total*100):0];}
     private function passengerSummary(array $rows):array{$a=$c=$i=0;foreach($rows as $r){$t=strtoupper($this->first((array)$r,['fare_type','passenger_type','age_type']));if(str_contains($t,'INF'))$i++;elseif(str_contains($t,'CHD')||str_contains($t,'CHILD'))$c++;else$a++;}return ['total'=>count($rows),'adult'=>$a,'child'=>$c,'infant'=>$i];}
     private function airSummary(array $s):array{$rows=array_values((array)($s['itinerary']??[]));$fmt=fn($r)=>trim($this->first((array)$r,['from','origin','departure_airport'])).' → '.trim($this->first((array)$r,['to','destination','arrival_airport']));return ['count'=>count($rows),'routes'=>array_values(array_filter(array_map($fmt,array_slice($rows,0,3))))];}
     private function hotelSummary(array $s):array{$rows=array_values((array)($s['stays']??[]));return ['count'=>count($rows),'total_nights'=>array_sum(array_map(fn($r)=>max(0,(int)((array)$r)['nights']??0),$rows)),'rows'=>array_slice($rows,0,3)];}
@@ -117,7 +109,6 @@ final class GeneralBookingReviewController extends Controller
     private function approvalStatus(array $b):string{$s=str_replace(['-','_'],' ',strtolower($this->first($b,['approval_status','workflow_status','booking_status','status'])?:'draft'));return match($s){'pending','pending approval','submitted'=>'Pending Approval','approved','confirmed'=>'Approved','reopened','reopen','reapproval required'=>'Reopened',default=>'Draft'};}
     private function accounting(array $x):array{$latest=$x['latest']??null;if(!$latest)return ['label'=>'Not Created','detail'=>'No Sales Invoice is linked to this booking.'];$s=strtolower((string)($latest['status']??'draft'));return ['label'=>ucwords(str_replace('_',' ',$s)),'detail'=>'Sales Invoice '.(($latest['number']??'')?:'#'.($latest['id']??'')).'.'];}
     private function payment(int $booking,float $due):array{$paid=0.0;try{if(Schema::hasTable('cash_vouchers')){$c=Schema::getColumnListing('cash_vouchers');$bc=$this->firstColumn($c,['booking_id','travel_booking_id','source_booking_id']);$ac=$this->firstColumn($c,['allocated_amount','amount','total_amount','base_amount']);$sc=$this->firstColumn($c,['status','voucher_status']);if($bc&&$ac){$q=DB::table('cash_vouchers')->where($bc,$booking);if($sc)$q->whereIn($sc,['approved','posted']);if(in_array('direction',$c,true))$q->where('direction','in');if(in_array('party_type',$c,true))$q->where('party_type','customer');$paid=(float)$q->sum($ac);}}}catch(Throwable){}$label=$paid<=0?'Unpaid':($due>0&&$paid+0.01<$due?'Partially Paid':'Paid');return ['label'=>$label,'paid'=>round($paid,2),'due'=>round(max(0,$due-$paid),2)];}
-    private function rowsHave(array $rows,array $groups):bool{foreach($rows as $r)foreach($groups as $g)if($this->first((array)$r,$g)==='')return false;return true;}
     private function first(array $row,array $keys):string{foreach($keys as $k){$v=trim((string)($row[$k]??''));if($v!=='')return $v;}return '';}
     private function firstColumn(array $columns,array $keys):?string{foreach($keys as $k)if(in_array($k,$columns,true))return $k;return null;}
     private function column(array $keys):?string{return Schema::hasTable('bookings')?$this->firstColumn(Schema::getColumnListing('bookings'),$keys):null;}

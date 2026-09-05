@@ -1100,7 +1100,7 @@ var etgpAirRender113106=function(host,data,bookingId){
   var supplierControl;
   if(suppliers.length){
     var supplierOpts=[{value:'',label:'Select vendor / supplier'}].concat(suppliers.map(function(item){return {value:item.id,label:item.name};}));
-    supplierControl=etgpAirSelect113106('Vendor / Supplier',common.supplier_id||'',supplierOpts);
+    supplierControl=etgpAirSelect113106('Vendor / Supplier *',common.supplier_id||'',supplierOpts);
     if(common.supplier_name){
       var supplierNameKey=normalizeAir(common.supplier_name);
       var selectedSupplierOption=supplierControl.select.options[supplierControl.select.selectedIndex];
@@ -1111,7 +1111,7 @@ var etgpAirRender113106=function(host,data,bookingId){
       }
     }
   }else{
-    supplierControl=etgpAirInput113106('Vendor / Supplier','text',common.supplier_name||'','Vendor / Supplier');
+    supplierControl=etgpAirInput113106('Vendor / Supplier *','text',common.supplier_name||'','Vendor / Supplier');
   }
   var commonPnr=etgpAirInput113106('PNR','text',common.pnr||'','PNR');
   var airlinePnr=etgpAirInput113106('Airline PNR','text',common.airline_pnr||'','Airline PNR');
@@ -1382,6 +1382,8 @@ var etgpAirRender113106=function(host,data,bookingId){
     if(invalidFare){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=invalidFare+' Basic Rate cannot be greater than Cost Price.';return;}
 
     var payload=buildPayload113119();
+    var hasAirVendorCost=payload.fare_commercials.some(function(row){return Number(row.cost_price||0)>0;});
+    if(hasAirVendorCost&&!payload.common.supplier_id&&!plain(payload.common.supplier_name)){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Select Vendor / Supplier before saving Air commercial data.';return;}
     etgpAirDraftWrite113119(bookingId,payload);
 
     save.disabled=true;save.textContent='Saving…';
@@ -1506,7 +1508,7 @@ var etgpHotelRender113127=function(host,data,bookingId){
   head.appendChild(headCopy);head.appendChild(add);block.appendChild(head);
   var scroll=create('div','etgp-hotel-grid-scroll-113127');
   var header=create('div','etgp-hotel-grid-113127 etgp-hotel-grid-head-113127');
-  ['#','City','Vendor','Hotel Name','C Number','R Type','Board','Check In','Check Out','Nights','Sale','Cost','Answer',''].forEach(function(label){header.appendChild(create('div','',label));});
+  ['#','City','Vendor *','Hotel Name','C Number','R Type','Board','Check In','Check Out','Nights','Sale','Cost','Answer',''].forEach(function(label){header.appendChild(create('div','',label));});
   scroll.appendChild(header);
   var body=create('div','etgp-hotel-rows-113127');scroll.appendChild(body);block.appendChild(scroll);
 
@@ -1578,8 +1580,10 @@ var etgpHotelRender113127=function(host,data,bookingId){
   save.addEventListener('click',function(){
     if(save.disabled)return;feedback.hidden=true;feedback.className='etgp-hotel-feedback-113127';var bodyPayload=payload();
     if(!bodyPayload.stays.length){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Add at least one Hotel stay before saving.';return;}
-    var invalid=bodyPayload.stays.find(function(row){return !row.vendor_id||!row.city||!row.hotel_name||!row.room_type||!row.check_in||!row.check_out||etgpHotelDateNights113127(row.check_in,row.check_out)<1;});
-    if(invalid){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Complete Vendor, City, Hotel, Room Type, Check In and Check Out. Check Out must be after Check In.';return;}
+    var invalid=bodyPayload.stays.find(function(row){return !row.city||!row.hotel_name||!row.room_type||!row.check_in||!row.check_out||etgpHotelDateNights113127(row.check_in,row.check_out)<1;});
+    if(invalid){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Complete City, Hotel, Room Type, Check In and Check Out. Check Out must be after Check In.';return;}
+    var missingHotelVendors=bodyPayload.stays.map(function(row,index){return Number(row.cost_rate||0)>0&&!row.vendor_id?'Hotel '+String(index+1):null;}).filter(Boolean);
+    if(missingHotelVendors.length){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=missingHotelVendors.join(', ')+': Vendor is required because vendor cost has been entered.';return;}
     clearTimeout(timer);host._etgpHotelDirty113138=true;etgpHotelDraftWrite113127(bookingId,bodyPayload);var submittedSignature=etgpHotelDraftSignature113138(bodyPayload);save.disabled=true;save.textContent='Saving…';
     etgpHotelRequest113127(bookingId,'PUT',bodyPayload).then(function(result){
       clearTimeout(timer);
@@ -1693,7 +1697,7 @@ var etgpTransportRender113139=function(host,data,bookingId){
 
   var scroll=create('div','etgp-transport-grid-scroll-113139');
   var header=create('div','etgp-transport-grid-113139 etgp-transport-grid-head-113139');
-  ['#','Transport Company','Route / Rate Card','Vehicle Type','Qty','BRN / Reference','Sale PKR','Cost Rate','Exchange Rate','Answer PKR',''].forEach(function(label){header.appendChild(create('div','',label));});
+  ['#','Transport Company *','Route / Rate Card','Vehicle Type','Qty','BRN / Reference','Sale PKR','Cost Rate','Exchange Rate','Answer PKR',''].forEach(function(label){header.appendChild(create('div','',label));});
   scroll.appendChild(header);
   var body=create('div','etgp-transport-rows-113139');scroll.appendChild(body);block.appendChild(scroll);
 
@@ -1858,6 +1862,8 @@ var etgpTransportRender113139=function(host,data,bookingId){
     if(invalid){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Complete Route, Vehicle Type and Qty for every Transport row.';return;}
     var missingFx=bodyPayload.transports.find(function(row){return String(row.cost_currency||'PKR').toUpperCase()!=='PKR'&&Number(row.exchange_rate||0)<=0;});
     if(missingFx){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Exchange Rate is missing for '+String(missingFx.cost_currency||'foreign currency')+' → PKR. Update Currency Rates first.';return;}
+    var missingTransportVendor=bodyPayload.transports.find(function(row){return Number(row.cost_amount||0)>0&&(!row.vendor_id||!plain(row.company_name));});
+    if(missingTransportVendor){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Select a valid Transport Company / Vendor before saving supplier cost.';return;}
     clearTimeout(timer);host._etgpTransportDirty113139=true;etgpTransportDraftWrite113139(bookingId,bodyPayload);var submittedSignature=etgpTransportDraftSignature113139(bodyPayload);save.disabled=true;save.textContent='Saving…';
     etgpTransportRequest113139(bookingId,'PUT',bodyPayload).then(function(result){
       clearTimeout(timer);var currentPayload=payload(),hasNewChanges=etgpTransportDraftSignature113139(currentPayload)!==submittedSignature;

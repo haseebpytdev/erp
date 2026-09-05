@@ -1,5 +1,14 @@
 # ERP-11.3.160 Code Audit
 
+## Local commercial Vendor authority correction
+
+- `BookingCommercialCompletenessResolver` is the single authority used by Air, Hotel, Transport and Visa saves, Booking Review cards, aggregate Commercial status and Send for Approval.
+- Air requires Vendor/Supplier when cost is positive. Hotel returns every missing row Vendor in one validation response. Transport requires a valid existing Vendor plus Transport Company when converted cost is positive. Visa retains the existing Saudi Company → Pakistani IATA → ERP Vendor Account chain.
+- Legacy bookings remain readable and editable but resolve Incomplete until missing Vendor ownership is corrected; no data migration or destructive repair is performed.
+- Review cards render actionable resolver reasons and use commercial completeness for the Visa card even while Visa operational status is Pending.
+- `BookingTravelReadinessResolver` remains separate: Pending tickets or Visa prevent Ready but do not prevent commercial approval.
+- Product-page validation preserves browser drafts/entered values and adds required Vendor indicators; all rules are enforced again on the backend.
+
 ## ERP-11.3.160 Booking Review header consolidation
 
 - The title row is the sole target for Back to Booking plus the existing shared native Menu/Booking Register toolbar.
