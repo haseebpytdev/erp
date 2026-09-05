@@ -6,6 +6,7 @@ const guard=read('app/Http/Middleware/GuardApprovedGeneralBookingCommercials.php
 const view=read('resources/views/operations/bookings/general-booking-review-v113160.blade.php');
 const routes=read('routes/erp103179.php');
 const shell=read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const focus=read('public/erp11335/booking-focus.js');
 const voucher=read('resources/views/operations/bookings/general-client-voucher-v113142.blade.php');
 let checks=0;const has=(s,n,m)=>{assert.ok(s.includes(n),m);checks++};const lacks=(s,n,m)=>{assert.ok(!s.includes(n),m);checks++};
 has(routes,"/operations/bookings/{booking}/review",'named booking review route exists');
@@ -36,6 +37,11 @@ has(view,`route('bookings.review.show',['booking'=>$bookingId]) }}" target="_bla
 has(view,'Internal Notes','internal notes area exists');has(view,'No native internal-note field exists; no parallel storage was created.','absence of native notes fails safely');
 lacks(voucher,'internalNotes','internal notes never enter client voucher');
 has(view,'grid-template-columns:repeat(5,minmax(0,1fr))','desktop five-card layout is bounded');has(view,'@media(max-width:760px)','responsive mobile stack exists');
+has(view,'data-et-booking-review-header-actions="1"','Review title row exposes one width-aligned native toolbar target');
+has(focus,'reviewHeaderActions.appendChild(toolbar)','shared native Menu/Register toolbar moves into Review header');
+has(focus,'registerLink&&registerLink.href','Booking Register retains native route authority');
+lacks(view,'<ul class="br-checks">','redundant completion text list is removed completely');
+has(view,"{{ $completion['done'] }} of {{ $completion['total'] }} Completed · {{ $completion['percent'] }}%",'aggregate completion indicator remains');
 has(view,'background:#fff','color UI uses white cards');has(view,'#1769d2','color UI uses primary blue');has(view,'#21a078','Hotel uses teal accent');has(view,'#7758c8','Transport uses purple accent');has(view,'#e8872e','Visa uses orange accent');
 has(controller,'array_slice($rows,0,3)','long service summaries are bounded');
 has(controller,"'vendor_cost_total'",'vendor total is centralized server-side');has(controller,"'gross_margin'",'margin is centralized server-side');

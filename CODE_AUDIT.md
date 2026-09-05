@@ -1,4 +1,11 @@
-# ERP-11.3.159 Code Audit
+# ERP-11.3.160 Code Audit
+
+## ERP-11.3.160 Booking Review header consolidation
+
+- The title row is the sole target for Back to Booking plus the existing shared native Menu/Booking Register toolbar.
+- The Menu continues to operate the established sidebar/drawer and outside-click/Escape behavior; its items are not recreated.
+- Booking Register reuses the native sidebar link when available. The fallback is the pre-existing canonical `/operations/bookings` path.
+- The duplicate plain-text completion checklist is removed; the five service cards and aggregate progress remain authoritative.
 
 ## Local Booking Review & Process implementation
 

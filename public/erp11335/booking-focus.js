@@ -132,7 +132,20 @@ var pageRegisterLink=Array.prototype.slice.call(
   return t==='booking register'||t==='back to booking register';
 });
 
-if(pageRegisterLink && pageRegisterLink.parentNode){
+var reviewHeaderActions=document.querySelector('[data-et-booking-review-header-actions="1"]');
+if(reviewHeaderActions){
+  /* Move the existing shared Menu and native Booking Register destination into
+   * the Review title row; do not recreate menu contents or route authority. */
+  toolbar.classList.add('et-booking-focus-fallback-inline');
+  var reviewRegister=document.createElement('a');
+  reviewRegister.className='et-booking-focus-btn';
+  reviewRegister.textContent='Booking Register';
+  reviewRegister.href=registerLink&&registerLink.href
+    ? registerLink.href
+    : (window.location.origin+'/operations/bookings');
+  toolbar.appendChild(reviewRegister);
+  reviewHeaderActions.appendChild(toolbar);
+}else if(pageRegisterLink && pageRegisterLink.parentNode){
   /*
    * Main native Booking Workspace: there is already a Booking Register action.
    * Reuse its action row and add Menu only. This guarantees the short-menu

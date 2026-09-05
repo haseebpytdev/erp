@@ -1,4 +1,4 @@
-# ERP-11.3.159 Test Report
+# ERP-11.3.160 Test Report
 
 ## Local Booking Review & Process validation
 
@@ -12,6 +12,17 @@
 - Framework/database integration: unavailable because this overlay has no `artisan` or `composer.json`; no result is claimed for those tests.
 - Migration added: `0`.
 - Package created: `NO`.
+
+## ERP-11.3.160 release-candidate verification
+
+- Header/action and duplicate-checklist focused assertions: `51` passed.
+- Cumulative regression/static groups: `11` passed; `0` failed (`538` assertions).
+- PHP syntax: `144` files passed; `0` failed.
+- JavaScript syntax: `10` files passed; `0` failed.
+- Native Menu/Booking Register route reuse and width-aligned header target: PASS.
+- Redundant completion text absent; cards and aggregate progress retained: PASS.
+- New migrations: `0`.
+- Production deployment/UAT: pending manual `.160` deployment.
 
 Canonical workspace: `D:\Easy Ticket\ERP\CURRENT`
 

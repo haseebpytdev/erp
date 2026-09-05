@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.159
-APPLICATION_VERSION=v1.1.33.159-ERP11.3.159
+CURRENT_VERSION=ERP-11.3.160
+APPLICATION_VERSION=v1.1.33.160-ERP11.3.160
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.159
+LAST_PACKAGED_RELEASE=ERP-11.3.160
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -40,3 +40,8 @@ Local development after `.159`: adds the authenticated GENERAL / MULTI-SERVICE
 Booking Review & Process dashboard using native booking fields, saved product
 snapshots, Company Profile, Sales Invoice, payment and central travel-readiness
 authorities. No version increment, package or migration was created.
+
+ERP-11.3.160 release candidate: consolidates that Booking Review implementation,
+opens Preview/Review links in new tabs, moves the existing native Menu and
+Booking Register controls into the width-aligned title toolbar, and removes the
+redundant text checklist below the five service cards. No migration is added.
