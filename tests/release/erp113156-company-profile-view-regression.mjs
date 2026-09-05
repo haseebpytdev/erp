@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(import.meta.dirname, '..', '..');
+const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+const view = read('resources/views/operations/bookings/general-client-voucher-v113142.blade.php');
+const controller = read('app/Http/Controllers/Operations/GeneralBookingVoucherPreviewController.php');
+const cashVoucher = read('app/Http/Controllers/Accounting/CashVoucherController.php');
+const profile = read('app/Services/Organization/CompanyProfileSnapshotService.php');
+const repository = read('app/Services/Operations/LegacyVisaTravelMasterRepository.php');
+const relationship = read('app/Services/Operations/VisaMasterRelationshipResolver.php');
+let checks = 0;
+const has = (text, value, message) => { assert.ok(text.includes(value), message); checks++; };
+const lacks = (text, value, message) => { assert.ok(!text.includes(value), message); checks++; };
+
+assert.equal(read('VERSION.txt').trim(), 'v1.1.33.156-ERP11.3.156'); checks++;
+has(profile, "'App\\\\Models\\\\Company'", 'native App Models Company is the model authority');
+has(profile, "Schema::hasTable('companies')", 'native companies table is the only profile table authority');
+has(profile, "$this->text($company, 'name')", 'native name field drives the voucher identity');
+has(profile, "$this->raw($company, 'report_logo')", 'native report_logo field drives the voucher logo');
+has(profile, "$this->text($company, 'voucher_footer_html')", 'native voucher_footer_html drives Company fallback');
+has(profile, "$bookingContext['company_id']", 'booking company scope is first authority');
+has(profile, "DB::table('branches')->where('id', $branchId)->value('company_id')", 'branch inherits its owning company');
+has(profile, "auth()->user()?->getAttribute('company_id')", 'signed-in company is a controlled secondary scope');
+has(profile, "$records->count() === 1", 'unscoped fallback is allowed only for an unambiguous single company');
+lacks(profile, "config('app.name'", 'app-name fallback is not Company Profile authority');
+lacks(profile, "'company_profiles'", 'guessed table scanning is removed');
+has(controller, '$company->get($bookingData)', 'voucher passes booking scope into Company Profile resolver');
+has(cashVoucher, '$this->companyProfile->get((array) $row)', 'cash-voucher print also passes its record scope');
+has(view, "@if(!empty($company['logo']))", 'real logo is checked before fallback');
+has(view, 'onerror="this.hidden=true;this.nextElementSibling.hidden=false"', 'fallback appears only when a real logo cannot render');
+has(view, "{{ $company['name'] }}", 'header name comes from resolved Company Profile');
+lacks(view, '>Easy Group Of Travels<', 'voucher has no hard-coded company name');
+has(repository, "['voucher_footer_html']", 'native Pakistan IATA footer field is read exactly');
+has(relationship, "$saudi['voucher_footer'] = trim((string) ($iata['voucher_footer'] ?? ''))", 'linked IATA footer reaches the Saudi booking relationship');
+has(view, '{!! nl2br($resolvedVoucherFooter) !!}', 'approved saved footer HTML is visible');
+assert.equal((view.match(/class="voucher-footer-text"/g) ?? []).length, 1, 'one footer rendering only'); checks++;
+const instructions = view.indexOf('<div class="instructions">');
+const footer = view.indexOf('class="voucher-footer-text"');
+const documentRef = view.lastIndexOf('<div>{{ $voucherNumber }} · {{ $bookingReference }}</div>');
+assert.ok(instructions >= 0 && footer > instructions && footer < documentRef, 'footer is below instructions and before the document reference'); checks++;
+has(view, '.voucher-lower-copy{min-width:0}', 'footer has a non-overlapping flexible column');
+has(view, 'overflow-wrap:anywhere', 'long contact text wraps');
+has(view, '@media print', 'same voucher template provides print/PDF layout');
+has(view, 'object-fit:contain', 'real logo preserves aspect ratio');
+
+console.log(`ERP-11.3.156 Company Profile view regression checks passed: ${checks}`);

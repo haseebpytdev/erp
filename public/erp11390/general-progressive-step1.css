@@ -1,0 +1,3474 @@
+/* ERP-11.3.95 — GENERAL Progressive Booking Builder · Step 1 — final reusable-passenger selector */
+
+html.et-general-progressive-step1-11390,
+html.etgp-step1-live-11390{
+  --etgp-bg:#f4f7fb;
+  --etgp-card:#ffffff;
+  --etgp-border:#dce5ef;
+  --etgp-soft:#eef3f8;
+  --etgp-text:#17243a;
+  --etgp-muted:#6c7c92;
+  --etgp-blue:#0b68d8;
+  --etgp-green:#16865a;
+  --etgp-radius:11px;
+  --etgp-shadow:0 7px 22px rgba(31,52,78,.045);
+}
+
+/* ERP-11.3.154 — two-step Add Visa wizard and simplified main Visa rows. */
+.etgp-visa-grid-113142{grid-template-columns:18px minmax(100px,1.25fr) minmax(72px,.75fr) minmax(64px,.7fr) minmax(82px,.9fr) minmax(82px,.9fr) minmax(78px,.85fr) minmax(70px,.78fr) minmax(78px,.74fr) minmax(70px,.72fr) 54px!important}
+.etgp-visa-detail-113142{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.etgp-visa-wizard-count-113154{display:inline-flex;margin-bottom:10px;padding:5px 9px;border-radius:999px;background:#edf4fc;color:#1d5f9f;font-size:9px;font-weight:900}
+.etgp-visa-wizard-fields-113154{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,.8fr) minmax(130px,.8fr);gap:9px;margin-bottom:10px}
+.etgp-visa-wizard-resolved-113154{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:10px;border:1px solid #dfe7f0;border-radius:9px;background:#f8fbfe}
+.etgp-visa-wizard-field-113154{min-width:0}.etgp-visa-wizard-field-113154 label{display:block;margin:0 0 4px;color:#5c6d84;font-size:7.5px;font-weight:900;text-transform:uppercase}
+.etgp-visa-wizard-field-113154 .form-control,.etgp-visa-wizard-field-113154 .form-select{width:100%;height:32px!important;min-height:32px!important;padding:4px 7px!important;font-size:8.5px!important}
+.etgp-visa-wizard-field-113154 input[readonly]{background:#f1f5f9!important;color:#34465d!important}
+.etgp-visa-wizard-summary-113154{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+.etgp-visa-wizard-summary-113154>div{display:flex;justify-content:space-between;gap:8px;border:1px solid #dce6f1;border-radius:7px;padding:7px 9px;background:#fff}
+.etgp-visa-wizard-summary-113154 span{font-size:7.6px;color:#64758b;font-weight:850}.etgp-visa-wizard-summary-113154 strong{font-size:8.8px;color:#17243a;white-space:nowrap}.etgp-visa-wizard-summary-113154 .is-negative{color:#b42318!important}
+.etgp-visa-wizard-footer-113154{gap:7px}.etgp-visa-wizard-footer-113154 .etgp-visa-btn-113142:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:1250px){.etgp-visa-grid-113142{grid-template-columns:18px minmax(95px,1.3fr) minmax(68px,.8fr) minmax(60px,.7fr) minmax(74px,.85fr) minmax(74px,.85fr) minmax(65px,.75fr) minmax(66px,.75fr) 70px 66px 50px!important}.etgp-visa-detail-113142{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
+@media(max-width:880px){.etgp-visa-grid-113142{grid-template-columns:18px repeat(2,minmax(0,1fr))!important}.etgp-visa-detail-113142{grid-template-columns:repeat(2,minmax(0,1fr))!important}.etgp-visa-wizard-fields-113154,.etgp-visa-wizard-resolved-113154,.etgp-visa-wizard-summary-113154{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.etgp-visa-wizard-fields-113154,.etgp-visa-wizard-resolved-113154,.etgp-visa-wizard-summary-113154{grid-template-columns:1fr}}
+
+html.et-general-progressive-step1-11390 body,
+html.etgp-step1-live-11390 body{
+  background:var(--etgp-bg)!important;
+}
+
+html.et-general-progressive-step1-11390 .page-wrapper > .page-header,
+html.etgp-step1-live-11390 .page-wrapper > .page-header{
+  min-height:50px!important;
+}
+
+html.et-general-progressive-step1-11390 .page-wrapper > .page-header > .container,
+html.et-general-progressive-step1-11390 .page-wrapper > .page-header > .container-xl,
+html.et-general-progressive-step1-11390 .page-header > [class*="container"],
+html.etgp-step1-live-11390 .page-wrapper > .page-header > .container,
+html.etgp-step1-live-11390 .page-wrapper > .page-header > .container-xl,
+html.etgp-step1-live-11390 .page-header > [class*="container"]{
+  min-height:50px!important;
+}
+
+html.et-general-progressive-step1-11390 section.content,
+html.etgp-step1-live-11390 section.content{
+  width:calc(100% - 32px)!important;
+  max-width:1280px!important;
+  min-width:0!important;
+  margin:0 auto!important;
+  padding:10px 0 24px!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-step1,
+.etgp-step1 *{
+  box-sizing:border-box;
+}
+
+.etgp-step1{
+  width:100%;
+  min-width:0;
+  color:var(--etgp-text);
+  font-size:13.5px;
+}
+
+.etgp-alerts{
+  margin-bottom:8px;
+}
+
+.etgp-alerts > *{
+  margin:0 0 7px!important;
+  padding:7px 10px!important;
+  border-radius:8px!important;
+  font-size:9px!important;
+  line-height:1.25!important;
+}
+
+
+/*
+ * ERP-11.3.90 stability rule:
+ * These values intentionally match the inline prepaint geometry exactly.
+ * Do not change one without changing the other.
+ */
+html.et-general-progressive-step1-11390 section.content,
+html.etgp-step1-live-11390 section.content{
+  transition:none!important;
+}
+
+
+/* ERP-11.3.90 first-paint reveal contract. */
+html.et-general-progressive-step1-11390{
+  scrollbar-gutter:stable;
+}
+
+html.et-general-progressive-step1-11390:not(.etgp-step1-ready-11390):not(.etgp-step1-fallback-11390)
+  section.content > *{
+  display:none!important;
+}
+
+/* Header */
+.etgp-toolbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin:0 0 9px;
+  padding:2px 1px;
+}
+
+.etgp-toolbar-left{
+  min-width:0;
+}
+
+.etgp-eyebrow{
+  margin-bottom:2px;
+  color:var(--etgp-blue);
+  font-size:9px;
+  line-height:1.15;
+  font-weight:900;
+  letter-spacing:.045em;
+}
+
+.etgp-booking-reference{
+  margin:0;
+  color:var(--etgp-text);
+  font-size:22px;
+  line-height:1.02;
+  font-weight:880;
+  letter-spacing:-.025em;
+}
+
+.etgp-toolbar-subtitle{
+  margin:3px 0 0;
+  color:var(--etgp-muted);
+  font-size:10px;
+  line-height:1.3;
+}
+
+.etgp-toolbar-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:5px;
+}
+
+.etgp-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:26px;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#edf4ff;
+  color:#0b63ce;
+  font-size:7.5px;
+  font-weight:900;
+  line-height:1;
+  text-transform:uppercase;
+}
+
+.etgp-toolbar-actions form,
+.etgp-toolbar-actions details,
+.etgp-toolbar-actions .dropdown,
+.etgp-toolbar-actions > a,
+.etgp-toolbar-actions > button{
+  width:auto!important;
+  margin:0!important;
+}
+
+.etgp-toolbar-actions a,
+.etgp-toolbar-actions button,
+.etgp-toolbar-actions summary,
+.etgp-toolbar-actions input[type="submit"]{
+  min-height:29px!important;
+  padding:4px 8px!important;
+  border-radius:7px!important;
+  font-size:8.5px!important;
+  line-height:1!important;
+}
+
+/* Progress */
+.etgp-progress{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-bottom:9px;
+}
+
+.etgp-progress-step{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:42px;
+  padding:8px 11px;
+  border:1px solid var(--etgp-border);
+  border-radius:9px;
+  background:#fff;
+  color:#738197;
+}
+
+.etgp-progress-number{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:21px;
+  height:21px;
+  flex:0 0 21px;
+  border-radius:999px;
+  background:#eef3f8;
+  color:#67778d;
+  font-size:8px;
+  font-weight:900;
+}
+
+.etgp-progress-label{
+  font-size:10px;
+  font-weight:850;
+}
+
+.etgp-progress-step.is-current{
+  border-color:#b8d4f3;
+  background:#f7fbff;
+  color:#0b63ce;
+}
+
+.etgp-progress-step.is-current .etgp-progress-number{
+  background:#0b68d8;
+  color:#fff;
+}
+
+.etgp-progress-step.is-done{
+  border-color:#cce8d9;
+  background:#f5fbf7;
+  color:#18754f;
+}
+
+.etgp-progress-step.is-done .etgp-progress-number{
+  background:#188458;
+  color:#fff;
+}
+
+/* Rebuilt authoritative KPI cards */
+.etgp-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+  width:100%;
+  margin:0 0 14px;
+}
+
+.etgp-kpi{
+  min-width:0;
+  min-height:78px;
+  padding:11px 13px 10px;
+  border:1px solid var(--etgp-border);
+  border-radius:var(--etgp-radius);
+  background:#fff;
+  box-shadow:var(--etgp-shadow);
+}
+
+.etgp-kpi-label{
+  display:block;
+  margin:0;
+  color:#5f6f86;
+  font-size:8.5px;
+  line-height:1.15;
+  font-weight:900;
+  letter-spacing:.025em;
+  text-transform:uppercase;
+}
+
+.etgp-kpi-value{
+  display:block;
+  margin:5px 0 0;
+  color:var(--etgp-text);
+  font-size:20px;
+  line-height:1.05;
+  font-weight:880;
+  letter-spacing:-.015em;
+}
+
+.etgp-kpi-note{
+  display:block;
+  margin:5px 0 0;
+  color:var(--etgp-muted);
+  font-size:9.5px;
+  line-height:1.25;
+}
+
+/* Base card */
+.etgp-card{
+  position:relative;
+  width:100%;
+  min-width:0;
+  margin:0 0 14px;
+  padding:10px 12px;
+  border:1px solid var(--etgp-border);
+  border-radius:var(--etgp-radius);
+  background:var(--etgp-card);
+  box-shadow:var(--etgp-shadow);
+}
+
+.etgp-card-head,
+.etgp-booking-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:6px;
+}
+
+.etgp-card-copy{
+  min-width:0;
+}
+
+.etgp-card-title{
+  margin:0;
+  color:var(--etgp-text);
+  font-size:15px;
+  line-height:1.15;
+  font-weight:860;
+}
+
+.etgp-card-note{
+  margin:2px 0 0;
+  color:var(--etgp-muted);
+  font-size:11.5px;
+  line-height:1.35;
+}
+
+.etgp-inline-title{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.etgp-card-inline-note{
+  color:var(--etgp-muted);
+  font-size:10.5px;
+  line-height:1.3;
+}
+
+.etgp-native-panel{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+[data-etgp-duplicate-heading="1"]{
+  display:none!important;
+}
+
+/* Booking Header */
+.etgp-booking-card{
+  padding:11px 13px 10px;
+}
+
+.etgp-header-summary{
+  display:grid;
+  grid-template-columns:
+    minmax(82px,.82fr)
+    minmax(105px,.98fr)
+    minmax(140px,1.3fr)
+    minmax(90px,.82fr)
+    minmax(120px,1.1fr)
+    minmax(82px,.76fr)
+    minmax(88px,.8fr)
+    minmax(62px,.62fr);
+  gap:0 10px;
+  align-items:start;
+}
+
+.etgp-summary-item{
+  min-width:0;
+  padding:3px 0 2px;
+}
+
+.etgp-summary-label{
+  overflow:hidden;
+  color:#64738a;
+  font-size:9px;
+  line-height:1.15;
+  font-weight:900;
+  text-transform:uppercase;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+.etgp-summary-value{
+  margin-top:2px;
+  overflow:hidden;
+  color:var(--etgp-text);
+  font-size:12.5px;
+  line-height:1.25;
+  font-weight:820;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+[data-etgp-header-source]{
+  height:0!important;
+  overflow:visible!important;
+}
+
+[data-etgp-header-source] > *{
+  display:none!important;
+}
+
+[data-etgp-header-editor]{
+  width:auto!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+[data-etgp-header-editor] > summary{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:27px!important;
+  padding:4px 8px!important;
+  border:1px solid #d5dfeb!important;
+  border-radius:7px!important;
+  background:#f8fafc!important;
+  color:#25364d!important;
+  font-size:9px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  list-style:none!important;
+  cursor:pointer!important;
+}
+
+[data-etgp-header-editor] > summary::-webkit-details-marker{
+  display:none!important;
+}
+
+[data-etgp-header-editor][open]{
+  position:absolute!important;
+  z-index:30!important;
+  top:43px!important;
+  left:12px!important;
+  right:12px!important;
+  width:auto!important;
+  padding:10px!important;
+  border:1px solid var(--etgp-border)!important;
+  border-radius:9px!important;
+  background:#fff!important;
+  box-shadow:0 14px 35px rgba(28,45,68,.14)!important;
+}
+
+/* Passengers */
+.etgp-passenger-card{
+  padding:10px 12px;
+}
+
+.etgp-passenger-card .etgp-native-panel{
+  position:relative;
+}
+
+.etgp-passenger-card h1,
+.etgp-passenger-card h2,
+.etgp-passenger-card h3,
+.etgp-passenger-card h4{
+  margin:0 0 3px!important;
+  font-size:14px!important;
+  line-height:1.2!important;
+}
+
+.etgp-passenger-card p{
+  margin:0 0 5px!important;
+  color:var(--etgp-muted)!important;
+  font-size:11px!important;
+  line-height:1.35!important;
+}
+
+.etgp-passenger-card button,
+.etgp-passenger-card .btn,
+.etgp-passenger-card a{
+  min-height:28px!important;
+  padding-top:4px!important;
+  padding-bottom:4px!important;
+  font-size:11px!important;
+}
+
+.etgp-passenger-card table{
+  margin:4px 0 0!important;
+  table-layout:auto!important;
+}
+
+.etgp-passenger-card th,
+.etgp-passenger-card td{
+  padding:4px 6px!important;
+  font-size:10.5px!important;
+  line-height:1.25!important;
+}
+
+/* Passenger action tray */
+.etgp-passenger-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:6px;
+  flex:0 0 auto;
+}
+
+.etgp-passenger-actions form{
+  width:auto!important;
+  margin:0!important;
+}
+
+.etgp-passenger-actions button,
+.etgp-passenger-actions a,
+.etgp-passenger-actions input[type="submit"]{
+  min-height:30px!important;
+  padding:5px 9px!important;
+  font-size:9px!important;
+}
+
+.etgp-passenger-extra{
+  margin-top:7px!important;
+  padding-top:7px!important;
+  border-top:1px solid var(--etgp-soft)!important;
+}
+
+/* Add products */
+.etgp-products-card{
+  padding:10px 12px;
+}
+
+.etgp-product-lock{
+  margin:0 0 7px;
+  padding:6px 8px;
+  border:1px dashed #d9e3ee;
+  border-radius:7px;
+  background:#fafcff;
+  color:#66788e;
+  font-size:11px;
+  line-height:1.35;
+}
+
+.etgp-product-buttons{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.etgp-product-button{
+  min-height:31px;
+  padding:5px 10px;
+  border:1px solid #cfd9e6;
+  border-radius:8px;
+  background:#fff;
+  color:#24364d;
+  font-size:11px;
+  line-height:1;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.etgp-product-button:hover:not(:disabled){
+  border-color:#a9c9ec;
+  background:#f6faff;
+  color:#0b63ce;
+}
+
+.etgp-product-button.is-selected{
+  border-color:#9cc3ed;
+  background:#edf5ff;
+  color:#0b63ce;
+}
+
+.etgp-product-button:disabled{
+  opacity:.52;
+  cursor:not-allowed;
+}
+
+.etgp-product-shells{
+  width:100%;
+}
+
+.etgp-product-shell{
+  width:100%;
+  margin:0 0 9px;
+  padding:10px 12px;
+  border:1px solid #cfdcec;
+  border-radius:var(--etgp-radius);
+  background:#fff;
+  box-shadow:var(--etgp-shadow);
+}
+
+.etgp-product-shell-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.etgp-product-shell-title{
+  margin:0;
+  font-size:14px;
+  line-height:1.12;
+  font-weight:860;
+}
+
+.etgp-product-shell-note{
+  margin:2px 0 0;
+  color:var(--etgp-muted);
+  font-size:8.5px;
+  line-height:1.2;
+}
+
+.etgp-remove-product{
+  min-height:27px;
+  padding:4px 8px;
+  border:1px solid #e0c9cc;
+  border-radius:7px;
+  background:#fff;
+  color:#9b3a44;
+  font-size:8px;
+  font-weight:850;
+  cursor:pointer;
+}
+
+.etgp-product-readiness{
+  margin-top:8px;
+  padding:7px 9px;
+  border:1px dashed #cddbea;
+  border-radius:7px;
+  background:#fafcff;
+  color:#5e6f85;
+  font-size:8.5px;
+  line-height:1.25;
+}
+
+/* Responsive */
+@media(max-width:1120px){
+  .etgp-header-summary{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    row-gap:3px;
+  }
+}
+
+@media(max-width:820px){
+  html.et-general-progressive-step1-11390 section.content,
+  html.etgp-step1-live-11390 section.content{
+    width:calc(100% - 20px)!important;
+  }
+
+  .etgp-toolbar{
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
+  }
+
+  .etgp-toolbar-actions{
+    justify-content:flex-start;
+  }
+
+  .etgp-progress{
+    grid-template-columns:1fr;
+  }
+
+  .etgp-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:620px){
+  .etgp-header-summary{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:440px){
+  .etgp-kpis,
+  .etgp-header-summary{
+    grid-template-columns:1fr!important;
+  }
+
+  .etgp-product-buttons{
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .etgp-product-button{
+    width:100%;
+  }
+}
+
+
+/* ERP-11.3.93 — FINAL PASSENGER QUICK-ADD / REUSE WORKSPACE
+ *
+ * Current booking passengers stay visible. Staff opens ONE full-width mode at
+ * a time: one-line New Passenger quick add OR full-width Reuse Previous.
+ */
+.etgp-passenger-card{
+  padding:14px 14px 17px;
+}
+
+.etgp-passenger-card .etgp-card-head{
+  align-items:flex-start;
+  margin-bottom:10px;
+}
+
+.etgp-passenger-card .etgp-card-note{
+  max-width:760px;
+}
+
+.etgp-passenger-card label,
+.etgp-passenger-card .form-label{
+  margin-bottom:4px!important;
+  color:#314157!important;
+  font-size:11px!important;
+  line-height:1.15!important;
+  font-weight:800!important;
+}
+
+.etgp-passenger-card input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.etgp-passenger-card select,
+.etgp-passenger-card textarea{
+  width:100%!important;
+  max-width:none!important;
+  min-height:34px!important;
+  padding:6px 9px!important;
+  border-radius:7px!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .table-responsive{
+  width:100%!important;
+  overflow-x:auto!important;
+}
+
+.etgp-passenger-card table{
+  width:100%!important;
+  min-width:880px;
+  border-collapse:collapse!important;
+  table-layout:auto!important;
+}
+
+.etgp-passenger-card thead{display:table-header-group!important;}
+.etgp-passenger-card tbody{display:table-row-group!important;}
+.etgp-passenger-card tr{display:table-row!important;}
+.etgp-passenger-card th,
+.etgp-passenger-card td{
+  display:table-cell!important;
+  vertical-align:middle!important;
+  padding:7px 8px!important;
+  font-size:10.5px!important;
+  line-height:1.3!important;
+  white-space:normal!important;
+}
+
+.etgp-current-passenger-table th{
+  color:#596980!important;
+  font-size:9.5px!important;
+  font-weight:850!important;
+  text-transform:uppercase;
+  letter-spacing:.025em;
+}
+
+.etgp-current-passenger-table td{
+  color:#26374d!important;
+}
+
+.etgp-passenger-column-hidden{
+  display:none!important;
+}
+
+.etgp-passenger-actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:7px!important;
+  margin-left:auto!important;
+}
+
+.etgp-passenger-actions button,
+.etgp-passenger-actions a,
+.etgp-passenger-actions input[type="submit"]{
+  width:auto!important;
+  min-height:32px!important;
+  padding:6px 11px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+}
+
+.etgp-passenger-actions [data-etgp-passenger-mode-control].is-active{
+  border-color:#8bb8eb!important;
+  background:#eaf3ff!important;
+  color:#0b63ce!important;
+  box-shadow:0 0 0 1px rgba(11,99,206,.05);
+}
+
+.etgp-passenger-duplicate-action,
+.etgp-passenger-native-hidden-field,
+.etgp-passenger-old-grid,
+.etgp-passenger-native-chrome-hidden,
+.etgp-saved-native-column-label{
+  display:none!important;
+}
+
+/* Only one editor mode at a time. */
+.etgp-passenger-card[data-etgp-passenger-mode="none"] .etgp-passenger-mode-panel,
+.etgp-passenger-card[data-etgp-passenger-mode="none"] .etgp-passenger-reuse-copy,
+.etgp-passenger-card[data-etgp-passenger-mode="none"] .etgp-passenger-new-copy,
+.etgp-passenger-card[data-etgp-passenger-mode="none"] .etgp-passenger-close-control{
+  display:none!important;
+}
+
+.etgp-passenger-card[data-etgp-passenger-mode="reuse"] .etgp-passenger-mode-new,
+.etgp-passenger-card[data-etgp-passenger-mode="reuse"] .etgp-passenger-new-copy,
+.etgp-passenger-card[data-etgp-passenger-mode="new"] .etgp-passenger-mode-reuse,
+.etgp-passenger-card[data-etgp-passenger-mode="new"] .etgp-passenger-reuse-copy{
+  display:none!important;
+}
+
+.etgp-passenger-card[data-etgp-passenger-mode="reuse"] .etgp-passenger-mode-reuse,
+.etgp-passenger-card[data-etgp-passenger-mode="new"] .etgp-passenger-mode-new{
+  display:block!important;
+}
+
+.etgp-passenger-mode-panel{
+  width:100%!important;
+  max-width:none!important;
+  margin:10px 0 0!important;
+  padding:11px!important;
+  border:1px solid #dce5ef!important;
+  border-radius:9px!important;
+  background:#fbfdff!important;
+  box-shadow:none!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-subpanel-heading{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:5px 9px;
+  margin:0 0 9px;
+  padding:0 0 7px;
+  border-bottom:1px solid #e8eef5;
+}
+
+.etgp-passenger-subpanel-title{
+  color:#17243a;
+  font-size:13px;
+  line-height:1.2;
+  font-weight:850;
+}
+
+.etgp-passenger-subpanel-note{
+  color:#708096;
+  font-size:10px;
+  line-height:1.3;
+}
+
+/* --------------------------------------------------------------
+ * NEW PASSENGER — approved one-line desktop quick add
+ * -------------------------------------------------------------- */
+.etgp-passenger-entry-form{
+  display:block!important;
+}
+
+.etgp-passenger-quick-row{
+  display:grid!important;
+  grid-template-columns:
+    minmax(145px,1.45fr)
+    minmax(125px,1.1fr)
+    minmax(125px,1.1fr)
+    minmax(118px,1fr)
+    minmax(118px,1fr)
+    minmax(105px,.9fr)
+    minmax(86px,.72fr)
+    auto!important;
+  gap:8px!important;
+  align-items:end!important;
+  width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.etgp-passenger-quick-field{
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  flex:none!important;
+  grid-column:auto!important;
+}
+
+.etgp-passenger-quick-field input,
+.etgp-passenger-quick-field select{
+  min-width:0!important;
+  min-height:34px!important;
+}
+
+.etgp-passenger-quick-status select{
+  color:#138a54!important;
+  font-weight:850!important;
+  background:#f2fbf6!important;
+}
+
+.etgp-passenger-quick-action{
+  display:flex!important;
+  align-items:flex-end!important;
+  width:auto!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.etgp-passenger-quick-add{
+  width:auto!important;
+  min-width:62px!important;
+  min-height:34px!important;
+  margin:0!important;
+  padding:6px 14px!important;
+  border-radius:7px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+}
+
+/* --------------------------------------------------------------
+ * REUSE PREVIOUS — full-width selector, loaded only in reuse mode
+ * -------------------------------------------------------------- */
+.etgp-saved-passenger-form{
+  display:block!important;
+}
+
+.etgp-saved-search-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:8px!important;
+  align-items:center!important;
+  width:100%!important;
+  margin:0 0 8px!important;
+}
+
+.etgp-saved-search-row input{
+  margin:0!important;
+}
+
+.etgp-saved-search-row button,
+.etgp-saved-search-row input[type="submit"]{
+  width:auto!important;
+  min-width:74px!important;
+  min-height:34px!important;
+  margin:0!important;
+  padding:6px 11px!important;
+  font-size:10.5px!important;
+}
+
+.etgp-saved-traveller-list{
+  display:block!important;
+  width:100%!important;
+  max-height:310px;
+  margin:8px 0!important;
+  padding:0 4px 0 0!important;
+  overflow:auto!important;
+  overscroll-behavior:contain;
+}
+
+.etgp-saved-traveller-row{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  min-height:44px!important;
+  margin:0 0 5px!important;
+  padding:7px 10px 7px 39px!important;
+  border:1px solid #dfe7f0!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#26374d!important;
+  font-size:10.5px!important;
+  line-height:1.25!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-saved-traveller-row:last-child{
+  margin-bottom:0!important;
+}
+
+.etgp-saved-traveller-row .row,
+.etgp-saved-traveller-row [class*="col-"],
+.etgp-saved-traveller-row .form-check,
+.etgp-saved-traveller-row label,
+.etgp-saved-traveller-row > div{
+  width:auto!important;
+  max-width:none!important;
+  min-width:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding-top:0!important;
+  padding-bottom:0!important;
+  flex:none!important;
+}
+
+.etgp-saved-traveller-checkbox{
+  position:absolute!important;
+  left:12px!important;
+  top:50%!important;
+  width:16px!important;
+  height:16px!important;
+  min-height:16px!important;
+  margin:-8px 0 0!important;
+  padding:0!important;
+  z-index:2;
+}
+
+.etgp-saved-traveller-row:has(.etgp-saved-traveller-checkbox:checked){
+  border-color:#98c2ee!important;
+  background:#f1f7ff!important;
+}
+
+.etgp-saved-actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  width:100%!important;
+  margin:9px 0 0!important;
+  padding-top:9px!important;
+  border-top:1px solid #e7edf4!important;
+}
+
+.etgp-saved-lead-option,
+.etgp-saved-submit-action{
+  width:auto!important;
+  margin:0!important;
+}
+
+.etgp-saved-lead-option{
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  font-size:10.5px!important;
+  font-weight:750!important;
+}
+
+.etgp-saved-lead-option input[type="checkbox"]{
+  width:16px!important;
+  height:16px!important;
+  min-height:16px!important;
+  margin:0!important;
+}
+
+.etgp-saved-submit-action button,
+.etgp-saved-submit-action input[type="submit"]{
+  width:auto!important;
+  min-height:34px!important;
+  padding:6px 11px!important;
+  font-size:10.5px!important;
+}
+
+.etgp-passenger-close-control{
+  min-height:26px!important;
+  padding:4px 8px!important;
+  font-size:9.5px!important;
+}
+
+@media(max-width:1080px){
+  .etgp-passenger-quick-row{
+    grid-template-columns:repeat(4,minmax(0,1fr)) auto!important;
+  }
+
+  .etgp-passenger-quick-name{
+    grid-column:span 2!important;
+  }
+}
+
+@media(max-width:760px){
+  .etgp-passenger-card .etgp-card-head{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .etgp-passenger-actions{
+    justify-content:flex-start!important;
+    margin-left:0!important;
+  }
+
+  .etgp-passenger-quick-row{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+
+  .etgp-passenger-quick-name{
+    grid-column:1 / -1!important;
+  }
+
+  .etgp-passenger-quick-action{
+    grid-column:1 / -1!important;
+  }
+
+  .etgp-passenger-quick-add{
+    width:100%!important;
+  }
+
+  .etgp-saved-search-row{
+    grid-template-columns:1fr!important;
+  }
+
+  .etgp-saved-search-row button,
+  .etgp-saved-search-row input[type="submit"]{
+    width:100%!important;
+  }
+
+  .etgp-saved-actions{
+    align-items:stretch!important;
+    flex-direction:column!important;
+  }
+
+  .etgp-saved-submit-action,
+  .etgp-saved-submit-action button,
+  .etgp-saved-submit-action input[type="submit"]{
+    width:100%!important;
+  }
+}
+
+@media(max-width:520px){
+  .etgp-passenger-quick-row{
+    grid-template-columns:1fr!important;
+  }
+
+  .etgp-passenger-quick-name,
+  .etgp-passenger-quick-action{
+    grid-column:1!important;
+  }
+}
+
+/* Passenger -> Add Products spacing is intentional. */
+.etgp-products-card{
+  margin-bottom:18px;
+  padding:13px 14px 16px;
+}
+
+@media(max-width:980px){
+  .etgp-saved-traveller-list{
+    grid-template-columns:1fr!important;
+    max-height:360px;
+  }
+
+  .etgp-passenger-field-grid-v2 > .etgp-passenger-field,
+  .etgp-passenger-field-grid-v2 .etgp-span-2,
+  .etgp-passenger-field-grid-v2 .etgp-span-3,
+  .etgp-passenger-field-grid-v2 .etgp-span-4,
+  .etgp-passenger-field-grid-v2 .etgp-span-6{
+    grid-column:span 6!important;
+  }
+
+  .etgp-passenger-field-grid-v2 .etgp-span-12{
+    grid-column:1 / -1!important;
+  }
+}
+
+@media(max-width:640px){
+  .etgp-passenger-card .etgp-card-head{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .etgp-passenger-actions{
+    justify-content:flex-start;
+  }
+
+  .etgp-saved-search-row{
+    grid-template-columns:1fr!important;
+  }
+
+  .etgp-saved-search-row button,
+  .etgp-saved-search-row input[type="submit"]{
+    width:100%!important;
+  }
+
+  .etgp-passenger-field-grid-v2{
+    grid-template-columns:1fr!important;
+  }
+
+  .etgp-passenger-field-grid-v2 > .etgp-passenger-field,
+  .etgp-passenger-field-grid-v2 .etgp-span-2,
+  .etgp-passenger-field-grid-v2 .etgp-span-3,
+  .etgp-passenger-field-grid-v2 .etgp-span-4,
+  .etgp-passenger-field-grid-v2 .etgp-span-6,
+  .etgp-passenger-field-grid-v2 .etgp-span-12{
+    grid-column:1!important;
+  }
+
+  .etgp-saved-actions,
+  .etgp-passenger-entry-actions{
+    align-items:stretch!important;
+    flex-direction:column!important;
+  }
+
+  .etgp-saved-submit-action,
+  .etgp-passenger-save-action{
+    width:100%!important;
+  }
+
+  .etgp-saved-submit-action button,
+  .etgp-saved-submit-action input[type="submit"],
+  .etgp-passenger-save-action button,
+  .etgp-passenger-save-action input[type="submit"]{
+    width:100%!important;
+  }
+
+  .etgp-passenger-card table{
+    min-width:740px;
+  }
+}
+
+/* ERP-11.3.94 — Passenger DOM stabilization.
+ * Production GENERAL has multiple native wrapper variants. The visible Step-1
+ * quick row is now a stable proxy layer; original native form controls remain
+ * in the form for server submission but their legacy layout is never rendered.
+ */
+.etgp-passenger-native-source-block{
+  display:none!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-new{
+  overflow:visible!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-row{
+  display:grid!important;
+  grid-template-columns:
+    minmax(180px,1.55fr)
+    minmax(140px,1.12fr)
+    minmax(145px,1.12fr)
+    minmax(125px,.96fr)
+    minmax(135px,1fr)
+    minmax(125px,.92fr)
+    minmax(100px,.72fr)
+    72px!important;
+  gap:10px!important;
+  align-items:end!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-field{
+  min-width:0!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-field label{
+  display:block!important;
+  min-height:13px!important;
+  margin:0 0 5px!important;
+  white-space:nowrap!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-field input,
+.etgp-passenger-card .etgp-passenger-quick-field select{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:7px 9px!important;
+  border:1px solid #d7e1ec!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#26374d!important;
+  font-size:11.5px!important;
+  line-height:1.2!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-status select{
+  color:#138a54!important;
+  font-weight:850!important;
+  background:#f2fbf6!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-action{
+  display:flex!important;
+  align-items:flex-end!important;
+  height:100%!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-add{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:72px!important;
+  min-width:72px!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:0 12px!important;
+  border-radius:7px!important;
+}
+
+.etgp-passenger-card .etgp-current-passenger-table{
+  min-width:940px!important;
+  table-layout:auto!important;
+}
+
+.etgp-passenger-card .etgp-current-passenger-table th,
+.etgp-passenger-card .etgp-current-passenger-table td{
+  padding:8px 9px!important;
+}
+
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(1){width:42px!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(2){width:13%!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(3){width:20%!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(4){width:13%!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(5){width:11%!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(6){width:13%!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(7){width:10%!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(8){width:8%!important;}
+.etgp-passenger-card .etgp-current-passenger-table th:nth-child(9){width:10%!important;}
+
+/* ERP-11.3.132 — native Age Type / Auto / Fare As stays on one desktop line. */
+.etgp-passenger-card .etgp-passenger-fare-inline-113132{
+  display:flex!important;
+  align-items:center!important;
+  flex-wrap:nowrap!important;
+  gap:5px!important;
+  width:100%!important;
+  min-width:0!important;
+  white-space:nowrap!important;
+  line-height:1.2!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 > *{
+  display:inline-flex!important;
+  align-items:center!important;
+  width:auto!important;
+  max-width:none!important;
+  margin:0!important;
+  vertical-align:middle!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 br{
+  display:none!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 form,
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 .input-group,
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 .d-flex{
+  display:inline-flex!important;
+  align-items:center!important;
+  flex-wrap:nowrap!important;
+  gap:4px!important;
+  margin:0!important;
+  width:auto!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 select{
+  width:auto!important;
+  min-width:84px!important;
+  max-width:100px!important;
+  min-height:30px!important;
+  height:30px!important;
+  margin:0!important;
+  padding:4px 24px 4px 8px!important;
+  font-size:10.5px!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 button,
+.etgp-passenger-card .etgp-passenger-fare-inline-113132 .btn{
+  width:auto!important;
+  min-width:50px!important;
+  min-height:30px!important;
+  height:30px!important;
+  margin:0!important;
+  padding:4px 9px!important;
+  font-size:10.5px!important;
+  line-height:1!important;
+}
+@media(max-width:900px){
+  .etgp-passenger-card .etgp-passenger-fare-inline-113132{
+    overflow-x:auto!important;
+    scrollbar-width:thin;
+  }
+}
+
+/* The mode panels themselves own the editor area; leftover native captions,
+ * tabs and standalone Close controls must not create additional rows. */
+.etgp-passenger-card .etgp-passenger-native-chrome-hidden{
+  display:none!important;
+}
+
+@media(max-width:1180px){
+  .etgp-passenger-card .etgp-passenger-quick-row{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+  .etgp-passenger-card .etgp-passenger-quick-action{
+    align-items:end!important;
+  }
+  .etgp-passenger-card .etgp-passenger-quick-add{
+    width:100%!important;
+  }
+}
+
+@media(max-width:760px){
+  .etgp-passenger-card .etgp-passenger-quick-row{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  .etgp-passenger-card .etgp-passenger-quick-name{
+    grid-column:1 / -1!important;
+  }
+  .etgp-passenger-card .etgp-passenger-quick-action{
+    grid-column:1 / -1!important;
+  }
+}
+
+@media(max-width:520px){
+  .etgp-passenger-card .etgp-passenger-quick-row{
+    grid-template-columns:1fr!important;
+  }
+}
+
+
+/* ======================================================================
+ * ERP-11.3.95 — FINAL REUSE PREVIOUS TRAVELLER SELECTOR
+ * Search stays on one row. Returned native Passenger Master entries are
+ * compressed into one selectable line each. Existing native checkboxes and
+ * submit form remain authoritative; this is presentation/sync only.
+ * ====================================================================== */
+.etgp-passenger-card .etgp-passenger-column-hidden{
+  display:none!important;
+}
+
+.etgp-passenger-card .passenger-current-label,
+.etgp-passenger-card .etgp-passenger-reuse-copy,
+.etgp-passenger-card .etgp-saved-native-column-label{
+  display:none!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-reuse{
+  width:100%!important;
+  margin-top:8px!important;
+  padding:12px 14px!important;
+  border:1px solid #dce5ef!important;
+  border-radius:9px!important;
+  background:#fff!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-reuse .etgp-passenger-subpanel-heading{
+  margin:0 0 10px!important;
+  padding:0!important;
+  border:0!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-reuse .etgp-passenger-subpanel-title{
+  margin:0!important;
+  font-size:13px!important;
+  font-weight:850!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-reuse .etgp-passenger-subpanel-note{
+  margin:2px 0 0!important;
+  font-size:10.5px!important;
+  color:#728399!important;
+}
+
+.etgp-passenger-card .etgp-saved-search-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 82px!important;
+  gap:8px!important;
+  align-items:center!important;
+  width:100%!important;
+  margin:0 0 10px!important;
+}
+
+.etgp-passenger-card .etgp-saved-search-row input{
+  display:block!important;
+  width:100%!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:7px 10px!important;
+  border:1px solid #d7e1ec!important;
+  border-radius:7px!important;
+  box-sizing:border-box!important;
+  font-size:11.5px!important;
+}
+
+.etgp-passenger-card .etgp-saved-search-row button,
+.etgp-passenger-card .etgp-saved-search-row input[type="submit"]{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:82px!important;
+  min-width:82px!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:0 10px!important;
+  border-radius:7px!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+
+.etgp-passenger-card .etgp-saved-traveller-list{
+  display:block!important;
+  width:100%!important;
+  max-height:300px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:auto!important;
+  border:1px solid #e1e8f0!important;
+  border-radius:8px!important;
+  background:#fff!important;
+}
+
+.etgp-passenger-card .etgp-saved-traveller-row{
+  position:relative!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  width:100%!important;
+  min-height:42px!important;
+  margin:0!important;
+  padding:8px 10px!important;
+  border:0!important;
+  border-bottom:1px solid #e8edf3!important;
+  border-radius:0!important;
+  background:#fff!important;
+  box-sizing:border-box!important;
+  cursor:pointer!important;
+}
+
+.etgp-passenger-card .etgp-saved-traveller-row:last-child{
+  border-bottom:0!important;
+}
+
+.etgp-passenger-card .etgp-saved-traveller-row:hover{
+  background:#f8fbff!important;
+}
+
+.etgp-passenger-card .etgp-saved-traveller-checkbox{
+  position:static!important;
+  flex:0 0 16px!important;
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  min-height:16px!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.etgp-passenger-card .etgp-saved-native-row-content{
+  display:none!important;
+}
+
+.etgp-passenger-card .etgp-saved-traveller-summary{
+  display:block!important;
+  min-width:0!important;
+  flex:1 1 auto!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+  color:#26374d!important;
+  font-size:11.25px!important;
+  font-weight:650!important;
+  line-height:1.25!important;
+}
+
+.etgp-passenger-card .etgp-saved-traveller-row:has(.etgp-saved-traveller-checkbox:checked){
+  background:#f0f7ff!important;
+  box-shadow:inset 3px 0 0 #2d73d5!important;
+}
+
+.etgp-passenger-card .etgp-saved-actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  width:100%!important;
+  margin:10px 0 0!important;
+  padding:10px 0 0!important;
+  border-top:1px solid #e6ecf2!important;
+}
+
+@media(max-width:700px){
+  .etgp-passenger-card .etgp-saved-search-row{
+    grid-template-columns:minmax(0,1fr) 76px!important;
+  }
+  .etgp-passenger-card .etgp-saved-search-row button,
+  .etgp-passenger-card .etgp-saved-search-row input[type="submit"]{
+    width:76px!important;
+    min-width:76px!important;
+  }
+  .etgp-passenger-card .etgp-saved-actions{
+    align-items:stretch!important;
+    flex-direction:column!important;
+  }
+  .etgp-passenger-card .etgp-saved-submit-action,
+  .etgp-passenger-card .etgp-saved-submit-action button,
+  .etgp-passenger-card .etgp-saved-submit-action input[type="submit"]{
+    width:100%!important;
+  }
+}
+
+/* ======================================================================
+ * ERP-11.3.96 — PASSENGER VISUAL-SHELL RESET
+ * The live GENERAL Passenger DOM is not structurally stable across native
+ * releases. Keep the native forms/routes as a hidden data/submit source and
+ * render one controlled visible shell for current passengers + one editor.
+ * This prevents old Search/Close/helper fragments from leaking into New mode.
+ * ====================================================================== */
+.etgp-passenger-card .etgp-passenger-native-source-host,
+.etgp-passenger-card .etgp-passenger-legacy-extra-hidden{
+  display:none!important;
+}
+
+.etgp-passenger-current-host,
+.etgp-passenger-editor-host{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-current-host{
+  margin:0!important;
+  padding:0 0 8px!important;
+  border-bottom:1px solid #e8edf3!important;
+}
+
+.etgp-passenger-editor-host{
+  margin:0!important;
+  padding:0!important;
+}
+
+.etgp-passenger-card .etgp-passenger-editor-host > .etgp-passenger-mode-panel{
+  margin:10px 0 0!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-button{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:0!important;
+  min-height:34px!important;
+  padding:7px 13px!important;
+  border:1px solid #d7e0ea!important;
+  border-radius:8px!important;
+  background:#f1f3f6!important;
+  color:#111827!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  line-height:1!important;
+  cursor:pointer!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-button.btn-primary{
+  border-color:#1967cf!important;
+  background:#1967cf!important;
+  color:#fff!important;
+}
+
+.etgp-passenger-card .etgp-passenger-mode-button.is-active{
+  box-shadow:0 0 0 2px rgba(25,103,207,.11)!important;
+}
+
+/* Reuse Previous is now a single visible component: heading, one-line search,
+ * selectable smart list and footer. The old native form remains hidden. */
+.etgp-passenger-card .etgp-reuse-proxy{
+  width:100%!important;
+  max-width:none!important;
+  margin:10px 0 0!important;
+  padding:12px 14px!important;
+  border:1px solid #dce5ef!important;
+  border-radius:9px!important;
+  background:#fbfdff!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-search{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 84px!important;
+  align-items:center!important;
+  gap:8px!important;
+  width:100%!important;
+  margin:0 0 9px!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-search input{
+  width:100%!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:7px 10px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#24364d!important;
+  font-size:11.5px!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-search-button{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:84px!important;
+  min-width:84px!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:0 10px!important;
+  border:1px solid #d5dde7!important;
+  border-radius:7px!important;
+  background:#eef0f3!important;
+  color:#111827!important;
+  font-size:11px!important;
+  font-weight:850!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-results{
+  width:100%!important;
+  max-height:288px!important;
+  overflow:auto!important;
+  border:1px solid #e0e7ef!important;
+  border-radius:8px!important;
+  background:#fff!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-row{
+  display:grid!important;
+  grid-template-columns:18px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+  min-height:42px!important;
+  margin:0!important;
+  padding:8px 11px!important;
+  border:0!important;
+  border-bottom:1px solid #e8edf3!important;
+  background:#fff!important;
+  color:#26374d!important;
+  cursor:pointer!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-row:last-child{
+  border-bottom:0!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-row:hover{
+  background:#f7fbff!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-row:has(.etgp-reuse-proxy-checkbox:checked){
+  background:#f0f7ff!important;
+  box-shadow:inset 3px 0 0 #2672d8!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-checkbox{
+  display:block!important;
+  position:static!important;
+  width:16px!important;
+  height:16px!important;
+  min-width:16px!important;
+  min-height:16px!important;
+  margin:0!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-summary{
+  display:block!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  text-overflow:ellipsis!important;
+  color:#26374d!important;
+  font-size:11.25px!important;
+  font-weight:700!important;
+  line-height:1.25!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-empty{
+  padding:18px 12px!important;
+  color:#77879b!important;
+  font-size:11px!important;
+  text-align:center!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-footer{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  width:100%!important;
+  margin:9px 0 0!important;
+  padding:9px 0 0!important;
+  border-top:1px solid #e6ecf2!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-lead{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin:0!important;
+  color:#42536a!important;
+  font-size:10.5px!important;
+  font-weight:700!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-lead input{
+  width:15px!important;
+  height:15px!important;
+  min-width:15px!important;
+  min-height:15px!important;
+  margin:0!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-add{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:150px!important;
+  height:34px!important;
+  min-height:34px!important;
+  margin:0!important;
+  padding:0 13px!important;
+  border-radius:7px!important;
+  font-size:10.5px!important;
+  font-weight:850!important;
+}
+
+.etgp-passenger-card .etgp-reuse-proxy-add:disabled{
+  opacity:.55!important;
+  cursor:not-allowed!important;
+}
+
+@media(max-width:720px){
+  .etgp-passenger-card .etgp-reuse-proxy-search{
+    grid-template-columns:minmax(0,1fr) 76px!important;
+  }
+  .etgp-passenger-card .etgp-reuse-proxy-search-button{
+    width:76px!important;
+    min-width:76px!important;
+  }
+  .etgp-passenger-card .etgp-reuse-proxy-footer{
+    align-items:stretch!important;
+    flex-direction:column!important;
+  }
+  .etgp-passenger-card .etgp-reuse-proxy-add{
+    width:100%!important;
+  }
+}
+.etgp-passenger-card .etgp-passenger-native-saved-source{
+  display:none!important;
+}
+
+/* ======================================================================
+ * ERP-11.3.98 — FINAL GENERAL PASSENGER QUICK-ADD / NATIVE SAVE BRIDGE
+ * Reuse Previous is retired. One always-visible quick row talks directly to
+ * ERP-owned Passenger Master lookup + booking snapshot endpoints.
+ * ====================================================================== */
+.etgp-passenger-card .etgp-passenger-actions,
+.etgp-passenger-card .etgp-reuse-proxy,
+.etgp-passenger-card .etgp-passenger-mode-reuse,
+.etgp-passenger-card .etgp-passenger-native-saved-source,
+.etgp-passenger-card .etgp-passenger-native-source-host,
+.etgp-passenger-card .etgp-passenger-legacy-extra-hidden{
+  display:none!important;
+}
+
+.etgp-passenger-card .etgp-passenger-editor-host-11397{
+  display:block!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.etgp-passenger-card .etgp-quick-passenger-11397{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  margin:10px 0 0!important;
+  padding:12px 14px!important;
+  border:1px solid #dce5ef!important;
+  border-radius:9px!important;
+  background:#fbfdff!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .etgp-quick-passenger-11397 .etgp-passenger-subpanel-heading{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:9px!important;
+  width:100%!important;
+  margin:0 0 9px!important;
+  padding:0 0 8px!important;
+  border-bottom:1px solid #e7edf4!important;
+}
+
+.etgp-passenger-card .etgp-quick-passenger-11397 .etgp-passenger-subpanel-title{
+  flex:0 0 auto!important;
+  margin:0!important;
+  font-size:13px!important;
+  font-weight:850!important;
+  color:#17243a!important;
+}
+
+.etgp-passenger-card .etgp-quick-passenger-11397 .etgp-passenger-subpanel-note{
+  min-width:0!important;
+  margin:0!important;
+  color:#718198!important;
+  font-size:10.5px!important;
+  line-height:1.3!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-row-11397{
+  display:grid!important;
+  grid-template-columns:
+    minmax(175px,1.45fr)
+    minmax(128px,1fr)
+    minmax(145px,1.15fr)
+    minmax(125px,.95fr)
+    minmax(125px,.95fr)
+    minmax(125px,.95fr)
+    minmax(105px,.75fr)
+    72px!important;
+  gap:8px!important;
+  align-items:end!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-row-11397 .etgp-passenger-quick-field{
+  min-width:0!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-row-11397 label{
+  display:block!important;
+  margin:0 0 4px!important;
+  color:#26374d!important;
+  font-size:10.5px!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+}
+
+.etgp-passenger-card .etgp-passenger-quick-row-11397 input,
+.etgp-passenger-card .etgp-passenger-quick-row-11397 select{
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:7px 10px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#26374d!important;
+  font-size:11.25px!important;
+  box-sizing:border-box!important;
+}
+
+.etgp-passenger-card .etgp-quick-status-11397 select,
+.etgp-passenger-card [data-etgp-quick-field-11397="status"] select{
+  color:#138a54!important;
+  background:#f1fbf6!important;
+  font-weight:850!important;
+  opacity:1!important;
+  -webkit-text-fill-color:#138a54!important;
+}
+
+.etgp-passenger-card .etgp-quick-action-11397{
+  display:flex!important;
+  align-items:flex-end!important;
+  width:72px!important;
+  min-width:72px!important;
+}
+
+.etgp-passenger-card .etgp-quick-action-11397 .etgp-passenger-quick-add{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:72px!important;
+  min-width:72px!important;
+  height:36px!important;
+  min-height:36px!important;
+  margin:0!important;
+  padding:0 12px!important;
+  border-radius:7px!important;
+  font-size:11px!important;
+  font-weight:850!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestions-11397{
+  position:relative!important;
+  z-index:20!important;
+  width:min(660px,100%)!important;
+  max-height:230px!important;
+  margin:7px 0 0!important;
+  overflow:auto!important;
+  border:1px solid #dce5ef!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  box-shadow:0 9px 24px rgba(31,51,73,.10)!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestions-11397[hidden]{
+  display:none!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestion-title-11397{
+  padding:7px 10px!important;
+  border-bottom:1px solid #e8edf3!important;
+  background:#f7f9fc!important;
+  color:#738399!important;
+  font-size:9.75px!important;
+  font-weight:800!important;
+  text-transform:uppercase!important;
+  letter-spacing:.025em!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestion-row-11397{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  width:100%!important;
+  min-height:39px!important;
+  margin:0!important;
+  padding:7px 10px!important;
+  border:0!important;
+  border-bottom:1px solid #edf1f5!important;
+  border-radius:0!important;
+  background:#fff!important;
+  color:#26374d!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestion-row-11397:last-child{
+  border-bottom:0!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestion-row-11397:hover{
+  background:#f3f8ff!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestion-row-11397 strong{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  color:#17243a!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestion-row-11397 span{
+  flex:0 1 auto!important;
+  min-width:0!important;
+  color:#708096!important;
+  font-size:10px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+
+.etgp-passenger-card .etgp-passenger-suggestion-empty-11397{
+  padding:10px 12px!important;
+  color:#718198!important;
+  font-size:10.5px!important;
+  text-align:left!important;
+}
+
+.etgp-passenger-card .etgp-passenger-feedback-11397{
+  margin:7px 0 0!important;
+  padding:7px 10px!important;
+  border-radius:7px!important;
+  font-size:10.5px!important;
+  font-weight:700!important;
+}
+
+.etgp-passenger-card .etgp-passenger-feedback-11397[hidden]{
+  display:none!important;
+}
+
+.etgp-passenger-card .etgp-passenger-feedback-11397.is-success{
+  border:1px solid #c9ead9!important;
+  background:#f1fbf6!important;
+  color:#137d4e!important;
+}
+
+.etgp-passenger-card .etgp-passenger-feedback-11397.is-error{
+  border:1px solid #f0c9c9!important;
+  background:#fff4f4!important;
+  color:#b42318!important;
+}
+
+@media(max-width:1100px){
+  .etgp-passenger-card .etgp-passenger-quick-row-11397{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+  .etgp-passenger-card .etgp-quick-action-11397,
+  .etgp-passenger-card .etgp-quick-action-11397 .etgp-passenger-quick-add{
+    width:100%!important;
+  }
+}
+
+@media(max-width:680px){
+  .etgp-passenger-card .etgp-quick-passenger-11397 .etgp-passenger-subpanel-heading{
+    align-items:flex-start!important;
+    flex-direction:column!important;
+    gap:3px!important;
+  }
+  .etgp-passenger-card .etgp-passenger-quick-row-11397{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  .etgp-passenger-card .etgp-passenger-suggestion-row-11397{
+    align-items:flex-start!important;
+    flex-direction:column!important;
+    gap:2px!important;
+  }
+}
+
+@media(max-width:430px){
+  .etgp-passenger-card .etgp-passenger-quick-row-11397{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}
+
+/* ======================================================================
+ * ERP-11.3.106 — GENERAL Tickets / Flight Data controlled product shell
+ * ====================================================================== */
+.etgp-air-workspace-113106{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:12px 14px 14px;
+  border-top:1px solid #e8eef5;
+}
+.etgp-air-loading-113106{
+  padding:14px;
+  border:1px dashed #ced9e7;
+  border-radius:8px;
+  background:#f8fbff;
+  color:#66758b;
+  font-size:11px;
+  font-weight:700;
+}
+.etgp-air-block-113106{
+  min-width:0;
+  padding:11px 12px 12px;
+  border:1px solid #e0e8f1;
+  border-radius:9px;
+  background:#fff;
+}
+.etgp-air-subhead-113106{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:9px;
+}
+.etgp-air-subhead-copy-113106{min-width:0}
+.etgp-air-subtitle-113106{
+  margin:0;
+  color:#17243a;
+  font-size:12px;
+  line-height:1.25;
+  font-weight:850;
+}
+.etgp-air-subnote-113106{
+  margin:2px 0 0;
+  color:#718096;
+  font-size:10px;
+  line-height:1.35;
+}
+.etgp-air-mini-button-113106,
+.etgp-air-remove-row-113106{
+  min-height:30px!important;
+  padding:5px 9px!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  white-space:nowrap;
+}
+.etgp-air-segments-113106{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+.etgp-air-segment-row-113106{
+  display:grid;
+  grid-template-columns:95px minmax(105px,1.15fr) 90px 72px 72px minmax(150px,1.35fr) minmax(150px,1.35fr) 90px 96px 34px;
+  align-items:end;
+  gap:6px;
+  padding:8px;
+  border:1px solid #e6edf5;
+  border-radius:8px;
+  background:#fbfdff;
+}
+.etgp-air-field-113106{min-width:0}
+.etgp-air-field-113106 .form-label{
+  display:block!important;
+  margin:0 0 3px!important;
+  color:#596a80!important;
+  font-size:9px!important;
+  line-height:1.1!important;
+  font-weight:800!important;
+}
+.etgp-air-field-113106 .form-control,
+.etgp-air-field-113106 .form-select,
+.etgp-air-ticket-table-113106 .form-control,
+.etgp-air-ticket-table-113106 .form-select{
+  width:100%!important;
+  min-height:32px!important;
+  height:32px!important;
+  padding:5px 7px!important;
+  border-radius:6px!important;
+  border-color:#d6e0eb!important;
+  font-size:10.5px!important;
+  line-height:1.2!important;
+  box-shadow:none!important;
+}
+.etgp-air-field-113106.is-total .form-control{
+  background:#f3f7fb!important;
+  color:#14253d!important;
+  font-weight:850!important;
+}
+.etgp-air-segment-actions-113106{
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  min-height:32px;
+}
+.etgp-air-remove-row-113106{
+  width:32px!important;
+  min-width:32px!important;
+  padding:0!important;
+  font-size:16px!important;
+  line-height:1!important;
+}
+.etgp-air-common-grid-113106{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;
+}
+.etgp-air-ticket-wrap-113106{
+  width:100%;
+  overflow-x:auto;
+}
+.etgp-air-ticket-table-113106{
+  width:100%;
+  min-width:760px;
+  margin:0!important;
+  table-layout:fixed;
+}
+.etgp-air-ticket-table-113106 th{
+  padding:6px 7px!important;
+  background:#f5f8fc!important;
+  color:#5b6b80!important;
+  border-bottom:1px solid #dde6f0!important;
+  font-size:9px!important;
+  font-weight:850!important;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+}
+.etgp-air-ticket-table-113106 td{
+  padding:6px 7px!important;
+  vertical-align:middle!important;
+  border-bottom:1px solid #edf1f6!important;
+  color:#28384d!important;
+  font-size:10.5px!important;
+}
+/* ERP-11.3.124 — fit all Passenger Ticket commercial columns in the normal
+   desktop card width. 11.3.123 forced min-width:1180px, which created the
+   horizontal scrollbar inside the already padded Air workspace. */
+.etgp-air-ticket-table-113106.etgp-air-ticket-table-113123{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+.etgp-air-ticket-table-113123 th:nth-child(1){width:15.5%}
+.etgp-air-ticket-table-113123 th:nth-child(2){width:6.5%}
+.etgp-air-ticket-table-113123 th:nth-child(3){width:17%}
+.etgp-air-ticket-table-113123 th:nth-child(4){width:5%}
+.etgp-air-ticket-table-113123 th:nth-child(5){width:7%}
+.etgp-air-ticket-table-113123 th:nth-child(6){width:7%}
+.etgp-air-ticket-table-113123 th:nth-child(7){width:10.5%}
+.etgp-air-ticket-table-113123 th:nth-child(8){width:10.5%}
+.etgp-air-ticket-table-113123 th:nth-child(9){width:10.5%}
+.etgp-air-ticket-table-113123 th:nth-child(10){width:10.5%}
+.etgp-air-ticket-table-113123 th,
+.etgp-air-ticket-table-113123 td{
+  min-width:0!important;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.etgp-air-ticket-table-113123 input.form-control{
+  width:100%!important;
+  min-width:0!important;
+  padding-left:7px!important;
+  padding-right:7px!important;
+}
+.etgp-air-ticket-money-113123{
+  text-align:right;
+  white-space:nowrap;
+  font-size:9.5px!important;
+}
+@media(min-width:901px){
+  .etgp-air-ticket-wrap-113106{overflow-x:hidden!important;}
+}
+@media(max-width:900px){
+  .etgp-air-ticket-wrap-113106{overflow-x:auto!important;}
+  .etgp-air-ticket-table-113106.etgp-air-ticket-table-113123{min-width:980px!important;}
+}
+.etgp-air-ticket-money-value-113123{
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-end;
+  min-height:29px;
+  width:100%;
+  padding:4px 6px;
+  border:1px solid #dfe7f1;
+  border-radius:7px;
+  background:#f7f9fc;
+  color:#24344a;
+  font-size:10px;
+  font-weight:850;
+  font-variant-numeric:tabular-nums;
+}
+.etgp-air-passenger-name-113106 strong{
+  color:#17243a;
+  font-size:10.5px;
+  font-weight:850;
+}
+.etgp-air-empty-113106{
+  padding:12px!important;
+  color:#748398!important;
+  text-align:center;
+}
+.etgp-air-commercial-grid-113106{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:12px;
+}
+.etgp-air-commercial-113106{height:100%}
+.etgp-air-price-grid-113106{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;
+}
+.etgp-air-summary-113106{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.etgp-air-summary-item-113106{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+  padding:8px 10px;
+  border:1px solid #dfe8f2;
+  border-radius:8px;
+  background:#f8fbff;
+}
+.etgp-air-summary-item-113106 span{
+  color:#68778c;
+  font-size:9.5px;
+  font-weight:800;
+}
+.etgp-air-summary-item-113106 strong{
+  color:#17243a;
+  font-size:11px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.etgp-air-actions-113106{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+}
+.etgp-air-save-113106{
+  min-height:34px!important;
+  padding:6px 12px!important;
+  font-size:10.5px!important;
+  font-weight:850!important;
+}
+.etgp-air-feedback-113106{
+  flex:1 1 auto;
+  min-width:0;
+  padding:7px 9px;
+  border-radius:7px;
+  font-size:10px;
+  font-weight:750;
+}
+.etgp-air-feedback-113106[hidden]{display:none!important}
+.etgp-air-feedback-113106.is-success{
+  border:1px solid #c9ead9;
+  background:#f1fbf6;
+  color:#137d4e;
+}
+.etgp-air-feedback-113106.is-error{
+  border:1px solid #f0c9c9;
+  background:#fff4f4;
+  color:#b42318;
+}
+.etgp-air-feedback-113106.is-warning{
+  border:1px solid #efdca8;
+  background:#fffaeb;
+  color:#8a6116;
+}
+
+@media(max-width:1180px){
+  .etgp-air-segment-row-113106{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+  .etgp-air-segment-actions-113106{justify-content:flex-start}
+  .etgp-air-price-grid-113106{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:860px){
+  .etgp-air-common-grid-113106{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .etgp-air-commercial-grid-113106{grid-template-columns:minmax(0,1fr)}
+  .etgp-air-summary-113106{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:640px){
+  .etgp-air-workspace-113106{padding:10px}
+  .etgp-air-subhead-113106{flex-direction:column;align-items:stretch}
+  .etgp-air-segment-row-113106,
+  .etgp-air-common-grid-113106,
+  .etgp-air-price-grid-113106{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .etgp-air-actions-113106{flex-direction:column;align-items:stretch}
+  .etgp-air-save-113106{width:100%}
+}
+@media(max-width:430px){
+  .etgp-air-segment-row-113106,
+  .etgp-air-common-grid-113106,
+  .etgp-air-price-grid-113106{grid-template-columns:minmax(0,1fr)}
+}
+.etgp-air-apply-commercials-113106{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:-2px 0 0;
+  padding:7px 9px;
+  border:1px solid #dfe8f2;
+  border-radius:7px;
+  background:#fbfdff;
+  color:#53657c;
+  font-size:10px;
+  font-weight:750;
+  cursor:pointer;
+}
+.etgp-air-apply-commercials-113106 input{
+  width:14px;
+  height:14px;
+  margin:0;
+  accent-color:#1769d2;
+}
+.etgp-air-commercial-113106.is-disabled{
+  background:#fafbfd;
+  opacity:.74;
+}
+
+/* ======================================================================
+ * ERP-11.3.107 — Air PNR/vendor + ADT/CHD/INF commercial matrix
+ * ====================================================================== */
+.etgp-air-segment-row-113107{
+  grid-template-columns:92px minmax(145px,1.3fr) 105px 72px 72px minmax(150px,1.25fr) minmax(150px,1.25fr) 34px!important;
+}
+.etgp-air-common-grid-113107{
+  grid-template-columns:minmax(165px,1.35fr) repeat(5,minmax(0,1fr))!important;
+}
+.etgp-air-ticket-status-113107{
+  display:inline-flex;
+  align-items:center;
+  min-height:27px;
+  padding:4px 8px;
+  border:1px solid #d8e3ef;
+  border-radius:999px;
+  background:#f5f8fc;
+  color:#53657c;
+  font-size:9.5px;
+  font-weight:850;
+  text-transform:capitalize;
+}
+.etgp-air-ticket-status-113107[data-status="ISSUED"]{
+  border-color:#bfe5d1;
+  background:#effaf4;
+  color:#148252;
+}
+.etgp-air-ticket-status-113107[data-status="VOID"],
+.etgp-air-ticket-status-113107[data-status="REFUNDED"],
+.etgp-air-ticket-status-113107[data-status="CANCELLED"]{
+  border-color:#efcaca;
+  background:#fff3f3;
+  color:#b42318;
+}
+.etgp-air-commercial-grid-113107{align-items:start}
+.etgp-air-fare-wrap-113107{
+  width:100%;
+  overflow-x:auto;
+}
+.etgp-air-fare-table-113107{
+  width:100%;
+  min-width:790px;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+.etgp-air-fare-table-113107 th{
+  padding:6px 5px;
+  border-bottom:1px solid #dfe7f0;
+  background:#f6f9fc;
+  color:#586a80;
+  font-size:8.5px;
+  line-height:1.15;
+  font-weight:850;
+  text-align:left;
+  text-transform:uppercase;
+  letter-spacing:.015em;
+  white-space:normal;
+}
+.etgp-air-fare-table-113107 td{
+  padding:6px 5px;
+  border-bottom:1px solid #edf2f7;
+  vertical-align:middle;
+}
+.etgp-air-fare-table-113107 th:nth-child(1){width:11%}
+.etgp-air-fare-table-113107 th:nth-child(2){width:6%}
+.etgp-air-fare-table-113107 th:nth-child(3){width:17%}
+.etgp-air-fare-table-113107 th:nth-child(4){width:14%}
+.etgp-air-fare-table-113107 th:nth-child(5){width:12%}
+.etgp-air-fare-table-113107 th:nth-child(6){width:14%}
+.etgp-air-fare-table-113107 th:nth-child(7){width:12%}
+.etgp-air-fare-table-113107 th:nth-child(8){width:14%}
+.etgp-air-fare-table-113107 .form-control,
+.etgp-air-fare-table-113107 .form-select{
+  width:100%!important;
+  height:31px!important;
+  min-height:31px!important;
+  padding:4px 6px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:6px!important;
+  background:#fff;
+  color:#213249;
+  font-size:9.5px!important;
+  box-shadow:none!important;
+}
+.etgp-air-fare-table-113107 .form-control.is-auto{
+  background:#f7f9fc!important;
+  color:#56677d!important;
+  font-weight:750!important;
+}
+.etgp-air-fare-table-113107 .form-control.is-total{
+  background:#eef4fa!important;
+  color:#14253d!important;
+  font-weight:900!important;
+}
+.etgp-air-fare-table-113107 .form-control.is-invalid{
+  border-color:#dc3545!important;
+  background:#fff5f5!important;
+}
+.etgp-air-fare-type-113107{
+  color:#17243a;
+  font-size:9.5px;
+  font-weight:900;
+}
+.etgp-air-fare-pax-113107{
+  color:#1769d2;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+}
+.etgp-air-fare-table-113107 tr.is-inactive{opacity:.48}
+.etgp-air-fare-table-113107 tr.is-inactive .form-control,
+.etgp-air-fare-table-113107 tr.is-inactive .form-select{background:#fafbfd!important}
+
+@media(max-width:1180px){
+  .etgp-air-segment-row-113107{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .etgp-air-common-grid-113107{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:640px){
+  .etgp-air-segment-row-113107,
+  .etgp-air-common-grid-113107{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:430px){
+  .etgp-air-segment-row-113107,
+  .etgp-air-common-grid-113107{grid-template-columns:minmax(0,1fr)!important}
+}
+
+/* ======================================================================
+ * ERP-11.3.108 — compact one-row ADT/CHD/INF PNR commercial matrix
+ * ====================================================================== */
+.etgp-air-commercial-113108{
+  width:100%;
+}
+.etgp-air-fare-wrap-113108{
+  width:100%;
+  overflow-x:auto;
+}
+.etgp-air-fare-table-113108{
+  width:100%;
+  min-width:1040px;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+.etgp-air-fare-table-113108 th{
+  padding:6px 5px;
+  border-bottom:1px solid #dfe7f0;
+  background:#f6f9fc;
+  color:#586a80;
+  font-size:8px;
+  line-height:1.12;
+  font-weight:850;
+  text-align:left;
+  text-transform:uppercase;
+  letter-spacing:.01em;
+  white-space:normal;
+}
+.etgp-air-fare-table-113108 td{
+  padding:6px 5px;
+  border-bottom:1px solid #edf2f7;
+  vertical-align:middle;
+}
+.etgp-air-fare-table-113108 th:nth-child(1){width:5.5%}
+.etgp-air-fare-table-113108 th:nth-child(2){width:3.5%}
+.etgp-air-fare-table-113108 th:nth-child(3){width:8.5%}
+.etgp-air-fare-table-113108 th:nth-child(4){width:8.5%}
+.etgp-air-fare-table-113108 th:nth-child(5){width:8.5%}
+.etgp-air-fare-table-113108 th:nth-child(6){width:7.5%}
+.etgp-air-fare-table-113108 th:nth-child(7){width:16%}
+.etgp-air-fare-table-113108 th:nth-child(8){width:16%}
+.etgp-air-fare-table-113108 th:nth-child(9){width:9%}
+.etgp-air-fare-table-113108 th:nth-child(10){width:17%}
+.etgp-air-fare-table-113108 .form-control,
+.etgp-air-fare-table-113108 .form-select{
+  width:100%!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:4px 5px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:6px!important;
+  background:#fff;
+  color:#213249;
+  font-size:9px!important;
+  box-shadow:none!important;
+}
+.etgp-air-fare-table-113108 .form-control.is-auto{
+  background:#f7f9fc!important;
+  color:#56677d!important;
+  font-weight:800!important;
+}
+.etgp-air-fare-table-113108 .form-control.is-invalid{
+  border-color:#dc3545!important;
+  background:#fff5f5!important;
+}
+.etgp-air-fare-type-113108{
+  color:#17243a;
+  font-size:9.5px;
+  font-weight:900;
+}
+.etgp-air-fare-pax-113108{
+  color:#1769d2;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+}
+.etgp-air-minus-113108{
+  display:grid;
+  grid-template-columns:54px minmax(0,1fr);
+  gap:4px;
+  align-items:center;
+}
+.etgp-air-minus-113108 .form-select{
+  padding-left:4px!important;
+  padding-right:16px!important;
+  font-size:8.5px!important;
+}
+.etgp-air-answer-113108{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:1px;
+  min-height:30px;
+  padding:3px 6px;
+  border:1px solid #d6e0eb;
+  border-radius:6px;
+  background:#f7f9fc;
+  color:#52647b;
+  font-size:8px;
+  line-height:1.15;
+  white-space:nowrap;
+}
+.etgp-air-answer-113108 .customer,
+.etgp-air-answer-113108 .vendor{font-weight:750}
+.etgp-air-answer-113108 .margin{
+  color:#14253d;
+  font-weight:900;
+}
+.etgp-air-answer-113108 .margin.is-negative{color:#b42318}
+.etgp-air-fare-table-113108 tr.is-inactive{opacity:.48}
+.etgp-air-fare-table-113108 tr.is-inactive .form-control,
+.etgp-air-fare-table-113108 tr.is-inactive .form-select{background:#fafbfd!important}
+.etgp-air-summary-113108{margin-top:8px}
+
+@media(min-width:1080px){
+  .etgp-air-fare-table-113108{min-width:0}
+}
+
+
+/* ======================================================================
+ * ERP-11.3.110 — Basic-Rate minus basis + inline minus amounts + soft load
+ * ====================================================================== */
+.etgp-air-minus-113110{
+  grid-template-columns:44px minmax(46px,1fr) 54px!important;
+  gap:3px!important;
+}
+.etgp-air-minus-113110 .form-select{
+  padding-left:3px!important;
+  padding-right:13px!important;
+  font-size:8px!important;
+}
+.etgp-air-minus-113110 .form-control{
+  padding-left:4px!important;
+  padding-right:4px!important;
+}
+.etgp-air-minus-amount-113110{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  min-width:0;
+  height:28px;
+  padding:0 4px;
+  border:1px solid #d9e7f5;
+  border-radius:5px;
+  background:#f4f8fc;
+  color:#34516f;
+  font-size:7.8px;
+  font-weight:850;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.etgp-air-fare-table-113108 .form-control,
+.etgp-air-fare-table-113108 .form-select{
+  height:28px!important;
+  min-height:28px!important;
+  font-size:8.5px!important;
+}
+.etgp-air-fare-table-113108 th,
+.etgp-air-fare-table-113108 td{
+  padding-left:4px;
+  padding-right:4px;
+}
+.etgp-air-workspace-113106.is-loading{
+  min-height:150px;
+}
+.etgp-air-workspace-113106.is-loading .etgp-air-loading-113106{
+  min-height:78px;
+  display:flex;
+  align-items:center;
+  opacity:.78;
+}
+@keyframes etgpAirSoftReveal113110{
+  from{opacity:.20;transform:translateY(2px)}
+  to{opacity:1;transform:none}
+}
+.etgp-air-workspace-113106.is-ready > .etgp-air-block-113106,
+.etgp-air-workspace-113106.is-ready > .etgp-air-summary-113106,
+.etgp-air-workspace-113106.is-ready > .etgp-air-actions-113106{
+  animation:etgpAirSoftReveal113110 .16s ease-out both;
+}
+@media(max-width:1079px){
+  .etgp-air-fare-wrap-113108{overflow-x:auto}
+}
+
+
+/* ======================================================================
+ * ERP-11.3.112 — PNR Fare commercial width balance + stable load skeleton
+ * ====================================================================== */
+.etgp-air-fare-table-113108 th:nth-child(1){width:4.5%}
+.etgp-air-fare-table-113108 th:nth-child(2){width:3%}
+.etgp-air-fare-table-113108 th:nth-child(3){width:8.5%}
+.etgp-air-fare-table-113108 th:nth-child(4){width:8.5%}
+.etgp-air-fare-table-113108 th:nth-child(5){width:8.5%}
+.etgp-air-fare-table-113108 th:nth-child(6){width:7.5%}
+.etgp-air-fare-table-113108 th:nth-child(7){width:20.5%}
+.etgp-air-fare-table-113108 th:nth-child(8){width:20.5%}
+.etgp-air-fare-table-113108 th:nth-child(9){width:8.5%}
+.etgp-air-fare-table-113108 th:nth-child(10){width:10%}
+.etgp-air-answer-113108{
+  padding:3px 4px;
+  font-size:7.6px;
+  line-height:1.08;
+}
+.etgp-air-minus-113110{
+  grid-template-columns:42px minmax(44px,1fr) minmax(52px,64px)!important;
+}
+.etgp-air-minus-amount-113110{
+  justify-content:center;
+  padding-left:2px;
+  padding-right:2px;
+}
+@media(min-width:1180px){
+  .etgp-air-fare-table-113108{min-width:0!important}
+  .etgp-air-fare-wrap-113108{overflow-x:hidden}
+}
+
+/* Keep the Air product footprint stable while native data is fetched. */
+.etgp-air-workspace-113106.is-loading{
+  min-height:620px;
+}
+.etgp-air-loading-shell-113112{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  width:100%;
+}
+.etgp-air-loading-head-113112{
+  display:flex;
+  align-items:center;
+  min-height:34px;
+  padding:8px 11px;
+  border:1px dashed #ced9e7;
+  border-radius:8px;
+  background:#f8fbff;
+  color:#66758b;
+  font-size:10.5px;
+  font-weight:750;
+}
+.etgp-air-loading-card-113112{
+  position:relative;
+  overflow:hidden;
+  min-height:92px;
+  padding:12px;
+  border:1px solid #e0e8f1;
+  border-radius:9px;
+  background:#fff;
+}
+.etgp-air-loading-card-113112.is-itinerary{min-height:126px}
+.etgp-air-loading-card-113112.is-tickets{min-height:104px}
+.etgp-air-loading-card-113112.is-commercial{min-height:150px}
+.etgp-air-loading-card-113112 span,
+.etgp-air-loading-card-113112 i,
+.etgp-air-loading-summary-113112 i{
+  display:block;
+  border-radius:5px;
+  background:#eef3f8;
+}
+.etgp-air-loading-card-113112 span{width:180px;height:13px;margin-bottom:13px}
+.etgp-air-loading-card-113112 i{height:28px;margin-top:7px}
+.etgp-air-loading-card-113112 i:nth-of-type(2){width:86%}
+.etgp-air-loading-card-113112 i:nth-of-type(3){width:72%}
+.etgp-air-loading-summary-113112{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.etgp-air-loading-summary-113112 i{height:46px;border:1px solid #e5ecf4;background:#f8fbff}
+.etgp-air-loading-card-113112::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent);
+  animation:etgpAirSkeleton113112 1.15s ease-in-out infinite;
+}
+@keyframes etgpAirSkeleton113112{to{transform:translateX(100%)}}
+@media(max-width:640px){
+  .etgp-air-workspace-113106.is-loading{min-height:560px}
+  .etgp-air-loading-summary-113112{grid-template-columns:1fr}
+  .etgp-air-loading-summary-113112 i{height:36px}
+}
+
+/* ======================================================================
+ * ERP-11.3.127 — Product expand/collapse + GENERAL Hotel Data workspace
+ * ====================================================================== */
+.etgp-product-shell-controls-113127{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex:0 0 auto;
+}
+.etgp-toggle-product-113127{
+  min-height:27px;
+  padding:4px 8px;
+  border:1px solid #cfd9e6;
+  border-radius:7px;
+  background:#f8fbff;
+  color:#31506f;
+  font-size:8px;
+  font-weight:850;
+  cursor:pointer;
+}
+.etgp-toggle-product-113127:hover{background:#eef6ff;color:#0b63ce;border-color:#aac9eb}
+.etgp-product-shell-body-113127{min-width:0}
+.etgp-product-shell-body-113127[hidden]{display:none!important}
+.etgp-product-shell.is-collapsed{padding-bottom:9px}
+.etgp-product-shell.is-collapsed .etgp-product-shell-note{display:none}
+.etgp-product-shell.is-collapsed .etgp-product-shell-head{align-items:center}
+
+.etgp-hotel-workspace-113127{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:10px 10px 12px;
+  margin-top:9px;
+  border-top:1px solid #e8eef5;
+}
+.etgp-hotel-workspace-113127.is-loading{min-height:116px}
+.etgp-hotel-loading-113127{
+  min-height:90px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px dashed #ced9e7;
+  border-radius:8px;
+  background:linear-gradient(90deg,#f8fbff 0%,#f1f6fc 50%,#f8fbff 100%);
+  color:#66758b;
+  font-size:10.5px;
+  font-weight:800;
+}
+.etgp-hotel-block-113127{
+  min-width:0;
+  padding:10px;
+  border:1px solid #e0e8f1;
+  border-radius:9px;
+  background:#fff;
+}
+.etgp-hotel-head-113127{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.etgp-hotel-title-113127{
+  margin:0;
+  color:#17243a;
+  font-size:12px;
+  line-height:1.2;
+  font-weight:900;
+}
+.etgp-hotel-note-113127{
+  margin:2px 0 0;
+  color:#718096;
+  font-size:9px;
+  line-height:1.25;
+}
+.etgp-hotel-add-113127,
+.etgp-hotel-save-113127{
+  min-height:31px!important;
+  padding:5px 10px!important;
+  font-size:9px!important;
+  font-weight:850!important;
+  white-space:nowrap;
+}
+.etgp-hotel-grid-scroll-113127{width:100%;overflow-x:hidden}
+.etgp-hotel-grid-113127{
+  display:grid;
+  grid-template-columns:54px 82px 118px minmax(125px,1.35fr) 94px 82px 58px 108px 108px 50px 82px 82px 86px 28px;
+  gap:5px;
+  min-width:0;
+  align-items:center;
+}
+.etgp-hotel-grid-head-113127{
+  padding:5px 5px;
+  border-bottom:1px solid #dfe7f0;
+  background:#f5f8fc;
+  color:#5b6b80;
+  font-size:7.7px;
+  line-height:1.1;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.01em;
+}
+.etgp-hotel-row-113127{
+  padding:6px 5px;
+  border-bottom:1px solid #edf1f6;
+}
+.etgp-hotel-row-113127:last-child{border-bottom:0}
+.etgp-hotel-row-113127 .form-control,
+.etgp-hotel-row-113127 .form-select{
+  width:100%!important;
+  min-width:0!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:4px 6px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:6px!important;
+  background:#fff;
+  color:#213249;
+  font-size:8.7px!important;
+  box-shadow:none!important;
+}
+.etgp-hotel-row-113127 .form-control.is-auto{
+  background:#f5f8fc!important;
+  color:#506278!important;
+  text-align:center;
+  font-weight:850!important;
+}
+.etgp-hotel-row-113127 .form-control.is-invalid{border-color:#dc3545!important;background:#fff5f5!important}
+.etgp-hotel-chip-113127{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:3px 4px;
+  border:1px solid #cfe0f5;
+  border-radius:6px;
+  background:#edf5ff;
+  color:#0b63ce;
+  font-size:8px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.etgp-hotel-combo-113127{min-width:0}
+.etgp-hotel-answer-113127{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:1px;
+  min-height:30px;
+  padding:3px 5px;
+  border:1px solid #d6e0eb;
+  border-radius:6px;
+  background:#f5f8fc;
+  color:#53657c;
+  font-size:7.8px;
+  line-height:1.12;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.etgp-hotel-answer-113127 span{font-weight:750}
+.etgp-hotel-answer-113127 strong{color:#17243a;font-weight:900}
+.etgp-hotel-answer-113127 strong.is-negative{color:#b42318}
+.etgp-hotel-remove-113127{
+  width:28px;
+  min-width:28px;
+  height:28px;
+  padding:0;
+  border:1px solid #efcaca;
+  border-radius:6px;
+  background:#fff7f7;
+  color:#b42318;
+  font-size:15px;
+  line-height:1;
+  font-weight:900;
+  cursor:pointer;
+}
+.etgp-hotel-summary-113127{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:9px;
+}
+.etgp-hotel-summary-item-113127{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+  padding:7px 9px;
+  border:1px solid #dfe8f2;
+  border-radius:7px;
+  background:#f8fbff;
+}
+.etgp-hotel-summary-item-113127 span{color:#68778c;font-size:8.5px;font-weight:800}
+.etgp-hotel-summary-item-113127 strong{color:#17243a;font-size:10px;font-weight:900;white-space:nowrap}
+.etgp-hotel-actions-113127{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:8px;
+}
+.etgp-hotel-feedback-113127{
+  flex:1 1 auto;
+  min-width:0;
+  padding:7px 9px;
+  border-radius:7px;
+  font-size:9px;
+  font-weight:800;
+}
+.etgp-hotel-feedback-113127[hidden]{display:none!important}
+.etgp-hotel-feedback-113127.is-success{border:1px solid #c9ead9;background:#f1fbf6;color:#137d4e}
+.etgp-hotel-feedback-113127.is-error{border:1px solid #f0c9c9;background:#fff4f4;color:#b42318}
+.etgp-hotel-feedback-113127.is-draft{border:1px solid #efdca8;background:#fffaeb;color:#8a6116}
+
+@media(max-width:1220px){
+  .etgp-hotel-grid-scroll-113127{overflow-x:auto}
+  .etgp-hotel-grid-113127{min-width:1160px}
+}
+@media(max-width:720px){
+  .etgp-product-shell-head{align-items:flex-start}
+  .etgp-product-shell-controls-113127{flex-direction:column;align-items:stretch}
+  .etgp-hotel-head-113127{flex-direction:column;align-items:stretch}
+  .etgp-hotel-add-113127{align-self:flex-start}
+  .etgp-hotel-summary-113127{grid-template-columns:1fr}
+  .etgp-hotel-actions-113127{flex-direction:column;align-items:stretch}
+  .etgp-hotel-save-113127{width:100%}
+}
+
+
+/* ERP-11.3.135 — Passenger Adult / Fare Type shows only the result. */
+.etgp-passenger-card .etgp-passenger-fare-result-113135{
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  min-width:0!important;
+  margin:0!important;
+  font-weight:700!important;
+  white-space:nowrap!important;
+  line-height:1.2!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-result-editable-113135{font-weight:400!important;}
+.etgp-passenger-card .etgp-passenger-fare-result-editable-113135 form{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  margin:0!important;
+  width:auto!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-result-editable-113135 select{
+  width:auto!important;
+  min-width:88px!important;
+  max-width:104px!important;
+  min-height:32px!important;
+  height:32px!important;
+  margin:0!important;
+  padding:4px 26px 4px 9px!important;
+}
+.etgp-passenger-card .etgp-passenger-fare-result-editable-113135 button,
+.etgp-passenger-card .etgp-passenger-fare-result-editable-113135 .btn,
+.etgp-passenger-card .etgp-passenger-fare-result-editable-113135 input[type=submit]{
+  min-height:32px!important;
+  height:32px!important;
+  width:auto!important;
+  min-width:52px!important;
+  margin:0!important;
+  padding:4px 10px!important;
+}
+.etgp-passenger-card .etgp-fare-native-label-hidden-113135{display:none!important;}
+
+/* ======================================================================
+ * ERP-11.3.141 — GENERAL Transport master cost + FX-to-PKR compact workspace
+ * Main row: Company -> Route/Rate -> Vehicle -> Qty -> BRN -> Sale PKR -> Cost Rate -> FX -> Answer PKR
+ * Operational sub-row: Driver -> Cell -> Plate -> Notes
+ * ====================================================================== */
+.etgp-transport-workspace-113139{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  padding:7px 8px 9px;
+  margin-top:7px;
+  border-top:1px solid #e8eef5;
+}
+.etgp-transport-workspace-113139.is-loading{min-height:90px}
+.etgp-transport-loading-113139{
+  min-height:72px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px dashed #ced9e7;
+  border-radius:8px;
+  background:linear-gradient(90deg,#f8fbff 0%,#f1f6fc 50%,#f8fbff 100%);
+  color:#66758b;
+  font-size:10px;
+  font-weight:800;
+}
+.etgp-transport-block-113139{
+  min-width:0;
+  padding:8px;
+  border:1px solid #e0e8f1;
+  border-radius:9px;
+  background:#fff;
+}
+.etgp-transport-head-113139{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:9px;
+  margin-bottom:6px;
+}
+.etgp-transport-head-copy-113139{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+.etgp-transport-title-113139{
+  margin:0;
+  color:#17243a;
+  font-size:11.5px;
+  line-height:1.2;
+  font-weight:900;
+  white-space:nowrap;
+}
+.etgp-transport-count-113139{
+  display:inline-flex;
+  align-items:center;
+  min-height:23px;
+  padding:3px 8px;
+  border:1px solid #dce6f1;
+  border-radius:999px;
+  background:#f6f9fd;
+  color:#5c6d83;
+  font-size:8px;
+  font-weight:850;
+  white-space:nowrap;
+}
+.etgp-transport-head-actions-113139{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:7px;
+}
+.etgp-transport-add-113139,
+.etgp-transport-save-113139{
+  min-height:29px!important;
+  padding:4px 10px!important;
+  font-size:8.6px!important;
+  font-weight:850!important;
+  white-space:nowrap;
+}
+/* No horizontal scroll in ERP-11.3.141. */
+.etgp-transport-grid-scroll-113139{
+  width:100%;
+  min-width:0;
+  overflow:visible;
+  border:1px solid #dfe7f0;
+  border-radius:8px;
+}
+.etgp-transport-grid-113139{
+  display:grid;
+  grid-template-columns:
+    22px
+    minmax(105px,1.05fr)
+    minmax(140px,1.38fr)
+    minmax(82px,.76fr)
+    38px
+    minmax(76px,.70fr)
+    62px
+    80px
+    70px
+    80px
+    54px;
+  gap:4px;
+  min-width:0;
+  width:100%;
+  align-items:center;
+}
+.etgp-transport-grid-head-113139{
+  padding:5px;
+  border-bottom:1px solid #dfe7f0;
+  background:#f5f8fc;
+  color:#53647b;
+  font-size:7.3px;
+  line-height:1.08;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.01em;
+}
+.etgp-transport-entry-113140{
+  border-bottom:1px solid #e7edf4;
+  background:#fff;
+}
+.etgp-transport-entry-113140:last-child{border-bottom:0}
+.etgp-transport-row-113139{
+  padding:5px 5px 4px;
+  background:#fff;
+}
+.etgp-transport-row-113139 .form-control,
+.etgp-transport-row-113139 .form-select,
+.etgp-transport-detail-113140 .form-control{
+  width:100%!important;
+  min-width:0!important;
+  height:28px!important;
+  min-height:28px!important;
+  padding:3px 5px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:6px!important;
+  background:#fff;
+  color:#213249;
+  font-size:8.1px!important;
+  line-height:1.12!important;
+  box-shadow:none!important;
+}
+.etgp-transport-cost-wrap-113141{
+  position:relative;
+  min-width:0;
+}
+.etgp-transport-cost-wrap-113141 .form-control{
+  padding-left:31px!important;
+}
+.etgp-transport-cost-currency-113141{
+  position:absolute;
+  z-index:2;
+  left:4px;
+  top:50%;
+  transform:translateY(-50%);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:23px;
+  height:18px;
+  padding:0 3px;
+  border-radius:4px;
+  background:#eef4fb;
+  color:#31537f;
+  font-size:6.6px;
+  line-height:1;
+  font-weight:900;
+  pointer-events:none;
+}
+.etgp-transport-row-113139 .form-control[readonly]{background:#f8fafc;color:#34465d}
+.etgp-transport-row-113139 .form-control.is-master-linked{border-color:#c7d8eb!important;background:#f6f9fd}
+.etgp-transport-row-113139 .form-control.is-missing{border-color:#e5a7a7!important;background:#fff5f5;color:#b42318}
+.etgp-transport-row-113139 input[type="number"]{
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+.etgp-transport-index-113139{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#17243a;
+  font-size:8.5px;
+  font-weight:900;
+}
+.etgp-transport-answer-113139{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:0;
+  min-height:28px;
+  padding:2px 4px;
+  border:1px solid #d6e0eb;
+  border-radius:6px;
+  background:#f5f8fc;
+  color:#53657c;
+  font-size:7.1px;
+  line-height:1.05;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.etgp-transport-answer-113139 span{font-weight:750}
+.etgp-transport-answer-113139 strong{color:#17243a;font-weight:900}
+.etgp-transport-answer-113139 strong.is-negative{color:#b42318}
+.etgp-transport-remove-113139{
+  min-width:54px;
+  height:28px;
+  padding:0 5px;
+  border:1px solid #efcaca;
+  border-radius:6px;
+  background:#fff7f7;
+  color:#b42318;
+  font-size:7.4px;
+  line-height:1;
+  font-weight:900;
+  cursor:pointer;
+}
+.etgp-transport-remove-113139:hover{background:#fff0f0;border-color:#e8b2b2}
+/* Second operational line: frees the commercial line from Driver/Cell/Plate/Notes width. */
+.etgp-transport-detail-113140{
+  display:grid;
+  grid-template-columns:minmax(125px,1.05fr) minmax(120px,1fr) minmax(90px,.72fr) minmax(180px,2.15fr);
+  gap:5px;
+  padding:0 5px 5px 31px;
+  min-width:0;
+  background:#fff;
+}
+.etgp-transport-detail-field-113140{min-width:0}
+.etgp-transport-detail-field-113140 label{
+  display:block;
+  margin:0 0 2px;
+  color:#718096;
+  font-size:6.8px;
+  line-height:1;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+}
+.etgp-transport-summary-113139{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  margin-top:7px;
+}
+.etgp-transport-summary-item-113139{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+  padding:6px 8px;
+  border:1px solid #dfe8f2;
+  border-radius:7px;
+  background:#f8fbff;
+}
+.etgp-transport-summary-item-113139 span{color:#68778c;font-size:8.3px;font-weight:800}
+.etgp-transport-summary-item-113139 strong{color:#17243a;font-size:9.8px;font-weight:900;white-space:nowrap}
+.etgp-transport-summary-item-113139 strong.is-negative{color:#b42318}
+.etgp-transport-feedback-113139{
+  margin-top:7px;
+  padding:7px 9px;
+  border-radius:7px;
+  font-size:8.8px;
+  font-weight:800;
+}
+.etgp-transport-feedback-113139[hidden]{display:none!important}
+.etgp-transport-feedback-113139.is-success{border:1px solid #c9ead9;background:#f1fbf6;color:#137d4e}
+.etgp-transport-feedback-113139.is-error{border:1px solid #f0c9c9;background:#fff4f4;color:#b42318}
+.etgp-transport-feedback-113139.is-draft{border:1px solid #efdca8;background:#fffaeb;color:#8a6116}
+.etgp-transport-helper-113139{
+  margin-top:7px;
+  padding:5px 8px;
+  border:1px solid #d7e7f8;
+  border-radius:7px;
+  background:#f4f9ff;
+  color:#64758a;
+  font-size:7.8px;
+  line-height:1.2;
+  font-weight:700;
+}
+@media(max-width:1180px){
+  .etgp-transport-grid-113139{
+    grid-template-columns:22px minmax(92px,1fr) minmax(118px,1.25fr) minmax(72px,.72fr) 36px minmax(66px,.65fr) 56px 70px 62px 72px 50px;
+    gap:3px;
+  }
+  .etgp-transport-row-113139 .form-control,
+  .etgp-transport-row-113139 .form-select,
+  .etgp-transport-detail-113140 .form-control{font-size:7.6px!important;padding-left:4px!important;padding-right:4px!important}
+}
+@media(max-width:900px){
+  .etgp-transport-grid-head-113139{display:none}
+  .etgp-transport-grid-113139{grid-template-columns:22px repeat(2,minmax(0,1fr));gap:5px}
+  .etgp-transport-row-113139 > *{min-width:0}
+  .etgp-transport-row-113139 .etgp-transport-index-113139{grid-row:1 / span 6}
+  .etgp-transport-answer-113139,.etgp-transport-remove-113139{width:100%}
+  .etgp-transport-detail-113140{grid-template-columns:repeat(2,minmax(0,1fr));padding-left:31px}
+}
+@media(max-width:760px){
+  .etgp-transport-head-113139{align-items:flex-start;flex-direction:column}
+  .etgp-transport-head-actions-113139{width:100%;justify-content:flex-start;flex-wrap:wrap}
+  .etgp-transport-summary-113139{grid-template-columns:1fr}
+  .etgp-transport-detail-113140{grid-template-columns:1fr}
+}
+
+/* ======================================================================
+ * ERP-11.3.142 — GENERAL Visa compact passenger/bulk workspace
+ * ====================================================================== */
+.etgp-visa-workspace-113142{min-width:0}.etgp-visa-loading-113142{padding:12px;color:#66758b;font-size:10px;font-weight:700}
+.etgp-visa-block-113142{border:1px solid #dce6f2;border-radius:10px;background:#fff;padding:10px;min-width:0}
+.etgp-visa-head-113142{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}.etgp-visa-title-wrap-113142{display:flex;align-items:center;gap:8px;min-width:0}.etgp-visa-title-113142{font-size:11px;font-weight:900;color:#17243a}.etgp-visa-count-113142{padding:4px 8px;border:1px solid #d6e2ef;background:#f5f9fd;border-radius:999px;color:#5d6e84;font-size:8px;font-weight:850;white-space:nowrap}.etgp-visa-head-actions-113142{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.etgp-visa-btn-113142{appearance:none;border:1px solid #cdd9e7;background:#fff;color:#183b68;border-radius:7px;padding:6px 9px;min-height:28px;font-size:8.5px;font-weight:850;text-decoration:none;cursor:pointer;white-space:nowrap}.etgp-visa-btn-113142:hover{background:#f7faff}.etgp-visa-btn-113142.is-primary{background:#1769d2;border-color:#1769d2;color:#fff}
+.etgp-visa-helper-113142{border:1px solid #d6e8fb;background:#f3f8fe;color:#50657e;border-radius:7px;padding:6px 8px;font-size:8.2px;margin-bottom:7px}.etgp-visa-tools-113142{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:8px;align-items:center;margin-bottom:7px}.etgp-visa-tools-113142 .form-control{height:29px!important;min-height:29px!important;font-size:8.5px!important;padding:4px 7px!important}.etgp-visa-shown-113142{font-size:8px;color:#66778e;font-weight:750;white-space:nowrap}
+.etgp-visa-table-113142{border:1px solid #dfe7f1;border-radius:8px;overflow:hidden;min-width:0}.etgp-visa-grid-113142{display:grid;grid-template-columns:18px 22px minmax(100px,1.25fr) minmax(72px,.75fr) minmax(64px,.7fr) minmax(82px,.9fr) minmax(82px,.9fr) minmax(78px,.85fr) minmax(70px,.78fr) minmax(66px,.7fr) minmax(66px,.7fr) minmax(70px,.72fr) 54px;gap:5px;align-items:center;min-width:0}.etgp-visa-grid-head-113142{padding:6px 7px;background:#f1f5fa;border-bottom:1px solid #dfe7f1;color:#53647a;font-size:7px;font-weight:900;text-transform:uppercase}.etgp-visa-entry-113142{border-bottom:1px solid #e8eef5}.etgp-visa-entry-113142:last-child{border-bottom:0}.etgp-visa-main-row-113142{padding:6px 7px;font-size:7.9px;color:#243650}.etgp-visa-main-row-113142>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.etgp-visa-main-row-113142 .form-control,.etgp-visa-main-row-113142 .form-select,.etgp-visa-detail-113142 .form-control,.etgp-visa-detail-113142 .form-select{height:28px!important;min-height:28px!important;font-size:7.8px!important;padding:3px 5px!important;border-radius:6px!important}.etgp-visa-index-113142{text-align:center;font-weight:900}.etgp-visa-passenger-113142{display:flex!important;flex-direction:column;line-height:1.15}.etgp-visa-passenger-113142 strong{font-size:8.2px;overflow:hidden;text-overflow:ellipsis}.etgp-visa-passenger-113142 span{font-size:6.9px;color:#6e7d91;margin-top:2px}.etgp-visa-money-113142{text-align:right;font-weight:800}.etgp-visa-answer-113142{background:#f5f8fc;border:1px solid #d8e3ef;border-radius:6px;padding:3px 5px;display:flex!important;flex-direction:column;gap:0;line-height:1.05;font-size:6.8px!important}.etgp-visa-answer-113142 span{font-weight:800}.etgp-visa-answer-113142 strong{color:#17243a}.etgp-visa-answer-113142 .is-negative,.etgp-visa-summary-item-113142 .is-negative{color:#b42318!important}.etgp-visa-actions-113142{display:flex!important;gap:4px;justify-content:center}.etgp-visa-icon-btn-113142{appearance:none;border:1px solid #ccdae9;background:#fff;color:#1769d2;border-radius:6px;width:24px;height:24px;padding:0;font-size:11px;line-height:1;cursor:pointer}.etgp-visa-icon-btn-113142.is-danger{color:#c0272d;border-color:#efcfd1}.etgp-visa-detail-113142{display:grid;grid-template-columns:minmax(165px,1.55fr) repeat(4,minmax(95px,.8fr)) minmax(90px,.7fr) minmax(80px,.65fr) minmax(150px,1.3fr);gap:7px;padding:7px 35px 8px 47px;background:#f8fbfe;border-top:1px dashed #dce6f1}.etgp-visa-detail-field-113142{min-width:0}.etgp-visa-detail-field-113142 label{display:block;margin:0 0 3px;color:#65758a;font-size:6.8px;font-weight:900;text-transform:uppercase}.etgp-visa-pager-113142{display:flex;justify-content:flex-end;gap:4px;margin-top:7px}.etgp-visa-page-btn-113142{border:1px solid #cfdae8;background:#fff;color:#40546d;border-radius:5px;min-width:25px;height:25px;font-size:8px;font-weight:800;cursor:pointer}.etgp-visa-page-btn-113142.is-current{background:#1769d2;color:#fff;border-color:#1769d2}.etgp-visa-page-btn-113142:disabled{opacity:.45;cursor:default}.etgp-visa-summary-113142{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:8px}.etgp-visa-summary-item-113142{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #dce6f1;background:#f6f9fc;border-radius:7px;padding:7px 9px}.etgp-visa-summary-item-113142 span{font-size:7.7px;color:#64758b;font-weight:850}.etgp-visa-summary-item-113142 strong{font-size:9.2px;color:#17243a;font-weight:900;white-space:nowrap}.etgp-visa-feedback-113142{margin-bottom:7px;padding:7px 9px;border-radius:7px;font-size:8.2px;font-weight:750}.etgp-visa-feedback-113142[hidden]{display:none!important}.etgp-visa-feedback-113142.is-success{border:1px solid #c5e8d4;background:#f1fbf5;color:#11764a}.etgp-visa-feedback-113142.is-error{border:1px solid #efc8c8;background:#fff4f4;color:#ad2424}.etgp-visa-feedback-113142.is-draft{border:1px solid #ead8a6;background:#fff9e9;color:#8a6116}
+.etgp-visa-modal-overlay-113142{position:fixed;inset:0;z-index:10050;background:rgba(14,29,48,.42);display:flex;align-items:center;justify-content:center;padding:20px}.etgp-visa-modal-113142{width:min(760px,96vw);max-height:86vh;overflow:auto;background:#fff;border:1px solid #d8e3ee;border-radius:12px;box-shadow:0 24px 70px rgba(16,24,40,.2)}.etgp-visa-modal-head-113142{position:sticky;top:0;z-index:2;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #e2e9f2;font-size:12px}.etgp-visa-modal-body-113142{padding:13px}.etgp-visa-modal-body-113142>.form-control,.etgp-visa-modal-body-113142>.form-select{height:34px!important;font-size:10px!important;margin-bottom:8px}.etgp-visa-modal-label-113142{display:block;font-size:8px;font-weight:900;color:#5c6d84;margin:8px 0 4px;text-transform:uppercase}.etgp-visa-modal-tools-113142{display:flex;gap:7px;align-items:center;margin:9px 0}.etgp-visa-modal-tools-113142 strong{margin-left:auto;font-size:9px;color:#40536c}.etgp-visa-pax-list-113142{border:1px solid #dfe7f0;border-radius:8px;max-height:420px;overflow:auto}.etgp-visa-pax-option-113142{display:grid;grid-template-columns:22px 1fr;gap:7px;align-items:center;padding:8px 10px;border-bottom:1px solid #edf1f6;cursor:pointer}.etgp-visa-pax-option-113142:last-child{border-bottom:0}.etgp-visa-pax-option-113142 span{display:flex;flex-direction:column}.etgp-visa-pax-option-113142 strong{font-size:9.5px}.etgp-visa-pax-option-113142 small{font-size:7.7px;color:#6f7e91;margin-top:2px}.etgp-visa-modal-footer-113142{display:flex;justify-content:flex-end;margin-top:10px}.etgp-visa-empty-113142{padding:18px;text-align:center;color:#6b7a90;font-size:10px}
+.etgp-visa-pax-modal-113152{width:min(840px,96vw);overflow:hidden}.etgp-visa-pax-modal-113152 .etgp-visa-modal-body-113142{padding:14px}.etgp-visa-pax-search-113152{margin:0!important}.etgp-visa-pax-toolbar-113152{margin:10px 0!important;padding:0 2px}.etgp-visa-clear-113152{border:0;background:transparent;color:#51657d;font-size:10px;font-weight:800;padding:6px 7px;cursor:pointer}.etgp-visa-picked-113152{margin-left:auto!important;padding:5px 9px;border-radius:999px;background:#edf4fc;color:#1d5f9f!important;font-size:9px!important}.etgp-visa-pax-table-113152{border:1px solid #dfe7f0;border-radius:9px;overflow:hidden}.etgp-visa-pax-row-113152{display:grid!important;grid-template-columns:34px minmax(0,1.55fr) minmax(0,1fr) 88px;gap:10px;align-items:center}.etgp-visa-pax-head-113152{padding:7px 10px;background:#f5f8fc;color:#63748a;font-size:8px;font-weight:900;text-transform:uppercase;border-bottom:1px solid #dfe7f0}.etgp-visa-pax-body-113152{border:0!important;border-radius:0!important;max-height:390px;overflow-y:auto!important;overflow-x:hidden!important}.etgp-visa-pax-option-113142.etgp-visa-pax-row-113152{grid-template-columns:34px minmax(0,1.55fr) minmax(0,1fr) 88px;padding:8px 10px;min-height:38px}.etgp-visa-pax-name-113152{font-size:10px!important;overflow-wrap:anywhere}.etgp-visa-pax-passport-113152{display:block!important;font-size:9px;color:#62748a;overflow-wrap:anywhere}.etgp-visa-fare-badge-113152{display:inline-flex!important;width:max-content;max-width:100%;align-items:center;justify-content:center;padding:3px 7px;border-radius:999px;background:#eaf2fb;color:#245d96;font-size:8px;font-weight:900;line-height:1}.etgp-visa-pax-footer-113152{display:grid;grid-template-columns:minmax(170px,1fr) auto minmax(230px,1fr);gap:12px;align-items:center;margin-top:12px}.etgp-visa-pax-showing-113152{font-size:9px;color:#64758b}.etgp-visa-pax-pager-113152{margin:0!important}.etgp-visa-pax-footer-actions-113152{display:flex;justify-content:flex-end;gap:7px}.etgp-visa-pax-footer-actions-113152 .etgp-visa-btn-113142:disabled{opacity:.55;cursor:not-allowed}@media(max-width:700px){.etgp-visa-modal-overlay-113142{padding:8px}.etgp-visa-pax-modal-113152{width:100%;max-height:94vh}.etgp-visa-pax-row-113152,.etgp-visa-pax-option-113142.etgp-visa-pax-row-113152{grid-template-columns:26px minmax(0,1.3fr) minmax(0,.9fr) 62px;gap:6px;padding-left:7px;padding-right:7px}.etgp-visa-pax-head-113152{font-size:7px}.etgp-visa-pax-footer-113152{grid-template-columns:1fr auto}.etgp-visa-pax-showing-113152{grid-column:1/-1}.etgp-visa-pax-footer-actions-113152{justify-content:flex-end}.etgp-visa-pax-footer-actions-113152 .etgp-visa-btn-113142{padding-left:8px;padding-right:8px}}
+@media(max-width:1250px){.etgp-visa-grid-113142{grid-template-columns:18px 20px minmax(95px,1.3fr) minmax(68px,.8fr) minmax(60px,.7fr) minmax(74px,.85fr) minmax(74px,.85fr) minmax(65px,.75fr) minmax(66px,.75fr) 60px 60px 66px 50px;gap:3px}.etgp-visa-main-row-113142{font-size:7px}.etgp-visa-detail-113142{grid-template-columns:repeat(4,minmax(0,1fr));padding-left:35px}}
+@media(max-width:880px){.etgp-visa-head-113142{align-items:flex-start;flex-direction:column}.etgp-visa-head-actions-113142{justify-content:flex-start}.etgp-visa-grid-head-113142{display:none}.etgp-visa-grid-113142{grid-template-columns:18px 22px repeat(2,minmax(0,1fr));gap:5px}.etgp-visa-main-row-113142>*{min-width:0}.etgp-visa-detail-113142{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.etgp-visa-summary-113142{grid-template-columns:1fr}.etgp-visa-tools-113142{grid-template-columns:1fr}.etgp-visa-shown-113142{white-space:normal}}
