@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.158
-APPLICATION_VERSION=v1.1.33.158-ERP11.3.158
+CURRENT_VERSION=ERP-11.3.159
+APPLICATION_VERSION=v1.1.33.159-ERP11.3.159
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.158
+LAST_PACKAGED_RELEASE=ERP-11.3.159
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -31,3 +31,7 @@ ERP-11.3.158 release candidate: completes embedded Company report-logo value
 resolution and changes General/Multi-Service voucher footer authority to the
 approved Saudi Company Footer → Company Default Footer rule. Pakistan IATA
 footer inheritance is removed; no migration is added.
+
+ERP-11.3.159 release candidate: constrains the real voucher header logo to an
+aspect-ratio-preserving 80 x 80 pixel maximum and gives the initials fallback
+the same footprint. Preview and print share the same markup and sizing rules.

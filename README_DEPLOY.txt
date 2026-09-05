@@ -1,4 +1,4 @@
-ERP-11.3.158 DIRECT UPLOAD
+ERP-11.3.159 DIRECT UPLOAD
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,13 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.158 adds no migration. Existing cumulative Visa migrations may still be
+ERP-11.3.159 adds no migration. Existing cumulative Visa migrations may still be
 pending on an installation that has not deployed ERP-11.3.142 or ERP-11.3.147.
 
 First verify booking BK-2026-000054. The General Client Voucher must use the
 saved /organization/company name and report logo, not its fallback mark. With
+The real logo must appear once only, preserve its aspect ratio, and remain within
+an 80 x 80 pixel maximum box in both Client Preview and Print / Save PDF. With
 the selected Pakistan Visa / IATA footer blank, the saved Company Default
 Voucher Footer must appear once below Special Instructions and must not overlap
 the controlled QR placeholder.

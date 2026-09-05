@@ -1,4 +1,10 @@
-# ERP-11.3.158 Code Audit
+# ERP-11.3.159 Code Audit
+
+## ERP-11.3.159 voucher logo sizing correction
+
+- The General Client Voucher real logo now uses `max-width: 80px`, `max-height: 80px`, automatic intrinsic dimensions, and `object-fit: contain`.
+- The fallback initials mark uses the same 80 x 80 footprint, and a centered logo box keeps header alignment stable.
+- Client Preview and Print / Save PDF use the same voucher markup and CSS; no unrelated voucher layout or business logic changed.
 
 ## ERP-11.3.158 final logo/footer authority correction
 

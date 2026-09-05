@@ -56,5 +56,8 @@ has(view, '.voucher-lower-copy{min-width:0}', 'footer has a non-overlapping flex
 has(view, 'overflow-wrap:anywhere', 'long contact text wraps');
 has(view, '@media print', 'same voucher template provides print/PDF layout');
 has(view, 'object-fit:contain', 'real logo preserves aspect ratio');
+has(view, 'max-width:80px;max-height:80px;width:auto;height:auto;object-fit:contain', 'real logo uses the approved aspect-ratio-preserving 80px maximum');
+has(view, '.logo-fallback{width:80px;height:80px', 'fallback mark keeps the same approximate 80px footprint');
+has(view, '.logo-box{width:80px;height:80px;display:flex;align-items:center;justify-content:center}', 'logo box aligns real and fallback marks cleanly with the header');
 
 console.log(`ERP-11.3.156 Company Profile view regression checks passed: ${checks}`);

@@ -10,9 +10,10 @@ body{margin:0;background:#edf1f5;color:#111;font-family:Arial,Helvetica,sans-ser
 .toolbar{position:sticky;top:0;z-index:20;background:#18243a;padding:8px;text-align:center}
 .toolbar button,.toolbar a{display:inline-block;border:0;border-radius:5px;padding:8px 12px;margin:0 3px;background:#fff;color:#17233b;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer}
 .sheet{width:210mm;min-height:297mm;margin:12px auto;background:#fff;border:1px solid #bbc4cf;padding:8mm 9mm 11mm;box-shadow:0 3px 18px rgba(20,30,45,.08)}
-.header{display:grid;grid-template-columns:58px 1fr auto;gap:9px;align-items:start;min-height:70px}
-.logo{width:54px;height:54px;object-fit:contain}
-.logo-fallback{width:54px;height:54px;border:1px solid #d7dde5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#be2a2a;font-size:14px}
+.header{display:grid;grid-template-columns:84px 1fr auto;gap:9px;align-items:start;min-height:80px}
+.logo-box{width:80px;height:80px;display:flex;align-items:center;justify-content:center}
+.logo{display:block;max-width:80px;max-height:80px;width:auto;height:auto;object-fit:contain}
+.logo-fallback{width:80px;height:80px;border:1px solid #d7dde5;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#be2a2a;font-size:18px}
 .company{font-size:21px;font-weight:800;color:#075aa8;line-height:1.05;margin-top:2px}
 .company-sub{font-size:9px;color:#374151;margin-top:3px;font-style:italic}
 .header-meta{font-size:9px;margin-top:4px;line-height:1.45}.header-meta strong{display:inline-block;min-width:74px}
@@ -29,7 +30,7 @@ th,td{border:1px solid #111;padding:3px 4px;vertical-align:middle}th{background:
 .transport-table{table-layout:fixed}.transport-table th,.transport-table td{font-size:7px;line-height:1.16}.transport-table td{vertical-align:top}.transport-table th:nth-child(1){width:16%}.transport-table th:nth-child(2){width:17%}.transport-table th:nth-child(3){width:12%}.transport-table th:nth-child(4){width:10%}.transport-table th:nth-child(5){width:14%}.transport-table th:nth-child(6){width:13%}.transport-table th:nth-child(7){width:18%}
 .voucher-lower{display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:12px;align-items:start;margin-top:7px}.voucher-lower-copy{min-width:0}.qr-box{width:86px;height:86px;display:flex;align-items:center;justify-content:center}.qr-box img{display:block;width:82px;height:82px;object-fit:contain}.qr-placeholder{width:82px;height:82px;border:1px solid #111;display:flex;align-items:center;justify-content:center;text-align:center;font-size:7.5px;color:#667085;background:#fff;padding:5px}.qr-placeholder[hidden]{display:none!important}.instructions{min-height:34px;border-bottom:1px dashed #cbd5e1;padding:5px 0;font-size:8px}.instructions strong{color:#203d75;font-style:italic;font-size:9px;margin-right:18px}.voucher-footer-text{padding:6px 0 2px;font-size:7.8px;line-height:1.35;color:#334155;white-space:normal;overflow-wrap:anywhere}.footer{margin-top:6px;padding-top:4px;border-top:1px dotted #d1d5db;font-size:7.5px;color:#475569;display:flex;justify-content:flex-end;gap:10px}
 @page{size:A4 portrait;margin:0}
-@media(max-width:760px){body{background:#fff}.sheet{width:100%;min-height:0;margin:0;border:0;box-shadow:none;padding:12px}.header{grid-template-columns:46px 1fr}.header-right{grid-column:1/-1;text-align:left}.logo,.logo-fallback{width:42px;height:42px}.summary{grid-template-columns:1fr}.summary>div{border-right:0;border-bottom:1px solid #111}.summary>div:last-child{border-bottom:0}.scroll{overflow:auto}.scroll table{min-width:680px}.flight-pair,.flight-pair.single{grid-template-columns:1fr}.flight-pair .scroll table{min-width:520px}.voucher-lower{grid-template-columns:minmax(0,1fr) 76px}.qr-box{width:76px}.qr-box img,.qr-placeholder{width:72px;height:72px}}
+@media(max-width:760px){body{background:#fff}.sheet{width:100%;min-height:0;margin:0;border:0;box-shadow:none;padding:12px}.header{grid-template-columns:84px 1fr}.header-right{grid-column:1/-1;text-align:left}.summary{grid-template-columns:1fr}.summary>div{border-right:0;border-bottom:1px solid #111}.summary>div:last-child{border-bottom:0}.scroll{overflow:auto}.scroll table{min-width:680px}.flight-pair,.flight-pair.single{grid-template-columns:1fr}.flight-pair .scroll table{min-width:520px}.voucher-lower{grid-template-columns:minmax(0,1fr) 76px}.qr-box{width:76px}.qr-box img,.qr-placeholder{width:72px;height:72px}}
 @media print{body{background:#fff}.toolbar{display:none}.sheet{margin:0;border:0;box-shadow:none;width:210mm;min-height:297mm;padding:8mm 9mm 10mm}.section-block{break-inside:avoid}thead{display:table-header-group}tr{break-inside:avoid}.voucher-lower,.footer{break-inside:avoid}}
 </style>
 </head>
@@ -40,7 +41,7 @@ th,td{border:1px solid #111;padding:3px 4px;vertical-align:middle}th{background:
 </div>
 <div class="sheet">
     <div class="header">
-        <div>
+        <div class="logo-box">
             @if(!empty($company['logo']))
                 <img class="logo" src="{{ $company['logo'] }}" alt="Company Logo" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
                 <div class="logo-fallback" hidden>{{ $companyInitials }}</div>
