@@ -836,6 +836,16 @@ HTML;
             ) ?? $html;
         }
 
+        // Booking Review entry stays inside the existing focused booking shell.
+        // It is injected only on the native GENERAL booking view/edit page.
+        if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $bookingMatch)) {
+            $reviewEntry = '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/review')).'" '
+                .'data-et-booking-review-entry="1" style="position:fixed;right:18px;bottom:18px;z-index:1000;padding:10px 15px;border-radius:9px;background:#1769d2;color:#fff;text-decoration:none;font:800 11px Arial,sans-serif;box-shadow:0 5px 16px rgba(23,105,210,.28)">Review Booking</a>';
+            if (! str_contains($html, 'data-et-booking-review-entry="1"') && stripos($html, '</body>') !== false) {
+                $html = preg_replace('/<\/body>/i', $reviewEntry."\n</body>", $html, 1) ?? $html;
+            }
+        }
+
         $response->setContent($html);
 
         return $response;

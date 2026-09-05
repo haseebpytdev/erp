@@ -35,8 +35,8 @@ final class BookingTravelReadinessResolver
 
         if (in_array('hotel', $selected, true)) {
             $stays = (array) ($hotel['stays'] ?? []);
-            if (! $stays || ! $this->allRowsHave($stays, [['city'], ['hotel_name'], ['check_in'], ['check_out']])) {
-                $blockers[] = 'Hotel service details are incomplete.';
+            if (! $stays || ! $this->allRowsHave($stays, [['city'], ['hotel_name'], ['check_in'], ['check_out'], ['confirmation_number', 'confirmation_no', 'booking_reference', 'reference']])) {
+                $blockers[] = 'Hotel stay or confirmation/reference is incomplete.';
             }
         }
 

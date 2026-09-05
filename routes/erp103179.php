@@ -7,6 +7,7 @@ use App\Http\Controllers\Operations\GeneralBookingHotelProductController;
 use App\Http\Controllers\Operations\GeneralBookingTransportProductController;
 use App\Http\Controllers\Operations\GeneralBookingVisaProductController;
 use App\Http\Controllers\Operations\GeneralBookingOperationalSummaryController;
+use App\Http\Controllers\Operations\GeneralBookingReviewController;
 use App\Http\Controllers\Operations\VisaMasterController;
 use App\Http\Controllers\Operations\GeneralBookingVoucherPreviewController;
 use App\Http\Controllers\Operations\GroupUmrahWorkflowController;
@@ -49,6 +50,7 @@ use App\Http\Middleware\PresentChartOfAccountsWorkspace;
 use App\Http\Middleware\PresentAccountingReportsWorkspace;
 use App\Http\Middleware\PresentVisaManagementTravelMasterLink;
 use App\Http\Middleware\PresentCompanyVoucherFooterAuthority;
+use App\Http\Middleware\GuardApprovedGeneralBookingCommercials;
 use App\Http\Middleware\EnforceErpRoleScopedAccess;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
@@ -181,7 +183,7 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::put(
         '/system/erp-bookings/{booking}/air-product',
         [GeneralBookingAirProductController::class, 'store']
-    )->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.air-product.store');
+    )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.air-product.store');
 
 
     // ERP-11.3.127 GENERAL Hotel Data: one-line multi-stay workspace backed by
@@ -195,7 +197,7 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::put(
         '/system/erp-bookings/{booking}/hotel-product',
         [GeneralBookingHotelProductController::class, 'store']
-    )->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.hotel-product.store');
+    )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.hotel-product.store');
 
     // ERP-11.3.141 GENERAL Transport: master foreign-cost + DB FX-to-PKR on the compact no-scroll workspace.
     // Uses native booking_transport_segments when available and a lossless
@@ -208,7 +210,7 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::put(
         '/system/erp-bookings/{booking}/transport-product',
         [GeneralBookingTransportProductController::class, 'store']
-    )->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.transport-product.store');
+    )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.transport-product.store');
 
     // ERP-11.3.142 GENERAL Visa: passenger selection + bulk assignment +
     // Saudi Company -> Pakistani IATA -> Vendor reporting chain and effective-dated rates.
@@ -220,7 +222,7 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::put(
         '/system/erp-bookings/{booking}/visa-product',
         [GeneralBookingVisaProductController::class, 'store']
-    )->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.visa-product.store');
+    )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.visa-product.store');
 
     // ERP-11.3.153: one persisted commercial/readiness summary for every product workspace.
     Route::get(
@@ -265,6 +267,14 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         '/operations/bookings/{booking}/client-voucher-preview',
         [GeneralBookingVoucherPreviewController::class, 'show']
     )->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.client-voucher-preview');
+
+    // GENERAL / MULTI-SERVICE Booking Review uses saved product, workflow,
+    // accounting and Company Profile authorities; it creates no parallel store.
+    Route::get('/operations/bookings/{booking}/review', [GeneralBookingReviewController::class, 'show'])
+        ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.review.show');
+    Route::post('/operations/bookings/{booking}/review/{action}', [GeneralBookingReviewController::class, 'action'])
+        ->whereNumber('booking')->where('action', 'submit|approve|reopen|notes|ready')
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.review.action');
 
     // ERP-11.3.10 Chart of Accounts canonical workspace.
     // This URI intentionally does not compete with the legacy native Chart route.

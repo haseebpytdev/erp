@@ -1,5 +1,17 @@
 # ERP-11.3.159 Code Audit
 
+## Local Booking Review & Process implementation
+
+Authority map: `BOOKING_MODEL=bookings`; `BOOKING_STATUS_FIELD=first native approval_status/workflow_status/booking_status/status`; `APPROVAL_STATUS_FIELD=same native workflow authority`; `TRAVEL_STATUS_FIELD=travel_status when present`; `ACCOUNTING_STATUS_SOURCE=NativeSalesInvoiceInspector`; `PAYMENT_STATUS_SOURCE=approved/posted booking-linked cash_vouchers`; `SPECIAL_INSTRUCTIONS_FIELD=first native special_instructions/voucher_instructions/client_instructions`; `INTERNAL_NOTES_FIELD=first native internal_notes/booking_internal_notes/staff_notes/private_notes, otherwise unavailable without parallel storage`.
+
+- New authenticated, named booking review route and colorful native-shell Blade dashboard reuse the four saved product snapshot controllers and Company Profile service.
+- Approval completeness and travel readiness remain separate. Approval ignores late ticket/Visa-issued/driver details; travel uses the existing central readiness resolver.
+- Approved commercial product writes are blocked server-side for normal users. Existing conservative Administrator authority controls approval/reopen overrides.
+- Accounting status is read-only from existing linked Sales Invoices. Payment is derived from existing approved/posted booking-linked cash vouchers. Opening the page creates no accounting document.
+- Notes update only compatible native booking fields; no migration or duplicate note store was added. Internal notes are not passed to the client voucher.
+- Snapshot reads are bounded to one call per service; visible Hotel/Transport/Air rows are capped at three. No row-level database lookup was introduced in Blade.
+- Travel readiness now requires the saved Hotel name, city, check-in/out and confirmation/reference, while absent optional services do not create blockers. Customer receipt totals exclude supplier/outgoing vouchers.
+
 ## ERP-11.3.159 voucher logo sizing correction
 
 - The General Client Voucher real logo now uses `max-width: 80px`, `max-height: 80px`, automatic intrinsic dimensions, and `object-fit: contain`.

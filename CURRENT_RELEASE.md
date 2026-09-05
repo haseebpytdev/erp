@@ -35,3 +35,8 @@ footer inheritance is removed; no migration is added.
 ERP-11.3.159 release candidate: constrains the real voucher header logo to an
 aspect-ratio-preserving 80 x 80 pixel maximum and gives the initials fallback
 the same footprint. Preview and print share the same markup and sizing rules.
+
+Local development after `.159`: adds the authenticated GENERAL / MULTI-SERVICE
+Booking Review & Process dashboard using native booking fields, saved product
+snapshots, Company Profile, Sales Invoice, payment and central travel-readiness
+authorities. No version increment, package or migration was created.

@@ -1,5 +1,18 @@
 # ERP-11.3.159 Test Report
 
+## Local Booking Review & Process validation
+
+- Dedicated static regression covers route/auth, native authorities, service cards, Hotel names/city/nights, commercial/process summaries, approval/locking/reopen, readiness gating, notes privacy, responsive color UI and bounded summaries: `44` passed.
+- Cumulative regression/static groups: `11` passed; `0` failed (`531` assertions).
+- PHP syntax: `144` files passed; `0` failed.
+- JavaScript syntax: `10` files passed; `0` failed.
+- Route references: named Review, action and Client Preview routes are asserted; booking IDs remain numeric and authenticated/role-scoped.
+- Query/N+1 review: each product snapshot and invoice/payment authority is loaded once; Blade contains no database access; visible service rows are bounded.
+- Authorization review: role middleware protects both routes; approver/reopen authority is server-side; approved product writes return `423` for normal users.
+- Framework/database integration: unavailable because this overlay has no `artisan` or `composer.json`; no result is claimed for those tests.
+- Migration added: `0`.
+- Package created: `NO`.
+
 Canonical workspace: `D:\Easy Ticket\ERP\CURRENT`
 
 The original `.156` ZIP SHA-256 matched the approved baseline, and its 151
