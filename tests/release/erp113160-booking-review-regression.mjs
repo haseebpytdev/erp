@@ -31,6 +31,8 @@ has(view,'Service Completion Checklist','selected service completion dashboard e
 has(view,'Hotel','Hotel card exists');has(view,"$stay['hotel_name']",'actual saved Hotel name renders');has(view,"$stay['city']",'Hotel city renders');has(view,"$stay['nights']",'Hotel nights render');
 has(view,'Commercial Summary','commercial summary exists');has(view,'Booking Process Status','process status exists');
 has(view,'Send for Approval','approval action exists');has(view,'Mark as Travel Ready','readiness action exists');has(view,'Preview Voucher','voucher action exists');
+has(view,`route('bookings.client-voucher-preview',['booking'=>$bookingId]) }}" target="_blank" rel="noopener noreferrer">Preview Voucher`,'Preview Voucher opens securely in a new tab');
+has(view,`route('bookings.review.show',['booking'=>$bookingId]) }}" target="_blank" rel="noopener noreferrer">Review Booking`,'Review Booking opens securely in a new tab');
 has(view,'Internal Notes','internal notes area exists');has(view,'No native internal-note field exists; no parallel storage was created.','absence of native notes fails safely');
 lacks(voucher,'internalNotes','internal notes never enter client voucher');
 has(view,'grid-template-columns:repeat(5,minmax(0,1fr))','desktop five-card layout is bounded');has(view,'@media(max-width:760px)','responsive mobile stack exists');
