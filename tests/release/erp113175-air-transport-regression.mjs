@@ -17,11 +17,11 @@ const airDiagnostic=read('app/Http/Controllers/System/AirLinkDbDiagnosticControl
 has(air,"$ticketPayloads = (array) ($data['tickets'] ?? []);",'Air save defines the submitted ticket payload before native persistence');
 has(air,'$this->syncTickets(','Air save executes native ticket persistence');
 has(air,'$this->passengerLinks->syncAirFromNative(','Air save synchronizes the host generic service passenger relation inside its transaction');
-has(read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php'),'reconcileCompleteAirServicesForInvoice($bookingId)','Invoice bridge reconciles only complete native Air links before the host validator runs');
+has(read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php'),'reconcileDeterministicServicesForInvoice($bookingId)','Invoice bridge reconciles every deterministic active service before the host validator runs');
 const genericLinks=read('app/Services/Operations/GenericServicePassengerLinkSynchronizer.php');
 has(genericLinks,"private const TABLE = 'booking_service_passengers'",'Generic synchronization uses the host-native booking-service passenger table');
 has(genericLinks,'assertPassengerOwnership($bookingId, $nativeIds)','Generic synchronization refuses passengers outside the booking');
-has(genericLinks,'if ($after !== $nativeIds)','Generic synchronization readbacks the exact native Air set');
+has(genericLinks,'if ($after !== $passengerIds)','Generic synchronization readbacks the exact authoritative passenger set');
 has(genericLinks,'DB::table(self::TABLE)->insert($row)','Generic synchronization persists only validated missing links');
 has(genericLinks,"Schema::getColumns(self::TABLE)",'Generic synchronization refuses to fabricate any unknown required pivot field');
 has(airDiagnostic,"'ACTIVE_SERVICE_PASSENGER_LINK_AUDIT' => $this->passengerLinks->auditActiveServices($booking)",'Air diagnostic audits every active service passenger-link count');

@@ -63,17 +63,16 @@ final class NativeSalesInvoiceRuntimeBridge
                 $this->fail('The booking Customer / Party is required.');
             }
 
-            // Approved legacy bookings can have complete Air-native ticket
-            // rows from before generic BookingService passenger pivots were
-            // enforced. Reconcile only the exact validated native Air set in
-            // this locked transaction, before the unchanged host validator
-            // evaluates service->passengers.
+            // Reconcile each explicit product passenger authority in this
+            // locked transaction before the unchanged host validator evaluates
+            // service->passengers: Air uses native tickets; Hotel/Transport use
+            // their MULTIPLE + PER_SERVICE booking-wide contract.
             try {
                 $this->passengerLinks
-                    ->reconcileCompleteAirServicesForInvoice($bookingId);
+                    ->reconcileDeterministicServicesForInvoice($bookingId);
             } catch (ValidationException $exception) {
                 $message = collect($exception->errors())->flatten()->first()
-                    ?? 'Air passenger links could not be reconciled safely for invoicing.';
+                    ?? 'Service passenger links could not be reconciled safely for invoicing.';
                 throw ValidationException::withMessages(['invoice' => $message]);
             }
 

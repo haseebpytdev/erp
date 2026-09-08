@@ -63,13 +63,13 @@ const creator = read('app/Services/Sales/NativeBookingSalesInvoiceCreator.php');
 const bridge = read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php');
 ok(air.indexOf('$this->syncTickets(') < air.indexOf('$this->passengerLinks->syncAirFromNative('), 'normal Air save writes native rows before generic links');
 ok(air.includes('DB::transaction(function ()'), 'normal Air save keeps native and generic synchronization atomic');
-ok(synchronizer.includes('if ($after !== $nativeIds)'), 'generic sync verifies exact post-write passenger-link equality');
+ok(synchronizer.includes('if ($after !== $passengerIds)'), 'generic sync verifies exact post-write passenger-link equality');
 ok(synchronizer.includes('assertPassengerOwnership($bookingId, $nativeIds)'), 'generic sync refuses untrusted passenger assignments');
 ok(bridge.includes('private readonly GenericServicePassengerLinkSynchronizer $passengerLinks'), 'transaction-owning bridge receives the generic passenger-link synchronizer');
-ok(bridge.indexOf('$this->customerAuthority->resolve($bookingId)') < bridge.indexOf('reconcileCompleteAirServicesForInvoice($bookingId)'), 'invoice reconciliation runs after locked booking and customer validation');
-ok(bridge.indexOf('reconcileCompleteAirServicesForInvoice($bookingId)') < bridge.indexOf('$this->creator->create($request, $bookingId)'), 'invoice bridge reconciles validated legacy Air links before invoking the native creator');
-ok(bridge.indexOf('DB::transaction(function ()') < bridge.indexOf('reconcileCompleteAirServicesForInvoice($bookingId)'), 'invoice reconciliation remains inside the bridge transaction');
-ok(!creator.includes('reconcileCompleteAirServicesForInvoice($bookingId)'), 'native creator does not perform a second reconciliation');
+ok(bridge.indexOf('$this->customerAuthority->resolve($bookingId)') < bridge.indexOf('reconcileDeterministicServicesForInvoice($bookingId)'), 'invoice reconciliation runs after locked booking and customer validation');
+ok(bridge.indexOf('reconcileDeterministicServicesForInvoice($bookingId)') < bridge.indexOf('$this->creator->create($request, $bookingId)'), 'invoice bridge reconciles deterministic service links before invoking the native creator');
+ok(bridge.indexOf('DB::transaction(function ()') < bridge.indexOf('reconcileDeterministicServicesForInvoice($bookingId)'), 'invoice reconciliation remains inside the bridge transaction');
+ok(!creator.includes('reconcileDeterministicServicesForInvoice($bookingId)'), 'native creator does not perform a second reconciliation');
 ok(!bridge.includes('SalesInvoiceService::createFromBooking'), 'invoice bridge does not alter or bypass host SalesInvoiceService validation');
 
 console.log(`TESTS_PASS=${pass}`);

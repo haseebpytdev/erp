@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
+use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,13 @@ use Throwable;
  */
 final class GeneralBookingHotelProductController extends Controller
 {
+    /** Native Product/Service Master authority for GENERAL Hotel. */
+    private const HOTEL_PRODUCT_SERVICE_ID = 3;
+
+    public function __construct(
+        private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+    ) {}
+
     public function show(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
@@ -177,6 +185,7 @@ final class GeneralBookingHotelProductController extends Controller
                 $persistedServiceRow = (array) (DB::table('booking_services')->where('id', (int) $service['id'])->first() ?? (object) []);
                 $fresh = $this->overlayHotelServiceSnapshot($fresh, $this->hotelServiceSnapshotFromRow($persistedServiceRow));
                 $this->assertPersistedHotelCommercials($normalized, $fresh);
+                $this->passengerLinks->syncHotelBookingWide($booking, (int) $service['id']);
 
                 return [
                     'service' => $service,
@@ -623,8 +632,14 @@ final class GeneralBookingHotelProductController extends Controller
         try {
             foreach (DB::table('booking_services')->where('booking_id', $booking)->orderByDesc('id')->get() as $rowObject) {
                 $row = (array) $rowObject;
-                $text = strtolower(implode(' ', array_map('strval', $row)));
-                if (str_contains($text, 'hotel') || str_contains($text, 'accommodation')) return ['id' => (int) ($row['id'] ?? 0), 'row' => $row];
+                if (! empty($row['deleted_at'])) continue;
+                if (array_key_exists('is_active', $row) && ! (bool) $row['is_active']) continue;
+                if (array_key_exists('active', $row) && ! (bool) $row['active']) continue;
+                $status = strtolower(trim((string) ($row['status'] ?? '')));
+                if (in_array($status, ['inactive', 'deleted', 'removed', 'cancelled', 'canceled'], true)) continue;
+                if ((int) ($row['product_service_id'] ?? 0) === self::HOTEL_PRODUCT_SERVICE_ID) {
+                    return ['id' => (int) ($row['id'] ?? 0), 'row' => $row];
+                }
             }
         } catch (Throwable) {
         }
@@ -664,6 +679,8 @@ final class GeneralBookingHotelProductController extends Controller
         $code = $this->firstNonEmpty($masterRow, ['code', 'service_code', 'product_code', 'slug']);
         $this->put($row, $columns, ['service_name', 'name', 'title'], $name);
         $this->put($row, $columns, ['service_code', 'product_code', 'code'], $code ?: null);
+        $this->putNativeEnum($row, $table, $columns, ['passenger_link_mode_snapshot', 'passenger_link_mode'], 'MULTIPLE', ['multiple']);
+        $this->putNativeEnum($row, $table, $columns, ['pricing_basis_snapshot', 'pricing_basis'], 'PER_SERVICE', ['per_service']);
         $this->put($row, $columns, ['quantity', 'qty'], 1);
         $this->putNativeEnum($row, $table, $columns, ['status'], 'active', ['ACTIVE', 'booked', 'BOOKED']);
         foreach (['is_active' => 1, 'active' => 1] as $field => $value) if (in_array($field, $columns, true)) $row[$field] = $value;
@@ -680,6 +697,10 @@ final class GeneralBookingHotelProductController extends Controller
             'status' => 'active',
             'quantity' => 1,
             'qty' => 1,
+            'passenger_link_mode_snapshot' => 'MULTIPLE',
+            'passenger_link_mode' => 'MULTIPLE',
+            'pricing_basis_snapshot' => 'PER_SERVICE',
+            'pricing_basis' => 'PER_SERVICE',
         ]);
         $this->assertRequiredContract($table, $row, 'Hotel service');
         $id = (int) DB::table($table)->insertGetId($row);
@@ -712,7 +733,7 @@ final class GeneralBookingHotelProductController extends Controller
                 foreach (DB::table($table)->limit(4000)->get() as $rowObject) {
                     $row = (array) $rowObject;
                     $id = (int) ($row[$idColumn] ?? 0);
-                    if ($id <= 0) continue;
+                    if ($id !== self::HOTEL_PRODUCT_SERVICE_ID) continue;
                     $text = strtolower(implode(' ', array_map('strval', $row)));
                     $score = 0;
                     if (str_contains($text, 'hotel')) $score += 10000;

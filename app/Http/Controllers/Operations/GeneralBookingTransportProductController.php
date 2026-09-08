@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
+use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -33,6 +34,10 @@ final class GeneralBookingTransportProductController extends Controller
 {
     /** Native Product/Service Master authority for GENERAL Transport. */
     private const TRANSPORT_PRODUCT_SERVICE_ID = 4;
+
+    public function __construct(
+        private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+    ) {}
 
     /** @var array<string,float|null> */
     private array $exchangeRateToPkrCache = [];
@@ -274,6 +279,7 @@ final class GeneralBookingTransportProductController extends Controller
                 $fresh = $table ? $this->transportRows($booking, (int) $service['id'], $table) : [];
                 $fresh = $this->overlaySnapshot($fresh, $this->snapshotFromServiceRow($freshService));
                 $this->assertPersisted($normalized, $fresh);
+                $this->passengerLinks->syncTransportBookingWide($booking, (int) $service['id']);
 
                 return ['transports' => $fresh, 'summary' => $this->summary($fresh)];
             });
@@ -883,6 +889,8 @@ final class GeneralBookingTransportProductController extends Controller
         $code = $this->firstNonEmpty($masterRow, ['code','service_code','product_code','slug']);
         $this->put($row, $columns, ['service_name','name','title'], $name);
         $this->put($row, $columns, ['service_code','product_code','code'], $code ?: null);
+        $this->putNativeEnum($row, $table, $columns, ['passenger_link_mode_snapshot','passenger_link_mode'], 'MULTIPLE', ['multiple']);
+        $this->putNativeEnum($row, $table, $columns, ['pricing_basis_snapshot','pricing_basis'], 'PER_SERVICE', ['per_service']);
         $this->put($row, $columns, ['quantity','qty'], 1);
         $this->putNativeEnum($row, $table, $columns, ['status'], 'active', ['ACTIVE','booked','BOOKED','requested','REQUESTED']);
         foreach (['is_active' => 1, 'active' => 1] as $field => $value) if (in_array($field, $columns, true)) $row[$field] = $value;
@@ -899,6 +907,10 @@ final class GeneralBookingTransportProductController extends Controller
             'status' => 'active',
             'quantity' => 1,
             'qty' => 1,
+            'passenger_link_mode_snapshot' => 'MULTIPLE',
+            'passenger_link_mode' => 'MULTIPLE',
+            'pricing_basis_snapshot' => 'PER_SERVICE',
+            'pricing_basis' => 'PER_SERVICE',
         ]);
         $this->assertRequiredContract($table, $row, 'Transport service');
         $id = (int) DB::table($table)->insertGetId($row);

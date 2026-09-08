@@ -9,13 +9,17 @@ use Throwable;
 
 /**
  * Keeps the host-native generic service->passengers relation consistent with
- * a product's already-persisted passenger authority.  It never invents a
- * passenger assignment: Air is eligible only when its native ticket rows are
- * non-null, unique, and all belong to the booking being reconciled.
+ * a product's already-persisted passenger authority. It never derives an
+ * assignment from passenger count: Air uses explicit ticket links, while the
+ * native Hotel/Transport products use an explicit MULTIPLE + PER_SERVICE
+ * booking-wide applicability contract.
  */
 final class GenericServicePassengerLinkSynchronizer
 {
     private const TABLE = 'booking_service_passengers';
+    private const AIR_PRODUCT_SERVICE_ID = 1;
+    private const HOTEL_PRODUCT_SERVICE_ID = 3;
+    private const TRANSPORT_PRODUCT_SERVICE_ID = 4;
 
     /**
      * Normal Air-save authority. This is called inside the caller's existing
@@ -25,20 +29,50 @@ final class GenericServicePassengerLinkSynchronizer
      */
     public function syncAirFromNative(int $bookingId, int $serviceId): array
     {
-        return $this->synchronize($bookingId, $serviceId, true);
+        return $this->synchronizeAir($bookingId, $serviceId, true);
+    }
+
+    /** @return list<int> */
+    public function syncHotelBookingWide(int $bookingId, int $serviceId): array
+    {
+        try {
+            return $this->synchronizeBookingWide(
+                $bookingId,
+                $serviceId,
+                self::HOTEL_PRODUCT_SERVICE_ID,
+                'Hotel',
+            );
+        } catch (ValidationException $exception) {
+            $this->rethrowForProduct($exception, 'hotel');
+        }
+    }
+
+    /** @return list<int> */
+    public function syncTransportBookingWide(int $bookingId, int $serviceId): array
+    {
+        try {
+            return $this->synchronizeBookingWide(
+                $bookingId,
+                $serviceId,
+                self::TRANSPORT_PRODUCT_SERVICE_ID,
+                'Transport',
+            );
+        } catch (ValidationException $exception) {
+            $this->rethrowForProduct($exception, 'transport');
+        }
     }
 
     /**
-     * Reconciles only complete, already-native Air links before the host
-     * invoice call. The caller is inside NativeSalesInvoiceRuntimeBridge's
-     * transaction, so a native invoice failure rolls this reconciliation back.
+     * Reconciles every deterministic active service before the host invoice
+     * call. The caller owns NativeSalesInvoiceRuntimeBridge's transaction, so
+     * a later native validation failure rolls the complete set back atomically.
      *
      * @return array<int,list<int>> service id => linked booking passenger ids
      */
-    public function reconcileCompleteAirServicesForInvoice(int $bookingId): array
+    public function reconcileDeterministicServicesForInvoice(int $bookingId): array
     {
         $this->assertGenericSchema();
-        if (! Schema::hasTable('booking_services') || ! Schema::hasTable('air_ticket_details')) {
+        if (! Schema::hasTable('booking_services')) {
             return [];
         }
 
@@ -54,17 +88,36 @@ final class GenericServicePassengerLinkSynchronizer
 
         $reconciled = [];
         foreach ($services as $service) {
-            $serviceId = (int) ($service->id ?? 0);
-            if ($serviceId <= 0 || ! $this->hasNativeAirRows($serviceId)) {
+            $row = (array) $service;
+            if (! $this->serviceIsActive($row)) continue;
+
+            $serviceId = (int) ($row['id'] ?? 0);
+            $productServiceId = (int) ($row['product_service_id'] ?? 0);
+            if ($serviceId <= 0) continue;
+
+            if ($productServiceId === self::AIR_PRODUCT_SERVICE_ID) {
+                if (! $this->hasNativeAirRows($serviceId)) continue;
+                $reconciled[$serviceId] = $this->synchronizeAir($bookingId, $serviceId, false);
                 continue;
             }
 
-            $nativeIds = $this->nativeAirPassengerIds($serviceId);
-            $genericIds = $this->genericPassengerIds($serviceId);
-            if ($nativeIds !== $genericIds) {
-                $reconciled[$serviceId] = $this->synchronize($bookingId, $serviceId, false);
-            } else {
-                $reconciled[$serviceId] = $nativeIds;
+            if ($productServiceId === self::HOTEL_PRODUCT_SERVICE_ID) {
+                $reconciled[$serviceId] = $this->synchronizeBookingWide(
+                    $bookingId,
+                    $serviceId,
+                    self::HOTEL_PRODUCT_SERVICE_ID,
+                    'Hotel',
+                );
+                continue;
+            }
+
+            if ($productServiceId === self::TRANSPORT_PRODUCT_SERVICE_ID) {
+                $reconciled[$serviceId] = $this->synchronizeBookingWide(
+                    $bookingId,
+                    $serviceId,
+                    self::TRANSPORT_PRODUCT_SERVICE_ID,
+                    'Transport',
+                );
             }
         }
 
@@ -86,6 +139,7 @@ final class GenericServicePassengerLinkSynchronizer
         $rows = [];
         foreach ($query->orderBy(in_array('id', $columns, true) ? 'id' : 'booking_id')->get() as $service) {
             $row = (array) $service;
+            if (! $this->serviceIsActive($row)) continue;
             $serviceId = (int) ($row['id'] ?? 0);
             $rows[] = [
                 'booking_service_id' => $serviceId,
@@ -106,10 +160,12 @@ final class GenericServicePassengerLinkSynchronizer
     }
 
     /** @return list<int> */
-    private function synchronize(int $bookingId, int $serviceId, bool $requireNativeRows): array
+    private function synchronizeAir(int $bookingId, int $serviceId, bool $requireNativeRows): array
     {
-        $schema = $this->assertGenericSchema();
-        $this->assertServiceBelongsToBooking($bookingId, $serviceId);
+        $service = $this->serviceForBooking($bookingId, $serviceId);
+        if ((int) ($service['product_service_id'] ?? 0) !== self::AIR_PRODUCT_SERVICE_ID) {
+            $this->fail('Native Air passenger links cannot be applied to a non-Air booking service.');
+        }
 
         $nativeIds = $this->nativeAirPassengerIds($serviceId);
         if ($requireNativeRows && $nativeIds === []) {
@@ -118,11 +174,36 @@ final class GenericServicePassengerLinkSynchronizer
         if ($nativeIds === []) return [];
 
         $this->assertPassengerOwnership($bookingId, $nativeIds);
+        return $this->synchronizeExact($bookingId, $serviceId, $nativeIds);
+    }
+
+    /** @return list<int> */
+    private function synchronizeBookingWide(
+        int $bookingId,
+        int $serviceId,
+        int $expectedProductServiceId,
+        string $product,
+    ): array {
+        $service = $this->serviceForBooking($bookingId, $serviceId);
+        $this->assertBookingWideContract($service, $expectedProductServiceId, $product);
+        $passengerIds = $this->activeBookingPassengerIds($bookingId);
+        if ($passengerIds === []) {
+            $this->fail($product.' booking-wide passenger synchronization requires at least one active booking passenger.');
+        }
+
+        return $this->synchronizeExact($bookingId, $serviceId, $passengerIds);
+    }
+
+    /** @param list<int> $passengerIds @return list<int> */
+    private function synchronizeExact(int $bookingId, int $serviceId, array $passengerIds): array
+    {
+        $schema = $this->assertGenericSchema();
+        $this->assertPassengerOwnership($bookingId, $passengerIds);
         $existing = $this->genericRows($serviceId, $schema['service_column']);
-        $this->removeDuplicatesAndStaleRows($serviceId, $nativeIds, $existing, $schema);
+        $this->removeDuplicatesAndStaleRows($serviceId, $passengerIds, $existing, $schema);
 
         $existingIds = $this->genericPassengerIds($serviceId);
-        foreach (array_values(array_diff($nativeIds, $existingIds)) as $passengerId) {
+        foreach (array_values(array_diff($passengerIds, $existingIds)) as $passengerId) {
             $row = [
                 $schema['service_column'] => $serviceId,
                 $schema['passenger_column'] => $passengerId,
@@ -133,11 +214,68 @@ final class GenericServicePassengerLinkSynchronizer
         }
 
         $after = $this->genericPassengerIds($serviceId);
-        if ($after !== $nativeIds) {
-            $this->fail('Generic service passenger synchronization did not persist the exact validated native Air passenger set.');
+        if ($after !== $passengerIds) {
+            $this->fail('Generic service passenger synchronization did not persist the exact authoritative passenger set.');
         }
 
         return $after;
+    }
+
+    /** @param array<string,mixed> $service */
+    private function assertBookingWideContract(array $service, int $expectedProductServiceId, string $product): void
+    {
+        if ((int) ($service['product_service_id'] ?? 0) !== $expectedProductServiceId) {
+            $this->fail($product.' booking-wide passenger policy cannot be applied to another Product/Service master.');
+        }
+        if (! $this->serviceIsActive($service)) {
+            $this->fail($product.' booking-wide passenger policy cannot be applied to an inactive booking service.');
+        }
+
+        $linkMode = strtoupper(trim((string) (
+            $service['passenger_link_mode_snapshot']
+            ?? $service['passenger_link_mode']
+            ?? ''
+        )));
+        $pricingBasis = strtoupper(trim((string) (
+            $service['pricing_basis_snapshot']
+            ?? $service['pricing_basis']
+            ?? ''
+        )));
+        if (! in_array($linkMode, ['REQUIRED', 'MULTIPLE'], true) || $pricingBasis !== 'PER_SERVICE') {
+            $this->fail(
+                $product.' booking-wide passenger policy requires the native REQUIRED/MULTIPLE + PER_SERVICE contract.'
+            );
+        }
+    }
+
+    /** @return list<int> */
+    private function activeBookingPassengerIds(int $bookingId): array
+    {
+        if (! Schema::hasTable('booking_passengers')) {
+            $this->fail('Booking passengers are unavailable; generic service links were not changed.');
+        }
+        $columns = Schema::getColumnListing('booking_passengers');
+        if (! in_array('id', $columns, true) || ! in_array('booking_id', $columns, true)) {
+            $this->fail('Booking passengers do not expose the required native identity fields.');
+        }
+
+        $query = DB::table('booking_passengers')->where('booking_id', $bookingId);
+        if (in_array('deleted_at', $columns, true)) $query->whereNull('deleted_at');
+        if (in_array('is_active', $columns, true)) $query->where('is_active', true);
+        if (in_array('active', $columns, true)) $query->where('active', true);
+
+        $ids = [];
+        foreach ($query->lockForUpdate()->get() as $passenger) {
+            $row = (array) $passenger;
+            $status = strtolower(trim((string) ($row['status'] ?? '')));
+            if (in_array($status, ['inactive', 'deleted', 'removed', 'cancelled', 'canceled'], true)) continue;
+            $id = (int) ($row['id'] ?? 0);
+            if ($id > 0) $ids[] = $id;
+        }
+        $ids = array_values(array_unique($ids));
+        sort($ids);
+
+        return $ids;
     }
 
     /** @return array{columns:list<string>,service_column:string,passenger_column:string,id_column:?string} */
@@ -198,21 +336,35 @@ final class GenericServicePassengerLinkSynchronizer
         }
     }
 
-    private function assertServiceBelongsToBooking(int $bookingId, int $serviceId): void
+    /** @return array<string,mixed> */
+    private function serviceForBooking(int $bookingId, int $serviceId): array
     {
         $row = DB::table('booking_services')
             ->where('id', $serviceId)
             ->where('booking_id', $bookingId)
             ->lockForUpdate()
             ->first();
-        if (! $row) $this->fail('The Air booking service no longer belongs to this booking.');
+        if (! $row) $this->fail('The booking service no longer belongs to this booking.');
+
+        return (array) $row;
+    }
+
+    /** @param array<string,mixed> $service */
+    private function serviceIsActive(array $service): bool
+    {
+        if (! empty($service['deleted_at'])) return false;
+        if (array_key_exists('is_active', $service) && ! (bool) $service['is_active']) return false;
+        if (array_key_exists('active', $service) && ! (bool) $service['active']) return false;
+        $status = strtolower(trim((string) ($service['status'] ?? '')));
+
+        return ! in_array($status, ['inactive', 'deleted', 'removed', 'cancelled', 'canceled'], true);
     }
 
     /** @param list<int> $passengerIds */
     private function assertPassengerOwnership(int $bookingId, array $passengerIds): void
     {
         if (count($passengerIds) !== count(array_unique($passengerIds))) {
-            $this->fail('Native Air passenger links are ambiguous; generic service links were not changed.');
+            $this->fail('The authoritative passenger set is ambiguous; generic service links were not changed.');
         }
         if (! Schema::hasTable('booking_passengers')) {
             $this->fail('Booking passengers are unavailable; generic service links were not changed.');
@@ -226,7 +378,7 @@ final class GenericServicePassengerLinkSynchronizer
             ->all();
         sort($owned);
         if ($owned !== $passengerIds) {
-            $this->fail('Native Air passenger links include a passenger outside this booking; generic service links were not changed.');
+            $this->fail('The authoritative passenger set includes a passenger outside this booking; generic service links were not changed.');
         }
     }
 
@@ -312,5 +464,12 @@ final class GenericServicePassengerLinkSynchronizer
     private function fail(string $message): never
     {
         throw ValidationException::withMessages(['air' => $message]);
+    }
+
+    private function rethrowForProduct(ValidationException $exception, string $key): never
+    {
+        $message = collect($exception->errors())->flatten()->first()
+            ?? 'Booking-service passenger links could not be synchronized safely.';
+        throw ValidationException::withMessages([$key => $message]);
     }
 }
