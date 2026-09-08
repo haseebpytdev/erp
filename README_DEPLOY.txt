@@ -1,4 +1,4 @@
-ERP-11.3.202 DIRECT UPLOAD
+ERP-11.3.203 DIRECT UPLOAD
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,7 +9,7 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.202 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.203 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
@@ -19,6 +19,12 @@ booking and do not save Air again. As Super Admin, first open the read-only
 ACTIVE_SERVICE_PASSENGER_LINK_AUDIT. Confirm whether every active
 REQUIRED/MULTIPLE service has generic passenger links or identify the next
 product-specific blocker without fabricating passenger assignments.
+
+During the guarded invoice transaction, Air service 17 must reconcile from its
+five native ticket passenger IDs, while Hotel service 18 and Transport service
+20 must reconcile from the exact active booking-passenger set. The expected
+generic link count is five for each service before the unchanged host validator
+runs. A later failure must roll back all reconciliation and invoice mutations.
 
 The controlled invoice test must confirm one Draft invoice for PKR 931,200.
 Any linkage, status, line or total mismatch must roll back. The host-native

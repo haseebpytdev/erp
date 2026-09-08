@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.202
-APPLICATION_VERSION=v1.1.33.202-ERP11.3.202
+CURRENT_VERSION=ERP-11.3.203
+APPLICATION_VERSION=v1.1.33.203-ERP11.3.203
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.202
+LAST_PACKAGED_RELEASE=ERP-11.3.203
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -99,3 +99,10 @@ passenger-link reconciliation inside the guarded Sales Invoice transaction,
 after booking/customer validation and before the unchanged host invoice
 creator and validator. Normal Air Save synchronization remains intact. No
 commercial values or other product data are changed, and no migration is added.
+
+ERP-11.3.203 direct-upload release extends that reconciliation to the confirmed
+booking-wide Hotel product 3 and Transport product 4 contracts. Their exact
+active booking-passenger set is synchronized only for REQUIRED/MULTIPLE +
+PER_SERVICE services, both during normal product saves and before native Sales
+Invoice creation. Air remains ticket-authoritative; no commercial values,
+validator logic or migrations change.
