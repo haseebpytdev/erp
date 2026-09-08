@@ -10,7 +10,6 @@ use ReflectionMethod;
 use ReflectionNamedType;
 use Throwable;
 use App\Services\Operations\BookingInvoiceEligibilityResolver;
-use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
 use App\Services\Operations\NativeBookingCustomerResolver;
 
 /**
@@ -28,7 +27,6 @@ final class NativeBookingSalesInvoiceCreator
     public function __construct(
         private readonly BookingInvoiceEligibilityResolver $eligibility,
         private readonly NativeBookingCustomerResolver $customerAuthority,
-        private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
     ) {}
 
     public function create(Request $request, int $bookingId): mixed
@@ -53,22 +51,6 @@ final class NativeBookingSalesInvoiceCreator
             throw ValidationException::withMessages([
                 'invoice' => 'The native Sales Invoice create-from-booking operation is unavailable.',
             ]);
-        }
-
-        // Approved legacy bookings can have complete Air-native ticket rows
-        // from before generic BookingService passenger pivots were enforced.
-        // Reconcile only a complete, validated native Air set. This is inside
-        // NativeSalesInvoiceRuntimeBridge's transaction and is not a host
-        // validator bypass: the host still evaluates service->passengers.
-        try {
-            $this->passengerLinks->reconcileCompleteAirServicesForInvoice($bookingId);
-        } catch (ValidationException $exception) {
-            // The stable invoice endpoint owns the user-facing error bag. The
-            // synchronizer uses the Air key for normal workspace saves, so map
-            // its explicit reconciliation blocker to the invoice action here.
-            $message = collect($exception->errors())->flatten()->first()
-                ?? 'Air passenger links could not be reconciled safely for invoicing.';
-            throw ValidationException::withMessages(['invoice' => $message]);
         }
 
         $method = new ReflectionMethod($native, 'createFromBooking');

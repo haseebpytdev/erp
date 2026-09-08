@@ -17,7 +17,7 @@ const airDiagnostic=read('app/Http/Controllers/System/AirLinkDbDiagnosticControl
 has(air,"$ticketPayloads = (array) ($data['tickets'] ?? []);",'Air save defines the submitted ticket payload before native persistence');
 has(air,'$this->syncTickets(','Air save executes native ticket persistence');
 has(air,'$this->passengerLinks->syncAirFromNative(','Air save synchronizes the host generic service passenger relation inside its transaction');
-has(read('app/Services/Sales/NativeBookingSalesInvoiceCreator.php'),'reconcileCompleteAirServicesForInvoice($bookingId)','Invoice bridge reconciles only complete native Air links before the host validator runs');
+has(read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php'),'reconcileCompleteAirServicesForInvoice($bookingId)','Invoice bridge reconciles only complete native Air links before the host validator runs');
 const genericLinks=read('app/Services/Operations/GenericServicePassengerLinkSynchronizer.php');
 has(genericLinks,"private const TABLE = 'booking_service_passengers'",'Generic synchronization uses the host-native booking-service passenger table');
 has(genericLinks,'assertPassengerOwnership($bookingId, $nativeIds)','Generic synchronization refuses passengers outside the booking');

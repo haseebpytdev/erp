@@ -15,6 +15,7 @@ final class NativeSalesInvoiceRuntimeBridge
         private readonly NativeBookingSalesInvoiceCreator $creator,
         private readonly NativeSalesInvoiceCreationVerifier $verifier,
         private readonly NativeBookingCustomerResolver $customerAuthority,
+        private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
     ) {}
 
     public function create(
@@ -60,6 +61,20 @@ final class NativeSalesInvoiceRuntimeBridge
 
             if ($customerId <= 0) {
                 $this->fail('The booking Customer / Party is required.');
+            }
+
+            // Approved legacy bookings can have complete Air-native ticket
+            // rows from before generic BookingService passenger pivots were
+            // enforced. Reconcile only the exact validated native Air set in
+            // this locked transaction, before the unchanged host validator
+            // evaluates service->passengers.
+            try {
+                $this->passengerLinks
+                    ->reconcileCompleteAirServicesForInvoice($bookingId);
+            } catch (ValidationException $exception) {
+                $message = collect($exception->errors())->flatten()->first()
+                    ?? 'Air passenger links could not be reconciled safely for invoicing.';
+                throw ValidationException::withMessages(['invoice' => $message]);
             }
 
             // The overlay never inserts invoice, line, journal or ledger rows.
