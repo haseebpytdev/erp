@@ -16,6 +16,7 @@ final class NativeSalesInvoiceRuntimeBridge
         private readonly NativeSalesInvoiceCreationVerifier $verifier,
         private readonly NativeBookingCustomerResolver $customerAuthority,
         private readonly VisaBookingServiceSynchronizer $visaServices,
+        private readonly HotelTransportBookingServiceCommercialSynchronizer $serviceCommercials,
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
     ) {}
 
@@ -72,6 +73,17 @@ final class NativeSalesInvoiceRuntimeBridge
             } catch (ValidationException $exception) {
                 $message = collect($exception->errors())->flatten()->first()
                     ?? 'The native Visa booking service could not be synchronized safely for invoicing.';
+                throw ValidationException::withMessages(['invoice' => $message]);
+            }
+
+            // Hotel and Transport are PER_SERVICE products. Repair their native
+            // quantity/rate/line contract from each product's persisted row
+            // authority before the unchanged host invoice creator reads it.
+            try {
+                $this->serviceCommercials->reconcileForInvoice($bookingId);
+            } catch (ValidationException $exception) {
+                $message = collect($exception->errors())->flatten()->first()
+                    ?? 'Hotel / Transport service commercials could not be reconciled safely for invoicing.';
                 throw ValidationException::withMessages(['invoice' => $message]);
             }
 

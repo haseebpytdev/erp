@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
 use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
+use App\Services\Operations\HotelTransportBookingServiceCommercialSynchronizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -37,6 +38,7 @@ final class GeneralBookingTransportProductController extends Controller
 
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+        private readonly HotelTransportBookingServiceCommercialSynchronizer $serviceCommercials,
     ) {}
 
     /** @var array<string,float|null> */
@@ -1346,6 +1348,7 @@ final class GeneralBookingTransportProductController extends Controller
         $this->putAll($update, $columns, ['margin','gross_margin','net_margin','profit'], $summary['margin']);
         if (in_array('updated_at', $columns, true)) $update['updated_at'] = now();
         if ($update) DB::table('booking_services')->where('id', $serviceId)->update($update);
+        $this->serviceCommercials->syncTransportSummary($serviceId, (float) $summary['customer_total']);
     }
 
     /** @param list<array<string,mixed>> $rows */

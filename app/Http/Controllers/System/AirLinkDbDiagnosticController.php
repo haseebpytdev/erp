@@ -5,6 +5,7 @@ namespace App\Http\Controllers\System;
 use App\Http\Controllers\Controller;
 use App\Services\Administration\ErpPermissionMatrixService;
 use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
+use App\Services\Operations\HotelTransportBookingServiceCommercialSynchronizer;
 use App\Services\Operations\VisaBookingServiceSynchronizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ final class AirLinkDbDiagnosticController extends Controller
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
         private readonly VisaBookingServiceSynchronizer $visaServices,
+        private readonly HotelTransportBookingServiceCommercialSynchronizer $serviceCommercials,
     ) {}
 
     public function __invoke(Request $request, int $booking, ErpPermissionMatrixService $permissions)
@@ -222,6 +224,7 @@ final class AirLinkDbDiagnosticController extends Controller
         try {
             DB::beginTransaction();
             $this->visaServices->synchronize($booking);
+            $this->serviceCommercials->reconcileForInvoice($booking);
             $this->passengerLinks->reconcileDeterministicServicesForInvoice($booking);
 
             $columns = Schema::getColumnListing('booking_services');
