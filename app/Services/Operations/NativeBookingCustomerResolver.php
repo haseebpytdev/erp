@@ -5,6 +5,7 @@ namespace App\Services\Operations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * ERP-10.31.13
@@ -24,8 +25,11 @@ class NativeBookingCustomerResolver
             return $this->empty();
         }
 
-        if ($saved = $this->savedContext($bookingId)) {
-            return $saved;
+        // This is the same authority used by the host main Booking page: its
+        // native Booking model and Customer / Party relationship. The overlay
+        // does not define or replace either model.
+        if ($native = $this->fromNativeBookingModel($bookingId)) {
+            return $native;
         }
 
         $customers = $this->source->customers();
@@ -82,6 +86,13 @@ class NativeBookingCustomerResolver
             }
         }
 
+        // Legacy context is a read-only fallback for bookings created through
+        // an older native entry point. Native booking/relationship data above
+        // remains the authority whenever it exists.
+        if ($saved = $this->savedContext($bookingId)) {
+            return $saved;
+        }
+
         return $this->empty();
     }
 
@@ -134,6 +145,109 @@ class NativeBookingCustomerResolver
             'source' => (string) ($row->customer_source ?? 'context'),
             'resolved' => true,
         ];
+    }
+
+    private function fromNativeBookingModel(int $bookingId): ?array
+    {
+        foreach ([
+            \App\Models\Booking::class,
+            \App\Models\Operations\Booking::class,
+            \App\Models\Travel\Booking::class,
+        ] as $class) {
+            if (! class_exists($class) || ! is_subclass_of($class, Model::class)) {
+                continue;
+            }
+
+            try {
+                /** @var Model|null $booking */
+                $booking = (new $class())->newQuery()->find($bookingId);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if (! $booking) {
+                continue;
+            }
+
+            foreach ([
+                'customer',
+                'party',
+                'client',
+                'customerParty',
+                'billToParty',
+                'accountParty',
+            ] as $relation) {
+                if (! method_exists($booking, $relation)) {
+                    continue;
+                }
+
+                try {
+                    $relationship = $booking->{$relation}();
+                    $related = $booking->getRelationValue($relation);
+                } catch (\Throwable) {
+                    continue;
+                }
+
+                if ($identity = $this->fromRelatedModel($related, $relation, $relationship)) {
+                    return $identity;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function fromRelatedModel(mixed $related, string $relation, mixed $relationship): ?array
+    {
+        if ($related instanceof Model) {
+            $row = $related->getAttributes();
+            $id = (int) $related->getKey();
+        } elseif (is_object($related)) {
+            $row = (array) $related;
+            $id = (int) ($row['id'] ?? $row['party_id'] ?? $row['customer_id'] ?? 0);
+        } elseif (is_array($related)) {
+            $row = $related;
+            $id = (int) ($row['id'] ?? $row['party_id'] ?? $row['customer_id'] ?? 0);
+        } else {
+            return null;
+        }
+
+        $name = '';
+
+        foreach (['name', 'display_name', 'legal_name', 'customer_name', 'party_name', 'client_name', 'title'] as $field) {
+            $value = trim((string) ($row[$field] ?? ''));
+
+            if ($value !== '') {
+                $name = $value;
+                break;
+            }
+        }
+
+        if ($id <= 0 || $name === '') {
+            return null;
+        }
+
+        return [
+            'id' => $id,
+            'name' => $name,
+            'source' => 'native-booking-model.'.$relation,
+            'field' => $this->relationForeignKey($relationship, $relation),
+            'relation' => $relation,
+            'resolved' => true,
+        ];
+    }
+
+    private function relationForeignKey(mixed $relationship, string $relation): string
+    {
+        if (is_object($relationship) && method_exists($relationship, 'getForeignKeyName')) {
+            try {
+                $field = trim((string) $relationship->getForeignKeyName());
+                if ($field !== '') return $field;
+            } catch (\Throwable) {
+            }
+        }
+
+        return Str::snake($relation).'_id';
     }
 
     private function fromRow(array $row, array $byId, array $byName, string $source): ?array

@@ -263,10 +263,16 @@ class UnifiedGroupPackageDataSource
                 $a = (array) $row;
                 $from = $fromColumn ? trim((string) ($a[$fromColumn] ?? '')) : '';
                 $to = $toColumn ? trim((string) ($a[$toColumn] ?? '')) : '';
-                $label = $labelColumn ? trim((string) ($a[$labelColumn] ?? '')) : '';
-                if ($label === '') {
-                    $label = trim($from . (($from !== '' && $to !== '') ? ' → ' : '') . $to);
-                }
+                // Rate-card rows may use a generic `name` column for the
+                // vehicle (for example, "Car").  A real origin/destination
+                // pair is the Route authority and must win over that generic
+                // label, otherwise the Route select hydrates with the Vehicle
+                // value and cannot locate the matching rate.
+                $routePair = trim($from . (($from !== '' && $to !== '') ? ' → ' : '') . $to);
+                $label = ($from !== '' && $to !== '')
+                    ? $routePair
+                    : ($labelColumn ? trim((string) ($a[$labelColumn] ?? '')) : '');
+                if ($label === '') $label = $routePair;
                 if ($label === '') {
                     continue;
                 }
@@ -363,6 +369,334 @@ class UnifiedGroupPackageDataSource
             ->unique(fn (array $row): string => strtolower($row['name'] . '|' . $row['source_table'] . '|' . $row['id']))
             ->sortBy('display', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
+    }
+
+    /**
+     * The GENERAL booking Transport editor consumes only the current effective
+     * rate-card matrix. Generic transport tables deliberately do not participate
+     * here: a card title or vehicle label must never become a Route option.
+     *
+     * @return Collection<int,array<string,mixed>>
+     */
+    public function effectiveTransportRateRoutes(string $companyName = '', ?string $effectiveDate = null, ?int $companyId = null): Collection
+    {
+        if (! Schema::hasTable('transport_rate_cards')) return collect();
+        try {
+            $columns = Schema::getColumnListing('transport_rate_cards');
+            $idColumn = $this->firstColumn($columns, ['id', 'rate_detail_id', 'transport_rate_card_detail_id']);
+            $fromColumn = $this->firstColumn($columns, ['from_location', 'pickup_location', 'origin', 'origin_name', 'from_city', 'from']);
+            $toColumn = $this->firstColumn($columns, ['to_location', 'dropoff_location', 'destination', 'destination_name', 'to_city', 'to']);
+            $vehicleColumn = $this->firstColumn($columns, ['vehicle_type', 'vehicle_name', 'vehicle', 'transport_type']);
+            if (! $idColumn) return collect();
+            $companyColumn = $this->firstColumn($columns, ['company_name', 'provider_name', 'transport_company', 'vendor_name', 'supplier_name']);
+            $companyIdColumn = $this->firstColumn($columns, ['transport_company_id', 'company_id', 'vendor_id', 'supplier_id', 'service_provider_id']);
+            $currencyColumn = $this->firstColumn($columns, ['currency_code', 'currency', 'supplier_currency_code', 'rate_currency']);
+            $activeColumn = $this->firstColumn($columns, ['is_active', 'active']);
+            $statusColumn = $this->firstColumn($columns, ['status', 'card_status']);
+            $fromDateColumn = $this->firstColumn($columns, ['effective_from', 'valid_from', 'start_date', 'effective_date']);
+            $toDateColumn = $this->firstColumn($columns, ['effective_to', 'valid_to', 'end_date', 'expiry_date']);
+            $asOf = $effectiveDate ?: now()->toDateString();
+            $companyKey = strtolower(trim($companyName));
+            $rows = collect();
+            $headers = [];
+            foreach (DB::table('transport_rate_cards')->limit(4000)->get() as $object) {
+                $row = (array) $object;
+                if ($activeColumn && ! (bool) ($row[$activeColumn] ?? false)) continue;
+                $status = strtolower(trim((string) ($statusColumn ? ($row[$statusColumn] ?? '') : '')));
+                if (in_array($status, ['inactive', 'draft', 'deleted', 'removed', 'expired', 'cancelled', 'canceled'], true)) continue;
+                $fromDate = trim((string) ($fromDateColumn ? ($row[$fromDateColumn] ?? '') : ''));
+                $toDate = trim((string) ($toDateColumn ? ($row[$toDateColumn] ?? '') : ''));
+                if ($fromDate !== '' && $fromDate > $asOf) continue;
+                if ($toDate !== '' && $toDate < $asOf) continue;
+                $company = trim((string) ($companyColumn ? ($row[$companyColumn] ?? '') : ''));
+                if ($companyKey !== '' && strtolower($company) !== $companyKey) continue;
+                if ($companyId !== null && $companyId > 0 && (int) ($companyIdColumn ? ($row[$companyIdColumn] ?? 0) : 0) !== $companyId) continue;
+                $headerId = (int) ($row[$idColumn] ?? 0);
+                if ($headerId <= 0) continue;
+                $headers[$headerId] = [
+                    'id' => $headerId,
+                    'company_name' => $company,
+                    'company_id' => (int) ($companyIdColumn ? ($row[$companyIdColumn] ?? 0) : 0),
+                    'rate_currency' => strtoupper(trim((string) ($currencyColumn ? ($row[$currencyColumn] ?? '') : ''))),
+                    'effective_from' => $fromDate,
+                    'card_name' => trim((string) ($this->value($row, $columns, ['name', 'card_name', 'title', 'rate_card_name'], ''))),
+                ];
+                $from = trim((string) ($fromColumn ? ($row[$fromColumn] ?? '') : ''));
+                $to = trim((string) ($toColumn ? ($row[$toColumn] ?? '') : ''));
+                $vehicle = trim((string) ($vehicleColumn ? ($row[$vehicleColumn] ?? '') : ''));
+                if ($from === '' || $to === '') continue;
+                if ($vehicle === '') {
+                    foreach (['car', 'coaster', 'gmc', 'hiace', 'starex', 'van', 'bus', 'sedan', 'suv'] as $vehicleName) {
+                        [$matrixField, $matrixRate] = $this->transportMatrixRate($row, $columns, $vehicleName);
+                        if ($matrixField === null || ! is_numeric($matrixRate)) continue;
+                        $rows->push([
+                            'id' => $headerId,
+                            'source_table' => 'transport_rate_cards',
+                            'rate_card_id' => $headerId,
+                            'name' => $from.' → '.$to,
+                            'display' => $from.' → '.$to,
+                            'from_location' => $from,
+                            'to_location' => $to,
+                            'vehicle_type' => strtoupper($vehicleName) === 'GMC' ? 'GMC' : ucfirst($vehicleName),
+                            'company_name' => $company,
+                            'rate_amount' => (float) $matrixRate,
+                            'rate_field' => $matrixField,
+                            'rate_raw_value' => $matrixRate,
+                            'rate_currency' => strtoupper(trim((string) ($currencyColumn ? ($row[$currencyColumn] ?? '') : ''))),
+                            'effective_from' => $fromDate,
+                        ]);
+                    }
+                    continue;
+                }
+                // A rate-card matrix can use either a generic rate column or a
+                // vehicle-specific cell such as car_rate.  Prefer the selected
+                // vehicle's cell, and never let a zero generic placeholder hide
+                // its non-zero matrix value.
+                [$rateColumn, $rate] = $this->transportMatrixRate($row, $columns, $vehicle);
+                $rows->push([
+                    'id' => (int) ($row[$idColumn] ?? 0),
+                    'source_table' => 'transport_rate_cards',
+                    'rate_card_id' => $headerId,
+                    'name' => $from.' → '.$to,
+                    'display' => $from.' → '.$to,
+                    'from_location' => $from,
+                    'to_location' => $to,
+                    'vehicle_type' => $vehicle,
+                    'company_name' => $company,
+                    'rate_amount' => is_numeric($rate) ? (float) $rate : null,
+                    'rate_field' => $rateColumn,
+                    'rate_raw_value' => $rate,
+                    'rate_currency' => strtoupper(trim((string) ($currencyColumn ? ($row[$currencyColumn] ?? '') : ''))),
+                    'effective_from' => $fromDate,
+                ]);
+            }
+            // Production's canonical structure is normalized:
+            // card -> transport_rates -> route + vehicle type -> cost_amount.
+            // Put this exact native authority first so it wins over any legacy
+            // wide-column or generic discovery result for the same selection.
+            $rows = $this->normalizedTransportRateRows($headers)
+                ->merge($rows)
+                ->merge($this->transportRateCardMatrixRows($headers));
+            $latest = $rows->pluck('effective_from')->filter()->max();
+            if ($latest !== null && $latest !== '') $rows = $rows->filter(static fn (array $row): bool => (string) $row['effective_from'] === (string) $latest);
+            return $rows->unique(static fn (array $row): string => strtolower($row['company_name'].'|'.$row['name'].'|'.$row['vehicle_type'].'|'.$row['id']))->values();
+        } catch (\Throwable) {
+            return collect();
+        }
+    }
+
+    /**
+     * Resolve the host's normalized Transport price pivot. This is deliberately
+     * exact rather than a column-name guess: one rate row belongs to one active
+     * card, route and vehicle type, and cost_amount is its source-currency cost.
+     *
+     * @param array<int,array<string,mixed>> $headers
+     * @return Collection<int,array<string,mixed>>
+     */
+    private function normalizedTransportRateRows(array $headers): Collection
+    {
+        if ($headers === [] || ! Schema::hasTable('transport_rates') || ! Schema::hasTable('transport_routes') || ! Schema::hasTable('transport_vehicle_types')) return collect();
+        try {
+            $rateColumns = Schema::getColumnListing('transport_rates');
+            $cardColumn = $this->firstColumn($rateColumns, ['transport_rate_card_id']);
+            $routeColumn = $this->firstColumn($rateColumns, ['transport_route_id']);
+            $vehicleColumn = $this->firstColumn($rateColumns, ['transport_vehicle_type_id']);
+            $rateColumn = $this->firstColumn($rateColumns, ['cost_amount']);
+            $idColumn = $this->firstColumn($rateColumns, ['id']);
+            if (! $cardColumn || ! $routeColumn || ! $vehicleColumn || ! $rateColumn || ! $idColumn) return collect();
+
+            $routeColumns = Schema::getColumnListing('transport_routes');
+            $routeId = $this->firstColumn($routeColumns, ['id']);
+            $routeName = $this->firstColumn($routeColumns, ['route_label', 'route_name', 'name', 'title']);
+            $fromColumn = $this->firstColumn($routeColumns, ['pickup_location', 'from_location', 'origin', 'from_city']);
+            $toColumn = $this->firstColumn($routeColumns, ['dropoff_location', 'to_location', 'destination', 'to_city']);
+            $vehicleColumns = Schema::getColumnListing('transport_vehicle_types');
+            $vehicleId = $this->firstColumn($vehicleColumns, ['id']);
+            $vehicleName = $this->firstColumn($vehicleColumns, ['name', 'vehicle_type', 'vehicle_name', 'code', 'title']);
+            if (! $routeId || ! $vehicleId || ! $vehicleName) return collect();
+
+            $routes = [];
+            foreach (DB::table('transport_routes')->get() as $object) {
+                $row = (array) $object;
+                $id = (int) ($row[$routeId] ?? 0);
+                if ($id <= 0) continue;
+                $from = trim((string) ($fromColumn ? ($row[$fromColumn] ?? '') : ''));
+                $to = trim((string) ($toColumn ? ($row[$toColumn] ?? '') : ''));
+                $name = trim((string) ($routeName ? ($row[$routeName] ?? '') : ''));
+                if ($name === '') $name = trim($from.(($from !== '' && $to !== '') ? ' → ' : '').$to);
+                if ($name !== '') $routes[$id] = ['name' => $name, 'from' => $from, 'to' => $to];
+            }
+            $vehicles = [];
+            foreach (DB::table('transport_vehicle_types')->get() as $object) {
+                $row = (array) $object;
+                $id = (int) ($row[$vehicleId] ?? 0);
+                $name = trim((string) ($row[$vehicleName] ?? ''));
+                if ($id > 0 && $name !== '') $vehicles[$id] = $name;
+            }
+
+            $rows = collect();
+            foreach (DB::table('transport_rates')->whereIn($cardColumn, array_keys($headers))->get() as $object) {
+                $row = (array) $object;
+                $cardId = (int) ($row[$cardColumn] ?? 0);
+                $routeIdValue = (int) ($row[$routeColumn] ?? 0);
+                $vehicleIdValue = (int) ($row[$vehicleColumn] ?? 0);
+                $header = $headers[$cardId] ?? null;
+                $route = $routes[$routeIdValue] ?? null;
+                $vehicle = $vehicles[$vehicleIdValue] ?? null;
+                if (! is_array($header) || ! is_array($route) || ! is_string($vehicle)) continue;
+                $rate = $row[$rateColumn] ?? null;
+                $rows->push([
+                    'id' => (int) ($row[$idColumn] ?? 0),
+                    'source_table' => 'transport_rates',
+                    'rate_card_id' => $cardId,
+                    'rate_card_name' => (string) ($header['card_name'] ?? ''),
+                    'transport_route_id' => $routeIdValue,
+                    'transport_vehicle_type_id' => $vehicleIdValue,
+                    'name' => (string) $route['name'],
+                    'display' => (string) $route['name'],
+                    'from_location' => (string) $route['from'],
+                    'to_location' => (string) $route['to'],
+                    'vehicle_type' => $vehicle,
+                    'company_name' => (string) ($header['company_name'] ?? ''),
+                    'company_id' => (int) ($header['company_id'] ?? 0),
+                    'rate_amount' => is_numeric($rate) ? (float) $rate : null,
+                    'rate_field' => 'cost_amount',
+                    'rate_raw_value' => $rate,
+                    'rate_currency' => (string) ($header['rate_currency'] ?? ''),
+                    'effective_from' => (string) ($header['effective_from'] ?? ''),
+                ]);
+            }
+            return $rows;
+        } catch (\Throwable) {
+            return collect();
+        }
+    }
+
+    /**
+     * Some host installations keep Transport cards as headers and the route /
+     * vehicle prices in a card-linked matrix table. Discover that native matrix
+     * by schema rather than assuming the booking row already carries its IDs.
+     *
+     * @param array<int,array<string,mixed>> $headers
+     * @return Collection<int,array<string,mixed>>
+     */
+    private function transportRateCardMatrixRows(array $headers): Collection
+    {
+        if ($headers === []) return collect();
+        $tables = [
+            'transport_rate_card_details', 'transport_rate_card_routes',
+            'transport_rate_matrices', 'transport_rate_matrix',
+            'transport_rate_details', 'transport_vendor_rate_card_details',
+        ];
+        try {
+            foreach (Schema::getTables() as $meta) {
+                $table = is_array($meta) ? (string) ($meta['name'] ?? $meta['table_name'] ?? '') : '';
+                $key = strtolower($table);
+                if ($table !== '' && str_contains($key, 'transport') && (str_contains($key, 'rate') || str_contains($key, 'card'))) $tables[] = $table;
+            }
+        } catch (\Throwable) {
+        }
+
+        $rows = collect();
+        foreach (array_values(array_unique($tables)) as $table) {
+            if ($table === 'transport_rate_cards' || ! Schema::hasTable($table)) continue;
+            try {
+                $columns = Schema::getColumnListing($table);
+                $cardColumn = $this->firstColumn($columns, ['transport_rate_card_id', 'rate_card_id', 'transport_vendor_rate_card_id', 'card_id']);
+                $idColumn = $this->firstColumn($columns, ['id', 'rate_detail_id', 'transport_rate_card_detail_id']);
+                $fromColumn = $this->firstColumn($columns, ['from_location', 'pickup_location', 'origin', 'origin_name', 'from_city', 'from']);
+                $toColumn = $this->firstColumn($columns, ['to_location', 'dropoff_location', 'destination', 'destination_name', 'to_city', 'to']);
+                if (! $cardColumn || ! $idColumn || ! $fromColumn || ! $toColumn) continue;
+                $vehicleColumn = $this->firstColumn($columns, ['vehicle_type', 'vehicle_name', 'vehicle', 'transport_type']);
+                $currencyColumn = $this->firstColumn($columns, ['currency_code', 'currency', 'supplier_currency_code', 'rate_currency']);
+                foreach (DB::table($table)->whereIn($cardColumn, array_keys($headers))->limit(8000)->get() as $object) {
+                    $row = (array) $object;
+                    $cardId = (int) ($row[$cardColumn] ?? 0);
+                    $header = $headers[$cardId] ?? null;
+                    if (! is_array($header)) continue;
+                    $from = trim((string) ($row[$fromColumn] ?? ''));
+                    $to = trim((string) ($row[$toColumn] ?? ''));
+                    if ($from === '' || $to === '') continue;
+                    $currency = strtoupper(trim((string) ($currencyColumn ? ($row[$currencyColumn] ?? '') : ($header['rate_currency'] ?? ''))));
+                    $base = [
+                        'id' => (int) ($row[$idColumn] ?? 0),
+                        'source_table' => $table,
+                        'rate_card_id' => $cardId,
+                        'rate_card_name' => (string) ($header['card_name'] ?? ''),
+                        'name' => $from.' → '.$to,
+                        'display' => $from.' → '.$to,
+                        'from_location' => $from,
+                        'to_location' => $to,
+                        'company_name' => (string) ($header['company_name'] ?? ''),
+                        'company_id' => (int) ($header['company_id'] ?? 0),
+                        'rate_currency' => $currency,
+                        'effective_from' => (string) ($header['effective_from'] ?? ''),
+                    ];
+                    $vehicle = trim((string) ($vehicleColumn ? ($row[$vehicleColumn] ?? '') : ''));
+                    if ($vehicle !== '') {
+                        [$field, $rate] = $this->transportMatrixRate($row, $columns, $vehicle);
+                        $rows->push($base + ['vehicle_type' => $vehicle, 'rate_amount' => is_numeric($rate) ? (float) $rate : null, 'rate_field' => $field, 'rate_raw_value' => $rate]);
+                        continue;
+                    }
+                    // Wide native matrices expose one column per known vehicle;
+                    // each non-null cell becomes its own exact vehicle row.
+                    foreach (['car', 'coaster', 'gmc', 'hiace', 'starex', 'van', 'bus', 'sedan', 'suv'] as $vehicleName) {
+                        [$field, $rate] = $this->transportMatrixRate($row, $columns, $vehicleName);
+                        if ($field === null || ! is_numeric($rate)) continue;
+                        $rows->push($base + ['vehicle_type' => strtoupper($vehicleName) === 'GMC' ? 'GMC' : ucfirst($vehicleName), 'rate_amount' => (float) $rate, 'rate_field' => $field, 'rate_raw_value' => $rate]);
+                    }
+                }
+            } catch (\Throwable) {
+                // Another host-specific matrix table must not disable a valid one.
+            }
+        }
+        return $rows;
+    }
+
+    /**
+     * Resolve the native value belonging to one rate-card matrix vehicle.
+     *
+     * @return array{0:?string,1:mixed}
+     */
+    private function transportMatrixRate(array $row, array $columns, string $vehicle): array
+    {
+        $vehicleKey = strtolower(trim($vehicle));
+        $vehicleKey = preg_replace('/[^a-z0-9]+/', '_', $vehicleKey) ?? '';
+        $vehicleKey = trim($vehicleKey, '_');
+
+        $vehicleCandidates = $vehicleKey === '' ? [] : [
+            $vehicleKey.'_rate', $vehicleKey.'_rate_sar', $vehicleKey.'_sar_rate',
+            'rate_'.$vehicleKey, 'rate_'.$vehicleKey.'_sar',
+            $vehicleKey.'_cost', $vehicleKey.'_cost_sar', $vehicleKey.'_vendor_rate',
+            $vehicleKey.'_supplier_rate', $vehicleKey.'_price', $vehicleKey.'_amount',
+            $vehicleKey,
+        ];
+        $genericCandidates = [
+            'rate', 'rate_amount', 'amount', 'price', 'transport_rate', 'supplier_rate',
+            'vendor_rate', 'cost_rate', 'supplier_amount', 'supplier_cost', 'vendor_cost',
+            'cost_amount', 'cost_price', 'supplier_price', 'vendor_price', 'purchase_price',
+            'cost', 'fare', 'net_rate', 'sar_rate', 'sr_rate', 'rate_sar', 'cost_sar',
+        ];
+
+        // Prefer a positive selected-vehicle matrix value. This is important
+        // where a legacy generic rate field remains at 0 while the real matrix
+        // stores the current Car/Coaster/etc. amount in a vehicle-specific cell.
+        foreach (array_merge($vehicleCandidates, $genericCandidates) as $column) {
+            if (! in_array($column, $columns, true) || ! array_key_exists($column, $row)) continue;
+            $value = $row[$column];
+            if (is_numeric($value) && (float) $value > 0) return [$column, $value];
+        }
+
+        // A zero is still meaningful when it is the only configured matrix
+        // value, but it must be returned only after every positive native field
+        // has been considered.
+        foreach (array_merge($vehicleCandidates, $genericCandidates) as $column) {
+            if (in_array($column, $columns, true) && array_key_exists($column, $row) && is_numeric($row[$column])) {
+                return [$column, $row[$column]];
+            }
+        }
+
+        return [null, null];
     }
 
     /** Vehicle choices are master-driven. If no dedicated vehicle master is

@@ -4,12 +4,21 @@ namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\NativeSalesInvoiceInspector;
+use App\Services\Operations\BookingInvoiceEligibilityResolver;
+use App\Services\Operations\BookingCommercialCompletenessResolver;
+use App\Services\Operations\NativeSalesInvoiceCreateCapability;
+use App\Services\Operations\NativeSalesInvoiceRuntimeBridge;
+use App\Http\Controllers\Operations\GeneralBookingAirProductController;
+use App\Http\Controllers\Operations\GeneralBookingHotelProductController;
+use App\Http\Controllers\Operations\GeneralBookingTransportProductController;
+use App\Http\Controllers\Operations\GeneralBookingVisaProductController;
 use App\Services\Sales\AirTicketInvoiceCommercialSyncService;
-use App\Services\Sales\NativeBookingSalesInvoiceCreator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -26,8 +35,11 @@ final class StableBookingSalesInvoiceController extends Controller
 {
     public function __construct(
         private readonly NativeSalesInvoiceInspector $invoices,
-        private readonly NativeBookingSalesInvoiceCreator $creator,
+        private readonly NativeSalesInvoiceRuntimeBridge $runtimeBridge,
         private readonly AirTicketInvoiceCommercialSyncService $airSync,
+        private readonly BookingInvoiceEligibilityResolver $eligibility,
+        private readonly BookingCommercialCompletenessResolver $commercialCompleteness,
+        private readonly NativeSalesInvoiceCreateCapability $createCapability,
     ) {}
 
     public function __invoke(Request $request, int $booking): RedirectResponse
@@ -39,54 +51,39 @@ final class StableBookingSalesInvoiceController extends Controller
         $existing = $this->find($booking);
 
         if ((int) ($existing['id'] ?? 0) > 0) {
+            if ($request->isMethod('post')) {
+                return $this->reviewSuccess($booking, 'Sales Invoice already exists. No duplicate invoice was created.');
+            }
             return $this->open(
                 (int) $existing['id'],
                 'Existing Sales Invoice opened. No duplicate invoice was created.'
             );
         }
 
+        if (! $this->createCapability->enabled()) {
+            return $this->bookingError($request,$booking,$this->createCapability->disabledMessage());
+        }
+
+        if (! $this->bookingIsApproved($booking)) {
+            return $this->bookingError($request, $booking, 'Approve the booking before creating its Sales Invoice.');
+        }
+        $commercial=$this->commercialState($request,$booking);
+        if(!$commercial['complete']){
+            return $this->bookingError($request,$booking,'Booking commercial data is incomplete. '.implode(' ',$commercial['reasons']));
+        }
+
         try {
-            $result = $this->creator->create(
-                $request,
-                $booking
-            );
+            $result = $this->runtimeBridge->create($request,$booking,(float)$commercial['expected_total'],(int)$commercial['product_count']);
         } catch (ValidationException $error) {
-            $recovered = $this->find($booking);
-
-            if ((int) ($recovered['id'] ?? 0) > 0) {
-                return $this->open(
-                    (int) $recovered['id'],
-                    'Sales Invoice created successfully.'
-                );
-            }
-
             return $this->bookingError(
+                $request,
                 $booking,
                 $error->errors()['invoice'][0]
                     ?? $error->getMessage()
             );
         } catch (Throwable $error) {
-            $recovered = $this->find($booking);
-
-            if ((int) ($recovered['id'] ?? 0) > 0) {
-                Log::warning(
-                    'ERP-11.3.75 recovered Sales Invoice after native service exception.',
-                    [
-                        'booking_id' => $booking,
-                        'invoice_id' => (int) $recovered['id'],
-                        'exception' => get_class($error),
-                        'message' => $error->getMessage(),
-                    ]
-                );
-
-                return $this->open(
-                    (int) $recovered['id'],
-                    'Sales Invoice created successfully.'
-                );
-            }
-
             Log::error(
-                'ERP-11.3.75 native Sales Invoice creation failed before persistence.',
+                'ERP-11.3.167 native Sales Invoice transaction failed and was rolled back.',
                 [
                     'booking_id' => $booking,
                     'exception' => get_class($error),
@@ -97,9 +94,9 @@ final class StableBookingSalesInvoiceController extends Controller
             );
 
             return $this->bookingError(
+                $request,
                 $booking,
-                'Sales Invoice could not be created. The native create operation failed before persistence. '
-                    .'The failure has been logged for review.'
+                'Sales Invoice could not be created or safely verified. The transaction was rolled back and the failure has been logged.'
             );
         }
 
@@ -124,6 +121,7 @@ final class StableBookingSalesInvoiceController extends Controller
 
         if ($invoiceId <= 0) {
             return $this->bookingError(
+                $request,
                 $booking,
                 'The native Sales Invoice operation returned without creating a linked invoice.'
             );
@@ -134,10 +132,38 @@ final class StableBookingSalesInvoiceController extends Controller
             $booking
         );
 
-        return $this->open(
-            $invoiceId,
-            'Sales Invoice created successfully.'
-        );
+        if ($request->isMethod('post')) return $this->reviewSuccess($booking, 'Sales Invoice created successfully.');
+        return $this->open($invoiceId, 'Sales Invoice created successfully.');
+    }
+
+    private function bookingIsApproved(int $bookingId): bool
+    {
+        if (! Schema::hasTable('bookings')) return false;
+        $columns = Schema::getColumnListing('bookings');
+        $row=DB::table('bookings')->where('id',$bookingId)->first();
+        return $row ? $this->eligibility->resolve((array)$row)['eligible'] : false;
+    }
+
+    private function commercialState(Request $request,int $bookingId):array
+    {
+        $air=$this->snapshot(fn()=>app(GeneralBookingAirProductController::class)->show($request,$bookingId)->getData(true));
+        $hotel=$this->snapshot(fn()=>app(GeneralBookingHotelProductController::class)->show($request,$bookingId)->getData(true));
+        $transport=$this->snapshot(fn()=>app(GeneralBookingTransportProductController::class)->show($request,$bookingId)->getData(true));
+        $visa=$this->snapshot(fn()=>app(GeneralBookingVisaProductController::class)->show($request,$bookingId)->getData(true));
+        $selected=[];
+        if(($air['itinerary']??[])||($air['tickets']??[]))$selected[]='air';
+        if($hotel['stays']??[])$selected[]='hotel';
+        if($transport['transports']??[])$selected[]='transport';
+        if($visa['visa_rows']??[])$selected[]='visa';
+        $state=$this->commercialCompleteness->resolve($selected,$air,$hotel,$transport,$visa);
+        $state['expected_total']=round(array_sum([(float)($air['summary']['customer_total']??0),(float)($hotel['summary']['customer_total']??0),(float)($transport['summary']['customer_total']??0),(float)($visa['summary']['customer_total']??0)]),2);
+        $state['product_count']=count($selected);
+        return $state;
+    }
+
+    private function snapshot(callable $resolver):array
+    {
+        try{$value=$resolver();return is_array($value)?$value:[];}catch(Throwable $error){report($error);return [];}
     }
 
     private function find(int $bookingId): ?array
@@ -248,9 +274,11 @@ final class StableBookingSalesInvoiceController extends Controller
     }
 
     private function bookingError(
+        Request $request,
         int $bookingId,
         string $message
     ): RedirectResponse {
+        if($request->isMethod('post')) return redirect()->route('bookings.review.show',['booking'=>$bookingId])->with('review_error',trim($message));
         return redirect()
             ->to(
                 url('/operations/bookings/'.$bookingId)
@@ -258,5 +286,10 @@ final class StableBookingSalesInvoiceController extends Controller
             ->withErrors([
                 'invoice' => trim($message),
             ]);
+    }
+
+    private function reviewSuccess(int $bookingId,string $message):RedirectResponse
+    {
+        return redirect()->route('bookings.review.show',['booking'=>$bookingId])->with('review_success',$message);
     }
 }

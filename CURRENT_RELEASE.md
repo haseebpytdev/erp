@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.161
-APPLICATION_VERSION=v1.1.33.161-ERP11.3.161
+CURRENT_VERSION=ERP-11.3.167
+APPLICATION_VERSION=v1.1.33.167-ERP11.3.167
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.161
+LAST_PACKAGED_RELEASE=ERP-11.3.167
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -55,3 +55,41 @@ migration or package was created.
 ERP-11.3.161 release candidate packages the shared commercial Vendor authority:
 positive supplier costs require an existing cost owner across Air, Hotel,
 Transport and Visa; Review status and approval consume the same resolver.
+
+ERP-11.3.162 release candidate adds the Air Vendor, public voucher-token and
+Travel Status migrations; separates readiness eligibility from persisted Ready;
+enforces Approved/Ready read-only presentation and server locks; fixes internal
+voucher/public QR route collisions; and keeps native Sales Invoice creation in
+explicit default-off safe mode pending host-runtime verification.
+
+ERP-11.3.163 release candidate adds the guarded native host-runtime Sales
+Invoice bridge. Creation remains unavailable unless the host service and
+createFromBooking method exist. Eligible creation is serialized and wrapped in
+a database transaction, prevents duplicates, verifies the Draft header,
+customer, booking, native number, product lines and authoritative total before
+commit, and rolls back on any mismatch. No fallback accounting writes, automatic
+approval/posting or new migration are added.
+
+ERP-11.3.164 release candidate makes the host Booking model Customer / Party
+relationship the first shared authority for the main booking, Booking Review,
+Sales Invoice eligibility and native creator input. It also introduces the
+approved two-level Visa presentation: clean section actions, one-line desktop
+headers, associated passenger detail strips, compact row actions, balanced
+totals/pagination and locked read-only behavior. Visa calculations, persistence
+and commercial authority are unchanged. No migration is added.
+
+ERP-11.3.165 release candidate persists the native host `confirmed` booking
+state only when the GENERAL approval transition succeeds and returns it to an
+editable non-confirmed state on submit/reopen. The native Sales Invoice gate,
+runtime bridge, customer authority and legacy booking workflow remain intact.
+No migration is added.
+
+ERP-11.3.166 release candidate writes `bookings.status` directly on GENERAL
+approval, reads it back inside the transaction, and rolls back instead of
+reporting success if the host-native confirmation state did not persist. Reopen
+returns the native status to an editable state. No migration is added.
+
+ERP-11.3.167 release candidate adds a temporary Super-Admin-only GET diagnostic
+for the host SalesInvoiceService confirmation predicate. It is reflection and
+read-query only: it cannot invoke invoice creation or write booking/accounting data.
+No migration is added.

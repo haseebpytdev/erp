@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
+use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
@@ -27,6 +28,10 @@ use Throwable;
 final class GeneralBookingAirProductController extends Controller
 {
     private const AIR_VENDOR_COLUMN = 'vendor_id';
+
+    public function __construct(
+        private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+    ) {}
 
     public function show(Request $request, int $booking): JsonResponse
     {
@@ -189,17 +194,58 @@ final class GeneralBookingAirProductController extends Controller
                 );
 
                 $nativeStage = 'Passenger Tickets / PNR Commercials';
+                // Keep one named payload for both the native write and the
+                // mandatory read-after-write assertion.  Previously the
+                // assertion referenced an undefined variable, which caused the
+                // transaction to roll back after a successful native write and
+                // surfaced as the generic native-store failure.
+                $ticketPayloads = (array) ($data['tickets'] ?? []);
                 $this->syncTickets(
                     (int) $service['id'],
                     $booking,
                     $bookingRow,
                     $passengers,
-                    (array) ($data['tickets'] ?? []),
+                    $ticketPayloads,
                     $common,
                     $fareCommercials,
                 );
 
                 $freshTickets = $this->ticketRows((int) $service['id'], $passengers);
+                $submittedPassengerIds = array_values(array_filter(array_map(
+                    static fn (array $ticket): int => (int) ($ticket['booking_passenger_id'] ?? 0),
+                    $ticketPayloads
+                )));
+                $nativePassengerIds = array_values(array_filter(array_map(
+                    static fn (array $ticket): int => (int) ($ticket['booking_passenger_id'] ?? 0),
+                    $freshTickets
+                )));
+                $missingPassengerLinks = array_diff($submittedPassengerIds, $nativePassengerIds);
+
+                // A successful save is a native, one-row-per-passenger contract.
+                // Count alone is insufficient: duplicate or wrongly-linked rows can
+                // otherwise satisfy a superficial readback and still fail native
+                // Sales Invoice passenger-link validation later.
+                if (count($ticketPayloads) > 0 && (
+                    count($submittedPassengerIds) !== count(array_unique($submittedPassengerIds))
+                    || count($freshTickets) !== count($ticketPayloads)
+                    || count($nativePassengerIds) !== count(array_unique($nativePassengerIds))
+                    || $missingPassengerLinks !== []
+                )) {
+                    throw ValidationException::withMessages([
+                        'air' => 'Native Air passenger-ticket synchronization did not persist one unique native passenger link for every submitted row.',
+                    ]);
+                }
+
+                // The host SalesInvoiceService validates the generic native
+                // BookingService::passengers relation, not the Air-specific
+                // ticket table. Use the already-read-back ticket rows as the
+                // only source and keep this pivot synchronization in the same
+                // transaction as the Air save.
+                $this->passengerLinks->syncAirFromNative(
+                    $booking,
+                    (int) $service['id'],
+                );
+                $this->syncAirServiceCommercialSnapshot((int) $service['id'], $this->summary($freshTickets, (int) $service['id']));
 
                 return [
                     'service' => $service,
@@ -590,7 +636,7 @@ final class GeneralBookingAirProductController extends Controller
         $foreignTable = $passengerColumn ? $this->foreignTable($table, $passengerColumn) : null;
         $passengerMap = [];
         foreach ($passengers as $passenger) {
-            $value = $this->ticketPassengerValue($passenger, $foreignTable);
+            $value = $this->ticketPassengerValue($passenger, $foreignTable, $passengerColumn);
             if ($value > 0) $passengerMap[$value] = $passenger;
         }
 
@@ -715,7 +761,7 @@ final class GeneralBookingAirProductController extends Controller
             ));
             $supplierTotal = max(0.0, round($vendorBaseNet + $vendorOtherAllocation, 2));
 
-            $passengerValue = $this->ticketPassengerValue($passenger, $foreignTable);
+            $passengerValue = $this->ticketPassengerValue($passenger, $foreignTable, $passengerColumn);
             if ($passengerValue <= 0) {
                 throw ValidationException::withMessages([
                     "tickets.$index.booking_passenger_id" => 'The native Air Ticket passenger link could not be resolved for this passenger.',
@@ -918,6 +964,8 @@ final class GeneralBookingAirProductController extends Controller
                 'vendor_incentive_percent' => 0.0,
                 'vendor_incentive_percentage' => 0.0,
             ]);
+
+            $this->normalizeRequiredNativeNumericDefaults($table, $row);
 
             $this->assertRequiredNativeContract($table, $row);
 
@@ -1288,6 +1336,22 @@ final class GeneralBookingAirProductController extends Controller
         $this->putAllowEmpty($update, $columns, ['airline_pnr', 'supplier_pnr'], trim((string) ($common['airline_pnr'] ?? '')));
         $serviceTicketStatus = strtoupper((string) ($common['ticket_status'] ?? 'BOOKED'));
         $this->putNativeEnum($update, 'booking_services', $columns, ['ticket_status'], $serviceTicketStatus, $this->ticketStatusAliases($serviceTicketStatus));
+        if (in_array('updated_at', $columns, true)) $update['updated_at'] = now();
+        if ($update) DB::table('booking_services')->where('id', $serviceId)->update($update);
+    }
+
+    private function syncAirServiceCommercialSnapshot(int $serviceId, array $summary): void
+    {
+        if ($serviceId <= 0 || ! Schema::hasTable('booking_services')) return;
+        $columns = $this->physicalColumnListing('booking_services');
+        $customer = round((float) ($summary['customer_total'] ?? 0), 2);
+        $supplier = round((float) ($summary['supplier_total'] ?? 0), 2);
+        $count = max(1, (int) ($summary['ticket_count'] ?? 1));
+        $update = [];
+        $this->putAllAllowEmpty($update, $columns, ['line_total','customer_total','selling_total','sale_amount','total_amount'], $customer);
+        $this->putAllAllowEmpty($update, $columns, ['supplier_total','vendor_total','supplier_amount','cost_amount'], $supplier);
+        $this->putAllAllowEmpty($update, $columns, ['quantity','qty'], $count);
+        $this->putAllAllowEmpty($update, $columns, ['unit_price','sale_price','selling_price'], round($customer / $count, 2));
         if (in_array('updated_at', $columns, true)) $update['updated_at'] = now();
         if ($update) DB::table('booking_services')->where('id', $serviceId)->update($update);
     }
@@ -1719,6 +1783,14 @@ final class GeneralBookingAirProductController extends Controller
         return $row;
     }
 
+    private function normalizeRequiredNativeNumericDefaults(string $table, array &$row): void
+    {
+        foreach ($this->columnMetadata($table) as $field => $meta) {
+            if ($this->columnCanBeOmitted($field, $meta) || ! in_array($this->metaType($meta), ['integer','bigint','smallint','tinyint','decimal','double','float'], true)) continue;
+            if (! array_key_exists($field, $row) || $row[$field] === null || $row[$field] === '') $row[$field] = 0;
+        }
+    }
+
     /**
      * Resolve mandatory legacy commercial siblings by field semantics.
      *
@@ -1960,8 +2032,9 @@ final class GeneralBookingAirProductController extends Controller
         return null;
     }
 
-    private function ticketPassengerValue(array $passenger, ?string $foreignTable): int
+    private function ticketPassengerValue(array $passenger, ?string $foreignTable, ?string $passengerColumn = null): int
     {
+        if ($passengerColumn === 'booking_passenger_id') return (int) ($passenger['id'] ?? 0);
         $foreign = strtolower((string) $foreignTable);
         if ($foreign !== '' && ! str_contains($foreign, 'booking_') && (
             str_contains($foreign, 'passenger') || str_contains($foreign, 'traveller') || str_contains($foreign, 'traveler')

@@ -13,19 +13,27 @@ id_ed25519
 /vendor/
 /node_modules/
 /storage/*.key
+/storage/*.pem
 /storage/framework/cache/
 /storage/framework/sessions/
 /storage/framework/views/
 /storage/logs/
-/bootstrap/cache/*.php
+/storage/logs/*
+/bootstrap/cache/
+/DEPLOY/
 
 # Test/build/deployment artifacts
 /.phpunit.cache/
+/.phpunit.result.cache
 /coverage/
 /.tmp-*/
 /.verify-*/
 /*.zip
 /*.zip.sha256.txt
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Editor / OS noise
 .DS_Store

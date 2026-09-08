@@ -600,7 +600,7 @@ html,body{
                     <div class="gp-field gp-c2"><label>Branch</label><select class="gp-select" name="branch_id"><option value="">Select branch</option>@foreach($branches as $branch)<option value="{{ $branch['id'] }}" @selected((string)$branchId === (string)$branch['id'])>{{ $branch['name'] }}</option>@endforeach</select></div>
                     <div class="gp-field gp-c3">
                         <label>Customer / Party *</label>
-                        @if($bookingId)
+                        @if($bookingId && $customerId)
                             <input type="hidden" name="customer_id" value="{{ $customerId ?: '' }}">
                             <input class="gp-input"
                                    value="{{ $customerName ?: 'Customer linked on original booking' }}"

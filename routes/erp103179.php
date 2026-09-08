@@ -7,6 +7,7 @@ use App\Http\Controllers\Operations\GeneralBookingHotelProductController;
 use App\Http\Controllers\Operations\GeneralBookingTransportProductController;
 use App\Http\Controllers\Operations\GeneralBookingVisaProductController;
 use App\Http\Controllers\Operations\GeneralBookingOperationalSummaryController;
+use App\Http\Controllers\Operations\GeneralBookingInvoiceSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingReviewController;
 use App\Http\Controllers\Operations\VisaMasterController;
 use App\Http\Controllers\Operations\GeneralBookingVoucherPreviewController;
@@ -37,6 +38,8 @@ use App\Http\Controllers\System\ReportsFilterAssetController;
 use App\Http\Controllers\System\BookingFocusAssetController;
 use App\Http\Controllers\System\GeneralProgressiveBookingAssetController;
 use App\Http\Controllers\System\AccountingJournalDiagnosticController;
+use App\Http\Controllers\System\AirLinkDbDiagnosticController;
+use App\Http\Controllers\System\TransportRateResolutionDiagnosticController;
 use App\Http\Controllers\System\SalesInvoiceWorkflowCompareController;
 use App\Http\Controllers\System\CashVoucherNativeJournalRepairController;
 use App\Http\Controllers\Administration\ErpUserManagementController;
@@ -51,10 +54,16 @@ use App\Http\Middleware\PresentAccountingReportsWorkspace;
 use App\Http\Middleware\PresentVisaManagementTravelMasterLink;
 use App\Http\Middleware\PresentCompanyVoucherFooterAuthority;
 use App\Http\Middleware\GuardApprovedGeneralBookingCommercials;
+use App\Http\Middleware\EnforceGeneralBookingEditLock;
+use App\Http\Middleware\PresentBookingRegisterInvoiceVisibility;
 use App\Http\Middleware\EnforceErpRoleScopedAccess;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Routing\Events\RouteMatched;
+
+Route::get('/voucher/{token}', [GeneralBookingVoucherPreviewController::class, 'publicShow'])
+    ->where('token', '[a-f0-9]{48}')
+    ->name('public.voucher.show');
 
 /*
 |--------------------------------------------------------------------------
@@ -212,6 +221,18 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         [GeneralBookingTransportProductController::class, 'store']
     )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.transport-product.store');
 
+    // Transport selection is server-backed so Remove -> Add Again always
+    // resolves one active native booking_services row before the editor loads.
+    Route::post(
+        '/system/erp-bookings/{booking}/transport-product/selection',
+        [GeneralBookingTransportProductController::class, 'activate']
+    )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.transport-product.activate');
+
+    Route::delete(
+        '/system/erp-bookings/{booking}/transport-product/selection',
+        [GeneralBookingTransportProductController::class, 'retire']
+    )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.transport-product.retire');
+
     // ERP-11.3.142 GENERAL Visa: passenger selection + bulk assignment +
     // Saudi Company -> Pakistani IATA -> Vendor reporting chain and effective-dated rates.
     Route::get(
@@ -229,6 +250,9 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         '/system/erp-bookings/{booking}/operational-summary',
         [GeneralBookingOperationalSummaryController::class, 'show']
     )->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.operational-summary.show');
+
+    Route::get('/system/erp-bookings/{booking}/invoice-summary', [GeneralBookingInvoiceSummaryController::class, 'show'])
+        ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.invoice-summary.show');
 
     // ERP-11.3.148 Visa Management is anchored to the REAL native Travel Masters
     // route used by production: /master-data/travel-masters. Keep the old
@@ -275,6 +299,8 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::post('/operations/bookings/{booking}/review/{action}', [GeneralBookingReviewController::class, 'action'])
         ->whereNumber('booking')->where('action', 'submit|approve|reopen|notes|ready')
         ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.review.action');
+    Route::get('/system/diagnostics/air-link-db/{booking}', AirLinkDbDiagnosticController::class)->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class);
+    Route::get('/system/diagnostics/transport-rate-resolution/{booking}', TransportRateResolutionDiagnosticController::class)->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class);
 
     // ERP-11.3.10 Chart of Accounts canonical workspace.
     // This URI intentionally does not compete with the legacy native Chart route.
@@ -477,6 +503,35 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     }
 
     $route->middleware(PresentAccountingReportsWorkspace::class);
+});
+
+/* The installed host may already own /voucher/{voucher}. Its different route
+ * parameter name creates the same URL matcher without replacing this overlay's
+ * /voucher/{token} entry. Normalize every exact public-voucher matcher to the
+ * same read-only controller before dispatch, and remove employee middleware. */
+foreach (Route::getRoutes()->getRoutes() as $publicVoucherCandidate) {
+    if (
+        in_array('GET',$publicVoucherCandidate->methods(),true)
+        && preg_match('#^voucher/\{[^}]+\}$#',trim((string)$publicVoucherCandidate->uri(),'/'))===1
+    ) {
+        $publicVoucherCandidate->setAction([
+            'uses'=>GeneralBookingVoucherPreviewController::class.'@publicRoute',
+            'controller'=>GeneralBookingVoucherPreviewController::class.'@publicRoute',
+            'middleware'=>['web'],
+        ]);
+    }
+}
+
+/* One authoritative hard-lock boundary for every booking mutation. Workflow
+ * transitions and the accounting bridge remain separate, explicit actions. */
+Event::listen(RouteMatched::class, function (RouteMatched $event): void {
+    $route = $event->route;
+    $methods = array_map('strtoupper', $route->methods());
+    if (array_diff($methods, ['GET','HEAD']) === []) return;
+    $uri = strtolower(trim((string) $route->uri(), '/'));
+    $isBookingWrite = preg_match('#^(?:system/erp-bookings|operations/bookings)/\{[^}]+\}(?:/|$)#', $uri) === 1;
+    if (! $isBookingWrite || str_ends_with($uri, '/sales-invoice')) return;
+    $route->middleware(EnforceGeneralBookingEditLock::class);
 });
 
 // Native Company Profile source is owned by the installed base application.
@@ -1102,4 +1157,17 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     $route->middleware(
         EnsureAirTicketCommercialIntegrityBeforeNativeWorkflow::class
     );
+});
+
+Event::listen(RouteMatched::class, function (RouteMatched $event): void {
+    $route=$event->route;
+    if(!in_array('GET',$route->methods(),true)) return;
+    $name=strtolower((string)$route->getName());
+    $action=strtolower((string)$route->getActionName());
+    $uri=strtolower(trim((string)$route->uri(),'/'));
+    if(
+        in_array($name,['operations.bookings.index','bookings.index'],true)
+        || (str_contains($action,'bookingcontroller')&&str_ends_with($action,'@index'))
+        || $uri==='operations/bookings'
+    ) $route->middleware(PresentBookingRegisterInvoiceVisibility::class);
 });

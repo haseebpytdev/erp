@@ -7,6 +7,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class BookingWorkspaceShellPresenter
 {
+    public function __construct(private readonly BookingEditLockResolver $bookingLocks) {}
+
     public function transform(Request $request, Response $response): Response
     {
         if (
@@ -543,6 +545,7 @@ html.et-booking-focus-prepaint [data-et-other-services-panel="ERP-11.3.54"]
         border-radius:10px!important;
     }
 }
+
 @media(max-width:760px){
     html.et-booking-focus-prepaint{
         --et-booking-canvas-gutter:10px;
@@ -839,6 +842,15 @@ HTML;
         // Booking Review entry stays inside the existing focused booking shell.
         // It is injected only on the native GENERAL booking view/edit page.
         if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $bookingMatch)) {
+            $lock=$this->bookingLocks->resolve((int)$bookingMatch[1]);
+            if($lock['locked']&&!str_contains($html,'data-et-server-booking-lock="1"')){
+                $message=e($lock['reason']);
+                $locked=<<<HTML
+<div data-et-server-booking-lock="1" style="width:min(100% - 48px,1280px);margin:8px auto;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font:700 11px Arial,sans-serif">{$message}</div>
+<script>(function(){function lock(){var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('.page-body');if(!root)return;root.querySelectorAll('input,select,textarea').forEach(function(e){e.disabled=true;e.setAttribute('aria-disabled','true')});root.querySelectorAll('button,[role="button"]').forEach(function(e){if(/\b(add|remove|delete|edit|apply|save|bulk|update|create|toggle)\b/i.test(e.textContent||e.value||'')){e.hidden=true;e.disabled=true}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock);else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true})})();</script>
+HTML;
+                $html=preg_replace('/<\/body>/i',$locked."\n</body>",$html,1)??$html;
+            }
             $reviewEntry = '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/review')).'" '
                 .'data-et-booking-review-entry="1" style="position:fixed;right:18px;bottom:18px;z-index:1000;padding:10px 15px;border-radius:9px;background:#1769d2;color:#fff;text-decoration:none;font:800 11px Arial,sans-serif;box-shadow:0 5px 16px rgba(23,105,210,.28)">Review Booking</a>';
             if (! str_contains($html, 'data-et-booking-review-entry="1"') && stripos($html, '</body>') !== false) {

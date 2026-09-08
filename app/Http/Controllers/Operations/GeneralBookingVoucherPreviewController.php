@@ -196,12 +196,17 @@ final class GeneralBookingVoucherPreviewController extends Controller
             ];
         }
         $resolvedVoucherFooter = $footerResolver->resolve($visaRows, (string) ($companyProfile['footer'] ?? ''));
-        $voucherQrImage = $this->safeVoucherUrl($this->firstString($bookingData, [
-            'public_voucher_qr_url', 'voucher_qr_url', 'qr_code_url', 'public_qr_url',
-        ]), true);
-        $publicVoucherUrl = $this->safeVoucherUrl($this->firstString($bookingData, [
-            'public_voucher_url', 'voucher_public_url', 'public_view_url', 'share_url',
-        ]), false);
+        $publicToken = $this->publicVoucherToken($booking, $bookingData);
+        /* Do not use a named route here. Installed hosts can already contain
+         * /voucher/{voucher}; its equivalent URI shape may own a different
+         * placeholder name and make route(..., ['token'=>...]) throw during
+         * internal preview. The public contract is one fixed opaque path. */
+        $publicVoucherUrl = $publicToken !== ''
+            ? url('/voucher/'.$publicToken)
+            : '';
+        $voucherQrImage = $publicVoucherUrl !== ''
+            ? 'https://api.qrserver.com/v1/create-qr-code/?size=164x164&margin=8&format=png&data='.rawurlencode($publicVoucherUrl)
+            : '';
 
         return view('operations.bookings.general-client-voucher-v113142', [
             'company' => $companyProfile,
@@ -238,7 +243,63 @@ final class GeneralBookingVoucherPreviewController extends Controller
             'outboundSegments' => $outboundSegments,
             'returnSegments' => $returnSegments,
             'accommodationOnly' => $accommodationOnly,
+            'publicMode' => (bool) $request->attributes->get('public_voucher', false),
         ]);
+    }
+
+    public function publicShow(
+        Request $request,
+        string $token,
+        CompanyProfileSnapshotService $company,
+        ClientVoucherFooterResolver $footerResolver,
+        ClientVoucherPassengerVisaMap $passengerVisaMap,
+        UnifiedGroupPackageDataSource $source,
+    ): View {
+        abort_unless(
+            preg_match('/^[a-f0-9]{48}$/', $token) === 1
+            && Schema::hasTable('bookings')
+            && Schema::hasColumn('bookings', 'public_voucher_token'),
+            404,
+            'Voucher not found.'
+        );
+        $booking = (int) DB::table('bookings')->where('public_voucher_token', $token)->value('id');
+        abort_unless($booking > 0, 404, 'Voucher not found.');
+        $request->attributes->set('public_voucher', true);
+
+        return $this->show($request, $booking, $company, $footerResolver, $passengerVisaMap, $source);
+    }
+
+    /** Collision-safe adapter for an installed host route using another parameter name. */
+    public function publicRoute(
+        Request $request,
+        CompanyProfileSnapshotService $company,
+        ClientVoucherFooterResolver $footerResolver,
+        ClientVoucherPassengerVisaMap $passengerVisaMap,
+        UnifiedGroupPackageDataSource $source,
+    ): View {
+        $parameters=$request->route()?->parameters() ?? [];
+        $token=trim((string)reset($parameters));
+        return $this->publicShow($request,$token,$company,$footerResolver,$passengerVisaMap,$source);
+    }
+
+    private function publicVoucherToken(int $booking, array $bookingData): string
+    {
+        try {
+            if (! Schema::hasColumn('bookings', 'public_voucher_token')) return '';
+            $existing = strtolower(trim((string) ($bookingData['public_voucher_token'] ?? '')));
+            if (preg_match('/^[a-f0-9]{48}$/', $existing) === 1) return $existing;
+
+            for ($attempt = 0; $attempt < 3; $attempt++) {
+                $token = bin2hex(random_bytes(24));
+                DB::table('bookings')->where('id', $booking)->whereNull('public_voucher_token')
+                    ->update(['public_voucher_token'=>$token]);
+                $stored = strtolower(trim((string) DB::table('bookings')->where('id', $booking)->value('public_voucher_token')));
+                if (preg_match('/^[a-f0-9]{48}$/', $stored) === 1) return $stored;
+            }
+        } catch (Throwable $error) {
+            report($error);
+        }
+        return '';
     }
 
     /** @return array<string,mixed> */

@@ -8,6 +8,8 @@ use App\Services\Operations\BookingCommercialCompletenessResolver;
 use App\Services\Operations\GroupUmrahEditAuthority;
 use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Operations\NativeSalesInvoiceInspector;
+use App\Services\Operations\NativeSalesInvoiceCreateCapability;
+use App\Services\Operations\NativeBookingCustomerResolver;
 use App\Services\Organization\CompanyProfileSnapshotService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,11 +20,11 @@ use Throwable;
 
 final class GeneralBookingReviewController extends Controller
 {
-    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, BookingTravelReadinessResolver $readiness, BookingCommercialCompletenessResolver $commercialResolver, GroupUmrahEditAuthority $authority): View
+    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, NativeSalesInvoiceCreateCapability $invoiceCreateCapability, NativeBookingCustomerResolver $customerAuthority, BookingTravelReadinessResolver $readiness, BookingCommercialCompletenessResolver $commercialResolver, GroupUmrahEditAuthority $authority): View
     {
         $row = $this->booking($booking);
         $snapshots = $this->snapshots($request, $booking);
-        $selected = $this->selected($snapshots);
+        $selected = $this->selected($snapshots, $booking);
         $commercial = $this->commercial($row, $snapshots);
         $commercialState = $commercialResolver->resolve($selected, ...array_values($snapshots));
         $checklist = $commercialState['items'];
@@ -32,13 +34,18 @@ final class GeneralBookingReviewController extends Controller
 
         return view('operations.bookings.general-booking-review-v113160', [
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'booking' => $row,
-            'company' => $company->get($row), 'identity' => $this->identity($row, $booking),
+            'company' => $company->get($row), 'identity' => $this->identity($row, $booking, $customerAuthority->resolve($booking)),
             'passengerSummary' => $this->passengerSummary($passengers), 'airSummary' => $this->airSummary($snapshots['air']),
             'hotelSummary' => $this->hotelSummary($snapshots['hotel']), 'transportSummary' => $this->transportSummary($snapshots['transport']),
             'visaSummary' => $this->visaSummary($snapshots['visa']), 'commercial' => $commercial,
             'selected' => $selected, 'checklist' => $checklist, 'completion' => ['done'=>$commercialState['passed_count'],'total'=>$commercialState['applicable_count'],'percent'=>$commercialState['applicable_count']?(int)round($commercialState['passed_count']/$commercialState['applicable_count']*100):0],
             'approvalStatus' => $this->approvalStatus($row), 'travel' => $travel,
+            'persistedTravelStatus' => $this->persistedTravelStatus($row),
             'accounting' => $this->accounting($invoice), 'payment' => $this->payment($booking, $commercial['final_sale_total']),
+            'invoice' => $invoice['latest'] ?? null,
+            'invoiceUrl' => route('operations.bookings.sales-invoice.stable', ['booking'=>$booking]),
+            'invoiceCreateEnabled' => $invoiceCreateCapability->enabled(),
+            'invoiceCreateDisabledMessage' => $invoiceCreateCapability->disabledMessage(),
             'specialInstructions' => $this->first($row, ['special_instructions','voucher_instructions','client_instructions','notes','remarks','description']),
             'specialField' => $this->column(['special_instructions','voucher_instructions','client_instructions']),
             'internalNotes' => $this->first($row, ['internal_notes','booking_internal_notes','staff_notes','private_notes']),
@@ -48,36 +55,52 @@ final class GeneralBookingReviewController extends Controller
         ]);
     }
 
-    public function action(Request $request, int $booking, string $action, GroupUmrahEditAuthority $authority): RedirectResponse
+    public function action(Request $request, int $booking, string $action, GroupUmrahEditAuthority $authority): mixed
     {
         $row = $this->booking($booking); $columns = Schema::getColumnListing('bookings');
         if ($action === 'ready') {
-            $snapshots=$this->snapshots($request,$booking);$selected=$this->selected($snapshots);
+            $snapshots=$this->snapshots($request,$booking);$selected=$this->selected($snapshots,$booking);
             $state=app(BookingTravelReadinessResolver::class)->resolve($row,$selected,...array_values($snapshots));
-            if(!$state['ready'])return back()->withErrors(['review'=>'Cannot mark Travel Ready: '.implode(' ',$state['blockers'])]);
+            if(!$state['ready']) return $this->businessFailure($request,$booking,'Cannot mark this booking as Travel Ready.',$state['blockers']);
             $travelField=$this->firstColumn($columns,['travel_status']);
-            abort_unless($travelField,422,'The native travel_status field is unavailable.');
-            $update=[$travelField=>'Ready'];if(in_array('updated_at',$columns,true))$update['updated_at']=now();DB::table('bookings')->where('id',$booking)->update($update);
-            return back()->with('review_success','Booking marked Travel Ready after all readiness gates passed.');
+            if(!$travelField) return $this->businessFailure($request,$booking,'System upgrade required.',['The travel status migration has not been applied.']);
+            $update=[$travelField=>'Ready'];
+            foreach(['travel_ready_at'=>now(),'travel_ready_by'=>$request->user()?->id] as $field=>$value) if(in_array($field,$columns,true))$update[$field]=$value;
+            if(in_array('updated_at',$columns,true))$update['updated_at']=now();DB::table('bookings')->where('id',$booking)->update($update);
+            return redirect()->route('bookings.review.show',['booking'=>$booking])->with('review_success','Booking marked Travel Ready after all readiness gates passed.');
         }
         $statusField = $this->firstColumn($columns, ['approval_status','workflow_status','booking_status','status']);
         abort_unless($statusField, 422, 'The native booking workflow status field is unavailable.');
         if ($action === 'submit') {
-            $snapshots = $this->snapshots($request, $booking); $state=app(BookingCommercialCompletenessResolver::class)->resolve($this->selected($snapshots),...array_values($snapshots));
+            $snapshots = $this->snapshots($request, $booking); $state=app(BookingCommercialCompletenessResolver::class)->resolve($this->selected($snapshots,$booking),...array_values($snapshots));
             if (!$state['complete']) return back()->withErrors(['review' => 'Cannot send for approval: '.implode(' ', $state['reasons'])]);
-            $this->setStatus($booking, $statusField, 'pending_approval', $columns, $request);
+            DB::transaction(function () use ($booking, $statusField, $columns, $request): void {
+                $this->setStatus($booking, $statusField, 'pending_approval', $columns, $request);
+                $this->syncGeneralNativeConfirmation($booking, 'pending', $statusField, $columns, $request);
+            });
             return back()->with('review_success', 'Booking sent for approval.');
         }
         if ($action === 'approve') {
             abort_unless($authority->canReopen($request->user()), 403, 'Only an authorized approver may approve this booking.');
             abort_unless($this->approvalStatus($row) === 'Pending Approval', 422, 'Only a pending booking can be approved.');
-            $this->setStatus($booking, $statusField, 'approved', $columns, $request);
+            DB::transaction(function () use ($booking, $statusField, $columns, $request): void {
+                $this->setStatus($booking, $statusField, 'approved', $columns, $request);
+                $this->syncGeneralNativeConfirmation($booking, 'CONFIRMED', $statusField, $columns, $request);
+            });
             return back()->with('review_success', 'Booking approved. Commercial product editing is now locked.');
         }
         if ($action === 'reopen') {
             abort_unless($authority->canReopen($request->user()), 403, 'Only an Administrator may reopen an approved booking.');
-            $this->setStatus($booking, $statusField, 'reopened', $columns, $request);
-            return back()->with('review_success', 'Booking reopened for controlled editing.');
+            DB::transaction(function () use ($booking, $statusField, $columns, $request): void {
+                $this->setStatus($booking, $statusField, 'reopened', $columns, $request);
+                $this->syncGeneralNativeConfirmation($booking, 'reopened', $statusField, $columns, $request);
+                if($travelField=$this->firstColumn($columns,['travel_status'])){
+                    $travelUpdate=[$travelField=>'PendingTravel'];
+                    if(in_array('updated_at',$columns,true))$travelUpdate['updated_at']=now();
+                    DB::table('bookings')->where('id',$booking)->update($travelUpdate);
+                }
+            });
+            return redirect()->route('bookings.review.show',['booking'=>$booking])->with('review_success','Booking reopened for controlled editing.');
         }
         if ($action === 'notes') {
             $data = $request->validate(['special_instructions'=>['nullable','string','max:5000'],'internal_notes'=>['nullable','string','max:5000']]); $update=[];
@@ -98,14 +121,14 @@ final class GeneralBookingReviewController extends Controller
         'visa'=>$this->safe(fn()=>app(GeneralBookingVisaProductController::class)->show($request,$id)->getData(true)),
     ]; }
     private function safe(callable $fn): array { try{$v=$fn();return is_array($v)?$v:[];}catch(Throwable $e){report($e);return [];} }
-    private function selected(array $s): array { $r=[]; if(($s['air']['itinerary']??[])||($s['air']['tickets']??[]))$r[]='air';if($s['hotel']['stays']??[])$r[]='hotel';if($s['transport']['transports']??[])$r[]='transport';if($s['visa']['visa_rows']??[])$r[]='visa';return $r; }
+    private function selected(array $s, int $booking): array { $r=[]; if(($s['air']['itinerary']??[])||($s['air']['tickets']??[]))$r[]='air';if($s['hotel']['stays']??[])$r[]='hotel';if(($s['transport']['transports']??[])||app(GeneralBookingTransportProductController::class)->activeServiceId($booking)!==null)$r[]='transport';if($s['visa']['visa_rows']??[])$r[]='visa';return array_values(array_unique($r)); }
     private function passengerSummary(array $rows):array{$a=$c=$i=0;foreach($rows as $r){$t=strtoupper($this->first((array)$r,['fare_type','passenger_type','age_type']));if(str_contains($t,'INF'))$i++;elseif(str_contains($t,'CHD')||str_contains($t,'CHILD'))$c++;else$a++;}return ['total'=>count($rows),'adult'=>$a,'child'=>$c,'infant'=>$i];}
     private function airSummary(array $s):array{$rows=array_values((array)($s['itinerary']??[]));$fmt=fn($r)=>trim($this->first((array)$r,['from','origin','departure_airport'])).' → '.trim($this->first((array)$r,['to','destination','arrival_airport']));return ['count'=>count($rows),'routes'=>array_values(array_filter(array_map($fmt,array_slice($rows,0,3))))];}
     private function hotelSummary(array $s):array{$rows=array_values((array)($s['stays']??[]));return ['count'=>count($rows),'total_nights'=>array_sum(array_map(fn($r)=>max(0,(int)((array)$r)['nights']??0),$rows)),'rows'=>array_slice($rows,0,3)];}
     private function transportSummary(array $s):array{$rows=array_values((array)($s['transports']??[]));return ['count'=>count($rows),'rows'=>array_slice($rows,0,3)];}
     private function visaSummary(array $s):array{$rows=(array)($s['visa_rows']??[]);$issued=count(array_filter($rows,fn($r)=>strtoupper($this->first((array)$r,['status','visa_status']))==='ISSUED'));return ['total'=>count($rows),'issued'=>$issued,'pending'=>count($rows)-$issued];}
     private function commercial(array $b,array $s):array{$customer=$vendor=0;foreach($s as $x){$customer+=(float)($x['summary']['customer_total']??0);$vendor+=(float)($x['summary']['vendor_total']??$x['summary']['supplier_total']??0);} $discount=(float)($this->first($b,['discount_amount','discount_value','total_discount'])?:0);$final=$this->first($b,['final_sale_total','net_total','grand_total','booking_total']);$final=$final!==''?(float)$final:max(0,$customer-$discount);return ['gross_customer_total'=>round($customer,2),'vendor_cost_total'=>round($vendor,2),'discount_type'=>$this->first($b,['discount_type','discount_mode'])?:'Amount','discount_value'=>round($discount,2),'final_sale_total'=>round($final,2),'gross_margin'=>round($final-$vendor,2),'agent_commission'=>(float)($this->first($b,['agent_commission','agent_commission_amount'])?:0),'salesperson_commission'=>(float)($this->first($b,['salesperson_commission','sales_commission','salesperson_commission_amount'])?:0),'currency'=>strtoupper($this->first($b,['currency_code','currency','booking_currency'])?:'PKR')];}
-    private function identity(array $b,int $id):array{return ['reference'=>$this->first($b,['booking_reference','booking_ref','booking_no','booking_number'])?:('Booking #'.$id),'voucher'=>$this->first($b,['travel_voucher_no','client_voucher_no','voucher_no','voucher_number'])?:'Generated on preview','booking_date'=>$this->first($b,['booking_date','date','created_at']),'travel_date'=>$this->first($b,['travel_date','departure_date','start_date']),'customer'=>$this->first($b,['customer_name','client_name','party_name'])?:'—','branch'=>$this->first($b,['branch_name','office_name'])?:'—','agent'=>$this->first($b,['agent_name','service_partner_name','partner_name'])?:'—','salesperson'=>$this->first($b,['salesperson_name','sales_person_name','created_by_name'])?:'—','package'=>$this->first($b,['package_name','package_reference','reference_name'])?:'—','manual'=>$this->first($b,['manual_voucher_no','manual_no','manual_number'])?:'—'];}
+    private function identity(array $b,int $id,array $customer):array{return ['reference'=>$this->first($b,['booking_reference','booking_ref','booking_no','booking_number'])?:('Booking #'.$id),'voucher'=>$this->first($b,['travel_voucher_no','client_voucher_no','voucher_no','voucher_number'])?:'Generated on preview','booking_date'=>$this->first($b,['booking_date','date','created_at']),'travel_date'=>$this->first($b,['travel_date','departure_date','start_date']),'customer'=>trim((string)($customer['name']??''))?:'—','branch'=>$this->first($b,['branch_name','office_name'])?:'—','agent'=>$this->first($b,['agent_name','service_partner_name','partner_name'])?:'—','salesperson'=>$this->first($b,['salesperson_name','sales_person_name','created_by_name'])?:'—','package'=>$this->first($b,['package_name','package_reference','reference_name'])?:'—','manual'=>$this->first($b,['manual_voucher_no','manual_no','manual_number'])?:'—'];}
     private function approvalStatus(array $b):string{$s=str_replace(['-','_'],' ',strtolower($this->first($b,['approval_status','workflow_status','booking_status','status'])?:'draft'));return match($s){'pending','pending approval','submitted'=>'Pending Approval','approved','confirmed'=>'Approved','reopened','reopen','reapproval required'=>'Reopened',default=>'Draft'};}
     private function accounting(array $x):array{$latest=$x['latest']??null;if(!$latest)return ['label'=>'Not Created','detail'=>'No Sales Invoice is linked to this booking.'];$s=strtolower((string)($latest['status']??'draft'));return ['label'=>ucwords(str_replace('_',' ',$s)),'detail'=>'Sales Invoice '.(($latest['number']??'')?:'#'.($latest['id']??'')).'.'];}
     private function payment(int $booking,float $due):array{$paid=0.0;try{if(Schema::hasTable('cash_vouchers')){$c=Schema::getColumnListing('cash_vouchers');$bc=$this->firstColumn($c,['booking_id','travel_booking_id','source_booking_id']);$ac=$this->firstColumn($c,['allocated_amount','amount','total_amount','base_amount']);$sc=$this->firstColumn($c,['status','voucher_status']);if($bc&&$ac){$q=DB::table('cash_vouchers')->where($bc,$booking);if($sc)$q->whereIn($sc,['approved','posted']);if(in_array('direction',$c,true))$q->where('direction','in');if(in_array('party_type',$c,true))$q->where('party_type','customer');$paid=(float)$q->sum($ac);}}}catch(Throwable){}$label=$paid<=0?'Unpaid':($due>0&&$paid+0.01<$due?'Partially Paid':'Paid');return ['label'=>$label,'paid'=>round($paid,2),'due'=>round(max(0,$due-$paid),2)];}
@@ -113,4 +136,29 @@ final class GeneralBookingReviewController extends Controller
     private function firstColumn(array $columns,array $keys):?string{foreach($keys as $k)if(in_array($k,$columns,true))return $k;return null;}
     private function column(array $keys):?string{return Schema::hasTable('bookings')?$this->firstColumn(Schema::getColumnListing('bookings'),$keys):null;}
     private function setStatus(int $id,string $field,string $value,array $columns,Request $request):void{$u=[$field=>$value];if(in_array('updated_at',$columns,true))$u['updated_at']=now();foreach($value==='approved'?['approved_by'=>$request->user()?->id,'approved_at'=>now()]:[] as $k=>$v)if(in_array($k,$columns,true))$u[$k]=$v;DB::table('bookings')->where('id',$id)->update($u);}
+    /** GENERAL workflow may use any visible alias; host accounting always reads bookings.status. */
+    private function syncGeneralNativeConfirmation(int $id,string $nativeStatus,string $workflowField,array $columns,Request $request):void
+    {
+        if(!in_array('status',$columns,true)) throw new \RuntimeException('The native bookings.status column is unavailable.');
+        $update=['status'=>$nativeStatus];
+        $confirmed=strcasecmp($nativeStatus,'CONFIRMED')===0;
+        foreach(['is_confirmed','confirmed'] as $field) if(in_array($field,$columns,true))$update[$field]=$confirmed?1:0;
+        if(in_array('confirmed_at',$columns,true))$update['confirmed_at']=$confirmed?now():null;
+        if($confirmed) foreach(['confirmed_by','confirmed_by_id','confirmed_user_id'] as $field) if(in_array($field,$columns,true))$update[$field]=$request->user()?->id;
+        if(in_array('updated_at',$columns,true))$update['updated_at']=now();
+        DB::table('bookings')->where('id',$id)->update($update);
+        $stored=trim((string)DB::table('bookings')->where('id',$id)->value('status'));
+        if(strcasecmp($stored,$nativeStatus)!==0) throw new \RuntimeException('Native booking status persistence verification failed.');
+    }
+    private function persistedTravelStatus(array $row):string
+    {
+        $value=trim((string)($row['travel_status']??''));
+        return strcasecmp(str_replace(['_','-'],'',$value),'ready')===0?'Ready':'PendingTravel';
+    }
+    private function businessFailure(Request $request,int $booking,string $message,array $blockers): mixed
+    {
+        $blockers=array_values(array_filter(array_map(fn($v)=>trim((string)$v),$blockers)));
+        if($request->expectsJson()||$request->ajax()) return response()->json(['message'=>$message,'error'=>'travel_ready_blocked','blockers'=>$blockers],422);
+        return redirect()->route('bookings.review.show',['booking'=>$booking])->with('review_error',$message.' Complete the following first: '.implode(' ',array_map(fn($v)=>'• '.$v,$blockers)));
+    }
 }

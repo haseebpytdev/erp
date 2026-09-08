@@ -30,7 +30,7 @@ class AdaptiveBookingWriter
 
         $this->put($row, $columns, ['booking_date', 'date'], $data['booking_date']);
         $this->put($row, $columns, ['booking_type', 'type', 'product_type'], $data['booking_type'] ?? 'UMRAH');
-        $this->put($row, $columns, ['customer_id', 'party_id', 'client_id'], $data['customer_id'] ?? null);
+        $this->put($row, $columns, $this->customerColumns(), $data['customer_id'] ?? null);
         $this->put($row, $columns, ['branch_id'], $data['branch_id'] ?? null);
         $this->put($row, $columns, ['currency_code', 'currency'], $data['currency_code'] ?? 'PKR');
         /*
@@ -105,7 +105,7 @@ class AdaptiveBookingWriter
 
         $this->put($row, $columns, ['booking_date', 'date'], $data['booking_date']);
         $this->put($row, $columns, ['booking_type', 'type', 'product_type'], $data['booking_type'] ?? 'UMRAH');
-        $this->put($row, $columns, ['customer_id', 'party_id', 'client_id'], $data['customer_id'] ?? null);
+        $this->put($row, $columns, $this->customerColumns(), $data['customer_id'] ?? null);
         $this->put($row, $columns, ['branch_id'], $data['branch_id'] ?? null);
         $this->put($row, $columns, ['currency_code', 'currency'], $data['currency_code'] ?? 'PKR');
         /*
@@ -175,6 +175,21 @@ class AdaptiveBookingWriter
                 return;
             }
         }
+    }
+
+    private function customerColumns(): array
+    {
+        return [
+            'customer_id',
+            'party_id',
+            'client_id',
+            'customer_party_id',
+            'customer_party_master_id',
+            'party_master_id',
+            'bill_to_party_id',
+            'account_party_id',
+            'customer_account_id',
+        ];
     }
 
     private function putAll(

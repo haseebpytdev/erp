@@ -35,16 +35,15 @@ th,td{border:1px solid #111;padding:3px 4px;vertical-align:middle}th{background:
 </style>
 </head>
 <body>
-<div class="toolbar">
+@if(empty($publicMode))<div class="toolbar">
     <a href="{{ url('/operations/bookings/'.$bookingId) }}">Back to Booking</a>
     <button type="button" onclick="window.print()">Print / Save PDF</button>
-</div>
+</div>@endif
 <div class="sheet">
     <div class="header">
         <div class="logo-box">
             @if(!empty($company['logo']))
-                <img class="logo" src="{{ $company['logo'] }}" alt="Company Logo" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
-                <div class="logo-fallback" hidden>{{ $companyInitials }}</div>
+                <img class="logo" src="{{ $company['logo'] }}" alt="Company Logo" onerror="this.hidden=true">
             @else
                 <div class="logo-fallback">{{ $companyInitials }}</div>
             @endif

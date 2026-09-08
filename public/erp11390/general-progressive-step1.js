@@ -691,6 +691,7 @@ var etgpSetProductCollapsed113127=function(reference,key,value){try{localStorage
    that need per-product persisted totals. */
 var etgpProductCustomerTotals113127={};
 var etgpProductCurrency113127='PKR';
+var etgpServerSelectedProducts113180=[];
 
 /* ERP-11.3.153 — authoritative persisted booking summary.  Product editors may
    show unsaved local totals inside their own workspace, but only this endpoint
@@ -715,13 +716,46 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       var currency=String(data.currency||'PKR').trim().toUpperCase()||'PKR';
       etgpProductCustomerTotals113127=Object.assign({},data.product_customer_totals||{});
       etgpProductCurrency113127=currency;
+      var serverSelected=Array.isArray(data.selected_products)?data.selected_products.map(function(key){return String(key||'').toLowerCase();}):[];
+      var selectionChanged=serverSelected.join(',')!==etgpServerSelectedProducts113180.join(',');
+      etgpServerSelectedProducts113180=serverSelected;
       etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),'Derived from saved product customer totals');
       var blockers=Array.isArray(data.readiness_blockers)?data.readiness_blockers:[];
       etgpAirSetKpi113124('Travel Status',data.travel_status||'PendingTravel',blockers.length?blockers[0]:'All selected travel services are ready');
+      etgpApplyBookingLock113162(data);
+      if(selectionChanged&&typeof renderProducts==='function'){
+        var root=document.querySelector('.etgp-step1');
+        if(root){var reference=root.dataset.bookingReference||'';var pax=passengerCount(root.querySelector('.etgp-passenger-card')||root);renderProducts(root,reference,pax);}
+      }
       return data;
     }).catch(function(){return null;});
 };
 window.etgpRefreshPersistedBookingState113153=etgpRefreshPersistedBookingState113153;
+var etgpApplyBookingLock113162=function(data){
+  var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('main');
+  if(!root)return;
+  var invoice=data&&data.sales_invoice||null;
+  var info=root.querySelector('[data-etgp-invoice-status]');
+  if(!info){info=document.createElement('div');info.setAttribute('data-etgp-invoice-status','1');info.style.cssText='margin:8px 0;padding:8px 12px;border:1px solid #dce7f3;border-radius:8px;background:#fff;font-size:11px';root.insertBefore(info,root.firstChild);}
+  var invoiceLabel=invoice?String(invoice.number||('#'+invoice.id))+' · '+String(invoice.status||'Draft').replace(/_/g,' '):'Not Created';
+  info.innerHTML='<strong>Sales Invoice:</strong> '+invoiceLabel+(invoice?' <a target="_blank" rel="noopener noreferrer" href="'+String(data.sales_invoice_url||'')+'">Open Sales Invoice</a>':'');
+  if(!data||data.booking_locked!==true)return;
+  document.documentElement.classList.add('et-booking-locked-113162');
+  var banner=root.querySelector('[data-etgp-booking-lock]');
+  if(!banner){banner=document.createElement('div');banner.setAttribute('data-etgp-booking-lock','1');banner.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font-size:11px;font-weight:700';root.insertBefore(banner,root.firstChild);}
+  banner.textContent=String(data.booking_lock_reason||'Booking is locked after approval. Reopen the booking before making changes.');
+  Array.prototype.slice.call(root.querySelectorAll('input,select,textarea')).forEach(function(el){
+    el.disabled=true;el.setAttribute('aria-disabled','true');
+    if(el.type==='hidden'||el.getAttribute('data-etgp-readonly-rendered')==='1')return;
+    el.setAttribute('data-etgp-readonly-rendered','1');
+    if(el.type==='checkbox'||el.type==='radio'){el.hidden=true;return;}
+    var value=el.tagName==='SELECT'&&el.selectedIndex>=0?el.options[el.selectedIndex].text:String(el.value||'—');
+    var read=document.createElement('span');read.className='etgp-readonly-value-113164';read.textContent=value||'—';el.hidden=true;el.insertAdjacentElement('afterend',read);
+  });
+  var mutation=/\b(add|remove|delete|edit|apply|save|bulk|update|create|toggle|setup|rates|select passengers)\b/i;
+  Array.prototype.slice.call(root.querySelectorAll('button,[role="button"],a')).forEach(function(el){if(mutation.test(String(el.textContent||el.value||''))){el.hidden=true;if('disabled'in el)el.disabled=true;}});
+  Array.prototype.slice.call(root.querySelectorAll('[data-etgp-product-buttons] button,[data-etgp-product-buttons] [role="button"]')).forEach(function(el){el.disabled=true;el.setAttribute('aria-disabled','true');el.style.pointerEvents='none';el.classList.add('etgp-static-product-indicator-113164');});
+};
 document.addEventListener('et:booking-product-saved',function(event){
   var detail=event&&event.detail||{};
   etgpRefreshPersistedBookingState113153(detail.bookingId||etgpBookingId11397(),detail.selectedProducts);
@@ -828,16 +862,11 @@ var etgpAirDraftClear113119=function(bookingId){try{localStorage.removeItem(etgp
 var etgpAirApplyDraft113119=function(data,bookingId){
   var draft=etgpAirDraftRead113119(bookingId);
   if(!draft||!draft.payload)return data;
-  var payload=draft.payload||{};
   var merged=Object.assign({},data||{});
-  if(payload.common)merged.common=Object.assign({},merged.common||{},payload.common);
-  if(Array.isArray(payload.segments))merged.itinerary=payload.segments;
-  if(Array.isArray(payload.tickets))merged.tickets=payload.tickets;
-  if(Array.isArray(payload.fare_commercials)){
-    var fareMap={};payload.fare_commercials.forEach(function(row){if(row&&row.fare_type)fareMap[String(row.fare_type).toUpperCase()]=row;});
-    merged.fare_commercials=fareMap;
-  }
-  merged._etgpDraftRestored113119=true;
+  /* A browser draft is recovery-only. It must never replace persisted
+     passenger-ticket or commercial rows, because those native rows are the
+     authority used by Sales Invoice passenger-link validation. */
+  merged._etgpDraftAvailable113119=true;
   return merged;
 };
 
@@ -1673,7 +1702,11 @@ var etgpTransportRender113139=function(host,data,bookingId){
   data=data||{};
   var draft=etgpTransportDraftRead113139(bookingId);
   if(draft&&draft.payload&&Array.isArray(draft.payload.transports)&&draft.payload.transports.length){
-    if(etgpTransportDraftMatchesSaved113139(draft.payload,data.transports)){
+    // Persisted Transport is the route/rate authority. A browser draft may
+    // resume an empty editor, but it may never replace an existing saved row
+    // (particularly a legacy row whose Route was previously polluted by a
+    // vehicle label).
+    if(Array.isArray(data.transports)&&data.transports.length){
       etgpTransportDraftClear113139(bookingId);
     }else{
       data=Object.assign({},data,{transports:draft.payload.transports,_draftRestored:true});
@@ -1723,6 +1756,11 @@ var etgpTransportRender113139=function(host,data,bookingId){
     return select;
   };
   var currentMaster=function(select){var option=select&&select.options?select.options[select.selectedIndex]:null;return option&&option._etgpMaster113139?option._etgpMaster113139:null;};
+  var rateMasterForVehicle=function(routeMaster,vehicleMaster){
+    var matrix=routeMaster&&Array.isArray(routeMaster.rate_matrix)?routeMaster.rate_matrix:[routeMaster||{}];
+    var vehicleName=norm(vehicleMaster&&vehicleMaster.name||'');
+    return matrix.find(function(item){return vehicleName!==''&&norm(item&&item.vehicle_type||'')===vehicleName;})||matrix[0]||null;
+  };
   var supplierMatch=function(name){var wanted=norm(name);return suppliers.find(function(v){return norm(v.name||'')===wanted;})||null;};
 
   var sourceCost=function(c){return etgpTransportMoney113139(c.costRate.value);};
@@ -1784,7 +1822,12 @@ var etgpTransportRender113139=function(host,data,bookingId){
 
     var costWrap=create('div','etgp-transport-cost-wrap-113141');
     var costCurrency=create('span','etgp-transport-cost-currency-113141',String(saved.cost_currency||'PKR').toUpperCase());
-    var costRate=makeInput(saved.cost_rate===undefined?(saved.cost_amount===undefined?'':saved.cost_amount):saved.cost_rate,'number','0.00');costRate.min='0';costRate.step='0.01';costRate.dataset.currency=String(saved.cost_currency||'PKR').toUpperCase();
+    // The server response is the only resolver authority. In particular, a
+    // zero from a legacy booking snapshot must not mask the current effective
+    // Transport master rate already resolved by the GET endpoint.
+    var resolvedServerCost=Number(saved.resolved_cost_rate||0);
+    var initialCost=resolvedServerCost>0?resolvedServerCost:(saved.cost_rate===undefined?(saved.cost_amount===undefined?'':saved.cost_amount):saved.cost_rate);
+    var costRate=makeInput(initialCost,'number','0.00');costRate.min='0';costRate.step='0.01';costRate.dataset.currency=String(saved.cost_currency||'PKR').toUpperCase();
     costWrap.appendChild(costCurrency);costWrap.appendChild(costRate);row.appendChild(costWrap);
 
     var fx=makeInput(saved.exchange_rate===undefined?'':saved.exchange_rate,'number','0.000000');fx.min='0';fx.step='0.000001';fx.readOnly=true;row.appendChild(fx);
@@ -1801,12 +1844,12 @@ var etgpTransportRender113139=function(host,data,bookingId){
     entry.appendChild(detail);
     body.appendChild(entry);
 
-    var controls={row:entry,index:index,route:route,vehicle:vehicle,qty:qty,driver:driver,cell:cell,plate:plate,company:company,brn:brn,sale:sale,costRate:costRate,costCurrency:costCurrency,fx:fx,answer:answer,notes:notes,savedCostCurrency:String(saved.cost_currency||''),savedExchangeRate:Number(saved.exchange_rate||0)};rows.push(controls);
+    var controls={row:entry,index:index,route:route,vehicle:vehicle,qty:qty,driver:driver,cell:cell,plate:plate,company:company,brn:brn,sale:sale,costRate:costRate,costCurrency:costCurrency,fx:fx,answer:answer,notes:notes,savedCostCurrency:String(saved.cost_currency||''),savedExchangeRate:Number(saved.exchange_rate||0),resolvedServerCost:resolvedServerCost};rows.push(controls);
     var initialMaster=currentMaster(route);
     if(initialMaster){
       if(!vehicle.value&&initialMaster.vehicle_type){var im=vehicleOptions.findIndex(function(v){return norm(v.name||'')===norm(initialMaster.vehicle_type||'');});if(im>=0)vehicle.value='master:'+im;}
       if(!company.value&&initialMaster.company_name)company.value=String(initialMaster.company_name);
-      setCostMaster(controls,initialMaster,false);
+      setCostMaster(controls,rateMasterForVehicle(initialMaster,currentMaster(vehicle))||initialMaster,false);
     }else{
       if(!controls.costCurrency.textContent)controls.costCurrency.textContent='PKR';
       if(!fx.value&&String(controls.costCurrency.textContent).toUpperCase()==='PKR')fx.value='1.000000';
@@ -1820,8 +1863,9 @@ var etgpTransportRender113139=function(host,data,bookingId){
       if(master.company_name)company.value=String(master.company_name);
       if(master.brn_number&&!brn.value)brn.value=String(master.brn_number);
       controls.savedExchangeRate=0;controls.savedCostCurrency='';
-      setCostMaster(controls,master,false);
+      setCostMaster(controls,rateMasterForVehicle(master,currentMaster(vehicle))||master,false);
     });
+    vehicle.addEventListener('change',function(){var master=currentMaster(route);if(master)setCostMaster(controls,rateMasterForVehicle(master,currentMaster(vehicle))||master,false);});
     [sale,costRate,qty].forEach(function(input){input.addEventListener('input',recalcAll);input.addEventListener('change',recalcAll);});
     remove.addEventListener('click',function(){if(rows.length<=1){[driver,cell,plate,company,brn,sale,costRate,notes].forEach(function(input){input.value='';});route.value='';vehicle.value='';qty.value='1';costCurrency.textContent='PKR';fx.value='1.000000';recalcAll();return;}var pos=rows.indexOf(controls);if(pos!==-1)rows.splice(pos,1);entry.remove();rows.forEach(function(item,i){item.index.textContent=String(i+1);});recalcAll();});
     recalcAll();
@@ -1837,10 +1881,10 @@ var etgpTransportRender113139=function(host,data,bookingId){
   add.addEventListener('click',function(){addRow({});rows[rows.length-1].route.focus();});
   var payload=function(){
     return {transports:rows.map(function(c){
-      var routeMaster=currentMaster(c.route),vehicleMaster=currentMaster(c.vehicle),supplier=supplierMatch(c.company.value),fx=fxValue(c),rate=sourceCost(c),qty=Math.max(1,Number(c.qty.value||1)||1),costPkr=rate*qty*fx;
+      var routeMaster=currentMaster(c.route),vehicleMaster=currentMaster(c.vehicle),rateMaster=rateMasterForVehicle(routeMaster,vehicleMaster)||routeMaster,supplier=supplierMatch(c.company.value),fx=fxValue(c),rate=sourceCost(c),qty=Math.max(1,Number(c.qty.value||1)||1),costPkr=rate*qty*fx;
       return {
-        route_master_id:routeMaster?Number(routeMaster.id||0)||null:null,
-        route_source_table:routeMaster?plain(routeMaster.source_table||''):'',
+        route_master_id:rateMaster?Number(rateMaster.id||0)||null:null,
+        route_source_table:rateMaster?plain(rateMaster.source_table||''):'',
         route_name:routeMaster?plain(routeMaster.name||''):'',
         vehicle_master_id:vehicleMaster?Number(vehicleMaster.id||0)||null:null,
         vehicle_source_table:vehicleMaster?plain(vehicleMaster.source_table||''):'',
@@ -1892,15 +1936,22 @@ var loadSelected=function(reference){
 
     var parsed=JSON.parse(raw);
 
-    return Array.isArray(parsed)
+    var selected=Array.isArray(parsed)
       ? parsed.filter(function(key){
           return productDefinitions.some(function(item){
             return item.key===key;
           });
         })
       : [];
+    var serverSelected=new URLSearchParams(window.location.search).get('selected_products')||'';
+    if(serverSelected.split(',').indexOf('transport')!==-1&&selected.indexOf('transport')===-1)selected.push('transport');
+    etgpServerSelectedProducts113180.forEach(function(key){if(selected.indexOf(key)===-1)selected.push(key);});
+    return selected;
   }catch(e){
-    return [];
+    var serverSelected=new URLSearchParams(window.location.search).get('selected_products')||'';
+    var selected=serverSelected.split(',').indexOf('transport')!==-1?['transport']:[];
+    etgpServerSelectedProducts113180.forEach(function(key){if(selected.indexOf(key)===-1)selected.push(key);});
+    return selected;
   }
 };
 
@@ -2100,26 +2151,24 @@ var etgpVisaRender113142=function(host,data,bookingId){
   var rates=Array.isArray(data.rates)?data.rates:[];
   var statuses=Array.isArray(data.statuses)?data.statuses:['pending','submitted','approved','issued','rejected','cancelled'];
   var rows=(Array.isArray(data.visa_rows)?data.visa_rows:[]).map(function(row){return Object.assign({},row);});
-  var selected={};var expanded={};var page=1;var pageSize=10;var query='';var dirty=!!data._draftRestored;var timer=null;
+  var selected={};var page=1;var pageSize=10;var query='';var statusFilter='';var dirty=!!data._draftRestored;var timer=null;
   var rateById={};rates.forEach(function(r){rateById[String(r.id)]=r;});
   var passengerById={};passengers.forEach(function(p){passengerById[String(p.id)]=p;});
 
   var block=create('div','etgp-visa-block-113142');host.appendChild(block);
   var head=create('div','etgp-visa-head-113142');
-  var titleWrap=create('div','etgp-visa-title-wrap-113142 etgp-product-subsection-161');titleWrap.appendChild(create('div','etgp-visa-title-113142','Visa Services'));
-  var count=create('span','etgp-visa-count-113142','Visa Services: '+rows.length);titleWrap.appendChild(count);head.appendChild(titleWrap);
+  var titleWrap=create('div','etgp-visa-title-wrap-113142 etgp-product-subsection-161');titleWrap.appendChild(create('span','etgp-visa-section-icon-113167','▣'));var titleText=create('div','etgp-visa-title-text-113167');titleText.appendChild(create('div','etgp-visa-title-113142','Visa'));titleText.appendChild(create('div','etgp-visa-subtitle-113167','Passenger visa processing, issuance and commercials'));titleWrap.appendChild(titleText);head.appendChild(titleWrap);
   var actions=create('div','etgp-visa-head-actions-113142');
   var setup=create('a','etgp-visa-btn-113142','Visa Setup / Rates');setup.href=String(data.setup_url||('/master-data/travel-masters/visa-management?booking='+bookingId));setup.target='_blank';actions.appendChild(setup);
   var bulk=create('button','etgp-visa-btn-113142','Bulk Actions');bulk.type='button';actions.appendChild(bulk);
   var add=create('button','etgp-visa-btn-113142','+ Add Visa');add.type='button';actions.appendChild(add);
   var save=create('button','etgp-visa-btn-113142 is-primary','Save Visa Data');save.type='button';actions.appendChild(save);head.appendChild(actions);block.appendChild(head);
 
-  var helper=create('div','etgp-visa-helper-113142','Add Visa selects passengers and applies one Visa Rate, sale and initial status before rows are created. Bulk Actions remains available for later corrections.');block.appendChild(helper);
-  var tools=create('div','etgp-visa-tools-113142');var search=create('input','form-control');search.type='search';search.placeholder='Search passenger, passport, visa no., reference…';tools.appendChild(search);var shown=create('span','etgp-visa-shown-113142','');tools.appendChild(shown);block.appendChild(tools);
+  var tools=create('div','etgp-visa-tools-113142');var search=create('input','form-control');search.type='search';search.placeholder='Search passenger, passport, visa no. or reference';tools.appendChild(search);var filters=create('details','etgp-visa-filters-113167');var filterButton=create('summary','etgp-visa-filter-btn-113167','Filters');filters.appendChild(filterButton);var filterSelect=create('select','form-select etgp-visa-filter-select-113167');var allStatuses=create('option','','All statuses');allStatuses.value='';filterSelect.appendChild(allStatuses);statuses.forEach(function(s){var option=create('option','',String(s).charAt(0).toUpperCase()+String(s).slice(1));option.value=String(s).toLowerCase();filterSelect.appendChild(option);});filters.appendChild(filterSelect);tools.appendChild(filters);block.appendChild(tools);
   var feedback=create('div','etgp-visa-feedback-113142');feedback.hidden=true;block.appendChild(feedback);
+  var servicesHead=create('div','etgp-visa-services-head-113167');var servicesTitle=create('div','etgp-visa-services-title-113167');servicesTitle.appendChild(create('strong','','Visa Services'));servicesTitle.appendChild(create('p','','Passenger-linked Visa details and saved customer/vendor commercials.'));servicesHead.appendChild(servicesTitle);var count=create('span','etgp-visa-count-113142','Visa Services: '+rows.length);servicesHead.appendChild(count);block.appendChild(servicesHead);
   var table=create('div','etgp-visa-table-113142');block.appendChild(table);
-  var pager=create('div','etgp-visa-pager-113142');block.appendChild(pager);
-  var summary=create('div','etgp-visa-summary-113142');var sc=create('div','etgp-visa-summary-item-113142'),sv=create('div','etgp-visa-summary-item-113142'),sm=create('div','etgp-visa-summary-item-113142');summary.appendChild(sc);summary.appendChild(sv);summary.appendChild(sm);block.appendChild(summary);
+  var footer=create('div','etgp-visa-footer-113167');var summary=create('div','etgp-visa-summary-113142');var sc=create('div','etgp-visa-summary-item-113142'),sv=create('div','etgp-visa-summary-item-113142'),sm=create('div','etgp-visa-summary-item-113142');summary.appendChild(sc);summary.appendChild(sv);summary.appendChild(sm);footer.appendChild(summary);var footerNav=create('div','etgp-visa-footer-nav-113167');var shown=create('span','etgp-visa-shown-113142','');footerNav.appendChild(shown);var pager=create('div','etgp-visa-pager-113142');footerNav.appendChild(pager);footer.appendChild(footerNav);block.appendChild(footer);
 
   var normalizeRow=function(row){
     var rate=rateById[String(row.visa_rate_card_id||'')];var p=passengerById[String(row.booking_passenger_id||'')];
@@ -2134,7 +2183,7 @@ var etgpVisaRender113142=function(host,data,bookingId){
   var rateSelect=function(row){var sel=create('select','form-select');var opt=create('option','','Select Visa Rate');opt.value='';sel.appendChild(opt);rates.forEach(function(r){var o=create('option','',r.display||((r.country||'')+' · '+(r.visa_type||'')+' · '+(r.saudi_company_name||'')));o.value=String(r.id);if(String(row.visa_rate_card_id||'')===String(r.id))o.selected=true;sel.appendChild(o);});return sel;};
   var statusSelect=function(row){var sel=create('select','form-select etgp-visa-status-113142');statuses.forEach(function(s){var o=create('option','',String(s).charAt(0).toUpperCase()+String(s).slice(1));o.value=String(s);if(String(row.status||'pending')===String(s))o.selected=true;sel.appendChild(o);});return sel;};
 
-  var filtered=function(){var q=norm(query);if(!q)return rows.slice();return rows.filter(function(r){return norm([r.passenger_name,r.passport_number,r.country,r.visa_type,r.saudi_company_name,r.pakistani_iata_name,r.vendor_name,r.visa_number,r.application_reference,r.status].join(' ')).indexOf(q)!==-1;});};
+  var filtered=function(){var q=norm(query);return rows.filter(function(r){var matchesStatus=!statusFilter||String(r.status||'').toLowerCase()===statusFilter;var matchesQuery=!q||norm([r.passenger_name,r.passport_number,r.country,r.visa_type,r.saudi_company_name,r.pakistani_iata_name,r.vendor_name,r.visa_number,r.application_reference,r.status].join(' ')).indexOf(q)!==-1;return matchesStatus&&matchesQuery;});};
   var updatePageBounds=function(){var total=Math.max(1,Math.ceil(filtered().length/pageSize));if(page>total)page=total;if(page<1)page=1;return total;};
 
   var render=function(){
@@ -2144,16 +2193,16 @@ var etgpVisaRender113142=function(host,data,bookingId){
       var line=create('div','etgp-visa-grid-113142 etgp-visa-main-row-113142');var chk=create('input','');chk.type='checkbox';chk.checked=!!selected[String(row.booking_passenger_id)];chk.addEventListener('change',function(){selected[String(row.booking_passenger_id)]=chk.checked;});line.appendChild(chk);
       var pn=create('div','etgp-visa-passenger-113142');pn.appendChild(create('strong','',row.passenger_name||'Passenger'));pn.appendChild(create('span','',row.passport_number||'—'));line.appendChild(pn);
       line.appendChild(create('div','',row.country||'—'));line.appendChild(create('div','',row.visa_type||'—'));line.appendChild(create('div','',row.saudi_company_name||'—'));line.appendChild(create('div','',row.pakistani_iata_name||'—'));
-      var st=statusSelect(row);st.addEventListener('change',function(){row.status=st.value;persist();});line.appendChild(st);
+      var st=statusSelect(row);st.addEventListener('change',function(){row.status=st.value;st.classList.toggle('is-issued',row.status==='issued');persist();});st.classList.toggle('is-issued',row.status==='issued');line.appendChild(st);
       var sale=create('input','form-control');sale.type='number';sale.step='0.01';sale.min='0';sale.value=String(row.sale_pkr||0);sale.addEventListener('input',function(){row.sale_pkr=etgpVisaMoney113142(sale.value);row.margin_pkr=row.sale_pkr-etgpVisaMoney113142(row.vendor_cost_pkr);refreshSummary();persist();});line.appendChild(sale);
       line.appendChild(create('div','etgp-visa-money-113142',Number(row.vendor_cost_pkr||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})));
       var ans=create('div','etgp-visa-answer-113142');ans.innerHTML='<span>C <strong>'+Number(row.sale_pkr||0).toLocaleString()+'</strong></span><span>V <strong>'+Number(row.vendor_cost_pkr||0).toLocaleString()+'</strong></span><span>M <strong class="'+(row.margin_pkr<0?'is-negative':'')+'">'+Number(row.margin_pkr||0).toLocaleString()+'</strong></span>';line.appendChild(ans);
-      var act=create('div','etgp-visa-actions-113142');var edit=create('button','etgp-visa-icon-btn-113142',expanded[String(row.booking_passenger_id)]?'▲':'✎');edit.type='button';edit.title='Edit Visa details';var del=create('button','etgp-visa-icon-btn-113142 is-danger','×');del.type='button';del.title='Remove Visa passenger';act.appendChild(edit);act.appendChild(del);line.appendChild(act);wrap.appendChild(line);
-      var detail=create('div','etgp-visa-detail-113142');detail.hidden=!expanded[String(row.booking_passenger_id)];
+      var act=create('div','etgp-visa-actions-113142');var edit=create('button','etgp-visa-icon-btn-113142','✎');edit.type='button';edit.title='Edit Visa details';var del=create('button','etgp-visa-icon-btn-113142 is-danger','×');del.type='button';del.title='Remove Visa passenger';act.appendChild(edit);act.appendChild(del);line.appendChild(act);wrap.appendChild(line);
+      var detail=create('div','etgp-visa-detail-113142');
       var addField=function(label,input){var f=create('div','etgp-visa-detail-field-113142');f.appendChild(create('label','',label));f.appendChild(input);detail.appendChild(f);};
       var app=create('input','form-control');app.value=row.application_reference||'';app.placeholder='Application / Reference';addField('Application Ref.',app);var vn=create('input','form-control');vn.value=row.visa_number||'';vn.placeholder='Visa No.';addField('Visa No.',vn);var issue=create('input','form-control');issue.type='date';issue.value=row.issue_date||'';addField('Issue Date',issue);var expiry=create('input','form-control');expiry.type='date';expiry.value=row.expiry_date||'';addField('Expiry Date',expiry);var note=create('input','form-control');note.value=row.notes||'';note.placeholder='Operational notes';addField('Notes',note);
       [[app,'application_reference'],[vn,'visa_number'],[issue,'issue_date'],[expiry,'expiry_date'],[note,'notes']].forEach(function(pair){pair[0].addEventListener('input',function(){row[pair[1]]=pair[0].value;persist();});pair[0].addEventListener('change',function(){row[pair[1]]=pair[0].value;persist();});});
-      edit.addEventListener('click',function(){expanded[String(row.booking_passenger_id)]=!expanded[String(row.booking_passenger_id)];render();});del.addEventListener('click',function(){rows=rows.filter(function(x){return x!==row;});delete selected[String(row.booking_passenger_id)];persist();refreshSummary();render();});
+      edit.addEventListener('click',function(){app.focus();});del.addEventListener('click',function(){rows=rows.filter(function(x){return x!==row;});delete selected[String(row.booking_passenger_id)];persist();refreshSummary();render();});
       wrap.appendChild(detail);table.appendChild(wrap);
     });
     var prev=create('button','etgp-visa-page-btn-113142','‹');prev.type='button';prev.disabled=page<=1;prev.addEventListener('click',function(){page--;render();});pager.appendChild(prev);for(var i=1;i<=pages;i++){var b=create('button','etgp-visa-page-btn-113142'+(i===page?' is-current':''),String(i));b.type='button';(function(n){b.addEventListener('click',function(){page=n;render();});})(i);pager.appendChild(b);}var next=create('button','etgp-visa-page-btn-113142','›');next.type='button';next.disabled=page>=pages;next.addEventListener('click',function(){page++;render();});pager.appendChild(next);
@@ -2207,6 +2256,7 @@ var etgpVisaRender113142=function(host,data,bookingId){
   bulk.addEventListener('click',function(){var ids=Object.keys(selected).filter(function(k){return selected[k];});if(!ids.length){feedback.hidden=false;feedback.className='etgp-visa-feedback-113142 is-error';feedback.textContent='Select Visa passenger rows first, then use Bulk Actions.';return;}var m=modal('Bulk Actions · '+ids.length+' selected');var rateLabel=create('label','etgp-visa-modal-label-113142','Visa Rate');m.body.appendChild(rateLabel);var dummy={};var rs=rateSelect(dummy);m.body.appendChild(rs);var statusLabel=create('label','etgp-visa-modal-label-113142','Status (optional)');m.body.appendChild(statusLabel);var st=create('select','form-select');st.appendChild(create('option','','Keep current status'));statuses.forEach(function(s){var o=create('option','',s.charAt(0).toUpperCase()+s.slice(1));o.value=s;st.appendChild(o);});m.body.appendChild(st);var saleLabel=create('label','etgp-visa-modal-label-113142','Sale PKR (leave blank to use rate default)');m.body.appendChild(saleLabel);var sale=create('input','form-control');sale.type='number';sale.step='0.01';sale.min='0';m.body.appendChild(sale);var footer=create('div','etgp-visa-modal-footer-113142');var apply=create('button','etgp-visa-btn-113142 is-primary','Apply to '+ids.length+' Passenger(s)');apply.type='button';footer.appendChild(apply);m.body.appendChild(footer);apply.addEventListener('click',function(){var r=rateById[String(rs.value||'')];rows.forEach(function(row){if(ids.indexOf(String(row.booking_passenger_id))===-1)return;if(r){row.visa_rate_card_id=r.id;row.country=r.country;row.visa_type=r.visa_type;row.saudi_company_id=r.saudi_company_id;row.saudi_company_name=r.saudi_company_name;row.pakistani_iata_id=r.pakistani_iata_id;row.pakistani_iata_name=r.pakistani_iata_name;row.vendor_id=r.vendor_id;row.vendor_name=r.vendor_name;row.cost_currency=r.cost_currency;row.cost_rate=r.cost_rate;row.exchange_rate=r.exchange_rate||0;row.vendor_cost_pkr=r.vendor_cost_pkr||0;row.sale_pkr=sale.value!==''?etgpVisaMoney113142(sale.value):etgpVisaMoney113142(r.default_sale_pkr||0);}else if(sale.value!=='')row.sale_pkr=etgpVisaMoney113142(sale.value);if(st.value)row.status=st.value;normalizeRow(row);});m.overlay.remove();persist();render();});});
 
   search.addEventListener('input',function(){query=search.value;page=1;render();});
+  filterSelect.addEventListener('change',function(){statusFilter=String(filterSelect.value||'').toLowerCase();page=1;render();filters.open=false;});
   var payload=function(){return {visas:rows.map(function(r){return {booking_passenger_id:Number(r.booking_passenger_id||0),visa_rate_card_id:Number(r.visa_rate_card_id||0),country:r.country||'',visa_type:r.visa_type||'',saudi_company_id:Number(r.saudi_company_id||0),application_reference:r.application_reference||'',visa_number:r.visa_number||'',status:r.status||'pending',issue_date:r.issue_date||null,expiry_date:r.expiry_date||null,sale_pkr:etgpVisaMoney113142(r.sale_pkr),cost_currency:r.cost_currency||'SAR',cost_rate:etgpVisaMoney113142(r.cost_rate),notes:r.notes||''};})};};
   host._etgpVisaPayload113142=payload;
   if(data._draftRestored){feedback.hidden=false;feedback.className='etgp-visa-feedback-113142 is-draft';feedback.textContent='Unsaved Visa data was restored from this browser.';}
@@ -2216,6 +2266,19 @@ var etgpVisaRender113142=function(host,data,bookingId){
 
 var renderVisaProductWorkspace113142=function(shell){
   var bookingId=etgpBookingId11397();var host=create('div','etgp-visa-workspace-113142 is-loading');host.setAttribute('data-etgp-visa-workspace-113142','1');host.appendChild(create('div','etgp-visa-loading-113142','Loading saved Visa data…'));shell.appendChild(host);if(!bookingId){host.innerHTML='';host.appendChild(create('div','etgp-visa-feedback-113142 is-error','Booking ID could not be resolved from this page.'));return;}etgpVisaLoad113142(bookingId).then(function(data){etgpVisaRender113142(host,data,bookingId);}).catch(function(error){host.innerHTML='';host.classList.remove('is-loading');host.appendChild(create('div','etgp-visa-feedback-113142 is-error',error&&error.message?error.message:'Visa Data could not be loaded.'));});
+};
+
+/* Native Transport forms live directly under body, never inside the host
+ * booking form. Visible controls submit by form=, preserving valid HTML. */
+var etgpEnsureTransportSelectionForm113179=function(bookingId,retire){
+  var id='etgp-transport-selection-form-'+String(bookingId)+'-'+(retire?'retire':'activate');
+  var form=document.getElementById(id);
+  if(form)return id;
+  form=create('form','etgp-transport-selection-form-113179');form.id=id;form.method='POST';form.action='/system/erp-bookings/'+String(bookingId)+'/transport-product/selection';form.hidden=true;
+  var csrf=create('input','');csrf.type='hidden';csrf.name='_token';csrf.value=String(etgpCsrf11397());form.appendChild(csrf);
+  if(retire){var method=create('input','');method.type='hidden';method.name='_method';method.value='DELETE';form.appendChild(method);}
+  document.body.appendChild(form);
+  return id;
 };
 
 var renderProducts=function(
@@ -2238,6 +2301,10 @@ var renderProducts=function(
     if(isSelected){button.classList.add('is-selected');button.textContent='✓ '+product.short;}
     if(paxCount<1){button.disabled=true;button.title='Add at least one passenger first.';}
 
+    if(product.key==='transport'&&!isSelected){
+      button.type='submit';button.setAttribute('form',etgpEnsureTransportSelectionForm113179(etgpBookingId11397(),false));buttons.appendChild(button);
+      return;
+    }
     button.addEventListener('click',function(){
       if(paxCount<1)return;
       etgpAirFlushVisibleDraft113126();
@@ -2276,7 +2343,9 @@ var renderProducts=function(
     };
     toggle.addEventListener('click',function(){setCollapsed(!collapsed);});
     shellHead.addEventListener('dblclick',function(event){if(event.target.closest('button'))return;setCollapsed(!collapsed);});
-    remove.addEventListener('click',function(){
+    if(product.key==='transport'){
+      remove.type='submit';remove.setAttribute('form',etgpEnsureTransportSelectionForm113179(etgpBookingId11397(),true));
+    }else remove.addEventListener('click',function(){
       etgpAirFlushVisibleDraft113126();etgpHotelFlushVisibleDraft113127();etgpTransportFlushVisibleDraft113139();
       etgpVisaFlushVisibleDraft113142();
       var next=loadSelected(reference).filter(function(key){return key!==product.key;});
@@ -5508,7 +5577,7 @@ if(document.readyState==='loading'){
       if(control.tagName==='A'){
         control.href=target;
         control.target='_blank';
-        control.rel='noopener';
+        control.rel='noopener noreferrer';
         control.setAttribute('data-etgp-client-voucher','ERP-11.3.129');
         return;
       }

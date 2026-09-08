@@ -8,6 +8,7 @@ const hotelController=read('app/Http/Controllers/Operations/GeneralBookingHotelP
 const transportController=read('app/Http/Controllers/Operations/GeneralBookingTransportProductController.php');
 const visaController=read('app/Http/Controllers/Operations/GeneralBookingVisaProductController.php');
 const guard=read('app/Http/Middleware/GuardApprovedGeneralBookingCommercials.php');
+const lockResolver=read('app/Services/Operations/BookingEditLockResolver.php');
 const view=read('resources/views/operations/bookings/general-booking-review-v113160.blade.php');
 const routes=read('routes/erp103179.php');
 const shell=read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
@@ -41,8 +42,9 @@ has(controller,"'pending_approval'",'submit transition uses native booking workf
 has(controller,"'approved'",'approved transition is supported');
 has(controller,"'reopened'",'controlled admin reopen is supported');
 has(controller,"$state['ready']",'Travel Ready action cannot bypass readiness resolver');
-has(guard,"['APPROVED','CONFIRMED']",'approved/confirmed booking is locked');
-has(guard,'canReopen','admin override reuses existing conservative authority');
+has(lockResolver,"['approved','confirmed']",'approved/confirmed booking is locked');
+has(lockResolver,"['pending','pending approval'",'pending approval is also locked');
+lacks(guard,'canReopen','administrators must reopen instead of bypassing the lock');
 has(view,'Booking Review &amp; Process','approved page heading exists');
 has(view,'Service Completion Checklist','selected service completion dashboard exists');
 has(view,'Hotel','Hotel card exists');has(view,"$stay['hotel_name']",'actual saved Hotel name renders');has(view,"$stay['city']",'Hotel city renders');has(view,"$stay['nights']",'Hotel nights render');

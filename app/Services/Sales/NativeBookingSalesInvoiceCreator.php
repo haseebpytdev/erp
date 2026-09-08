@@ -9,6 +9,9 @@ use Illuminate\Validation\ValidationException;
 use ReflectionMethod;
 use ReflectionNamedType;
 use Throwable;
+use App\Services\Operations\BookingInvoiceEligibilityResolver;
+use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
+use App\Services\Operations\NativeBookingCustomerResolver;
 
 /**
  * ERP-11.3.75
@@ -22,6 +25,12 @@ use Throwable;
  */
 final class NativeBookingSalesInvoiceCreator
 {
+    public function __construct(
+        private readonly BookingInvoiceEligibilityResolver $eligibility,
+        private readonly NativeBookingCustomerResolver $customerAuthority,
+        private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+    ) {}
+
     public function create(Request $request, int $bookingId): mixed
     {
         if ($bookingId <= 0) {
@@ -44,6 +53,22 @@ final class NativeBookingSalesInvoiceCreator
             throw ValidationException::withMessages([
                 'invoice' => 'The native Sales Invoice create-from-booking operation is unavailable.',
             ]);
+        }
+
+        // Approved legacy bookings can have complete Air-native ticket rows
+        // from before generic BookingService passenger pivots were enforced.
+        // Reconcile only a complete, validated native Air set. This is inside
+        // NativeSalesInvoiceRuntimeBridge's transaction and is not a host
+        // validator bypass: the host still evaluates service->passengers.
+        try {
+            $this->passengerLinks->reconcileCompleteAirServicesForInvoice($bookingId);
+        } catch (ValidationException $exception) {
+            // The stable invoice endpoint owns the user-facing error bag. The
+            // synchronizer uses the Air key for normal workspace saves, so map
+            // its explicit reconciliation blocker to the invoice action here.
+            $message = collect($exception->errors())->flatten()->first()
+                ?? 'Air passenger links could not be reconciled safely for invoicing.';
+            throw ValidationException::withMessages(['invoice' => $message]);
         }
 
         $method = new ReflectionMethod($native, 'createFromBooking');
@@ -97,7 +122,24 @@ final class NativeBookingSalesInvoiceCreator
                         ]);
                     }
 
-                    $arguments[] = $booking;
+                    $identity = $this->customerAuthority->resolve($bookingId);
+
+                    if ((int) ($identity['id'] ?? 0) <= 0) {
+                        throw ValidationException::withMessages([
+                            'invoice' => 'The booking Customer / Party is required.',
+                        ]);
+                    }
+
+                    $booking = $this->withCustomerIdentity(
+                        $booking,
+                        (int) $identity['id']
+                    );
+
+                    $state=$this->eligibility->resolve($booking->getAttributes());
+                    if(!$state['eligible']){
+                        throw ValidationException::withMessages(['invoice'=>'Only an Approved booking can create a Sales Invoice.']);
+                    }
+                    $arguments[] = $this->eligibility->forNativeService($booking);
                     continue;
                 }
 
@@ -208,6 +250,37 @@ final class NativeBookingSalesInvoiceCreator
         ]);
 
         return $method->invokeArgs($native, $arguments);
+    }
+
+    /**
+     * Supply the already-resolved native customer to host services that read a
+     * booking attribute directly. This is in-memory compatibility only; it
+     * never creates or updates a parallel customer field in the database.
+     */
+    private function withCustomerIdentity(Model $booking, int $customerId): Model
+    {
+        $attributes = $booking->getAttributes();
+
+        foreach ([
+            'customer_id',
+            'party_id',
+            'client_id',
+            'customer_party_id',
+            'customer_party_master_id',
+            'party_master_id',
+            'bill_to_party_id',
+            'account_party_id',
+            'customer_account_id',
+        ] as $field) {
+            if (array_key_exists($field, $attributes)) {
+                $booking->setAttribute($field, $customerId);
+                return $booking;
+            }
+        }
+
+        $booking->setAttribute('customer_id', $customerId);
+
+        return $booking;
     }
 
     private function nativeRequest(Request $outer, int $bookingId): Request

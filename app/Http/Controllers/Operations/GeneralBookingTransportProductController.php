@@ -7,6 +7,7 @@ use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,9 @@ use Throwable;
  */
 final class GeneralBookingTransportProductController extends Controller
 {
+    /** Native Product/Service Master authority for GENERAL Transport. */
+    private const TRANSPORT_PRODUCT_SERVICE_ID = 4;
+
     /** @var array<string,float|null> */
     private array $exchangeRateToPkrCache = [];
 
@@ -41,7 +45,11 @@ final class GeneralBookingTransportProductController extends Controller
         $table = $this->resolveTransportTable();
         $rows = $table ? $this->transportRows($booking, (int) ($service['id'] ?? 0), $table) : [];
         $rows = $this->overlaySnapshot($rows, $this->snapshotFromServiceRow($serviceRow));
-        $routes = $this->routeOptions();
+        $rateCompanyId = $this->transportCompanyId($rows, $serviceRow);
+        // Company is a display value derived from the selected rate card. It
+        // must never become a free-text rate-card filter: normalized cards use
+        // transport_company_id and may not carry the display name themselves.
+        $routes = $this->routeOptions('', $this->transportEffectiveDate($bookingRow), $rateCompanyId);
         $rows = $this->hydrateForeignCostCommercials($rows, $routes);
 
         return response()->json([
@@ -49,7 +57,7 @@ final class GeneralBookingTransportProductController extends Controller
             'booking_id' => $booking,
             'booking' => ['currency' => 'PKR', 'native_currency' => $this->bookingCurrency($bookingRow)],
             'routes' => $routes,
-            'vehicles' => $this->vehicleOptions(),
+            'vehicles' => $this->vehicleOptions($routes),
             'suppliers' => $this->supplierOptions(),
             'transports' => $rows,
             'summary' => $this->summary($rows),
@@ -59,6 +67,18 @@ final class GeneralBookingTransportProductController extends Controller
                 'snapshot_carrier' => $serviceRow ? $this->snapshotCarrierAvailable('booking_services', array_keys($serviceRow)) : false,
             ],
         ]);
+    }
+
+    /**
+     * The single server-side authority for whether a booking currently has an
+     * active Transport product.  Workspace and operational-summary readers use
+     * this rather than independently text-matching retired booking services.
+     */
+    public function activeServiceId(int $booking): ?int
+    {
+        $service = $this->findTransportService($booking);
+
+        return $service ? (int) $service['id'] : null;
     }
 
     public function store(Request $request, int $booking): JsonResponse
@@ -98,7 +118,11 @@ final class GeneralBookingTransportProductController extends Controller
             $supplierMap[(int) ($supplier['id'] ?? 0)] = trim((string) ($supplier['name'] ?? ''));
         }
 
-        $routeOptions = $this->routeOptions();
+        $activeService = $this->findTransportService($booking);
+        $serviceRow = (array) ($activeService['row'] ?? []);
+        $serviceCompanyId = $this->transportCompanyId([], $serviceRow);
+        $serviceVendorId = $this->bookingVendorId([], $serviceRow);
+        $routeOptions = $this->routeOptions('', $this->transportEffectiveDate($bookingRow), $serviceCompanyId);
         $routeMap = [];
         foreach ($routeOptions as $routeOption) {
             $source = trim((string) ($routeOption['source_table'] ?? ''));
@@ -117,6 +141,18 @@ final class GeneralBookingTransportProductController extends Controller
                 throw ValidationException::withMessages(["transports.$index.vehicle_type" => 'Select a Vehicle Type.']);
             }
             $vendorId = max(0, (int) ($raw['vendor_id'] ?? 0));
+            // A legacy Transport detail may be missing its vendor FK while the
+            // active booking-service still has the native company authority.
+            // Reuse it only when it is a recognised supplier; otherwise it is
+            // used solely to resolve the current rate-card matrix, never written
+            // as an invented vendor reference.
+            // A booking Vendor/Party ID is not the Transport Company namespace.
+            // Rate selection is driven by the selected matrix row/card, while
+            // company_name remains display-only.
+            $rateCompanyId = $serviceCompanyId;
+            if ($vendorId <= 0 && $serviceVendorId !== null && isset($supplierMap[$serviceVendorId])) {
+                $vendorId = $serviceVendorId;
+            }
             if ($vendorId > 0 && ! isset($supplierMap[$vendorId])) {
                 throw ValidationException::withMessages(["transports.$index.vendor_id" => 'Select a valid Transport Company / Vendor from the existing supplier authority.']);
             }
@@ -126,11 +162,24 @@ final class GeneralBookingTransportProductController extends Controller
             $quantity = max(1, (int) ($raw['quantity'] ?? 1));
             $routeSource = trim((string) ($raw['route_source_table'] ?? ''));
             $routeMasterId = max(0, (int) ($raw['route_master_id'] ?? 0));
-            $master = $routeMap[strtolower($routeSource).':'.$routeMasterId] ?? null;
+            $companyRoutes = $rateCompanyId !== null
+                ? $this->routeOptions('', $this->transportEffectiveDate($bookingRow), $rateCompanyId)
+                : $routeOptions;
+            $companyMatrix = collect($companyRoutes)
+                ->flatMap(static fn (array $route): array => (array) ($route['rate_matrix'] ?? [$route]))
+                ->values()
+                ->all();
+            $companyRouteMap = [];
+            foreach ($companyMatrix as $routeOption) {
+                $source = trim((string) ($routeOption['source_table'] ?? ''));
+                $id = (int) ($routeOption['id'] ?? 0);
+                if ($source !== '' && $id > 0) $companyRouteMap[strtolower($source).':'.$id] = $routeOption;
+            }
+            $master = $companyRouteMap[strtolower($routeSource).':'.$routeMasterId] ?? null;
             if (! is_array($master)) {
                 $wantedRoute = strtolower(trim((string) ($raw['route_name'] ?? '')));
                 $wantedVehicle = strtolower(trim((string) ($raw['vehicle_type'] ?? '')));
-                foreach ($routeOptions as $candidate) {
+                foreach ($companyMatrix as $candidate) {
                     if (strtolower(trim((string) ($candidate['name'] ?? ''))) !== $wantedRoute) continue;
                     $candidateVehicle = strtolower(trim((string) ($candidate['vehicle_type'] ?? '')));
                     if ($wantedVehicle !== '' && $candidateVehicle !== '' && $candidateVehicle !== $wantedVehicle) continue;
@@ -142,7 +191,18 @@ final class GeneralBookingTransportProductController extends Controller
             $masterRate = is_array($master) && is_numeric($master['rate_amount'] ?? null)
                 ? round((float) $master['rate_amount'], 2)
                 : null;
-            $costRate = $masterRate ?? (array_key_exists('cost_rate', $raw) ? round((float) ($raw['cost_rate'] ?? 0), 2) : round(((float) ($raw['cost_amount'] ?? 0)) / max(1, $quantity), 2));
+            $resolvedRouteMasterId = is_array($master) && (int) ($master['id'] ?? 0) > 0
+                ? (int) $master['id']
+                : $routeMasterId;
+            $resolvedRouteSource = is_array($master) && trim((string) ($master['source_table'] ?? '')) !== ''
+                ? trim((string) $master['source_table'])
+                : $routeSource;
+            $submittedCostRate = array_key_exists('cost_rate', $raw)
+                ? round((float) ($raw['cost_rate'] ?? 0), 2)
+                : round(((float) ($raw['cost_amount'] ?? 0)) / max(1, $quantity), 2);
+            // A non-zero saved booking cost is historical commercial data. Only
+            // an empty/zero booking cost may inherit the current master matrix.
+            $costRate = $submittedCostRate > 0 ? $submittedCostRate : ($masterRate ?? 0.0);
             $costCurrency = $this->normalizeCurrencyCode((string) (is_array($master) ? ($master['rate_currency'] ?? '') : ''));
             if ($costCurrency === '') $costCurrency = $this->normalizeCurrencyCode((string) ($raw['cost_currency'] ?? ''));
             if ($costCurrency === '') $costCurrency = (str_contains(strtolower($routeSource), 'transport_rate') ? 'SAR' : 'PKR');
@@ -155,8 +215,12 @@ final class GeneralBookingTransportProductController extends Controller
             }
             $cost = round($costRate * $quantity * $exchangeRate, 2);
             $normalized[] = [
-                'route_master_id' => $routeMasterId,
-                'route_source_table' => $routeSource,
+                'route_master_id' => $resolvedRouteMasterId,
+                'route_source_table' => $resolvedRouteSource,
+                'rate_card_id' => max(0, (int) ($master['rate_card_id'] ?? (str_contains(strtolower($resolvedRouteSource), 'transport_rate') ? $resolvedRouteMasterId : 0))),
+                'transport_company_id' => max(0, (int) ($master['company_id'] ?? $serviceCompanyId ?? 0)),
+                'transport_route_id' => max(0, (int) ($master['transport_route_id'] ?? 0)),
+                'transport_vehicle_type_id' => max(0, (int) ($master['transport_vehicle_type_id'] ?? 0)),
                 'route_name' => $route,
                 'vehicle_master_id' => max(0, (int) ($raw['vehicle_master_id'] ?? 0)),
                 'vehicle_source_table' => trim((string) ($raw['vehicle_source_table'] ?? '')),
@@ -227,15 +291,77 @@ final class GeneralBookingTransportProductController extends Controller
             ]);
         }
 
+        $responseCompany = trim((string) ($result['transports'][0]['company_name'] ?? ''));
+        $responseRoutes = $this->routeOptions($responseCompany, $this->transportEffectiveDate($bookingRow));
         return response()->json([
             'ok' => true,
             'message' => 'Transport Data saved.',
             'transports' => $result['transports'],
             'summary' => $result['summary'],
-            'routes' => $this->routeOptions(),
-            'vehicles' => $this->vehicleOptions(),
+            'routes' => $responseRoutes,
+            'vehicles' => $this->vehicleOptions($responseRoutes),
             'suppliers' => $this->supplierOptions(),
         ]);
+    }
+
+    /**
+     * Select Transport for a GENERAL booking before any row data exists.
+     * This is intentionally narrower than the Transport store: it creates or
+     * resolves only one active native booking-service row and writes no
+     * transport commercial or operational data.
+     */
+    public function activate(Request $request, int $booking): JsonResponse|RedirectResponse
+    {
+        $bookingRow = $this->assertBooking($booking);
+        if (! Schema::hasTable('booking_services')) {
+            throw ValidationException::withMessages(['transport' => 'The native booking service store is not available on this ERP installation.']);
+        }
+
+        $service = DB::transaction(fn (): array => $this->ensureTransportService($booking, $bookingRow));
+
+        if (! $request->expectsJson()) {
+            return redirect()->to($this->bookingWorkspaceUrl($booking, true))->with('success', 'Transport product added.');
+        }
+
+        return response()->json([
+            'ok' => true,
+            'booking_id' => $booking,
+            'service_id' => (int) $service['id'],
+            'message' => 'Transport selected.',
+        ]);
+    }
+
+    /** Retire only the active Transport service; child data remains historical. */
+    public function retire(Request $request, int $booking): JsonResponse|RedirectResponse
+    {
+        $this->assertBooking($booking);
+        $service = $this->findTransportService($booking);
+        if (! $service) {
+            if (! $request->expectsJson()) return redirect()->to($this->bookingWorkspaceUrl($booking))->with('success', 'Transport product removed.');
+            return response()->json(['ok' => true, 'booking_id' => $booking, 'message' => 'Transport is already removed.']);
+        }
+
+        $columns = $this->physicalColumnListing('booking_services');
+        $update = [];
+        if (in_array('is_active', $columns, true)) $update['is_active'] = 0;
+        if (in_array('active', $columns, true)) $update['active'] = 0;
+        if (in_array('status', $columns, true)) {
+            $enum = $this->enumValues($this->columnMetadata('booking_services')['status'] ?? []);
+            $retired = collect(['inactive', 'removed', 'cancelled', 'canceled', 'deleted'])
+                ->first(static fn (string $value): bool => ! $enum || in_array($value, $enum, true));
+            if ($retired !== null) $update['status'] = $retired;
+        }
+        if (in_array('updated_at', $columns, true)) $update['updated_at'] = now();
+        if (! $update || (! array_key_exists('is_active', $update) && ! array_key_exists('active', $update) && ! array_key_exists('status', $update))) {
+            throw ValidationException::withMessages(['transport' => 'This native booking-service schema has no safe Transport retirement authority.']);
+        }
+        DB::table('booking_services')->where('id', (int) $service['id'])->update($update);
+
+        if (! $request->expectsJson()) {
+            return redirect()->to($this->bookingWorkspaceUrl($booking))->with('success', 'Transport product removed.');
+        }
+
+        return response()->json(['ok' => true, 'booking_id' => $booking, 'message' => 'Transport removed.']);
     }
 
     private function assertBooking(int $booking): object
@@ -244,6 +370,12 @@ final class GeneralBookingTransportProductController extends Controller
         $row = DB::table('bookings')->where('id', $booking)->first();
         abort_unless($row, 404);
         return $row;
+    }
+
+    private function bookingWorkspaceUrl(int $booking, bool $transportSelected = false): string
+    {
+        $url = url('/operations/bookings/'.$booking);
+        return $transportSelected ? $url.'?selected_products=transport' : $url;
     }
 
     private function bookingCurrency(object $booking): string
@@ -266,11 +398,85 @@ final class GeneralBookingTransportProductController extends Controller
         return 'PKR';
     }
 
+    private function transportEffectiveDate(object $booking): ?string
+    {
+        $data = (array) $booking;
+        foreach (['travel_date', 'departure_date', 'start_date', 'booking_date', 'date'] as $field) {
+            $value = trim((string) ($data[$field] ?? ''));
+            if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) return substr($value, 0, 10);
+        }
+
+        return null;
+    }
+
+    /** @param list<array<string,mixed>> $rows */
+    private function transportCompanyId(array $rows, array $serviceRow): ?int
+    {
+        foreach ($rows as $row) {
+            $id = (int) ($row['transport_company_id'] ?? 0);
+            if ($id > 0) return $id;
+        }
+        $direct = (int) ($serviceRow['transport_company_id'] ?? 0);
+        if ($direct > 0) return $direct;
+
+        // Production Transport Company authority is travel_voucher_partners,
+        // not booking_services.vendor_id. Resolve it from the actual Transport
+        // segment's company identity only; never borrow a Hotel service vendor.
+        $companyName = '';
+        foreach ($rows as $row) {
+            $companyName = trim((string) ($row['company_name'] ?? ''));
+            if ($companyName !== '') break;
+        }
+        if ($companyName === '' || ! Schema::hasTable('travel_voucher_partners')) return null;
+        try {
+            $columns = $this->physicalColumnListing('travel_voucher_partners');
+            $idColumn = $this->firstColumn($columns, ['id', 'partner_id']);
+            $nameColumn = $this->firstColumn($columns, ['name', 'partner_name', 'company_name', 'display_name']);
+            $typeColumn = $this->firstColumn($columns, ['partner_type', 'type', 'category']);
+            if (! $idColumn || ! $nameColumn) return null;
+            $wanted = preg_replace('/[^a-z0-9]+/', '', strtolower($companyName));
+            foreach (DB::table('travel_voucher_partners')->get() as $object) {
+                $partner = (array) $object;
+                if ($typeColumn && ! str_contains(strtolower((string) ($partner[$typeColumn] ?? '')), 'transport')) continue;
+                $candidate = preg_replace('/[^a-z0-9]+/', '', strtolower((string) ($partner[$nameColumn] ?? '')));
+                if ($wanted !== '' && ($candidate === $wanted || str_contains($candidate, $wanted) || str_contains($wanted, $candidate))) {
+                    $id = (int) ($partner[$idColumn] ?? 0);
+                    if ($id > 0) return $id;
+                }
+            }
+        } catch (Throwable) {}
+        return null;
+    }
+
+    /** @param list<array<string,mixed>> $rows */
+    private function bookingVendorId(array $rows, array $serviceRow): ?int
+    {
+        foreach ($rows as $row) {
+            $id = (int) ($row['vendor_id'] ?? 0);
+            if ($id > 0) return $id;
+        }
+        foreach (['vendor_id', 'supplier_id', 'service_provider_id'] as $field) {
+            $id = (int) ($serviceRow[$field] ?? 0);
+            if ($id > 0) return $id;
+        }
+
+        return null;
+    }
+
     /** @return list<array<string,mixed>> */
-    private function routeOptions(): array
+    private function routeOptions(string $companyName = '', ?string $effectiveDate = null, ?int $companyId = null): array
     {
         try {
-            return app(UnifiedGroupPackageDataSource::class)->transportRoutes()->map(function (array $row): array {
+            $source = app(UnifiedGroupPackageDataSource::class);
+            $effective = $source->effectiveTransportRateRoutes($companyName, $effectiveDate, $companyId);
+            // A legacy booking service can carry a native vendor key that is
+            // not the rate-card company key. Do not turn that stale FK into a
+            // zero-rate result: fall back to the uniquely matching active
+            // route/vehicle matrix while preserving normal company filtering.
+            if ($effective->isEmpty() && $companyId !== null && $companyId > 0) {
+                $effective = $source->effectiveTransportRateRoutes($companyName, $effectiveDate);
+            }
+            $matrix = $effective->map(function (array $row): array {
                 $source = trim((string) ($row['source_table'] ?? ''));
                 $currency = $this->normalizeCurrencyCode((string) ($row['rate_currency'] ?? ''));
                 if ($currency === '' && str_contains(strtolower($source), 'transport_rate')) $currency = 'SAR';
@@ -286,6 +492,9 @@ final class GeneralBookingTransportProductController extends Controller
                 return [
                     'id' => (int) ($row['id'] ?? 0),
                     'source_table' => $source,
+                    'rate_card_id' => (int) ($row['rate_card_id'] ?? 0),
+                    'transport_route_id' => (int) ($row['transport_route_id'] ?? 0),
+                    'transport_vehicle_type_id' => (int) ($row['transport_vehicle_type_id'] ?? 0),
                     'key' => trim((string) ($row['key'] ?? '')),
                     'name' => $name,
                     'display' => implode(' · ', array_filter($parts, static fn ($value): bool => trim((string) $value) !== '')),
@@ -294,11 +503,22 @@ final class GeneralBookingTransportProductController extends Controller
                     'contact_number' => trim((string) ($row['contact_number'] ?? '')),
                     'brn_number' => trim((string) ($row['brn_number'] ?? '')),
                     'rate_amount' => $rate,
+                    'rate_field' => trim((string) ($row['rate_field'] ?? '')),
+                    'rate_raw_value' => $row['rate_raw_value'] ?? null,
                     'rate_currency' => $currency,
                     'exchange_rate_to_pkr' => $fx !== null ? round($fx, 8) : null,
                     'rate_pkr' => ($rate !== null && $fx !== null) ? round($rate * $fx, 2) : null,
                 ];
-            })->filter(static fn (array $row): bool => $row['name'] !== '')->values()->all();
+            })->filter(static fn (array $row): bool => $row['name'] !== '')->values();
+
+            // The Route select contains one route. Vehicle-specific matrix rows
+            // remain attached so their rate can be resolved independently.
+            return $matrix->groupBy(static fn (array $row): string => strtolower($row['company_name'].'|'.$row['name']))
+                ->map(function ($group): array {
+                    $route = (array) $group->first();
+                    $route['rate_matrix'] = $group->values()->all();
+                    return $route;
+                })->values()->all();
         } catch (Throwable) {
             return [];
         }
@@ -425,7 +645,8 @@ final class GeneralBookingTransportProductController extends Controller
     private function hydrateForeignCostCommercials(array $rows, array $routes): array
     {
         $byKey = [];
-        foreach ($routes as $route) {
+        $matrix = collect($routes)->flatMap(static fn (array $route): array => (array) ($route['rate_matrix'] ?? [$route]))->values()->all();
+        foreach ($matrix as $route) {
             $source = strtolower(trim((string) ($route['source_table'] ?? '')));
             $id = (int) ($route['id'] ?? 0);
             if ($source !== '' && $id > 0) $byKey[$source.':'.$id] = $route;
@@ -436,7 +657,7 @@ final class GeneralBookingTransportProductController extends Controller
             $id = (int) ($row['route_master_id'] ?? 0);
             $master = $byKey[$source.':'.$id] ?? null;
             if (! is_array($master)) {
-                foreach ($routes as $candidate) {
+                foreach ($matrix as $candidate) {
                     if (strtolower(trim((string) ($candidate['name'] ?? ''))) !== strtolower(trim((string) ($row['route_name'] ?? '')))) continue;
                     $candidateVehicle = strtolower(trim((string) ($candidate['vehicle_type'] ?? '')));
                     $rowVehicle = strtolower(trim((string) ($row['vehicle_type'] ?? '')));
@@ -446,20 +667,67 @@ final class GeneralBookingTransportProductController extends Controller
                 }
             }
 
-            if (! array_key_exists('cost_rate', $row) || (float) ($row['cost_rate'] ?? 0) <= 0) {
-                if (is_array($master) && is_numeric($master['rate_amount'] ?? null)) $row['cost_rate'] = round((float) $master['rate_amount'], 2);
-                else $row['cost_rate'] = round(((float) ($row['cost_amount'] ?? 0)) / max(1, $quantity), 2);
+            // Legacy malformed rows may contain the Vehicle label in the Route
+            // slot. Once the exact native rate-card row is found, repair that
+            // display-only collision from its stored origin/destination route.
+            if (is_array($master) && strtolower(trim((string) ($row['route_name'] ?? ''))) === strtolower(trim((string) ($row['vehicle_type'] ?? '')))) {
+                $row['route_name'] = trim((string) ($master['name'] ?? $row['route_name']));
             }
+
+            // The rate matrix already resolved the native Transport Partner
+            // authority. Carry that authority into the workspace row instead
+            // of leaving the repaired booking-service with an empty company
+            // label (which the client renders as “Transport company”).
+            $resolvedRateCardId = is_array($master) ? (int) ($master['rate_card_id'] ?? 0) : 0;
+            $resolvedCompanyId = is_array($master) ? (int) ($master['company_id'] ?? 0) : 0;
+            if ($resolvedCompanyId <= 0 && $resolvedRateCardId > 0) {
+                $resolvedCompanyId = $this->activeTransportCompanyIdForRateCard($resolvedRateCardId);
+            }
+            if ($resolvedCompanyId > 0) {
+                if ($resolvedRateCardId > 0) $row['rate_card_id'] = $resolvedRateCardId;
+                $row['transport_company_id'] = $resolvedCompanyId;
+                $row['company_id'] = $resolvedCompanyId;
+                $resolvedCompanyName = $this->transportCompanyPartnerName($resolvedCompanyId);
+                if ($resolvedCompanyName !== '' && $this->isUnresolvedTransportCompanyName((string) ($row['company_name'] ?? ''))) {
+                    $row['company_name'] = $resolvedCompanyName;
+                }
+                if ($resolvedCompanyName !== '') $row['transport_company_name'] = $resolvedCompanyName;
+            }
+
+            $usesMasterRate = (! array_key_exists('cost_rate', $row) || (float) ($row['cost_rate'] ?? 0) <= 0)
+                && is_array($master)
+                && is_numeric($master['rate_amount'] ?? null)
+                && (float) $master['rate_amount'] > 0;
+            if ($usesMasterRate) {
+                $row['cost_rate'] = round((float) $master['rate_amount'], 2);
+            }
+            // Keep the result of the single server-side resolver explicit in
+            // the response contract. The workspace must never re-select a
+            // legacy persisted zero over this current effective master rate.
+            // A non-zero historical booking cost remains the displayed value.
+            $row['resolved_cost_rate'] = round((float) ($row['cost_rate'] ?? 0), 2);
+            $row['cost_rate_authority'] = $usesMasterRate
+                ? 'effective_transport_rate'
+                : ((float) ($row['cost_rate'] ?? 0) > 0 ? 'saved_historical_cost' : 'unresolved');
             $currency = $this->normalizeCurrencyCode((string) ($row['cost_currency'] ?? ''));
+            if ($usesMasterRate && is_array($master)) $currency = $this->normalizeCurrencyCode((string) ($master['rate_currency'] ?? ''));
             if ($currency === '' && is_array($master)) $currency = $this->normalizeCurrencyCode((string) ($master['rate_currency'] ?? ''));
             if ($currency === '') $currency = (str_contains($source, 'transport_rate') ? 'SAR' : 'PKR');
             $row['cost_currency'] = $currency;
 
-            $fx = (float) ($row['exchange_rate'] ?? 0);
+            $fx = $usesMasterRate ? 0.0 : (float) ($row['exchange_rate'] ?? 0);
             if ($fx <= 0 && is_array($master) && is_numeric($master['exchange_rate_to_pkr'] ?? null)) $fx = (float) $master['exchange_rate_to_pkr'];
             if ($fx <= 0) $fx = (float) ($this->exchangeRateToPkr($currency) ?? 0);
             if ($fx <= 0 && $currency === 'PKR') $fx = 1.0;
             $row['exchange_rate'] = round($fx, 8);
+            // A physical vendor total is already in PKR.  When a legacy row has
+            // no stored unit rate, derive the source-currency rate only after
+            // its FX is known; dividing merely by quantity made a valid total
+            // look like a rate and then inflated/overwrote it on reload.
+            if ((float) ($row['cost_rate'] ?? 0) <= 0 && (float) ($row['cost_amount'] ?? 0) > 0 && $fx > 0) {
+                $row['cost_rate'] = round((float) $row['cost_amount'] / ($quantity * $fx), 2);
+            }
+            $row['resolved_cost_rate'] = round((float) ($row['cost_rate'] ?? 0), 2);
             if ($fx > 0) $row['cost_amount'] = round((float) ($row['cost_rate'] ?? 0) * $quantity * $fx, 2);
             $row['margin'] = round((float) ($row['sale_amount'] ?? 0) - (float) ($row['cost_amount'] ?? 0), 2);
         }
@@ -467,19 +735,57 @@ final class GeneralBookingTransportProductController extends Controller
         return $rows;
     }
 
-    /** @return list<array<string,mixed>> */
-    private function vehicleOptions(): array
+    private function transportCompanyPartnerName(int $companyId): string
     {
+        if ($companyId <= 0 || ! Schema::hasTable('travel_voucher_partners')) return '';
         try {
-            return app(UnifiedGroupPackageDataSource::class)->transportVehicles()->map(static fn (array $row): array => [
-                'id' => (int) ($row['id'] ?? 0),
-                'source_table' => trim((string) ($row['source_table'] ?? '')),
-                'key' => trim((string) ($row['key'] ?? '')),
-                'name' => trim((string) ($row['name'] ?? '')),
-            ])->filter(static fn (array $row): bool => $row['name'] !== '')->values()->all();
+            $columns = $this->physicalColumnListing('travel_voucher_partners');
+            $idColumn = $this->firstColumn($columns, ['id', 'partner_id']);
+            $nameColumn = $this->firstColumn($columns, ['name', 'partner_name', 'company_name', 'display_name']);
+            $typeColumn = $this->firstColumn($columns, ['partner_type', 'type', 'category']);
+            if (! $idColumn || ! $nameColumn) return '';
+            $partner = (array) (DB::table('travel_voucher_partners')->where($idColumn, $companyId)->first() ?? (object) []);
+            if ($typeColumn && ! str_contains(strtolower((string) ($partner[$typeColumn] ?? '')), 'transport')) return '';
+            return trim((string) ($partner[$nameColumn] ?? ''));
         } catch (Throwable) {
-            return [];
+            return '';
         }
+    }
+
+    private function activeTransportCompanyIdForRateCard(int $rateCardId): int
+    {
+        if ($rateCardId <= 0 || ! Schema::hasTable('transport_rate_cards')) return 0;
+        try {
+            $columns = $this->physicalColumnListing('transport_rate_cards');
+            $idColumn = $this->firstColumn($columns, ['id', 'rate_card_id']);
+            $companyColumn = $this->firstColumn($columns, ['transport_company_id', 'company_id']);
+            if (! $idColumn || ! $companyColumn) return 0;
+            $card = (array) (DB::table('transport_rate_cards')->where($idColumn, $rateCardId)->first() ?? (object) []);
+            if (! $card) return 0;
+            if (array_key_exists('is_active', $card) && ! (bool) $card['is_active']) return 0;
+            if (array_key_exists('active', $card) && ! (bool) $card['active']) return 0;
+            if (array_key_exists('status', $card) && strtolower(trim((string) $card['status'])) !== 'active') return 0;
+            return max(0, (int) ($card[$companyColumn] ?? 0));
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    private function isUnresolvedTransportCompanyName(string $name): bool
+    {
+        return in_array(strtolower(trim($name)), ['', 'transport company', 'select transport company'], true);
+    }
+
+    /** @return list<array<string,mixed>> */
+    private function vehicleOptions(array $routes): array
+    {
+        return collect($routes)->flatMap(static fn (array $row): array => (array) ($row['rate_matrix'] ?? [$row]))->map(static fn (array $row): array => [
+            'id' => 0,
+            'source_table' => (string) ($row['source_table'] ?? 'transport_rate_cards'),
+            'key' => (string) ($row['source_table'] ?? 'transport_rate_cards').':vehicle:'.strtolower((string) ($row['vehicle_type'] ?? '')),
+            'name' => trim((string) ($row['vehicle_type'] ?? '')),
+        ])->filter(static fn (array $row): bool => $row['name'] !== '')
+            ->unique(static fn (array $row): string => strtolower($row['name']))->values()->all();
     }
 
     /** @return list<array{id:int,name:string}> */
@@ -522,11 +828,24 @@ final class GeneralBookingTransportProductController extends Controller
         if (! Schema::hasTable('booking_services')) return null;
         $columns = $this->physicalColumnListing('booking_services');
         if (! in_array('booking_id', $columns, true) || ! in_array('id', $columns, true)) return null;
+        // Product/Service is the sole booking-service discriminator. In
+        // particular, never inspect notes, descriptions or arbitrary scalar
+        // fields here: a legacy ETERP_TRANSPORT_ROWS marker on another product
+        // would otherwise make that product permanently masquerade as Transport.
+        $masterId = self::TRANSPORT_PRODUCT_SERVICE_ID;
         try {
             foreach (DB::table('booking_services')->where('booking_id', $booking)->orderByDesc('id')->get() as $object) {
                 $row = (array) $object;
-                $text = strtolower(implode(' ', array_map(static fn ($v): string => is_scalar($v) ? (string) $v : '', $row)));
-                if (str_contains($text, 'transport') || str_contains($text, 'transfer')) return ['id' => (int) ($row['id'] ?? 0), 'row' => $row];
+                // A removed native service must not be treated as the active
+                // Transport authority on a later Add. Otherwise
+                // ensureTransportService returns the retired row and the
+                // product cannot be recreated.
+                if (! empty($row['deleted_at'])) continue;
+                if (array_key_exists('is_active', $row) && ! (bool) $row['is_active']) continue;
+                if (array_key_exists('active', $row) && ! (bool) $row['active']) continue;
+                $status = strtolower(trim((string) ($row['status'] ?? '')));
+                if (in_array($status, ['deleted', 'removed', 'inactive', 'cancelled', 'canceled'], true)) continue;
+                if ((int) ($row['product_service_id'] ?? 0) === $masterId) return ['id' => (int) ($row['id'] ?? 0), 'row' => $row];
             }
         } catch (Throwable) {}
         return null;
@@ -536,10 +855,10 @@ final class GeneralBookingTransportProductController extends Controller
     private function ensureTransportService(int $booking, object $bookingRow): array
     {
         $existing = $this->findTransportService($booking);
-        if ($existing) return $existing;
+        if ($existing) return $this->repairLegacyTransportOwnership($booking, $existing);
 
         $master = $this->resolveTransportProductService();
-        if (! $master) {
+        if (! $master || (int) ($master['id'] ?? 0) !== self::TRANSPORT_PRODUCT_SERVICE_ID) {
             throw ValidationException::withMessages([
                 'transport' => 'The Transport Product Service master could not be resolved. Confirm that Transport exists in Product/Service Master.',
             ]);
@@ -583,7 +902,7 @@ final class GeneralBookingTransportProductController extends Controller
         ]);
         $this->assertRequiredContract($table, $row, 'Transport service');
         $id = (int) DB::table($table)->insertGetId($row);
-        return ['id' => $id, 'row' => $row + ['id' => $id]];
+        return $this->repairLegacyTransportOwnership($booking, ['id' => $id, 'row' => $row + ['id' => $id]]);
     }
 
     /** @return array<string,mixed>|null */
@@ -607,7 +926,7 @@ final class GeneralBookingTransportProductController extends Controller
                 $idColumn = $this->firstColumn($columns, ['id','product_service_id']);
                 if (! $idColumn) continue;
                 foreach (DB::table($table)->limit(4000)->get() as $object) {
-                    $row = (array) $object; $id = (int) ($row[$idColumn] ?? 0); if ($id <= 0) continue;
+                    $row = (array) $object; $id = (int) ($row[$idColumn] ?? 0); if ($id !== self::TRANSPORT_PRODUCT_SERVICE_ID) continue;
                     $text = strtolower(implode(' ', array_map(static fn ($v): string => is_scalar($v) ? (string) $v : '', $row)));
                     $score = 0;
                     if (str_contains($text, 'transport')) $score += 10000;
@@ -621,6 +940,80 @@ final class GeneralBookingTransportProductController extends Controller
             } catch (Throwable) {}
         }
         return $bestScore >= 3000 ? $best : null;
+    }
+
+    /**
+     * Correct only the known, unambiguous legacy corruption pattern: native
+     * Transport rows attached to a non-Transport booking service. The caller
+     * runs inside the activation/save transaction, so a failed repair cannot
+     * leave a half-moved segment or snapshot behind.
+     *
+     * @param array{id:int,row:array<string,mixed>} $transportService
+     * @return array{id:int,row:array<string,mixed>}
+     */
+    private function repairLegacyTransportOwnership(int $booking, array $transportService): array
+    {
+        $transportServiceId = (int) ($transportService['id'] ?? 0);
+        if ($transportServiceId <= 0 || ! Schema::hasTable('booking_services')) return $transportService;
+
+        $table = $this->resolveTransportTable();
+        if (! $table) return $transportService;
+        $columns = $this->physicalColumnListing($table);
+        $serviceColumn = $this->resolveBookingServiceLinkColumn($table, $columns);
+        if (! $serviceColumn || ! in_array('booking_id', $columns, true)) return $transportService;
+
+        $wrongRows = DB::table($table)->where('booking_id', $booking)
+            ->where($serviceColumn, '<>', $transportServiceId)->get();
+        if ($wrongRows->isEmpty()) return $transportService;
+
+        foreach ($wrongRows as $object) {
+            $segment = (array) $object;
+            $wrongServiceId = (int) ($segment[$serviceColumn] ?? 0);
+            if ($wrongServiceId <= 0) continue;
+            $wrongService = (array) (DB::table('booking_services')->where('id', $wrongServiceId)->first() ?? (object) []);
+            if (! $wrongService || (int) ($wrongService['product_service_id'] ?? 0) === self::TRANSPORT_PRODUCT_SERVICE_ID) continue;
+
+            // This table is the installed native Transport row store. A row in
+            // it linked to a non-Transport service is the required unambiguous
+            // corruption signal; do not apply this repair to generic tables.
+            DB::table($table)->where('id', (int) ($segment['id'] ?? 0))->update([$serviceColumn => $transportServiceId]);
+
+            $legacySnapshot = $this->snapshotFromServiceRow($wrongService);
+            $canonicalSnapshot = $this->snapshotFromServiceRow((array) (DB::table('booking_services')->where('id', $transportServiceId)->first() ?? (object) []));
+            if ($legacySnapshot && ! $canonicalSnapshot) $this->syncServiceSnapshot($transportServiceId, $legacySnapshot);
+            $this->removeTransportSnapshot($wrongServiceId);
+        }
+
+        $fresh = (array) (DB::table('booking_services')->where('id', $transportServiceId)->first() ?? (object) []);
+        return ['id' => $transportServiceId, 'row' => $fresh ?: $transportService['row']];
+    }
+
+    /** Remove only the Transport compatibility payload; retain all other notes and JSON keys. */
+    private function removeTransportSnapshot(int $serviceId): void
+    {
+        if ($serviceId <= 0 || ! Schema::hasTable('booking_services')) return;
+        $table = 'booking_services';
+        $columns = $this->physicalColumnListing($table);
+        $current = (array) (DB::table($table)->where('id', $serviceId)->first() ?? (object) []);
+        if (! $current) return;
+        $update = [];
+
+        foreach ($this->jsonCarrierFields($table, $columns) as $field) {
+            $raw = $current[$field] ?? null;
+            $decoded = is_array($raw) ? $raw : json_decode((string) ($raw ?? ''), true);
+            if (! is_array($decoded) || ! array_key_exists('et_erp_transport_rows', $decoded)) continue;
+            unset($decoded['et_erp_transport_rows']);
+            $update[$field] = json_encode($decoded, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+        foreach ($this->taggedTextCarrierFields($table, $columns) as $field) {
+            $text = (string) ($current[$field] ?? '');
+            $clean = $this->removeTaggedPayload($text, 'ETERP_TRANSPORT_ROWS');
+            if ($clean !== $text) $update[$field] = $clean;
+        }
+        if ($update) {
+            if (in_array('updated_at', $columns, true)) $update['updated_at'] = now();
+            DB::table($table)->where('id', $serviceId)->update($update);
+        }
     }
 
     private function resolveBookingServiceLinkColumn(string $table, array $columns): ?string
@@ -651,15 +1044,28 @@ final class GeneralBookingTransportProductController extends Controller
             $records = $order ? $query->orderBy($order)->get() : $query->get();
             return $records->map(function (object $object) use ($columns): array {
                 $row = (array) $object;
+                $rateCardId = (int) ($this->valueFrom($row, $columns, ['rate_card_id']) ?? 0);
+                $routeMasterId = (int) ($this->valueFrom($row, $columns, ['route_master_id','route_id']) ?? 0);
                 $sale = $this->numberFromMeaningful($row, $columns, ['sale_amount','selling_total','customer_total','sale_total','total_sale','customer_amount','selling_amount','customer_price','sale_price','selling_price']);
-                $cost = $this->numberFromMeaningful($row, $columns, ['supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price']);
+                // Modern host rows retain the source-currency vendor price and
+                // its converted PKR commercial independently. Prefer the PKR
+                // total for margin calculations; supplier_amount then remains
+                // the source vendor price (for example SAR 100.00).
+                $cost = $this->numberFromMeaningful($row, $columns, ['supplier_amount_pkr','vendor_total_pkr','cost_amount_pkr','supplier_total_pkr','supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price']);
                 $costRate = $this->numberFromMeaningful($row, $columns, ['supplier_rate','vendor_rate','cost_rate','unit_cost','supplier_unit_cost','vendor_unit_cost']);
+                if ($costRate <= 0 && in_array('supplier_amount_pkr', $columns, true)) {
+                    $costRate = $this->numberFromMeaningful($row, $columns, ['supplier_amount']);
+                }
                 $costCurrency = strtoupper(trim((string) ($this->valueFrom($row, $columns, ['cost_rate_currency_code','rate_currency','source_currency_code','cost_currency','cost_currency_code','supplier_currency_code','vendor_currency_code']) ?? '')));
                 $exchangeRate = $this->numberFromMeaningful($row, $columns, ['exchange_rate','supplier_exchange_rate','vendor_exchange_rate','cost_exchange_rate']);
                 return [
                     'id' => (int) ($row['id'] ?? 0),
-                    'route_master_id' => (int) ($this->valueFrom($row, $columns, ['rate_card_id','route_master_id','route_id']) ?? 0),
-                    'route_source_table' => '',
+                    'route_master_id' => $routeMasterId > 0 ? $routeMasterId : $rateCardId,
+                    // A physical rate_card_id is an exact native master key;
+                    // retain it on reload so the rate lookup never falls back
+                    // to a generic vehicle label.
+                    'route_source_table' => $rateCardId > 0 ? 'transport_rate_cards' : '',
+                    'rate_card_id' => $rateCardId,
                     'route_name' => trim((string) ($this->valueFrom($row, $columns, ['route_label','route_name','route']) ?? '')) ?: $this->composeRoute($row, $columns),
                     'vehicle_master_id' => (int) ($this->valueFrom($row, $columns, ['vehicle_master_id','vehicle_id','vehicle_type_id']) ?? 0),
                     'vehicle_source_table' => '',
@@ -669,6 +1075,7 @@ final class GeneralBookingTransportProductController extends Controller
                     'driver_cell' => trim((string) ($this->valueFrom($row, $columns, ['driver_cell','driver_contact','contact_number','provider_contact','phone','mobile','cell_number']) ?? '')),
                     'plate_number' => trim((string) ($this->valueFrom($row, $columns, ['plate_number','plate_no','vehicle_plate','registration_number','registration_no']) ?? '')),
                     'vendor_id' => (int) ($this->valueFrom($row, $columns, ['vendor_id','supplier_id','service_provider_id']) ?? 0),
+                    'transport_company_id' => (int) ($this->valueFrom($row, $columns, ['transport_company_id']) ?? 0),
                     'company_name' => trim((string) ($this->valueFrom($row, $columns, ['company_name','provider_name','transport_company','vendor_name','supplier_name']) ?? '')),
                     'brn_number' => trim((string) ($this->valueFrom($row, $columns, ['brn_number','brn','provider_reference','booking_reference','reference']) ?? '')),
                     'sale_amount' => round($sale, 2),
@@ -712,8 +1119,21 @@ final class GeneralBookingTransportProductController extends Controller
             foreach (['company_id','branch_id','customer_id','agent_id','salesperson_id','currency_id','tenant_id','office_id'] as $field) {
                 if (in_array($field, $columns, true) && array_key_exists($field, $bookingData)) $row[$field] = $bookingData[$field];
             }
-            if (($transport['route_source_table'] ?? '') === 'transport_rate_cards') $this->put($row, $columns, ['rate_card_id'], (int) ($transport['route_master_id'] ?? 0) ?: null);
-            $this->put($row, $columns, ['route_master_id','route_id'], (int) ($transport['route_master_id'] ?? 0) ?: null);
+            $resolvedRateCardId = (int) ($transport['rate_card_id'] ?? 0);
+            if ($resolvedRateCardId <= 0 && ($transport['route_source_table'] ?? '') === 'transport_rate_cards') {
+                $resolvedRateCardId = (int) ($transport['route_master_id'] ?? 0);
+            }
+            if ($resolvedRateCardId > 0) $this->put($row, $columns, ['rate_card_id'], $resolvedRateCardId);
+            $this->put($row, $columns, ['transport_company_id'], (int) ($transport['transport_company_id'] ?? 0) ?: null);
+            $this->put($row, $columns, ['transport_route_id'], (int) ($transport['transport_route_id'] ?? 0) ?: null);
+            $this->put($row, $columns, ['transport_vehicle_type_id'], (int) ($transport['transport_vehicle_type_id'] ?? 0) ?: null);
+            // A discovered matrix-detail ID is not automatically a native Route
+            // master FK. Persist the rate-card header where supported and retain
+            // the textual origin/destination unless the selected source itself
+            // is the native rate-card route authority.
+            if (($transport['route_source_table'] ?? '') === 'transport_rate_cards') {
+                $this->put($row, $columns, ['route_master_id','route_id'], (int) ($transport['route_master_id'] ?? 0) ?: null);
+            }
             $this->put($row, $columns, ['route_label','route_name','route'], $transport['route_name']);
             [$from, $to] = $this->splitRoute((string) $transport['route_name']);
             $this->put($row, $columns, ['pickup_location','from_location','origin','from_city'], $from ?: null);
@@ -730,7 +1150,14 @@ final class GeneralBookingTransportProductController extends Controller
             $this->putAll($row, $columns, ['sale_amount','selling_total','customer_total','sale_total','total_sale','customer_amount','selling_amount','customer_price','sale_price','selling_price'], $transport['sale_amount']);
             $this->putAll($row, $columns, ['supplier_rate','vendor_rate','cost_rate','unit_cost','supplier_unit_cost','vendor_unit_cost'], $transport['cost_rate']);
             $this->putAll($row, $columns, ['exchange_rate','supplier_exchange_rate','vendor_exchange_rate','cost_exchange_rate'], $transport['exchange_rate']);
-            $this->putAll($row, $columns, ['supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price'], $transport['cost_amount']);
+            $separateSourceAndPkr = in_array('supplier_amount_pkr', $columns, true);
+            if ($separateSourceAndPkr) {
+                $this->put($row, $columns, ['supplier_amount'], $transport['cost_rate']);
+                $this->putAll($row, $columns, ['supplier_amount_pkr','vendor_total_pkr','cost_amount_pkr','supplier_total_pkr'], $transport['cost_amount']);
+                $this->putAll($row, $columns, ['vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price'], $transport['cost_amount']);
+            } else {
+                $this->putAll($row, $columns, ['supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price'], $transport['cost_amount']);
+            }
             $this->putAll($row, $columns, ['margin','gross_margin','net_margin','profit'], $transport['margin']);
             $this->putAll($row, $columns, ['voucher_notes','notes','remarks','description'], $transport['notes'] ?: null);
             $this->put($row, $columns, ['sort_order','sequence','sequence_no'], ($index + 1) * 10);
@@ -738,9 +1165,10 @@ final class GeneralBookingTransportProductController extends Controller
             $this->putNativeEnum($row, $table, $columns, ['status'], 'requested', ['REQUESTED','booked','BOOKED','confirmed','CONFIRMED','active','ACTIVE']);
             if (in_array('commercial_locked', $columns, true)) $row['commercial_locked'] = 0;
             if (in_array('sale_currency_code', $columns, true)) $row['sale_currency_code'] = 'PKR';
-            // Native monetary totals remain PKR for accounting compatibility. Source
-            // currency is carried separately (and losslessly in the Transport snapshot).
-            foreach (['supplier_currency_code','vendor_currency_code'] as $field) if (in_array($field, $columns, true)) $row[$field] = 'PKR';
+            // When the host exposes a separate source amount and PKR total,
+            // supplier currency describes the source vendor price. Older
+            // one-amount schemas retain their native PKR accounting meaning.
+            foreach (['supplier_currency_code','vendor_currency_code'] as $field) if (in_array($field, $columns, true)) $row[$field] = $separateSourceAndPkr ? $transport['cost_currency'] : 'PKR';
             foreach (['cost_rate_currency_code','rate_currency','source_currency_code','cost_currency'] as $field) if (in_array($field, $columns, true)) $row[$field] = $transport['cost_currency'];
             foreach (['created_by','created_by_id','updated_by','updated_by_id','user_id'] as $field) if (in_array($field, $columns, true) && Auth::id()) $row[$field] = Auth::id();
             if (in_array('created_at', $columns, true)) $row['created_at'] = now();
@@ -853,8 +1281,11 @@ final class GeneralBookingTransportProductController extends Controller
             foreach (['route_source_table','route_name','vehicle_source_table','vehicle_type','driver_name','driver_cell','plate_number','company_name','brn_number','cost_currency','notes'] as $field) {
                 if (trim((string) ($saved[$field] ?? '')) !== '') $row[$field] = trim((string) $saved[$field]);
             }
-            foreach (['sale_amount','cost_rate','cost_amount','margin'] as $field) $row[$field] = round((float) ($saved[$field] ?? 0), 2);
-            $row['exchange_rate'] = round((float) ($saved['exchange_rate'] ?? 0), 8);
+            foreach (['sale_amount','cost_rate','cost_amount'] as $field) {
+                if ((float) ($saved[$field] ?? 0) > 0) $row[$field] = round((float) $saved[$field], 2);
+            }
+            if ((float) ($saved['exchange_rate'] ?? 0) > 0) $row['exchange_rate'] = round((float) $saved['exchange_rate'], 8);
+            $row['margin'] = round((float) ($row['sale_amount'] ?? 0) - (float) ($row['cost_amount'] ?? 0), 2);
         }
         unset($row);
         return $rows;
@@ -1004,8 +1435,13 @@ final class GeneralBookingTransportProductController extends Controller
     {
         $encoded = base64_encode((string) json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
         $marker = '[['.$tag.':'.$encoded.']]';
-        $clean = preg_replace('/\s*\[\['.preg_quote($tag, '/').':[A-Za-z0-9+\/=]+\]\]\s*/', '', $text) ?? $text;
+        $clean = $this->removeTaggedPayload($text, $tag);
         $clean = trim($clean); return $clean === '' ? $marker : $clean."\n".$marker;
+    }
+
+    private function removeTaggedPayload(string $text, string $tag): string
+    {
+        return preg_replace('/\s*\[\['.preg_quote($tag, '/').':[A-Za-z0-9+\/=]+\]\]\s*/', '', $text) ?? $text;
     }
 
     private function shortDatabaseMessage(string $message): string

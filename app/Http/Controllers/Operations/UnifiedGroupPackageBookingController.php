@@ -80,6 +80,9 @@ class UnifiedGroupPackageBookingController extends Controller
                 $stage = 'booking header';
                 $bookingId = $this->bookingWriter->create([...$data, ...$commercial]);
 
+                $stage = 'booking customer authority';
+                $this->assertPersistedCustomer($bookingId, (int) $data['customer_id']);
+
                 $stage = 'package reference';
                 $packageCode = $this->packageCode($bookingId, $data['booking_date']);
 
@@ -184,6 +187,9 @@ class UnifiedGroupPackageBookingController extends Controller
                         $booking,
                         [...$data, ...$commercial]
                     );
+
+                    $stage = 'booking customer authority';
+                    $this->assertPersistedCustomer($booking, (int) $data['customer_id']);
 
                     $stage = 'commercial package';
                     $this->saveCommercialRecord(
@@ -396,6 +402,20 @@ class UnifiedGroupPackageBookingController extends Controller
         }
 
         return $data;
+    }
+
+    private function assertPersistedCustomer(int $bookingId, int $selectedCustomerId): void
+    {
+        $identity = $this->customerResolver->resolve($bookingId);
+
+        if (
+            $selectedCustomerId <= 0
+            || (int) ($identity['id'] ?? 0) !== $selectedCustomerId
+        ) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'customer_id' => 'The selected Customer / Party could not be persisted to the native booking authority.',
+            ]);
+        }
     }
 
     private function firstPositiveId(array $row, array $keys): int
