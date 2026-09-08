@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.167
-APPLICATION_VERSION=v1.1.33.167-ERP11.3.167
+CURRENT_VERSION=ERP-11.3.202
+APPLICATION_VERSION=v1.1.33.202-ERP11.3.202
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.167
+LAST_PACKAGED_RELEASE=ERP-11.3.202
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -93,3 +93,9 @@ ERP-11.3.167 release candidate adds a temporary Super-Admin-only GET diagnostic
 for the host SalesInvoiceService confirmation predicate. It is reflection and
 read-query only: it cannot invoke invoice creation or write booking/accounting data.
 No migration is added.
+
+ERP-11.3.202 direct-upload release adds deterministic native Air-to-generic
+passenger-link reconciliation inside the guarded Sales Invoice transaction,
+after booking/customer validation and before the unchanged host invoice
+creator and validator. Normal Air Save synchronization remains intact. No
+commercial values or other product data are changed, and no migration is added.
