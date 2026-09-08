@@ -1,4 +1,4 @@
-ERP-11.3.206 DIRECT UPLOAD — DIAGNOSTIC
+ERP-11.3.207 DIRECT UPLOAD
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,13 +9,17 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.206 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.207 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
 During the guarded invoice transaction, Air service 17 must reconcile from its
 five native ticket passenger IDs, while Hotel service 18 and Transport service
-20 must reconcile from the exact active booking-passenger set. Visa must be
+20 must reconcile from the exact active booking-passenger set. Hotel and
+Transport must also persist their native PER_SERVICE quantity, unit_price,
+line_total and PKR currency from their own persisted product rows. For booking
+BK-2026-000054, Hotel must contribute PKR 8,000 and Transport PKR 200 without
+using a residual booking-total calculation. Visa must be
 materialized from its native Product/Service master and authoritative child rows,
 with customer total PKR 205,000 and exact passenger IDs 20,21,22,23,24. Its
 native row must persist quantity, unit_price and line_total so that quantity
@@ -27,11 +31,13 @@ After deployment, do not click Create Sales Invoice and do not reopen or resave
 the booking. As Super Admin, first open:
 https://erp.easyticket.pk/system/diagnostics/air-link-db/13
 
-Capture PRE_NATIVE_SERVICE_COMMERCIAL_AUDIT and
-HOST_SALES_INVOICE_METHOD_SOURCE. The pre-native audit must always roll back its
-temporary service/passenger reconciliation and must never invoke the invoice
-creator. Existing Sales Invoice validation and accounting behavior remain
-authoritative and unchanged.
+Capture PRE_NATIVE_SERVICE_COMMERCIAL_AUDIT before attempting invoice creation.
+It must report four active services, Hotel line_total 8,000, Transport
+line_total 200, SUM_LINE_TOTAL 931,200 and SUM_QUANTITY_X_UNIT_PRICE 931,200.
+The audit must always roll back its temporary service/passenger reconciliation
+and must never invoke the invoice creator. Only after those values pass, attempt
+Create Sales Invoice once. Existing Sales Invoice validation and accounting
+behavior remain authoritative and unchanged.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the

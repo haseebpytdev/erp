@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.206
-APPLICATION_VERSION=v1.1.33.206-ERP11.3.206
+CURRENT_VERSION=ERP-11.3.207
+APPLICATION_VERSION=v1.1.33.207-ERP11.3.207
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.206
+LAST_PACKAGED_RELEASE=ERP-11.3.207
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -129,3 +129,11 @@ line count and line total on mismatch. Its Super-Admin diagnostic adds a
 rollback-only pre-native service commercial audit and the full reflected host
 `SalesInvoiceService::createFromBooking()` source. It never calls the invoice
 creator, never commits temporary reconciliation, and adds no migration.
+
+ERP-11.3.207 direct-upload release persists the native Hotel and Transport
+PER_SERVICE quantity, unit price, line total and PKR currency during normal
+product saves. Historical approved bookings reconcile the same fields from
+each product's own persisted rows inside the guarded Sales Invoice transaction,
+before passenger reconciliation and native invoice creation. Air, Visa,
+SalesInvoiceService and the native verifier remain unchanged; no migration is
+added.
