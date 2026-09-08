@@ -16,6 +16,10 @@ final class VisaBookingServiceSynchronizer
 {
     private const CHILD_TABLE = 'booking_visa_services';
     private const SERVICE_TABLE = 'booking_services';
+    private const CUSTOMER_TOTAL_FIELDS = [
+        'line_total', 'selling_total', 'customer_total', 'sale_total',
+        'total_sale', 'customer_amount', 'selling_amount',
+    ];
 
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
@@ -71,9 +75,13 @@ final class VisaBookingServiceSynchronizer
             return $this->result($master, null, [], 0.0, 0.0);
         }
 
-        [$passengerIds, $customerTotal, $vendorTotal] = $this->childAuthority($bookingId, $children);
+        [$passengerIds, $customerTotal, $vendorTotal, $vendorId] = $this->childAuthority($bookingId, $children);
         $contract = $this->masterContract($master);
         $quantity = $this->quantity($contract['pricing_basis'], count($passengerIds));
+        $unitPrice = round($customerTotal / $quantity, 2);
+        if (abs(($quantity * $unitPrice) - $customerTotal) > 0.005) {
+            $this->fail('The authoritative Visa total cannot be represented exactly by the native quantity and unit-price contract.');
+        }
 
         $service = $active[0] ?? $this->latestInactive($services);
         $serviceId = $this->writeService(
@@ -82,8 +90,10 @@ final class VisaBookingServiceSynchronizer
             $master,
             $contract,
             $quantity,
+            $unitPrice,
             $customerTotal,
             $vendorTotal,
+            $vendorId,
             $service,
         );
 
@@ -100,7 +110,7 @@ final class VisaBookingServiceSynchronizer
             );
         }
 
-        $this->verify($bookingId, (int) $master['id'], $serviceId, $customerTotal);
+        $this->verify($bookingId, (int) $master['id'], $serviceId, $quantity, $unitPrice, $customerTotal);
         return $this->result($master, $serviceId, $linked, $customerTotal, $vendorTotal);
     }
 
@@ -119,12 +129,14 @@ final class VisaBookingServiceSynchronizer
         }
     }
 
-    /** @param list<array<string,mixed>> $rows @return array{0:list<int>,1:float,2:float} */
+    /** @param list<array<string,mixed>> $rows @return array{0:list<int>,1:float,2:float,3:?int} */
     private function childAuthority(int $bookingId, array $rows): array
     {
         $ids = [];
         $customer = 0.0;
         $vendor = 0.0;
+        $vendorIds = [];
+        $missingVendor = false;
         foreach ($rows as $row) {
             $id = (int) ($row['booking_passenger_id'] ?? 0);
             if ($id <= 0 || in_array($id, $ids, true)) {
@@ -136,6 +148,12 @@ final class VisaBookingServiceSynchronizer
             $ids[] = $id;
             $customer += (float) $row['sale_pkr'];
             $vendor += (float) $row['vendor_cost_pkr'];
+            $vendorId = (int) ($row['vendor_id'] ?? 0);
+            if ($vendorId > 0) {
+                $vendorIds[] = $vendorId;
+            } else {
+                $missingVendor = true;
+            }
         }
         sort($ids);
 
@@ -144,7 +162,12 @@ final class VisaBookingServiceSynchronizer
         sort($owned);
         if ($owned !== $ids) $this->fail('A Visa child passenger does not belong to this booking.');
 
-        return [$ids, round($customer, 2), round($vendor, 2)];
+        $vendorIds = array_values(array_unique($vendorIds));
+        if (count($vendorIds) > 1 || ($vendorIds !== [] && $missingVendor)) {
+            $this->fail('Visa child rows do not resolve to one unambiguous Vendor ID.');
+        }
+
+        return [$ids, round($customer, 2), round($vendor, 2), $vendorIds[0] ?? null];
     }
 
     /** @return array{id:int,table:string,row:array<string,mixed>} */
@@ -250,14 +273,14 @@ final class VisaBookingServiceSynchronizer
     }
 
     /** @param array<string,mixed> $booking @param array{id:int,table:string,row:array<string,mixed>} $master @param array<string,string> $contract @param array<string,mixed>|null $existing */
-    private function writeService(int $bookingId, array $booking, array $master, array $contract, int $quantity, float $customerTotal, float $vendorTotal, ?array $existing): int
+    private function writeService(int $bookingId, array $booking, array $master, array $contract, int $quantity, float $unitPrice, float $customerTotal, float $vendorTotal, ?int $vendorId, ?array $existing): int
     {
         $columns = Schema::getColumnListing(self::SERVICE_TABLE);
         $row = ['booking_id' => $bookingId, 'product_service_id' => (int) $master['id']];
         foreach (['company_id', 'branch_id', 'customer_id', 'agent_id', 'salesperson_id', 'currency_id', 'tenant_id', 'office_id'] as $field) {
             if (in_array($field, $columns, true) && array_key_exists($field, $booking)) $row[$field] = $booking[$field];
         }
-        $this->putFirst($row, $columns, ['service_name', 'name', 'title'], $contract['name']);
+        $this->putFirst($row, $columns, ['service_name', 'name', 'title', 'description'], $contract['name']);
         $this->putFirst($row, $columns, ['service_code', 'product_code', 'code'], $contract['code'] ?: null);
         $this->putFirst($row, $columns, [
             'revenue_mapping_key', 'revenue_mapping_key_snapshot',
@@ -275,9 +298,12 @@ final class VisaBookingServiceSynchronizer
         $this->putContract($row, $columns, ['passenger_link_mode_snapshot', 'passenger_link_mode'], $contract['passenger_link_mode']);
         $this->putContract($row, $columns, ['pricing_basis_snapshot', 'pricing_basis'], $contract['pricing_basis']);
         $this->putAll($row, $columns, ['quantity', 'qty'], $quantity);
-        $this->putAll($row, $columns, ['selling_total', 'customer_total', 'sale_total', 'total_sale', 'customer_amount', 'selling_amount'], $customerTotal);
+        $this->putAll($row, $columns, ['unit_price'], $unitPrice);
+        $this->putAll($row, $columns, self::CUSTOMER_TOTAL_FIELDS, $customerTotal);
         $this->putAll($row, $columns, ['net_supplier_cost', 'supplier_total', 'vendor_total', 'cost_total', 'total_cost', 'supplier_amount', 'vendor_amount'], $vendorTotal);
         $this->putAll($row, $columns, ['margin', 'gross_margin', 'net_margin', 'profit'], round($customerTotal - $vendorTotal, 2));
+        $this->putAll($row, $columns, ['currency_code'], 'PKR');
+        if (in_array('vendor_id', $columns, true)) $row['vendor_id'] = $vendorId;
         if (in_array('is_active', $columns, true)) $row['is_active'] = 1;
         if (in_array('active', $columns, true)) $row['active'] = 1;
         if (in_array('status', $columns, true) && (! $existing || ! $this->isActive($existing))) {
@@ -286,7 +312,7 @@ final class VisaBookingServiceSynchronizer
         if (in_array('deleted_at', $columns, true)) $row['deleted_at'] = null;
         if (in_array('updated_at', $columns, true)) $row['updated_at'] = now();
 
-        $totalFields = array_values(array_intersect($columns, ['selling_total', 'customer_total', 'sale_total', 'total_sale', 'customer_amount', 'selling_amount']));
+        $totalFields = array_values(array_intersect($columns, self::CUSTOMER_TOTAL_FIELDS));
         if ($totalFields === []) $this->fail('booking_services has no supported native customer-total field for Visa.');
 
         if ($existing) {
@@ -325,16 +351,26 @@ final class VisaBookingServiceSynchronizer
         }
     }
 
-    private function verify(int $bookingId, int $masterId, int $serviceId, float $customerTotal): void
+    private function verify(int $bookingId, int $masterId, int $serviceId, int $quantity, float $unitPrice, float $customerTotal): void
     {
         $services = $this->visaServices($bookingId, $masterId);
         $active = array_values(array_filter($services, fn (array $row): bool => $this->isActive($row)));
         if (count($active) !== 1 || (int) ($active[0]['id'] ?? 0) !== $serviceId) {
             $this->fail('Visa synchronization did not leave exactly one active native booking service.');
         }
-        $actual = $this->firstNumeric($active[0], ['selling_total', 'customer_total', 'sale_total', 'total_sale', 'customer_amount', 'selling_amount']);
+        $actual = $this->firstNumeric($active[0], self::CUSTOMER_TOTAL_FIELDS);
         if ($actual === null || abs($actual - $customerTotal) > 0.005) {
             $this->fail('The native Visa booking service customer total did not match authoritative Visa child rows.');
+        }
+        if (array_key_exists('quantity', $active[0]) && (int) $active[0]['quantity'] !== $quantity) {
+            $this->fail('The native Visa booking service quantity did not match its pricing contract.');
+        }
+        if (array_key_exists('unit_price', $active[0])) {
+            $actualUnitPrice = (float) $active[0]['unit_price'];
+            if (abs($actualUnitPrice - $unitPrice) > 0.005
+                || abs(($quantity * $actualUnitPrice) - $customerTotal) > 0.005) {
+                $this->fail('The native Visa booking service quantity and unit price do not reconcile to its authoritative line total.');
+            }
         }
     }
 
