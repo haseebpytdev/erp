@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.205
-APPLICATION_VERSION=v1.1.33.205-ERP11.3.205
+CURRENT_VERSION=ERP-11.3.206
+APPLICATION_VERSION=v1.1.33.206-ERP11.3.206
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.205
+LAST_PACKAGED_RELEASE=ERP-11.3.206
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -122,3 +122,10 @@ from the runtime pricing quantity, records the native description and PKR
 currency, and writes `vendor_id` only from one unambiguous child-row authority.
 Exact Visa passenger links, the PKR 931,200 booking total, Air/Hotel/Transport
 values, invoice verification and migrations remain unchanged.
+
+ERP-11.3.206 diagnostic release preserves every existing validation and
+accounting rule while exposing the actual native Sales Invoice header total,
+line count and line total on mismatch. Its Super-Admin diagnostic adds a
+rollback-only pre-native service commercial audit and the full reflected host
+`SalesInvoiceService::createFromBooking()` source. It never calls the invoice
+creator, never commits temporary reconciliation, and adds no migration.

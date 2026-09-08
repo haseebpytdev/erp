@@ -1,4 +1,4 @@
-ERP-11.3.205 DIRECT UPLOAD
+ERP-11.3.206 DIRECT UPLOAD — DIAGNOSTIC
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,7 +9,7 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.205 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.206 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
@@ -23,12 +23,15 @@ times unit_price equals PKR 205,000, plus description, PKR currency and only an
 unambiguous child-derived Vendor ID. All four services must be complete before
 the unchanged host invoice creator runs.
 
-After deployment, do not reopen the booking or resave its products. Attempt
-Create Sales Invoice once. Success must produce one
-Draft invoice with four product lines and header/line total PKR 931,200. If any
-message appears, record its exact text and do not retry. Any linkage, status,
-line or total mismatch must roll back. The host-native SalesInvoiceService
-validator remains authoritative and unchanged.
+After deployment, do not click Create Sales Invoice and do not reopen or resave
+the booking. As Super Admin, first open:
+https://erp.easyticket.pk/system/diagnostics/air-link-db/13
+
+Capture PRE_NATIVE_SERVICE_COMMERCIAL_AUDIT and
+HOST_SALES_INVOICE_METHOD_SOURCE. The pre-native audit must always roll back its
+temporary service/passenger reconciliation and must never invoke the invoice
+creator. Existing Sales Invoice validation and accounting behavior remain
+authoritative and unchanged.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
