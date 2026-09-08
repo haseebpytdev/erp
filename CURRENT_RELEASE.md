@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.203
-APPLICATION_VERSION=v1.1.33.203-ERP11.3.203
+CURRENT_VERSION=ERP-11.3.204
+APPLICATION_VERSION=v1.1.33.204-ERP11.3.204
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.203
+LAST_PACKAGED_RELEASE=ERP-11.3.204
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -106,3 +106,11 @@ active booking-passenger set is synchronized only for REQUIRED/MULTIPLE +
 PER_SERVICE services, both during normal product saves and before native Sales
 Invoice creation. Air remains ticket-authoritative; no commercial values,
 validator logic or migrations change.
+
+ERP-11.3.204 direct-upload release materializes the native Visa booking service
+from authoritative `booking_visa_services` child rows. It resolves the native
+Visa Product/Service identity and contract at runtime, preserves the exact Visa
+passenger subset, synchronizes Visa customer/vendor totals, and supports
+historical approved bookings inside the guarded Sales Invoice transaction.
+Air, Hotel and Transport values, invoice verification and migrations remain
+unchanged.

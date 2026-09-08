@@ -1,4 +1,4 @@
-ERP-11.3.203 DIRECT UPLOAD
+ERP-11.3.204 DIRECT UPLOAD
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,26 +9,23 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.203 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.204 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
-Before retrying Sales Invoice creation for BK-2026-000054, do not reopen the
-booking and do not save Air again. As Super Admin, first open the read-only
-/system/diagnostics/air-link-db/13 endpoint and inspect
-ACTIVE_SERVICE_PASSENGER_LINK_AUDIT. Confirm whether every active
-REQUIRED/MULTIPLE service has generic passenger links or identify the next
-product-specific blocker without fabricating passenger assignments.
-
 During the guarded invoice transaction, Air service 17 must reconcile from its
 five native ticket passenger IDs, while Hotel service 18 and Transport service
-20 must reconcile from the exact active booking-passenger set. The expected
-generic link count is five for each service before the unchanged host validator
-runs. A later failure must roll back all reconciliation and invoice mutations.
+20 must reconcile from the exact active booking-passenger set. Visa must be
+materialized from its native Product/Service master and authoritative child rows,
+with customer total PKR 205,000 and exact passenger IDs 20,21,22,23,24. All four
+services must be complete before the unchanged host invoice creator runs.
 
-The controlled invoice test must confirm one Draft invoice for PKR 931,200.
-Any linkage, status, line or total mismatch must roll back. The host-native
-SalesInvoiceService validator remains authoritative and unchanged.
+After deployment, do not reopen the booking or resave its products. Attempt
+Create Sales Invoice once. Success must produce one
+Draft invoice with four product lines and header/line total PKR 931,200. If any
+message appears, record its exact text and do not retry. Any linkage, status,
+line or total mismatch must roll back. The host-native SalesInvoiceService
+validator remains authoritative and unchanged.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
