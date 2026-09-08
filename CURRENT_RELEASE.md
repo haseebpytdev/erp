@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.204
-APPLICATION_VERSION=v1.1.33.204-ERP11.3.204
+CURRENT_VERSION=ERP-11.3.205
+APPLICATION_VERSION=v1.1.33.205-ERP11.3.205
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.204
+LAST_PACKAGED_RELEASE=ERP-11.3.205
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -114,3 +114,11 @@ passenger subset, synchronizes Visa customer/vendor totals, and supports
 historical approved bookings inside the guarded Sales Invoice transaction.
 Air, Hotel and Transport values, invoice verification and migrations remain
 unchanged.
+
+ERP-11.3.205 direct-upload release aligns that Visa materialization with the
+production-native `booking_services` commercial schema. It persists the
+authoritative Visa customer total through `line_total`, derives `unit_price`
+from the runtime pricing quantity, records the native description and PKR
+currency, and writes `vendor_id` only from one unambiguous child-row authority.
+Exact Visa passenger links, the PKR 931,200 booking total, Air/Hotel/Transport
+values, invoice verification and migrations remain unchanged.

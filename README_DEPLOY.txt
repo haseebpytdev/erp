@@ -1,4 +1,4 @@
-ERP-11.3.204 DIRECT UPLOAD
+ERP-11.3.205 DIRECT UPLOAD
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,7 +9,7 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.204 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.205 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
@@ -17,8 +17,11 @@ During the guarded invoice transaction, Air service 17 must reconcile from its
 five native ticket passenger IDs, while Hotel service 18 and Transport service
 20 must reconcile from the exact active booking-passenger set. Visa must be
 materialized from its native Product/Service master and authoritative child rows,
-with customer total PKR 205,000 and exact passenger IDs 20,21,22,23,24. All four
-services must be complete before the unchanged host invoice creator runs.
+with customer total PKR 205,000 and exact passenger IDs 20,21,22,23,24. Its
+native row must persist quantity, unit_price and line_total so that quantity
+times unit_price equals PKR 205,000, plus description, PKR currency and only an
+unambiguous child-derived Vendor ID. All four services must be complete before
+the unchanged host invoice creator runs.
 
 After deployment, do not reopen the booking or resave its products. Attempt
 Create Sales Invoice once. Success must produce one

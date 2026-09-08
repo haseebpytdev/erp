@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.204-ERP11.3.204',
-    'release' => 'ERP-11.3.204',
-    'package' => 'ERP-11.3.204 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.204 materializes the native Visa booking service from authoritative Visa child rows, preserves their exact passenger subset and includes their commercial total before guarded Sales Invoice creation.',
+    'version' => 'v1.1.33.205-ERP11.3.205',
+    'release' => 'ERP-11.3.205',
+    'package' => 'ERP-11.3.205 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.205 aligns Visa with the native booking-service commercial contract by persisting quantity, unit_price, line_total, PKR currency, description and an unambiguous child-derived Vendor ID.',
 ];
