@@ -15,6 +15,7 @@ final class NativeSalesInvoiceRuntimeBridge
         private readonly NativeBookingSalesInvoiceCreator $creator,
         private readonly NativeSalesInvoiceCreationVerifier $verifier,
         private readonly NativeBookingCustomerResolver $customerAuthority,
+        private readonly VisaBookingServiceSynchronizer $visaServices,
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
     ) {}
 
@@ -61,6 +62,17 @@ final class NativeSalesInvoiceRuntimeBridge
 
             if ($customerId <= 0) {
                 $this->fail('The booking Customer / Party is required.');
+            }
+
+            // Historical approved bookings may have authoritative Visa child
+            // rows without a native booking service. Materialize that service,
+            // its totals and exact passenger subset in this locked transaction.
+            try {
+                $this->visaServices->synchronize($bookingId);
+            } catch (ValidationException $exception) {
+                $message = collect($exception->errors())->flatten()->first()
+                    ?? 'The native Visa booking service could not be synchronized safely for invoicing.';
+                throw ValidationException::withMessages(['invoice' => $message]);
             }
 
             // Reconcile each explicit product passenger authority in this

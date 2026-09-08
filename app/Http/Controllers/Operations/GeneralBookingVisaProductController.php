@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\LegacyVisaTravelMasterRepository;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
+use App\Services\Operations\VisaBookingServiceSynchronizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,9 +29,10 @@ final class GeneralBookingVisaProductController extends Controller
     /** @var list<array{id:int,name:string}>|null */
     private ?array $vendorOptionsCache = null;
 
-    public function __construct(private readonly LegacyVisaTravelMasterRepository $visaMasters)
-    {
-    }
+    public function __construct(
+        private readonly LegacyVisaTravelMasterRepository $visaMasters,
+        private readonly VisaBookingServiceSynchronizer $visaServices,
+    ) {}
 
     public function show(Request $request, int $booking): JsonResponse
     {
@@ -64,7 +66,7 @@ final class GeneralBookingVisaProductController extends Controller
 
     public function store(Request $request, int $booking): JsonResponse
     {
-        $bookingRow = $this->assertBooking($booking);
+        $this->assertBooking($booking);
         $this->assertSchema();
 
         $data = $request->validate([
@@ -193,7 +195,7 @@ final class GeneralBookingVisaProductController extends Controller
             throw ValidationException::withMessages(['visa_vendor' => $vendorErrors]);
         }
 
-        DB::transaction(function () use ($booking, $normalized, $bookingRow): void {
+        DB::transaction(function () use ($booking, $normalized): void {
             $keep = array_map(static fn (array $row): int => (int) $row['booking_passenger_id'], $normalized);
             $stale = DB::table('booking_visa_services')->where('booking_id', $booking);
             if ($keep) $stale->whereNotIn('booking_passenger_id', $keep);
@@ -206,7 +208,7 @@ final class GeneralBookingVisaProductController extends Controller
                 );
             }
 
-            $this->syncBookingServiceBestEffort($booking, $bookingRow, $this->summary($normalized));
+            $this->visaServices->synchronize($booking, true);
         });
 
         $fresh = DB::table('booking_visa_services')->where('booking_id', $booking)->orderBy('id')->get()
@@ -450,28 +452,4 @@ final class GeneralBookingVisaProductController extends Controller
         return '';
     }
 
-    private function syncBookingServiceBestEffort(int $booking, object $bookingRow, array $summary): void
-    {
-        if (! Schema::hasTable('booking_services')) return;
-        try {
-            $columns = Schema::getColumnListing('booking_services');
-            if (! in_array('booking_id', $columns, true)) return;
-            $rows = DB::table('booking_services')->where('booking_id', $booking)->get();
-            $visa = null;
-            foreach ($rows as $row) {
-                $data = (array) $row;
-                $hay = strtolower(implode(' ', array_map('strval', array_intersect_key($data, array_flip(['service_name','name','title','description','service_type','product_type'])))));
-                if (str_contains($hay, 'visa')) { $visa = $data; break; }
-            }
-            if (! $visa || empty($visa['id'])) return;
-            $update = [];
-            foreach (['selling_total','customer_total','sale_total','total_sale','customer_amount','selling_amount'] as $field) if (in_array($field, $columns, true)) $update[$field] = $summary['customer_total'];
-            foreach (['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','supplier_amount','vendor_amount'] as $field) if (in_array($field, $columns, true)) $update[$field] = $summary['vendor_total'];
-            foreach (['margin','gross_margin','net_margin','profit'] as $field) if (in_array($field, $columns, true)) $update[$field] = $summary['margin'];
-            if (in_array('updated_at', $columns, true)) $update['updated_at'] = now();
-            if ($update) DB::table('booking_services')->where('id', (int) $visa['id'])->update($update);
-        } catch (Throwable) {
-            // Visa child rows remain authoritative even if an old booking_services schema cannot accept totals.
-        }
-    }
 }

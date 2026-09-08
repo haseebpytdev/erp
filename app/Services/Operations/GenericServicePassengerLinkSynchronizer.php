@@ -63,6 +63,44 @@ final class GenericServicePassengerLinkSynchronizer
     }
 
     /**
+     * Visa child rows carry an explicit passenger subset. The Visa service
+     * resolver supplies the product identity discovered from the native master;
+     * this method never guesses that identity or expands the subset booking-wide.
+     *
+     * @param list<int> $passengerIds
+     * @return list<int>
+     */
+    public function syncVisaFromNative(
+        int $bookingId,
+        int $serviceId,
+        int $productServiceId,
+        array $passengerIds,
+    ): array {
+        try {
+            $rawIds = array_map(static fn ($id): int => (int) $id, $passengerIds);
+            $passengerIds = array_values(array_filter($rawIds, static fn (int $id): bool => $id > 0));
+            sort($passengerIds);
+            if (count($passengerIds) !== count($rawIds)
+                || count($passengerIds) !== count(array_unique($passengerIds))) {
+                $this->fail('Native Visa passenger links are incomplete or duplicated; generic service links were not changed.');
+            }
+
+            $service = $this->serviceForBooking($bookingId, $serviceId);
+            if ((int) ($service['product_service_id'] ?? 0) !== $productServiceId) {
+                $this->fail('Native Visa passenger links cannot be applied to another Product/Service master.');
+            }
+            if (! $this->serviceIsActive($service)) {
+                $this->fail('Native Visa passenger links cannot be applied to an inactive booking service.');
+            }
+
+            $this->assertPassengerOwnership($bookingId, $passengerIds);
+            return $this->synchronizeExact($bookingId, $serviceId, $passengerIds);
+        } catch (ValidationException $exception) {
+            $this->rethrowForProduct($exception, 'visa');
+        }
+    }
+
+    /**
      * Reconciles every deterministic active service before the host invoice
      * call. The caller owns NativeSalesInvoiceRuntimeBridge's transaction, so
      * a later native validation failure rolls the complete set back atomically.
