@@ -103,7 +103,7 @@ ok(bridge.indexOf('$this->customerAuthority->resolve($bookingId)') < bridge.inde
 ok(bridge.indexOf('$this->visaServices->synchronize($bookingId)') < bridge.indexOf('reconcileDeterministicServicesForInvoice($bookingId)'), 'Visa service is complete before Air/Hotel/Transport reconciliation');
 ok(bridge.indexOf('reconcileDeterministicServicesForInvoice($bookingId)') < bridge.indexOf('$this->creator->create($request, $bookingId)'), 'all four native services are complete before native invoice creation');
 ok(bridge.indexOf('DB::transaction(function ()') < bridge.indexOf('$this->visaServices->synchronize($bookingId)'), 'historical Visa reconciliation is inside the invoice transaction');
-ok(verifier.includes('header total does not match the authoritative booking customer total'), 'native invoice total verification remains enforced');
+ok(verifier.includes('!$this->same((float)($data[$headerAmountColumn]??0),$expectedTotal)'), 'native invoice header-total verification remains enforced');
 
 equal(718000 + 8000 + 200 + first.service.customer_total, 931200, 'four native service totals equal the authoritative booking total');
 equal(['Air', 'Hotel', 'Transport', 'Visa'].length, 4, 'expected native invoice product line count is four');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\System;
 use App\Http\Controllers\Controller;
 use App\Services\Administration\ErpPermissionMatrixService;
 use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
+use App\Services\Operations\VisaBookingServiceSynchronizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +20,7 @@ final class AirLinkDbDiagnosticController extends Controller
 {
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+        private readonly VisaBookingServiceSynchronizer $visaServices,
     ) {}
 
     public function __invoke(Request $request, int $booking, ErpPermissionMatrixService $permissions)
@@ -96,6 +98,7 @@ final class AirLinkDbDiagnosticController extends Controller
         ))));
 
         $hostValidator = $this->hostPassengerValidator();
+        $preNativeAudit = $this->preNativeServiceCommercialAudit($booking, $errors);
         $genericLinks = $this->genericPassengerLinks(
             $airService ? (int) $airService->id : 0,
             $errors
@@ -119,8 +122,13 @@ final class AirLinkDbDiagnosticController extends Controller
             'AIR_TICKET_ROWS' => $ticketRows,
             'NATIVE_LINKED_PASSENGER_IDS' => $linkedPassengerIds,
             'HOST_SALES_INVOICE_PASSENGER_VALIDATOR' => $hostValidator,
+            'HOST_SALES_INVOICE_METHOD_FILE' => $hostValidator['method_file'] ?? null,
+            'HOST_SALES_INVOICE_METHOD_START_LINE' => $hostValidator['method_start_line'] ?? null,
+            'HOST_SALES_INVOICE_METHOD_END_LINE' => $hostValidator['method_end_line'] ?? null,
+            'HOST_SALES_INVOICE_METHOD_SOURCE' => $hostValidator['method_source'] ?? null,
             'GENERIC_SERVICE_PASSENGER_LINK_CANDIDATES' => $genericLinks,
             'ACTIVE_SERVICE_PASSENGER_LINK_AUDIT' => $this->passengerLinks->auditActiveServices($booking),
+            'PRE_NATIVE_SERVICE_COMMERCIAL_AUDIT' => $preNativeAudit,
             'AIR_SERVICE_PASSENGER_COLUMNS' => $linkColumns($serviceColumns),
             'AIR_TICKET_PASSENGER_COLUMNS' => $linkColumns($ticketColumns),
             'DIAGNOSTIC_ERRORS' => $errors,
@@ -165,11 +173,22 @@ final class AirLinkDbDiagnosticController extends Controller
                 }
             }
 
+            $methodSource = [];
+            if (is_array($source)) {
+                for ($line = $start; $line <= $end; $line++) {
+                    $methodSource[] = $line.': '.(string) ($source[$line - 1] ?? '');
+                }
+            }
+
             return [
                 'available' => true,
                 'class' => $class,
                 'method' => 'createFromBooking',
                 'source_file' => basename($file),
+                'method_file' => $file,
+                'method_start_line' => $start,
+                'method_end_line' => $end,
+                'method_source' => implode("\n", $methodSource),
                 'error_line' => $matchingLine,
                 'validation_snippet' => $snippet,
                 'method_parameters' => array_map(
@@ -185,6 +204,87 @@ final class AirLinkDbDiagnosticController extends Controller
                 'reason' => $exception->getMessage(),
             ];
         }
+    }
+
+    /** @return array<string,mixed> */
+    private function preNativeServiceCommercialAudit(int $booking, array &$errors): array
+    {
+        $startingLevel = DB::transactionLevel();
+        $audit = [
+            'ROLLBACK_ONLY' => true,
+            'NATIVE_INVOICE_CREATOR_CALLED' => false,
+            'ACTIVE_SERVICE_COUNT' => 0,
+            'SUM_LINE_TOTAL' => 0.0,
+            'SUM_QUANTITY_X_UNIT_PRICE' => 0.0,
+            'SERVICES' => [],
+        ];
+
+        try {
+            DB::beginTransaction();
+            $this->visaServices->synchronize($booking);
+            $this->passengerLinks->reconcileDeterministicServicesForInvoice($booking);
+
+            $columns = Schema::getColumnListing('booking_services');
+            $linkAudit = collect($this->passengerLinks->auditActiveServices($booking))
+                ->keyBy('booking_service_id');
+            $rows = DB::table('booking_services')->where('booking_id', $booking)
+                ->orderBy(in_array('id', $columns, true) ? 'id' : 'booking_id')
+                ->get();
+
+            $services = [];
+            $sumLineTotal = 0.0;
+            $sumQuantityRate = 0.0;
+            foreach ($rows as $object) {
+                $row = (array) $object;
+                if (! $this->serviceIsActive($row)) continue;
+
+                $serviceId = (int) ($row['id'] ?? 0);
+                $quantity = (float) ($row['quantity'] ?? 0);
+                $unitPrice = (float) ($row['unit_price'] ?? 0);
+                $lineTotal = (float) ($row['line_total'] ?? 0);
+                $sumLineTotal += $lineTotal;
+                $sumQuantityRate += $quantity * $unitPrice;
+                $link = $linkAudit->get($serviceId, []);
+
+                $services[] = [
+                    'id' => $serviceId,
+                    'product_service_id' => $row['product_service_id'] ?? null,
+                    'description' => $row['description'] ?? null,
+                    'quantity' => $row['quantity'] ?? null,
+                    'unit_price' => $row['unit_price'] ?? null,
+                    'line_total' => $row['line_total'] ?? null,
+                    'currency_code' => $row['currency_code'] ?? null,
+                    'passenger_link_mode_snapshot' => $row['passenger_link_mode_snapshot'] ?? null,
+                    'pricing_basis_snapshot' => $row['pricing_basis_snapshot'] ?? null,
+                    'generic_linked_passenger_count' => $link['generic_linked_passenger_count'] ?? null,
+                ];
+            }
+
+            $audit['ACTIVE_SERVICE_COUNT'] = count($services);
+            $audit['SUM_LINE_TOTAL'] = round($sumLineTotal, 2);
+            $audit['SUM_QUANTITY_X_UNIT_PRICE'] = round($sumQuantityRate, 2);
+            $audit['SERVICES'] = $services;
+        } catch (Throwable $exception) {
+            $audit['ERROR'] = $exception->getMessage();
+            $errors[] = 'pre-native service commercial audit: '.$exception->getMessage();
+        } finally {
+            while (DB::transactionLevel() > $startingLevel) {
+                DB::rollBack();
+            }
+        }
+
+        return $audit;
+    }
+
+    /** @param array<string,mixed> $service */
+    private function serviceIsActive(array $service): bool
+    {
+        if (! empty($service['deleted_at'])) return false;
+        if (array_key_exists('is_active', $service) && ! (bool) $service['is_active']) return false;
+        if (array_key_exists('active', $service) && ! (bool) $service['active']) return false;
+        return ! in_array(strtolower(trim((string) ($service['status'] ?? ''))), [
+            'inactive', 'deleted', 'removed', 'cancelled', 'canceled',
+        ], true);
     }
 
     /** @return array<string,array<string,mixed>> */

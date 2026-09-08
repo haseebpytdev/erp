@@ -30,11 +30,30 @@ final class NativeSalesInvoiceCreationVerifier
         $numberColumn=$this->first($columns,['invoice_number','invoice_no','invoice_reference','reference_no','reference','number','document_no']);
         if(!$numberColumn||trim((string)($data[$numberColumn]??''))==='')$this->fail('The native Sales Invoice number was not assigned.');
         $headerAmountColumn=$this->first($columns,['grand_total','total_amount','net_total','total','amount','invoice_total']);
-        if(!$headerAmountColumn||!$this->same((float)($data[$headerAmountColumn]??0),$expectedTotal))$this->fail('The Sales Invoice header total does not match the authoritative booking customer total.');
-        [$lineCount,$lineTotal]=$this->lineSummary($table,$invoiceId);
+        $headerTotal=$headerAmountColumn?(float)($data[$headerAmountColumn]??0):0.0;
+        $lineSummary=$this->lineSummary($table,$invoiceId);
+        $lineCount=(int)$lineSummary['count'];
+        $lineTotal=(float)$lineSummary['total'];
+        if(!$headerAmountColumn||!$this->same((float)($data[$headerAmountColumn]??0),$expectedTotal))$this->fail($this->totalMismatch(
+            $expectedTotal,$table,$invoiceId,$headerAmountColumn,$headerTotal,$lineSummary
+        ));
         if($lineCount<max(1,$minimumLines))$this->fail('The native Sales Invoice did not create all required product lines.');
-        if(!$this->same($lineTotal,$expectedTotal))$this->fail('The Sales Invoice line total does not match the authoritative booking customer total.');
-        return ['invoice'=>$invoice,'line_count'=>$lineCount,'line_total'=>round($lineTotal,2),'expected_total'=>round($expectedTotal,2)];
+        if(!$this->same($lineTotal,$expectedTotal))$this->fail($this->totalMismatch(
+            $expectedTotal,$table,$invoiceId,$headerAmountColumn,$headerTotal,$lineSummary
+        ));
+        return [
+            'invoice'=>$invoice,
+            'header_table'=>$table,
+            'header_amount_column'=>$headerAmountColumn,
+            'header_total'=>round($headerTotal,2),
+            'line_table'=>$lineSummary['table'],
+            'line_amount_column'=>$lineSummary['amount_column'],
+            'line_quantity_column'=>$lineSummary['quantity_column'],
+            'line_rate_column'=>$lineSummary['rate_column'],
+            'line_count'=>$lineCount,
+            'line_total'=>round($lineTotal,2),
+            'expected_total'=>round($expectedTotal,2),
+        ];
     }
 
     private function lineSummary(string $headerTable,int $invoiceId):array
@@ -54,9 +73,40 @@ final class NativeSalesInvoiceCreationVerifier
             if(!$amount&&!($quantity&&$rate))continue;
             $total=0.0;
             foreach($rows as $row){$data=(array)$row;$total+=$amount?(float)($data[$amount]??0):(float)($data[$quantity]??0)*(float)($data[$rate]??0);}
-            return [$rows->count(),$total];
+            return [
+                'table'=>$table,
+                'amount_column'=>$amount,
+                'quantity_column'=>$quantity,
+                'rate_column'=>$rate,
+                'count'=>$rows->count(),
+                'total'=>$total,
+            ];
         }
-        return [0,0.0];
+        return [
+            'table'=>null,
+            'amount_column'=>null,
+            'quantity_column'=>null,
+            'rate_column'=>null,
+            'count'=>0,
+            'total'=>0.0,
+        ];
+    }
+
+    /** @param array{table:?string,amount_column:?string,quantity_column:?string,rate_column:?string,count:int,total:float} $line */
+    private function totalMismatch(float $expected,string $headerTable,int $invoiceId,?string $headerColumn,float $headerTotal,array $line):string
+    {
+        return 'Sales Invoice total mismatch: '
+            .'expected='.number_format($expected,2,'.','').'; '
+            .'header_table='.$headerTable.'; '
+            .'invoice_id='.$invoiceId.'; '
+            .'header_column='.($headerColumn??'UNRESOLVED').'; '
+            .'header_total='.number_format($headerTotal,2,'.','').'; '
+            .'line_table='.(($line['table']??null)?:'UNRESOLVED').'; '
+            .'line_amount_column='.(($line['amount_column']??null)?:'UNRESOLVED').'; '
+            .'line_quantity_column='.(($line['quantity_column']??null)?:'UNRESOLVED').'; '
+            .'line_rate_column='.(($line['rate_column']??null)?:'UNRESOLVED').'; '
+            .'line_count='.(int)$line['count'].'; '
+            .'line_total='.number_format((float)$line['total'],2,'.','');
     }
 
     private function first(array $columns,array $candidates):?string{foreach($candidates as $candidate)if(in_array($candidate,$columns,true))return $candidate;return null;}
