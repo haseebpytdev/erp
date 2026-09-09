@@ -41,7 +41,7 @@ const fixture = commercialSummary({
     { product_service_id: 4, line_total: 200 },
     { product_service_id: 2, line_total: 205000 },
   ],
-  costs: { 1: 500000, 3: 6000, 4: 250, 2: 150000 },
+  costs: { 1: 730000, 3: 7200, 4: 7600, 2: 193800 },
 });
 
 equal(fixture.invoiceTotal, 931200, 'top total uses native invoice grand_total');
@@ -52,10 +52,12 @@ equal(fixture.products.find(product => product.id === 3).sale, 8000, 'Hotel sale
 equal(fixture.products.find(product => product.id === 4).sale, 200, 'Transport sale comes from native invoice line');
 equal(fixture.products.find(product => product.id === 2).sale, 205000, 'Visa sale comes from native invoice line');
 equal(fixture.productSale, fixture.invoiceTotal, 'product sale reconciles to invoice total');
-equal(fixture.products.find(product => product.id === 1).margin, 218000, 'positive margin is sale less cost');
-equal(fixture.products.find(product => product.id === 4).margin, -50, 'negative margin is retained');
-equal(fixture.totalCost, 656250, 'complete costs sum without affecting invoice sale');
-equal(fixture.grossMargin, 274950, 'overall margin is native invoice sale less resolved costs');
+equal(fixture.products.find(product => product.id === 1).margin, -12000, 'reference Air margin remains sale less cost');
+equal(fixture.products.find(product => product.id === 3).margin, 800, 'reference Hotel margin remains sale less cost');
+equal(fixture.products.find(product => product.id === 4).margin, -7400, 'reference Transport negative margin is retained');
+equal(fixture.products.find(product => product.id === 2).margin, 11200, 'reference Visa margin remains sale less cost');
+equal(fixture.totalCost, 938600, 'reference complete cost remains unchanged');
+equal(fixture.grossMargin, -7400, 'reference gross margin remains unchanged');
 
 const incomplete = commercialSummary({
   grandTotal: 931200,
@@ -95,6 +97,7 @@ ok(presenter.includes("summaryCard('Total Cost'"), 'top Total Cost card exists')
 ok(presenter.includes("summaryCard('Gross Margin'"), 'top Gross Margin card exists');
 ok(presenter.includes("summaryCard('Passengers'"), 'top Passengers card exists');
 ok(presenter.includes("summaryCard('Products'"), 'top Products card replaces Service Lines');
+equal([...presenter.matchAll(/summaryCard\('([^']+)'/g)].map(match => match[1]), ['Invoice Total', 'Total Cost', 'Gross Margin', 'Passengers', 'Products'], 'desktop summary remains exactly the approved five cards');
 ok(presenter.includes("['accounting','not posted'].includes(norm(el.textContent))") && presenter.includes("text.includes('accounting')&&text.includes('not posted')"), 'standalone top Accounting / Not Posted card is explicitly removed');
 ok(presenter.includes('Product Commercial Summary'), 'full-width product commercial summary exists');
 ok(presenter.includes('Commercial visibility by product — sale, cost and margin.'), 'product summary guidance is present');
@@ -107,11 +110,13 @@ ok(presenter.includes('.et-si11-product-icon-103179.visa') && presenter.includes
 ok(presenter.includes('Air Ticket Commercial Lines') && presenter.includes('Grouped by fare type + customer rate.'), 'Air Adult/Child commercial detail remains separate');
 ok(presenter.includes('<th>Type</th><th>Count</th><th>Tickets</th>'), 'passenger summary uses Type, Count and Tickets columns');
 ok(presenter.includes('et-si11-ticket-refs-103179') && presenter.includes('et-si11-ticket-ref-103179'), 'ticket numbers render as individually readable wrapping references');
+ok(presenter.includes('font-size:10.5px') && presenter.includes('flex-direction:column'), 'ticket references retain readable type and clean vertical spacing');
 ok(presenter.includes("accountingHeading.textContent='Accounting Preview (Journal Lines)'"), 'lower accounting section identifies its journal lines explicitly');
 ok(presenter.includes('Customer receivable remains based on sale total.'), 'accounting preview explains that costs do not alter receivable');
 ok(presenter.includes("accountingCard.querySelectorAll('tr')"), 'native accounting preview rows remain the displayed authority');
 ok(presenter.includes("el.textContent='SALES INVOICE · ERP-11.3'"), 'existing Sales Invoice header is retained at ERP-11.3');
 ok(presenter.includes('@media(max-width:760px)') && presenter.includes('@media(max-width:430px)'), 'summary and product UI has tablet/mobile breakpoints');
+ok(presenter.includes('.et-si11-table-103179 td:nth-child(3){grid-column:1/-1}'), 'mobile passenger rows stack ticket references without page overflow');
 ok(!presenter.includes('overflow-x:auto') && !presenter.includes('min-width:900'), 'product summary does not force a wide-table mobile overflow');
 ok(presenter.includes('$this->sync->snapshot(') && !presenter.includes('$this->sync->sync('), 'invoice page presenter only reads the Air snapshot');
 

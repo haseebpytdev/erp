@@ -549,8 +549,8 @@ body.et-si11-page-103179 .content-wrapper{font-size:13px}
 .et-si11-table-103179 th:nth-child(1),.et-si11-table-103179 td:nth-child(1){width:34%}
 .et-si11-table-103179 th:nth-child(2),.et-si11-table-103179 td:nth-child(2){width:14%;text-align:center}
 .et-si11-table-103179 th:nth-child(3),.et-si11-table-103179 td:nth-child(3){width:52%}
-.et-si11-ticket-refs-103179{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
-.et-si11-ticket-ref-103179{display:inline-flex;max-width:100%;padding:4px 7px;border:1px solid #d6e3f2;border-radius:6px;background:#f5f9ff;color:#174f92;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;font-weight:800;line-height:1.25;letter-spacing:.025em;overflow-wrap:anywhere}
+.et-si11-ticket-refs-103179{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.et-si11-ticket-ref-103179{display:inline-flex;max-width:100%;padding:4px 7px;border:1px solid #d6e3f2;border-radius:6px;background:#f5f9ff;color:#174f92;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;font-weight:800;line-height:1.35;letter-spacing:.025em;overflow-wrap:anywhere}
 .et-si11-ticket-ref-103179.pending{border-style:dashed;background:#fafbfd;color:#7b8798;font-family:inherit;font-weight:700}
 .et-si11-accounting-103179{margin-top:14px!important;padding:16px!important}
 .et-si11-accounting-103179 table{width:100%!important;border-collapse:collapse!important}
@@ -610,7 +610,16 @@ body.et-si11-page-103179 .content-wrapper{font-size:13px}
     .et-si11-profit-row-103179 .et-si11-product-103179{grid-column:1/-1}
     .et-si11-profit-number-103179,.et-si11-margin-103179{text-align:left;justify-self:start}
 }
-@media(max-width:430px){.et-si11-summary-103179{grid-template-columns:1fr}.et-si11-profit-row-103179{grid-template-columns:1fr}.et-si11-profit-row-103179 .et-si11-product-103179{grid-column:auto}}
+@media(max-width:430px){
+    .et-si11-summary-103179{grid-template-columns:1fr}
+    .et-si11-profit-row-103179{grid-template-columns:1fr}
+    .et-si11-profit-row-103179 .et-si11-product-103179{grid-column:auto}
+    .et-si11-table-103179,.et-si11-table-103179 tbody,.et-si11-table-103179 tr,.et-si11-table-103179 td{display:block;width:100%!important;box-sizing:border-box}
+    .et-si11-table-103179 thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    .et-si11-table-103179 tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:10px 0;border-bottom:1px solid #edf1f5}
+    .et-si11-table-103179 td{padding:2px 0;border:0!important;text-align:left!important}
+    .et-si11-table-103179 td:nth-child(3){grid-column:1/-1}
+}
 </style>
 <script id="et-si11-script-103179">
 (function(){
