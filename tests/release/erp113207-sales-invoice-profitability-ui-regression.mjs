@@ -71,6 +71,7 @@ equal(incomplete.grossMargin, null, 'top margin is incomplete when any product c
 
 const resolver = read('app/Services/Sales/SalesInvoiceProductCommercialSummaryResolver.php');
 const presenter = read('app/Http/Middleware/PresentAirTicketSalesInvoice.php');
+const styleMatch = presenter.match(/<style id="et-si11-style-103179">([\s\S]*?)<\/style>/);
 
 ok(resolver.includes("foreach (['grand_total', 'total_amount'"), 'invoice header grand_total is the first top-total authority');
 ok(resolver.includes("['source_booking_service_id', 'booking_service_id']"), 'invoice lines retain source booking-service identity');
@@ -98,7 +99,10 @@ ok(presenter.includes("summaryCard('Gross Margin'"), 'top Gross Margin card exis
 ok(presenter.includes("summaryCard('Passengers'"), 'top Passengers card exists');
 ok(presenter.includes("summaryCard('Products'"), 'top Products card replaces Service Lines');
 equal([...presenter.matchAll(/summaryCard\('([^']+)'/g)].map(match => match[1]), ['Invoice Total', 'Total Cost', 'Gross Margin', 'Passengers', 'Products'], 'desktop summary remains exactly the approved five cards');
-ok(presenter.includes("['accounting','not posted'].includes(norm(el.textContent))") && presenter.includes("text.includes('accounting')&&text.includes('not posted')"), 'standalone top Accounting / Not Posted card is explicitly removed');
+ok(presenter.includes("norm(el.textContent)==='accounting'") && presenter.includes("norm(el.textContent)==='not posted'") && presenter.includes('commonAncestor(label,status)'), 'standalone top Accounting / Not Posted card is matched by its exact paired labels');
+ok(presenter.includes('card===document.body') && presenter.includes('card.contains(reviewCard)') && presenter.includes('card.contains(accountingCard)'), 'legacy card cleanup cannot hide body, Review, or the lower Accounting Preview');
+ok(presenter.includes('rect.height<=220') && presenter.includes('rect.bottom<=topBoundary+1'), 'legacy card cleanup is bounded to a compact element entirely above Review');
+ok(!presenter.includes('for(let i=0;i<7&&current'), 'unsafe open-ended Accounting ancestor walk is removed');
 ok(presenter.includes('Product Commercial Summary'), 'full-width product commercial summary exists');
 ok(presenter.includes('Commercial visibility by product — sale, cost and margin.'), 'product summary guidance is present');
 ok(presenter.includes('Product cost could not be resolved from the source booking.'), 'unresolved product costs carry an explicit warning');
@@ -119,6 +123,10 @@ ok(presenter.includes('@media(max-width:760px)') && presenter.includes('@media(m
 ok(presenter.includes('.et-si11-table-103179 td:nth-child(3){grid-column:1/-1}'), 'mobile passenger rows stack ticket references without page overflow');
 ok(!presenter.includes('overflow-x:auto') && !presenter.includes('min-width:900'), 'product summary does not force a wide-table mobile overflow');
 ok(presenter.includes('$this->sync->snapshot(') && !presenter.includes('$this->sync->sync('), 'invoice page presenter only reads the Air snapshot');
+ok(presenter.includes("$content = $response->getContent()") && presenter.includes("$response->setContent($content)"), 'middleware preserves and returns the native response body around its injection');
+ok(!presenter.includes('body.et-si11-page-103179{display:none') && !presenter.includes('.content-wrapper{display:none'), 'focused presentation CSS never hides the page root');
+ok(Boolean(styleMatch), 'focused Sales Invoice stylesheet is present');
+equal((styleMatch[1].match(/{/g) || []).length, (styleMatch[1].match(/}/g) || []).length, 'focused Sales Invoice stylesheet braces are balanced');
 
 const scriptMatch = presenter.match(/<script id="et-si11-script-103179">([\s\S]*?)<\/script>/);
 ok(Boolean(scriptMatch), 'focused Sales Invoice script is present');

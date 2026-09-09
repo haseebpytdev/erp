@@ -766,8 +766,9 @@ const nativeMetricCards=nativeMetricLabels.map(label=>nearestCard(leafExact(labe
 const nativeMetricParents=[...new Set(nativeMetricCards.map(card=>card.parentElement).filter(Boolean))];
 if(nativeMetricParents.length===1&&nativeMetricCards.length>=3)nativeMetricParents[0].classList.add('et-si11-native-metrics-hidden-103179');
 else nativeMetricCards.forEach(card=>card.classList.add('et-si11-native-metrics-hidden-103179'));
-const topAccountingSignals=Array.from(document.querySelectorAll('*')).filter(el=>el.children.length===0&&['accounting','not posted'].includes(norm(el.textContent))&&el.getBoundingClientRect().top<topBoundary);
-topAccountingSignals.forEach(signal=>{let current=signal.parentElement;for(let i=0;i<7&&current&&current!==document.body;i++){const text=norm(current.textContent);if(text.includes('accounting')&&text.includes('not posted')&&current.getBoundingClientRect().top<topBoundary){current.classList.add('et-si11-native-metrics-hidden-103179');break;}current=current.parentElement;}});
+const topAccountingLabels=Array.from(document.querySelectorAll('*')).filter(el=>el.children.length===0&&norm(el.textContent)==='accounting'&&el.getBoundingClientRect().top<topBoundary);
+const topNotPostedLabels=Array.from(document.querySelectorAll('*')).filter(el=>el.children.length===0&&norm(el.textContent)==='not posted'&&el.getBoundingClientRect().top<topBoundary);
+topAccountingLabels.forEach(label=>topNotPostedLabels.forEach(status=>{const card=commonAncestor(label,status);if(!card||card===document.body||card===reviewCard||card===accountingCard||card.contains(reviewCard)||card.contains(accountingCard))return;const rect=card.getBoundingClientRect();const text=norm(card.textContent);if(rect.height>0&&rect.height<=220&&rect.bottom<=topBoundary+1&&text.includes('accounting')&&text.includes('not posted'))card.classList.add('et-si11-native-metrics-hidden-103179');}));
 anchorCard.parentNode.insertBefore(summary,anchorCard);
 
 if(reviewCard){
