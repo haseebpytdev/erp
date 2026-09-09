@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.207
-APPLICATION_VERSION=v1.1.33.207-ERP11.3.207
+CURRENT_VERSION=ERP-11.3.208
+APPLICATION_VERSION=v1.1.33.208-ERP11.3.208
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.207
+LAST_PACKAGED_RELEASE=ERP-11.3.208
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -137,3 +137,13 @@ each product's own persisted rows inside the guarded Sales Invoice transaction,
 before passenger reconciliation and native invoice creation. Air, Visa,
 SalesInvoiceService and the native verifier remain unchanged; no migration is
 added.
+
+ERP-11.3.208 direct-upload release adds read-only Sales Invoice product
+profitability visibility. Invoice sale amounts come from the native Sales
+Invoice snapshot. Air cost comes from `air_ticket_details.net_supplier_cost`;
+Hotel cost comes from persisted `vendor_total`, with persisted `cost_rate *
+nights` fallback; Transport cost comes from persisted PKR `cost_amount`; and
+Visa cost comes from `booking_visa_services.vendor_cost_pkr`. Missing product
+cost remains visibly incomplete and is never silently treated as zero. These
+costs do not change the invoice grand total, customer receivable, revenue
+journal, posting, workflow or booking data. No migration is added.
