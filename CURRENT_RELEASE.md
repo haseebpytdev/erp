@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.209
-APPLICATION_VERSION=v1.1.33.209-ERP11.3.209
+CURRENT_VERSION=ERP-11.3.210
+APPLICATION_VERSION=v1.1.33.210-ERP11.3.210
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.209
+LAST_PACKAGED_RELEASE=ERP-11.3.210
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -155,3 +155,10 @@ Ticket Summary readability and mobile stacking, and labels the journal section
 as Accounting Preview (Journal Lines). Profitability calculations,
 SalesInvoiceService, accounting logic, booking/invoice mutations and workflow
 remain unchanged. No migration is added.
+
+ERP-11.3.210 hotfix release fixes the Sales Invoice blank-page regression
+caused by the `.209` legacy Accounting card cleanup. The cleanup is now safely
+bounded to the compact top Accounting / Not Posted card and cannot hide the
+shared page container, Review card, lower Accounting Preview or document body.
+Profitability calculations, accounting logic, SalesInvoiceService, workflow
+and booking/invoice data remain unchanged. No migration is added.

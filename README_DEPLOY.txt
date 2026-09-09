@@ -1,4 +1,4 @@
-ERP-11.3.209 DIRECT UPLOAD
+ERP-11.3.210 DIRECT UPLOAD — SALES INVOICE BLANK-PAGE HOTFIX
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,24 +9,25 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.209 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.210 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
-ERP-11.3.209 completes the Sales Invoice profitability UI polish. It removes
-the legacy standalone Accounting status card above the summary row, preserves
-the approved five-card summary, improves Passenger / Ticket Summary readability
-and mobile stacking, and labels the journal section as Accounting Preview
-(Journal Lines).
+ERP-11.3.210 fixes the Sales Invoice blank-page regression caused by the `.209`
+legacy Accounting card cleanup. The cleanup is now safely bounded to the
+compact top Accounting / Not Posted card and cannot hide the shared page
+container, Review card, lower Accounting Preview or document body.
 
-There are no profitability calculation changes, SalesInvoiceService changes,
-accounting logic changes, booking/invoice mutation changes or new migrations.
+There are no profitability calculation, accounting logic, SalesInvoiceService,
+workflow or booking/invoice data changes. No migration is added.
 
-After deployment, first open Sales Invoice SI-2026-000014 and review the visual
-layout before using workflow actions. Confirm the top Invoice Total is PKR
-931,200, Products is 4, and Product Commercial Summary shows sale, cost and
-margin for Air, Hotel, Transport and Visa. These values are UAT references only;
-the implementation does not hard-code them.
+After deployment, clear Application Cache, press Ctrl+F5, and open
+https://erp.easyticket.pk/sales/invoices/7 before using any workflow action.
+Confirm the page is not blank; the legacy top Accounting / Not Posted card is
+absent; the five summary cards, Product Commercial Summary, Air Ticket
+Commercial Lines, Passenger / Ticket Summary, Accounting Preview (Journal
+Lines), Workflow and Activity are visible; and invoice totals, costs and margins
+remain unchanged.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
