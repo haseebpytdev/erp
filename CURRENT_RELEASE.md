@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.208
-APPLICATION_VERSION=v1.1.33.208-ERP11.3.208
+CURRENT_VERSION=ERP-11.3.209
+APPLICATION_VERSION=v1.1.33.209-ERP11.3.209
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.208
+LAST_PACKAGED_RELEASE=ERP-11.3.209
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -147,3 +147,11 @@ Visa cost comes from `booking_visa_services.vendor_cost_pkr`. Missing product
 cost remains visibly incomplete and is never silently treated as zero. These
 costs do not change the invoice grand total, customer receivable, revenue
 journal, posting, workflow or booking data. No migration is added.
+
+ERP-11.3.209 direct-upload release completes the Sales Invoice profitability
+UI polish. It removes the legacy standalone Accounting status card above the
+summary row, preserves the approved five-card summary, improves Passenger /
+Ticket Summary readability and mobile stacking, and labels the journal section
+as Accounting Preview (Journal Lines). Profitability calculations,
+SalesInvoiceService, accounting logic, booking/invoice mutations and workflow
+remain unchanged. No migration is added.

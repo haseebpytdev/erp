@@ -1,4 +1,4 @@
-ERP-11.3.208 DIRECT UPLOAD
+ERP-11.3.209 DIRECT UPLOAD
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,22 +9,18 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.208 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.209 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
-ERP-11.3.208 adds read-only Sales Invoice product profitability visibility.
-Invoice sale amounts come from the native Sales Invoice snapshot. Product cost
-sources remain:
+ERP-11.3.209 completes the Sales Invoice profitability UI polish. It removes
+the legacy standalone Accounting status card above the summary row, preserves
+the approved five-card summary, improves Passenger / Ticket Summary readability
+and mobile stacking, and labels the journal section as Accounting Preview
+(Journal Lines).
 
-- Air: air_ticket_details.net_supplier_cost
-- Hotel: persisted Hotel vendor_total, with persisted cost_rate * nights fallback
-- Transport: persisted PKR cost_amount
-- Visa: booking_visa_services.vendor_cost_pkr
-
-Missing product cost remains visibly incomplete and is not silently treated as
-zero. Product costs do not change the invoice grand total, customer receivable,
-revenue journal, posting, workflow or booking data.
+There are no profitability calculation changes, SalesInvoiceService changes,
+accounting logic changes, booking/invoice mutation changes or new migrations.
 
 After deployment, first open Sales Invoice SI-2026-000014 and review the visual
 layout before using workflow actions. Confirm the top Invoice Total is PKR
