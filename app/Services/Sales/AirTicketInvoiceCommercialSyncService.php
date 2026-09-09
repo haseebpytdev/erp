@@ -224,12 +224,19 @@ class AirTicketInvoiceCommercialSyncService
 
             /** @var Relation $relation */
             $relation = $lineRelation['relation'];
-            $existing = $relation->get()->values();
-
             $related = $relation->getRelated();
             $lineTable = $related->getTable();
             $columns = Schema::getColumnListing($lineTable);
             $metadata = $this->columnMetadata($lineTable);
+            $existing = $this->orderInvoiceLines(
+                $relation->lockForUpdate()->get()->values(),
+                $columns
+            );
+            $lineNumberField = $this->invoiceLineNumberField($columns);
+            $occupiedLineNumbers = $this->occupiedInvoiceLineNumbers(
+                $existing,
+                $lineNumberField
+            );
 
             $airLines = $existing
                 ->filter(fn (Model $line): bool => $this->lineLooksLikeAirTicket($line))
@@ -256,6 +263,12 @@ class AirTicketInvoiceCommercialSyncService
 
             foreach ($snapshot['groups'] as $index => $group) {
                 $line = $airLines->get($index);
+                $lineNo = $line instanceof Model
+                    ? $this->existingInvoiceLineNumber(
+                        $line,
+                        $lineNumberField
+                    )
+                    : null;
 
                 if (! $line instanceof Model) {
                     $line = $relation->make();
@@ -266,10 +279,23 @@ class AirTicketInvoiceCommercialSyncService
                     );
                 }
 
+                if ($lineNo === null) {
+                    $lineNo = $this->nextInvoiceLineNumber(
+                        $occupiedLineNumbers
+                    );
+                } else {
+                    $occupiedLineNumbers[$lineNo] = true;
+                }
+
                 $payload = $this->invoiceLinePayload(
                     $group,
                     $columns,
-                    $index + 1
+                    $lineNo
+                );
+                $payload = $this->preserveExistingInvoiceLineNumbers(
+                    $line,
+                    $payload,
+                    $columns
                 );
 
                 /*
@@ -2299,6 +2325,146 @@ class AirTicketInvoiceCommercialSyncService
             || str_contains($text, 'air_ticket')
             || str_contains($text, 'ticket revenue')
         );
+    }
+
+    /**
+     * Keep native invoice ordering deterministic without renumbering any row.
+     * The physical line_no column is the first authority when it exists; the
+     * model key is only a stable tie-breaker for legacy or incomplete rows.
+     *
+     * @param Collection<int,Model> $lines
+     * @param list<string> $columns
+     * @return Collection<int,Model>
+     */
+    private function orderInvoiceLines(
+        Collection $lines,
+        array $columns
+    ): Collection {
+        $field = $this->invoiceLineNumberField($columns);
+
+        return $lines->sort(
+            function (Model $left, Model $right) use ($field): int {
+                $leftNo = $this->existingInvoiceLineNumber($left, $field);
+                $rightNo = $this->existingInvoiceLineNumber($right, $field);
+
+                if ($leftNo !== $rightNo) {
+                    if ($leftNo === null) {
+                        return 1;
+                    }
+
+                    if ($rightNo === null) {
+                        return -1;
+                    }
+
+                    return $leftNo <=> $rightNo;
+                }
+
+                return (int) $left->getKey() <=> (int) $right->getKey();
+            }
+        )->values();
+    }
+
+    /** @param list<string> $columns */
+    private function invoiceLineNumberField(array $columns): ?string
+    {
+        foreach ([
+            'line_no',
+            'line_number',
+            'sequence_no',
+            'sequence',
+            'sort_order',
+        ] as $field) {
+            if (in_array($field, $columns, true)) {
+                return $field;
+            }
+        }
+
+        return null;
+    }
+
+    private function existingInvoiceLineNumber(
+        Model $line,
+        ?string $field
+    ): ?int {
+        if ($field === null) {
+            return null;
+        }
+
+        $lineNo = (int) $line->getAttribute($field);
+
+        return $lineNo > 0 ? $lineNo : null;
+    }
+
+    /**
+     * @param array<string,mixed> $payload
+     * @param list<string> $columns
+     * @return array<string,mixed>
+     */
+    private function preserveExistingInvoiceLineNumbers(
+        Model $line,
+        array $payload,
+        array $columns
+    ): array {
+        if (! $line->exists) {
+            return $payload;
+        }
+
+        foreach ([
+            'line_no',
+            'line_number',
+            'sequence_no',
+            'sequence',
+            'sort_order',
+        ] as $field) {
+            if (! in_array($field, $columns, true)) {
+                continue;
+            }
+
+            $value = $line->getAttribute($field);
+
+            if ($value !== null && $value !== '') {
+                $payload[$field] = $value;
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param Collection<int,Model> $lines
+     * @return array<int,true>
+     */
+    private function occupiedInvoiceLineNumbers(
+        Collection $lines,
+        ?string $field
+    ): array {
+        $occupied = [];
+
+        foreach ($lines as $line) {
+            $lineNo = $this->existingInvoiceLineNumber($line, $field);
+
+            if ($lineNo !== null) {
+                $occupied[$lineNo] = true;
+            }
+        }
+
+        return $occupied;
+    }
+
+    /** @param array<int,true> $occupied */
+    private function nextInvoiceLineNumber(array &$occupied): int
+    {
+        $lineNo = $occupied === []
+            ? 1
+            : max(array_keys($occupied)) + 1;
+
+        while (isset($occupied[$lineNo])) {
+            $lineNo++;
+        }
+
+        $occupied[$lineNo] = true;
+
+        return $lineNo;
     }
 
     /**
