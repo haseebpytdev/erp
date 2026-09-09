@@ -546,6 +546,12 @@ body.et-si11-page-103179 .content-wrapper{font-size:13px}
 .et-si11-table-103179 tr:last-child td{border-bottom:0}
 .et-si11-table-103179 td:first-child{font-weight:850;color:#24344b}
 .et-si11-table-103179 .right{text-align:right;font-weight:850;color:#24344b}
+.et-si11-table-103179 th:nth-child(1),.et-si11-table-103179 td:nth-child(1){width:34%}
+.et-si11-table-103179 th:nth-child(2),.et-si11-table-103179 td:nth-child(2){width:14%;text-align:center}
+.et-si11-table-103179 th:nth-child(3),.et-si11-table-103179 td:nth-child(3){width:52%}
+.et-si11-ticket-refs-103179{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.et-si11-ticket-ref-103179{display:inline-flex;max-width:100%;padding:4px 7px;border:1px solid #d6e3f2;border-radius:6px;background:#f5f9ff;color:#174f92;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;font-weight:800;line-height:1.25;letter-spacing:.025em;overflow-wrap:anywhere}
+.et-si11-ticket-ref-103179.pending{border-style:dashed;background:#fafbfd;color:#7b8798;font-family:inherit;font-weight:700}
 .et-si11-accounting-103179{margin-top:14px!important;padding:16px!important}
 .et-si11-accounting-103179 table{width:100%!important;border-collapse:collapse!important}
 .et-si11-accounting-103179 th{padding:8px!important;background:#f8fafc!important;font-size:8px!important;text-transform:uppercase!important;letter-spacing:.04em!important;color:#617189!important}
@@ -751,6 +757,8 @@ const nativeMetricCards=nativeMetricLabels.map(label=>nearestCard(leafExact(labe
 const nativeMetricParents=[...new Set(nativeMetricCards.map(card=>card.parentElement).filter(Boolean))];
 if(nativeMetricParents.length===1&&nativeMetricCards.length>=3)nativeMetricParents[0].classList.add('et-si11-native-metrics-hidden-103179');
 else nativeMetricCards.forEach(card=>card.classList.add('et-si11-native-metrics-hidden-103179'));
+const topAccountingSignals=Array.from(document.querySelectorAll('*')).filter(el=>el.children.length===0&&['accounting','not posted'].includes(norm(el.textContent))&&el.getBoundingClientRect().top<topBoundary);
+topAccountingSignals.forEach(signal=>{let current=signal.parentElement;for(let i=0;i<7&&current&&current!==document.body;i++){const text=norm(current.textContent);if(text.includes('accounting')&&text.includes('not posted')&&current.getBoundingClientRect().top<topBoundary){current.classList.add('et-si11-native-metrics-hidden-103179');break;}current=current.parentElement;}});
 anchorCard.parentNode.insertBefore(summary,anchorCard);
 
 if(reviewCard){
@@ -791,7 +799,7 @@ linesPanel.innerHTML='<div class="et-si11-panel-head-103179"><div class="et-si11
 
 const paxPanel=document.createElement('div');paxPanel.className='et-si11-panel-103179';
 const farePresentation={ADULT:{label:'Adult',className:'air'},CHILD:{label:'Child',className:'transport'},INFANT:{label:'Infant',className:'visa'}};
-const paxRows=Object.entries(farePresentation).map(([fare,presentation])=>{const fareTickets=tickets.filter(ticket=>ticket.fare_type===fare);const refs=fareTickets.map(ticket=>esc(ticket.ticket_number||'Pending')).join(' · ')||'—';return '<tr><td><span class="et-si11-product-103179"><span class="et-si11-product-icon-103179 '+presentation.className+'">'+icon('users')+'</span>'+presentation.label+'</span></td><td>'+String(fareTickets.length)+'</td><td>'+refs+'</td></tr>';}).join('');
+const paxRows=Object.entries(farePresentation).map(([fare,presentation])=>{const fareTickets=tickets.filter(ticket=>ticket.fare_type===fare);const refs=fareTickets.length?'<div class="et-si11-ticket-refs-103179">'+fareTickets.map(ticket=>{const reference=String(ticket.ticket_number||'').trim();return '<span class="et-si11-ticket-ref-103179 '+(reference?'':'pending')+'" title="'+esc(reference?'Ticket '+reference:'Ticket pending')+'">'+esc(reference||'Pending')+'</span>';}).join('')+'</div>':'—';return '<tr><td><span class="et-si11-product-103179"><span class="et-si11-product-icon-103179 '+presentation.className+'">'+icon('users')+'</span>'+presentation.label+'</span></td><td>'+String(fareTickets.length)+'</td><td>'+refs+'</td></tr>';}).join('');
 paxPanel.innerHTML='<div class="et-si11-panel-head-103179"><div class="et-si11-panel-title-103179">Passenger / Ticket Summary</div><div class="et-si11-panel-note-103179">Current saved-ticket source with invoice snapshot fallback.</div></div><div class="et-si11-panel-body-103179"><div class="et-si11-pax-hero-103179"><div><div class="et-si11-pax-count-103179">'+String(ticketCount)+'</div><div class="et-si11-pax-caption-103179">Saved passenger tickets</div></div><div class="et-si11-pills-103179"><span class="et-si11-pill-103179">'+String(paxMix.ADULT)+' Adult</span><span class="et-si11-pill-103179">'+String(paxMix.CHILD)+' Child</span><span class="et-si11-pill-103179">'+String(paxMix.INFANT)+' Infant</span></div></div><table class="et-si11-table-103179"><thead><tr><th>Type</th><th>Count</th><th>Tickets</th></tr></thead><tbody>'+paxRows+'<tr><td><strong>Total</strong></td><td><strong>'+String(ticketCount)+'</strong></td><td><strong>'+String(tickets.filter(ticket=>ticket.ticket_number).length)+' ticket(s)</strong></td></tr></tbody></table></div>';
 grid.appendChild(linesPanel);grid.appendChild(paxPanel);commercial.appendChild(grid);
 
@@ -806,6 +814,7 @@ if(oldRow)oldRow.classList.add('et-si11-native-duplicate-103179');else [oldLineC
 /* Accounting / Workflow / Activity retain native data and actions; only presentation changes. */
 if(accountingCard){
     accountingCard.classList.add('et-si11-card-103179','et-si11-accounting-103179');
+    if(accountingHeading)accountingHeading.textContent='Accounting Preview (Journal Lines)';
     Array.from(accountingCard.querySelectorAll('tr')).forEach(row=>{const text=norm(row.textContent);const first=row.querySelector('td');if(!first)return;let key='';if(text.includes('air ticket'))key='air';else if(text.includes('hotel'))key='hotel';else if(text.includes('transport'))key='transport';else if(text.includes('visa'))key='visa';else if(text.includes('customer receivable'))key='receivable';if(!key)return;row.classList.add('et-si11-account-row-103179',key);if(!first.querySelector('.et-si11-account-icon-103179'))first.insertAdjacentHTML('afterbegin','<span class="et-si11-account-icon-103179">'+icon(key==='receivable'?'calculator':key)+'</span>');});
     if(!accountingCard.querySelector('.et-si11-account-note-103179'))accountingCard.insertAdjacentHTML('beforeend','<div class="et-si11-account-note-103179">Customer receivable remains based on sale total. Product costs are shown for profitability visibility only and do not alter this journal.</div>');
 }

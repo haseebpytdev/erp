@@ -95,6 +95,7 @@ ok(presenter.includes("summaryCard('Total Cost'"), 'top Total Cost card exists')
 ok(presenter.includes("summaryCard('Gross Margin'"), 'top Gross Margin card exists');
 ok(presenter.includes("summaryCard('Passengers'"), 'top Passengers card exists');
 ok(presenter.includes("summaryCard('Products'"), 'top Products card replaces Service Lines');
+ok(presenter.includes("['accounting','not posted'].includes(norm(el.textContent))") && presenter.includes("text.includes('accounting')&&text.includes('not posted')"), 'standalone top Accounting / Not Posted card is explicitly removed');
 ok(presenter.includes('Product Commercial Summary'), 'full-width product commercial summary exists');
 ok(presenter.includes('Commercial visibility by product — sale, cost and margin.'), 'product summary guidance is present');
 ok(presenter.includes('Product cost could not be resolved from the source booking.'), 'unresolved product costs carry an explicit warning');
@@ -105,6 +106,8 @@ ok(presenter.includes('.et-si11-product-icon-103179.transport') && presenter.inc
 ok(presenter.includes('.et-si11-product-icon-103179.visa') && presenter.includes('--et-si11-orange'), 'Visa uses orange icon language');
 ok(presenter.includes('Air Ticket Commercial Lines') && presenter.includes('Grouped by fare type + customer rate.'), 'Air Adult/Child commercial detail remains separate');
 ok(presenter.includes('<th>Type</th><th>Count</th><th>Tickets</th>'), 'passenger summary uses Type, Count and Tickets columns');
+ok(presenter.includes('et-si11-ticket-refs-103179') && presenter.includes('et-si11-ticket-ref-103179'), 'ticket numbers render as individually readable wrapping references');
+ok(presenter.includes("accountingHeading.textContent='Accounting Preview (Journal Lines)'"), 'lower accounting section identifies its journal lines explicitly');
 ok(presenter.includes('Customer receivable remains based on sale total.'), 'accounting preview explains that costs do not alter receivable');
 ok(presenter.includes("accountingCard.querySelectorAll('tr')"), 'native accounting preview rows remain the displayed authority');
 ok(presenter.includes("el.textContent='SALES INVOICE · ERP-11.3'"), 'existing Sales Invoice header is retained at ERP-11.3');
