@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.211
-APPLICATION_VERSION=v1.1.33.211-ERP11.3.211
+CURRENT_VERSION=ERP-11.3.212
+APPLICATION_VERSION=v1.1.33.212-ERP11.3.212
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.211
+LAST_PACKAGED_RELEASE=ERP-11.3.212
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -170,4 +170,13 @@ the native Air template line `currency_code` / `currency`, followed by the
 native Sales Invoice header `currency_code` / `currency`; no currency is
 hard-coded. Unresolved required native structure stops with controlled
 validation before database insertion. Accounting, profitability, workflow and
+booking data remain unchanged. No migration is added.
+
+ERP-11.3.212 hotfix release fixes grouped Air invoice line numbering during
+Sales Invoice Submit for Approval. Existing persisted Air line numbers are
+preserved. A newly-created grouped Air line receives an invoice-wide unique
+line number based on all occupied native invoice line numbers, without
+renumbering Hotel, Transport, Visa or other non-Air lines. Deterministic Air
+ordering, idempotent synchronization, transaction rollback and the ERP-11.3.211
+currency correction remain preserved. Accounting, profitability, workflow and
 booking data remain unchanged. No migration is added.
