@@ -227,9 +227,9 @@ class AirTicketInvoiceCommercialSyncService
             $existing = $relation->get()->values();
 
             $related = $relation->getRelated();
-            $columns = Schema::getColumnListing(
-                $related->getTable()
-            );
+            $lineTable = $related->getTable();
+            $columns = Schema::getColumnListing($lineTable);
+            $metadata = $this->columnMetadata($lineTable);
 
             $airLines = $existing
                 ->filter(fn (Model $line): bool => $this->lineLooksLikeAirTicket($line))
@@ -286,6 +286,16 @@ class AirTicketInvoiceCommercialSyncService
                             $template->getAttribute($field);
                     }
                 }
+
+                $payload = $this->preserveNativeStructuralFields(
+                    $template,
+                    $line,
+                    $invoice,
+                    $payload,
+                    $columns,
+                    $metadata,
+                    $lineTable
+                );
 
                 $line->forceFill($payload);
                 $line->saveQuietly();
@@ -2483,6 +2493,190 @@ class AirTicketInvoiceCommercialSyncService
         if ($payload !== []) {
             $to->forceFill($payload);
         }
+    }
+
+    /**
+     * Preserve invoice-level native structure independently from accounting /
+     * product mappings, then stop before save if any physical non-null,
+     * no-default field still has no native authority.
+     *
+     * @param array<string,mixed> $payload
+     * @param list<string> $columns
+     * @param array<string,array<string,mixed>> $metadata
+     * @return array<string,mixed>
+     */
+    private function preserveNativeStructuralFields(
+        Model $template,
+        Model $line,
+        Model $invoice,
+        array $payload,
+        array $columns,
+        array $metadata,
+        string $table
+    ): array {
+        $currency = $this->nativeInvoiceCurrency(
+            $template,
+            $invoice
+        );
+
+        foreach (['currency_code', 'currency'] as $field) {
+            if (in_array($field, $columns, true) && $currency !== null) {
+                $payload[$field] = $currency;
+            }
+        }
+
+        if (
+            in_array('currency_code', $columns, true)
+            && $currency === null
+        ) {
+            throw ValidationException::withMessages([
+                'invoice' => 'Sales Invoice line currency could not be resolved from the native invoice.',
+            ]);
+        }
+
+        $unresolved = [];
+
+        foreach ($metadata as $field => $meta) {
+            if (
+                ! in_array($field, $columns, true)
+                || array_key_exists($field, $payload)
+                || $this->columnCanBeOmitted($field, $meta)
+                || $this->hasNativeValue($line->getAttribute($field))
+            ) {
+                continue;
+            }
+
+            $value = $template->getAttribute($field);
+
+            if (
+                ! $this->hasNativeValue($value)
+                && in_array(
+                    $field,
+                    [
+                        'currency_id',
+                        'company_id',
+                        'branch_id',
+                        'office_id',
+                        'customer_id',
+                        'party_id',
+                    ],
+                    true
+                )
+            ) {
+                $value = $invoice->getAttribute($field);
+            }
+
+            if ($this->hasNativeValue($value)) {
+                $payload[$field] = $value;
+                continue;
+            }
+
+            $unresolved[] = $field;
+        }
+
+        if ($unresolved !== []) {
+            throw ValidationException::withMessages([
+                'invoice' => 'Required native Sales Invoice line field(s) could not be resolved from the template or invoice: '
+                    .implode(', ', $unresolved)
+                    .'. Native table: '.$table.'.',
+            ]);
+        }
+
+        return $payload;
+    }
+
+    private function nativeInvoiceCurrency(
+        Model $template,
+        Model $invoice
+    ): ?string {
+        foreach ([$template, $invoice] as $authority) {
+            foreach (['currency_code', 'currency'] as $field) {
+                $value = strtoupper(trim((string) (
+                    $authority->getAttribute($field)
+                    ?? ''
+                )));
+
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** @return array<string,array<string,mixed>> */
+    private function columnMetadata(string $table): array
+    {
+        $result = [];
+
+        try {
+            foreach (Schema::getColumns($table) as $column) {
+                if (! is_array($column)) {
+                    continue;
+                }
+
+                $name = (string) (
+                    $column['name']
+                    ?? $column['column_name']
+                    ?? ''
+                );
+
+                if ($name !== '') {
+                    $result[$name] = $column;
+                }
+            }
+        } catch (Throwable) {
+        }
+
+        return $result;
+    }
+
+    /** @param array<string,mixed> $meta */
+    private function columnCanBeOmitted(
+        string $field,
+        array $meta
+    ): bool {
+        if (
+            in_array(
+                $field,
+                ['id', 'created_at', 'updated_at', 'deleted_at'],
+                true
+            )
+        ) {
+            return true;
+        }
+
+        $nullable = $meta['nullable']
+            ?? $meta['is_nullable']
+            ?? false;
+        $nullable = is_bool($nullable)
+            ? $nullable
+            : in_array(
+                strtoupper(trim((string) $nullable)),
+                ['1', 'TRUE', 'YES'],
+                true
+            );
+        $default = array_key_exists('default', $meta)
+            && $meta['default'] !== null;
+        $auto = (bool) (
+            $meta['auto_increment']
+            ?? $meta['autoincrement']
+            ?? false
+        );
+        $generated = trim((string) (
+            $meta['generation_expression']
+            ?? $meta['expression']
+            ?? ''
+        )) !== '';
+
+        return $nullable || $default || $auto || $generated;
+    }
+
+    private function hasNativeValue(mixed $value): bool
+    {
+        return $value !== null
+            && (! is_string($value) || trim($value) !== '');
     }
 
     /**
