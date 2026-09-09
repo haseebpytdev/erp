@@ -89,12 +89,19 @@ class AirTicketInvoiceCommercialSyncService
         $total = round(array_sum(array_column($groups, 'total')), 2);
         $supplierTotal = round(array_sum(array_column($tickets, 'supplier_cost')), 2);
 
-        $currentAirLines = $this->currentAirLines($invoice);
+        $currentInvoiceLines = $this->currentInvoiceLines($invoice);
+        $currentAirLines = array_values(
+            array_filter(
+                $currentInvoiceLines,
+                fn (Model $line): bool =>
+                    $this->lineLooksLikeAirTicket($line)
+            )
+        );
         $needsSync = $this->needsSync(
             $invoice,
             $groups,
             $currentAirLines,
-            $tickets
+            $currentInvoiceLines
         );
 
         /*
@@ -2078,13 +2085,13 @@ class AirTicketInvoiceCommercialSyncService
     /**
      * @param list<array<string,mixed>> $groups
      * @param list<Model> $currentAirLines
-     * @param list<array<string,mixed>> $tickets
+     * @param list<Model> $currentInvoiceLines
      */
     private function needsSync(
         Model $invoice,
         array $groups,
         array $currentAirLines,
-        array $tickets
+        array $currentInvoiceLines
     ): bool {
         /*
          * ERP-11.3.61:
@@ -2092,7 +2099,7 @@ class AirTicketInvoiceCommercialSyncService
          * A Draft with zero header total must never appear "in sync" when the
          * Booking Saved Passenger Tickets total is non-zero.
          */
-        $expectedTotal = round(
+        $expectedAirTotal = round(
             array_sum(
                 array_map(
                     static fn (array $group): float =>
@@ -2106,36 +2113,6 @@ class AirTicketInvoiceCommercialSyncService
             2
         );
 
-        $headerTotal =
-            $this->invoiceCommercialHeaderTotal(
-                $invoice
-            );
-
-        if (
-            $headerTotal !== null
-            && abs(
-                $headerTotal
-                - $expectedTotal
-            ) > 0.01
-        ) {
-            return true;
-        }
-
-        /*
-         * ERP-11.3.82 — accounting workflow monetary authority.
-         *
-         * The native invoice is allowed to represent the same commercial sale
-         * using a different internal row grouping. Example:
-         *   booking source: 2 x 160,000
-         *   native invoice: equivalent row structure totaling 320,000.
-         *
-         * If BOTH:
-         *   - invoice header total equals the authoritative saved-ticket total
-         *   - native Air Ticket invoice-line aggregate equals that same total
-         *
-         * then customer commercial value is synchronized and workflow must not
-         * be blocked by row grouping / quantity-rate representation.
-         */
         $currentAirTotal = round(
             array_sum(
                 array_map(
@@ -2147,18 +2124,49 @@ class AirTicketInvoiceCommercialSyncService
             2
         );
 
+        $currentInvoiceLineTotal = round(
+            array_sum(
+                array_map(
+                    fn (Model $line): float =>
+                        $this->lineTotal($line),
+                    $currentInvoiceLines
+                )
+            ),
+            2
+        );
+
+        $headerTotal = $this->invoiceCommercialHeaderTotal($invoice);
+
+        /*
+         * Air authority and whole-invoice authority are deliberately separate.
+         * This supports both Air-only and multi-product Sales Invoices without
+         * comparing the complete invoice header to the Air-only booking source.
+         */
+        if (
+            abs(
+                $currentAirTotal
+                - $expectedAirTotal
+            ) > 0.01
+        ) {
+            return true;
+        }
+
         if (
             $headerTotal !== null
-            && $currentAirLines !== []
             && abs(
                 $headerTotal
-                - $expectedTotal
-            ) <= 0.01
-            && abs(
-                $currentAirTotal
-                - $expectedTotal
-            ) <= 0.01
+                - $currentInvoiceLineTotal
+            ) > 0.01
         ) {
+            return true;
+        }
+
+        /*
+         * Preserve the existing aggregate-equivalence contract: when both the
+         * Air scope and whole-invoice scope reconcile, native row grouping is
+         * commercially valid and does not itself require a rewrite.
+         */
+        if ($headerTotal !== null && $currentAirLines !== []) {
             return false;
         }
 
@@ -2273,6 +2281,20 @@ class AirTicketInvoiceCommercialSyncService
      */
     private function currentAirLines(Model $invoice): array
     {
+        return array_values(
+            array_filter(
+                $this->currentInvoiceLines($invoice),
+                fn (Model $line): bool =>
+                    $this->lineLooksLikeAirTicket($line)
+            )
+        );
+    }
+
+    /**
+     * @return list<Model>
+     */
+    private function currentInvoiceLines(Model $invoice): array
+    {
         $resolved = $this->resolveInvoiceLineRelation($invoice);
 
         if (! $resolved) {
@@ -2282,13 +2304,7 @@ class AirTicketInvoiceCommercialSyncService
         /** @var Relation $relation */
         $relation = $resolved['relation'];
 
-        return $relation->get()
-            ->filter(
-                fn (Model $line): bool =>
-                    $this->lineLooksLikeAirTicket($line)
-            )
-            ->values()
-            ->all();
+        return $relation->get()->values()->all();
     }
 
     private function lineLooksLikeAirTicket(Model $line): bool
