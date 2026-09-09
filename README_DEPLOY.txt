@@ -1,4 +1,4 @@
-ERP-11.3.210 DIRECT UPLOAD — SALES INVOICE BLANK-PAGE HOTFIX
+ERP-11.3.211 DIRECT UPLOAD — AIR INVOICE CURRENCY HOTFIX
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,25 +9,30 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.210 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.211 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
-ERP-11.3.210 fixes the Sales Invoice blank-page regression caused by the `.209`
-legacy Accounting card cleanup. The cleanup is now safely bounded to the
-compact top Accounting / Not Posted card and cannot hide the shared page
-container, Review card, lower Accounting Preview or document body.
+ERP-11.3.211 fixes Air Ticket commercial synchronization during Sales Invoice
+Submit for Approval. New grouped Adult, Child and Infant Air invoice lines now
+preserve required native structural fields, including currency.
 
-There are no profitability calculation, accounting logic, SalesInvoiceService,
-workflow or booking/invoice data changes. No migration is added.
+Currency authority is:
+1. Native Air template line currency_code / currency.
+2. Native Sales Invoice header currency_code / currency.
+
+No currency is hard-coded. If required native structural fields cannot be
+resolved, synchronization stops with controlled validation before database
+insertion. There are no accounting, profitability, SalesInvoiceService,
+workflow or booking-data changes. No migration is added.
 
 After deployment, clear Application Cache, press Ctrl+F5, and open
-https://erp.easyticket.pk/sales/invoices/7 before using any workflow action.
-Confirm the page is not blank; the legacy top Accounting / Not Posted card is
-absent; the five summary cards, Product Commercial Summary, Air Ticket
-Commercial Lines, Passenger / Ticket Summary, Accounting Preview (Journal
-Lines), Workflow and Activity are visible; and invoice totals, costs and margins
-remain unchanged.
+https://erp.easyticket.pk/sales/invoices/7. Before workflow, confirm Invoice
+Total PKR 931,200, Total Cost PKR 938,600, Gross Margin PKR -7,400 and Products
+4. Then click Submit for Approval once. It must complete without SQLSTATE 1364,
+preserve Air PKR 718,000, Hotel PKR 8,000, Transport PKR 200, Visa PKR 205,000
+and invoice PKR 931,200, create no duplicate Air lines, and transition Draft to
+Pending Approval. If synchronization fails, no partial data may remain.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the

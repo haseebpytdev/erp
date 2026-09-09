@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.210
-APPLICATION_VERSION=v1.1.33.210-ERP11.3.210
+CURRENT_VERSION=ERP-11.3.211
+APPLICATION_VERSION=v1.1.33.211-ERP11.3.211
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.210
+LAST_PACKAGED_RELEASE=ERP-11.3.211
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -162,3 +162,12 @@ bounded to the compact top Accounting / Not Posted card and cannot hide the
 shared page container, Review card, lower Accounting Preview or document body.
 Profitability calculations, accounting logic, SalesInvoiceService, workflow
 and booking/invoice data remain unchanged. No migration is added.
+
+ERP-11.3.211 hotfix release fixes Air Ticket commercial synchronization during
+Sales Invoice Submit for Approval. New grouped Adult, Child and Infant Air
+invoice lines preserve required native structural fields. Currency authority is
+the native Air template line `currency_code` / `currency`, followed by the
+native Sales Invoice header `currency_code` / `currency`; no currency is
+hard-coded. Unresolved required native structure stops with controlled
+validation before database insertion. Accounting, profitability, workflow and
+booking data remain unchanged. No migration is added.
