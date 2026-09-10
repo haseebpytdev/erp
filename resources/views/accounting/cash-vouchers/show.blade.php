@@ -41,11 +41,13 @@
       <div class="cvs27-grid">
         <div class="cvs27-item"><b>Type</b>{{ $definition['label'] }}</div>
         <div class="cvs27-item"><b>Voucher Date</b>{{ \Carbon\Carbon::parse($row->voucher_date)->format('d M Y') }}</div>
-        <div class="cvs27-item"><b>{{ $definition['party_type']==='supplier'?'Supplier':'Customer / Agent' }}</b>{{ $row->party_name ?: '—' }}</div>
+        <div class="cvs27-item"><b>{{ $row->voucher_type==='expense' ? 'Payee' : ($definition['party_type']==='supplier'?'Supplier':'Customer / Agent') }}</b>{{ $row->party_name ?: '—' }}</div>
         <div class="cvs27-item"><b>Booking</b>{{ $row->booking_id ? 'Booking #'.$row->booking_id : '—' }}</div>
         <div class="cvs27-item"><b>Amount</b><strong>{{ $row->currency_code }} {{ number_format($row->amount,2) }}</strong></div>
-        <div class="cvs27-item"><b>Allocated</b>{{ $row->currency_code }} {{ number_format($row->allocated_amount,2) }}</div>
-        <div class="cvs27-item"><b>Advance / Unallocated</b>{{ $row->currency_code }} {{ number_format($row->unallocated_amount,2) }}</div>
+        @if($row->voucher_type!=='expense')
+          <div class="cvs27-item"><b>Allocated</b>{{ $row->currency_code }} {{ number_format($row->allocated_amount,2) }}</div>
+          <div class="cvs27-item"><b>Advance / Unallocated</b>{{ $row->currency_code }} {{ number_format($row->unallocated_amount,2) }}</div>
+        @endif
         <div class="cvs27-item"><b>FX Rate</b>{{ number_format($row->exchange_rate,8) }}</div>
         <div class="cvs27-item"><b>Payment Method</b>{{ $row->payment_method }}</div>
         <div class="cvs27-item"><b>Cash / Bank Account</b>{{ $row->cash_bank_account_code }} · {{ $row->cash_bank_account_name }}</div>
@@ -60,6 +62,21 @@
     </div>
   </section>
 
+  @if($row->voucher_type==='expense')
+    <section class="cvs27-card">
+      <div class="cvs27-card-head">Expense Lines</div>
+      <table class="cvs27-table">
+        <thead><tr><th>#</th><th>Expense Account</th><th>Description</th><th>Amount</th><th>Base Amount</th></tr></thead>
+        <tbody>
+          @foreach($expenseLines as $line)
+            <tr><td>{{ $line->line_no }}</td><td><strong>{{ $line->expense_account_code }} · {{ $line->expense_account_name }}</strong></td><td>{{ $line->description ?: '—' }}</td><td>{{ $line->currency_code }} {{ number_format($line->amount,2) }}</td><td>PKR {{ number_format($line->base_amount,2) }}</td></tr>
+          @endforeach
+        </tbody>
+        <tfoot><tr><th colspan="3">Total Expense</th><th>{{ $row->currency_code }} {{ number_format($expenseLines->sum('amount'),2) }}</th><th>PKR {{ number_format($expenseLines->sum('base_amount'),2) }}</th></tr></tfoot>
+      </table>
+    </section>
+  @endif
+
   @if($allocations->isNotEmpty())
     <section class="cvs27-card">
       <div class="cvs27-card-head">Document Allocations</div>
@@ -70,9 +87,20 @@
     </section>
   @endif
 
-  @if($postings->isNotEmpty())
+  @if($row->voucher_type==='expense' && $postings->isEmpty())
     <section class="cvs27-card">
-      <div class="cvs27-card-head">Accounting Posting</div>
+      <div class="cvs27-card-head">Accounting Preview</div>
+      <div class="cvs27-post">
+        <div><b>Account</b></div><div><b>Description</b></div><div style="text-align:right"><b>Debit (Base)</b></div><div style="text-align:right"><b>Credit (Base)</b></div>
+        @foreach($expenseLines as $line)
+          <div>{{ $line->expense_account_code }} · {{ $line->expense_account_name }}</div><div>{{ $line->description ?: $row->narration }}</div><div style="text-align:right">{{ number_format($line->base_amount,2) }}</div><div style="text-align:right">0.00</div>
+        @endforeach
+        <div>{{ $row->cash_bank_account_code }} · {{ $row->cash_bank_account_name }}</div><div>{{ $row->narration ?: 'Direct expense payment' }}</div><div style="text-align:right">0.00</div><div style="text-align:right">{{ number_format($expenseLines->sum('base_amount'),2) }}</div>
+      </div>
+    </section>
+  @elseif($postings->isNotEmpty())
+    <section class="cvs27-card">
+      <div class="cvs27-card-head">Posted Journal · {{ $row->posting_reference ?: $row->reversal_reference }}</div>
       <div class="cvs27-post">
         <div><b>Account</b></div><div><b>Party / Narration</b></div><div style="text-align:right"><b>Debit</b></div><div style="text-align:right"><b>Credit</b></div>
         @foreach($postings as $p)

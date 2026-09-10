@@ -24,7 +24,7 @@ class CashVoucherController extends Controller
     public function index(Request $request)
     {
         $allowedTypes = array_values(array_filter(
-            ['receipt', 'payment', 'customer_advance', 'supplier_advance'],
+            ['receipt', 'payment', 'expense', 'customer_advance', 'supplier_advance'],
             fn (string $type): bool => $this->service->canUseType($request->user(), $type, 'view')
         ));
         abort_if($allowedTypes === [], 403);
@@ -41,6 +41,8 @@ class CashVoucherController extends Controller
                 $query->where('voucher_type', 'receipt');
             } elseif ($mode === 'payments' && in_array('payment', $allowedTypes, true)) {
                 $query->where('voucher_type', 'payment');
+            } elseif ($mode === 'expenses' && in_array('expense', $allowedTypes, true)) {
+                $query->where('voucher_type', 'expense');
             } elseif ($mode === 'advances') {
                 $advanceTypes = array_values(array_intersect(
                     ['customer_advance', 'supplier_advance'],
@@ -83,6 +85,7 @@ class CashVoucherController extends Controller
             ->selectRaw("
                 COALESCE(SUM(CASE WHEN voucher_type = 'receipt' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS receipts,
                 COALESCE(SUM(CASE WHEN voucher_type = 'payment' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS payments,
+                COALESCE(SUM(CASE WHEN voucher_type = 'expense' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS expenses,
                 COALESCE(SUM(CASE WHEN voucher_type = 'customer_advance' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS customer_advances,
                 COALESCE(SUM(CASE WHEN voucher_type = 'supplier_advance' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS supplier_advances,
                 COALESCE(SUM(CASE WHEN status = 'pending_approval' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS pending_approval,
@@ -118,7 +121,7 @@ class CashVoucherController extends Controller
     public function create(Request $request)
     {
         $type = (string) $request->query('type', 'receipt');
-        abort_unless(in_array($type, ['receipt', 'payment', 'customer_advance', 'supplier_advance'], true), 404);
+        abort_unless(in_array($type, ['receipt', 'payment', 'expense', 'customer_advance', 'supplier_advance'], true), 404);
         abort_unless($this->service->canUseType($request->user(), $type, 'create'), 403);
 
         return view('accounting.cash-vouchers.form', $this->formData(null, $type));
@@ -130,12 +133,19 @@ class CashVoucherController extends Controller
         $type = (string) $data['voucher_type'];
         abort_unless($this->service->canUseType($request->user(), $type, 'create'), 403);
         $definition = $this->service->voucherDefinition($type);
-        $allocations = $this->validateAllocations($request, $definition['target_type']);
+        $expenseLines = $type === 'expense'
+            ? $this->validateExpenseLines($request, $data)
+            : [];
+        $allocations = $type === 'expense'
+            ? []
+            : $this->validateAllocations($request, $definition['target_type']);
         $proof = $this->storeProof($request);
 
-        $id = DB::transaction(function () use ($request, $data, $definition, $allocations, $proof): int {
+        $id = DB::transaction(function () use ($request, $data, $definition, $allocations, $expenseLines, $proof): int {
             $now = now();
-            $partyId = ! empty($data['party_id']) ? (int) $data['party_id'] : null;
+            $partyId = $data['voucher_type'] === 'expense'
+                ? null
+                : (! empty($data['party_id']) ? (int) $data['party_id'] : null);
             $account = $this->resolveCashBankAccount((string) $data['cash_bank_account']);
             $id = DB::table('cash_vouchers')->insertGetId([
                 'voucher_no' => $this->service->nextNumber((string) $data['voucher_type']),
@@ -167,6 +177,9 @@ class CashVoucherController extends Controller
                 'updated_at' => $now,
             ]);
             $this->replaceAllocations($id, $allocations, $definition['target_type'], (string) $data['currency_code']);
+            if ($data['voucher_type'] === 'expense') {
+                $this->replaceExpenseLines($id, $expenseLines);
+            }
             $this->service->recalculate($id);
             $this->service->activity($id, 'create', null, 'draft', $request->user(), 'Cash voucher draft created.');
             return $id;
@@ -205,6 +218,7 @@ class CashVoucherController extends Controller
             'row' => $row,
             'definition' => $this->service->voucherDefinition((string) $row->voucher_type),
             'allocations' => DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
+            'expenseLines' => DB::table('cash_voucher_expense_lines')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
             'postings' => DB::table('cash_voucher_posting_lines')->where('cash_voucher_id', $voucher)->orderBy('id')->get(),
             'activities' => DB::table('cash_voucher_activities')->where('cash_voucher_id', $voucher)->orderByDesc('id')->get(),
             'layoutMeta' => $this->layout->resolve(),
@@ -220,7 +234,10 @@ class CashVoucherController extends Controller
 
         return view('accounting.cash-vouchers.form', array_merge(
             $this->formData($row, (string) $row->voucher_type),
-            ['allocations' => DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get()]
+            [
+                'allocations' => DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
+                'expenseLines' => DB::table('cash_voucher_expense_lines')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
+            ]
         ));
     }
 
@@ -231,11 +248,18 @@ class CashVoucherController extends Controller
         abort_unless($this->service->canUseType($request->user(), (string) $row->voucher_type, 'update'), 403);
         $data = $this->validateHeader($request, (string) $row->voucher_type);
         $definition = $this->service->voucherDefinition((string) $row->voucher_type);
-        $allocations = $this->validateAllocations($request, $definition['target_type']);
+        $expenseLines = (string) $row->voucher_type === 'expense'
+            ? $this->validateExpenseLines($request, $data)
+            : [];
+        $allocations = (string) $row->voucher_type === 'expense'
+            ? []
+            : $this->validateAllocations($request, $definition['target_type']);
         $proof = $this->storeProof($request);
 
-        DB::transaction(function () use ($request, $voucher, $row, $data, $definition, $allocations, $proof): void {
-            $partyId = ! empty($data['party_id']) ? (int) $data['party_id'] : null;
+        DB::transaction(function () use ($request, $voucher, $row, $data, $definition, $allocations, $expenseLines, $proof): void {
+            $partyId = (string) $row->voucher_type === 'expense'
+                ? null
+                : (! empty($data['party_id']) ? (int) $data['party_id'] : null);
             $account = $this->resolveCashBankAccount((string) $data['cash_bank_account']);
             $update = [
                 'party_id' => $partyId,
@@ -262,6 +286,9 @@ class CashVoucherController extends Controller
             }
             DB::table('cash_vouchers')->where('id', $voucher)->update($update);
             $this->replaceAllocations($voucher, $allocations, $definition['target_type'], (string) $data['currency_code']);
+            if ((string) $row->voucher_type === 'expense') {
+                $this->replaceExpenseLines($voucher, $expenseLines);
+            }
             $this->service->recalculate($voucher);
             $this->service->activity($voucher, 'update', 'draft', 'draft', $request->user(), 'Draft updated.');
         });
@@ -339,6 +366,10 @@ class CashVoucherController extends Controller
                 ->where('cash_voucher_id', $voucher)
                 ->orderBy('line_no')
                 ->get(),
+            'expenseLines' => DB::table('cash_voucher_expense_lines')
+                ->where('cash_voucher_id', $voucher)
+                ->orderBy('line_no')
+                ->get(),
             'bookingReference' => $bookingReference,
             'amountInWords' => AmountInWords::money(
                 (float) $row->amount,
@@ -364,11 +395,14 @@ class CashVoucherController extends Controller
             'row' => $row,
             'type' => $type,
             'definition' => $definition,
-            'parties' => $this->service->partyOptions($definition['party_type']),
+            'parties' => $type === 'expense'
+                ? []
+                : $this->service->partyOptions($definition['party_type']),
             'bookings' => $this->service->bookingOptions(),
             'cashBankAccounts' => $this->service->cashBankAccounts(),
             'paymentMethods' => $this->service->paymentMethods(),
             'documents' => $definition['target_type'] ? $this->service->documentOptions($definition['target_type']) : [],
+            'expenseAccounts' => $type === 'expense' ? $this->service->expenseAccounts() : [],
             'layoutMeta' => $this->layout->resolve(),
         ];
     }
@@ -376,7 +410,7 @@ class CashVoucherController extends Controller
     private function validateHeader(Request $request, ?string $lockedType = null): array
     {
         $data = $request->validate([
-            'voucher_type' => ['required', Rule::in(['receipt', 'payment', 'customer_advance', 'supplier_advance'])],
+            'voucher_type' => ['required', Rule::in(['receipt', 'payment', 'expense', 'customer_advance', 'supplier_advance'])],
             'party_id' => ['nullable', 'integer', 'min:1'],
             'party_name' => ['nullable', 'string', 'max:255'],
             'booking_id' => ['nullable', 'integer', 'min:1'],
@@ -396,7 +430,11 @@ class CashVoucherController extends Controller
         if ($lockedType !== null && $data['voucher_type'] !== $lockedType) {
             abort(409, 'Voucher type cannot be changed after creation.');
         }
-        if (empty($data['party_id']) && trim((string) ($data['party_name'] ?? '')) === '') {
+        if (
+            $data['voucher_type'] !== 'expense'
+            && empty($data['party_id'])
+            && trim((string) ($data['party_name'] ?? '')) === ''
+        ) {
             abort(422, 'Select a party or enter a party name.');
         }
         return $data;
@@ -414,6 +452,62 @@ class CashVoucherController extends Controller
             'allocations.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
         return array_values((array) ($validated['allocations'] ?? []));
+    }
+
+    private function validateExpenseLines(Request $request, array $header): array
+    {
+        $validated = $request->validate([
+            'expense_lines' => ['required', 'array', 'min:1'],
+            'expense_lines.*.expense_account_id' => ['required', 'integer', 'min:1'],
+            'expense_lines.*.description' => ['nullable', 'string', 'max:2000'],
+            'expense_lines.*.amount' => ['required', 'numeric', 'gt:0'],
+        ]);
+
+        $currency = strtoupper(trim((string) $header['currency_code']));
+        $rate = (float) $header['exchange_rate'];
+        $rows = [];
+        $total = 0.0;
+
+        foreach (array_values($validated['expense_lines']) as $index => $line) {
+            $account = $this->service->expenseAccount((int) $line['expense_account_id']);
+            $amount = round((float) $line['amount'], 2);
+            $total += $amount;
+            $rows[] = [
+                'line_no' => $index + 1,
+                'expense_account_id' => (int) $account['id'],
+                'expense_account_code' => (string) $account['code'],
+                'expense_account_name' => (string) $account['name'],
+                'description' => trim((string) ($line['description'] ?? '')) ?: null,
+                'amount' => $amount,
+                'currency_code' => $currency,
+                'exchange_rate' => $rate,
+                'base_amount' => round($amount * $rate, 2),
+            ];
+        }
+
+        if (abs(round($total, 2) - round((float) $header['amount'], 2)) > 0.005) {
+            abort(422, 'Expense line total must equal the voucher header amount.');
+        }
+
+        return $rows;
+    }
+
+    private function replaceExpenseLines(int $voucherId, array $expenseLines): void
+    {
+        DB::table('cash_voucher_expense_lines')->where('cash_voucher_id', $voucherId)->delete();
+
+        if ($expenseLines === []) {
+            return;
+        }
+
+        $now = now();
+        $rows = array_map(static fn (array $line): array => array_merge($line, [
+            'cash_voucher_id' => $voucherId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]), $expenseLines);
+
+        DB::table('cash_voucher_expense_lines')->insert($rows);
     }
 
     private function replaceAllocations(int $voucherId, array $allocations, ?string $targetType, string $currencyCode): void

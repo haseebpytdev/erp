@@ -21,6 +21,7 @@ class CashVoucherService
         $prefix = match ($type) {
             'receipt' => 'RV',
             'payment' => 'PV',
+            'expense' => 'EV',
             'customer_advance' => 'CAR',
             'supplier_advance' => 'SAP',
             default => throw new RuntimeException('Unsupported cash voucher type.'),
@@ -73,6 +74,14 @@ class CashVoucherService
                 'target_type' => 'supplier_costing',
                 'target_label' => 'Supplier Costing',
             ],
+            'expense' => [
+                'label' => 'Expense Voucher',
+                'short' => 'Expense',
+                'direction' => 'out',
+                'party_type' => 'expense',
+                'target_type' => null,
+                'target_label' => null,
+            ],
             'customer_advance' => [
                 'label' => 'Customer Advance Receipt',
                 'short' => 'Customer Advance',
@@ -99,8 +108,19 @@ class CashVoucherService
             return true;
         }
 
-        $isReceipt = in_array($type, ['receipt', 'customer_advance'], true);
-        $phrases = $isReceipt
+        if ($type === 'expense') {
+            $phrases = [
+                'view expense vouchers',
+                'create expense vouchers',
+                'update expense vouchers',
+                'approve expense vouchers',
+                'post expense vouchers',
+                'reverse expense vouchers',
+                'manage expense vouchers',
+            ];
+        } else {
+            $isReceipt = in_array($type, ['receipt', 'customer_advance'], true);
+            $phrases = $isReceipt
             ? [
                 'view receipts', 'create receipts', 'update receipts', 'approve receipts', 'post receipts', 'manage receipts',
                 'view receipt vouchers', 'create receipt vouchers', 'approve receipt vouchers', 'post receipt vouchers', 'manage receipt vouchers',
@@ -111,13 +131,15 @@ class CashVoucherService
                 'view payment vouchers', 'create payment vouchers', 'approve payment vouchers', 'post payment vouchers', 'manage payment vouchers',
                 'manage supplier advances', 'supplier advances',
             ];
+        }
 
         $actionPhrases = match ($action) {
             'view' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'view') || str_contains($p, 'manage'))),
             'create' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'create') || str_contains($p, 'manage') || str_contains($p, 'advance'))),
             'update' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'update') || str_contains($p, 'manage'))),
             'approve' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'approve') || str_contains($p, 'manage'))),
-            'post', 'reverse' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'post') || str_contains($p, 'manage'))),
+            'post' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'post') || str_contains($p, 'manage'))),
+            'reverse' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'reverse') || str_contains($p, 'post') || str_contains($p, 'manage'))),
             default => $phrases,
         };
 
@@ -339,6 +361,80 @@ class CashVoucherService
         return (array) config('cash_vouchers.payment_methods', ['Cash', 'Bank Transfer', 'Cheque', 'Card', 'Online', 'Other']);
     }
 
+    /**
+     * Active posting Expense accounts from the same adaptive Chart authority.
+     * No code-prefix inference or fallback expense account is permitted.
+     */
+    public function expenseAccounts(): array
+    {
+        $s = $this->chartAccounts->schema();
+        $select = [
+            $s['id'].' as id',
+            $s['code'].' as code',
+            $s['name'].' as name',
+            $s['type'].' as account_type',
+        ];
+
+        $query = DB::table($s['table'])->select($select)
+            ->where(function ($q) use ($s): void {
+                $q->whereRaw('LOWER('.$s['type'].') LIKE ?', ['%expense%'])
+                    ->orWhereRaw('LOWER('.$s['type'].') LIKE ?', ['%cost%']);
+            });
+
+        if ($s['active']) {
+            $query->where($s['active'], 1);
+        }
+        if ($s['status']) {
+            $query->where(function ($q) use ($s): void {
+                $q->whereNull($s['status'])
+                    ->orWhereRaw(
+                        'LOWER('.$s['status'].') IN (?, ?, ?)',
+                        ['active', 'enabled', 'open']
+                    );
+            });
+        }
+        if ($s['posting']) {
+            $query->where($s['posting'], 1);
+        }
+        if ($s['control_flag']) {
+            $query->where(function ($q) use ($s): void {
+                $q->whereNull($s['control_flag'])->orWhere($s['control_flag'], 0);
+            });
+        }
+
+        $cashBankCodes = array_column($this->cashBankAccounts(), 'code');
+
+        return $query->orderBy($s['code'])->limit(1000)->get()
+            ->map(static fn ($row): array => [
+                'id' => (int) $row->id,
+                'code' => trim((string) $row->code),
+                'name' => trim((string) $row->name),
+                'type' => trim((string) $row->account_type),
+            ])
+            ->reject(static fn (array $account): bool =>
+                $account['id'] <= 0
+                || $account['code'] === ''
+                || $account['name'] === ''
+                || in_array($account['code'], $cashBankCodes, true)
+            )
+            ->unique('id')
+            ->values()
+            ->all();
+    }
+
+    public function expenseAccount(int $accountId): array
+    {
+        foreach ($this->expenseAccounts() as $account) {
+            if ((int) $account['id'] === $accountId) {
+                return $account;
+            }
+        }
+
+        throw new RuntimeException(
+            'Selected Expense account is not an active posting Expense account.'
+        );
+    }
+
     public function documentOptions(string $targetType): array
     {
         return $targetType === 'supplier_costing'
@@ -520,6 +616,24 @@ class CashVoucherService
         if (! $voucher) {
             throw new RuntimeException('Cash voucher not found.');
         }
+        if ((string) $voucher->voucher_type === 'expense') {
+            $amount = round((float) DB::table('cash_voucher_expense_lines')
+                ->where('cash_voucher_id', $voucherId)
+                ->sum('amount'), 2);
+
+            if ($amount <= 0) {
+                throw new RuntimeException('Expense Voucher requires at least one positive expense line.');
+            }
+
+            DB::table('cash_vouchers')->where('id', $voucherId)->update([
+                'amount' => $amount,
+                'allocated_amount' => 0,
+                'unallocated_amount' => 0,
+                'updated_at' => now(),
+            ]);
+            return;
+        }
+
         $allocated = (float) DB::table('cash_voucher_allocations')
             ->where('cash_voucher_id', $voucherId)
             ->sum('amount');
@@ -822,8 +936,68 @@ class CashVoucherService
         if (trim((string) $voucher->cash_bank_account_code) === '') {
             throw new RuntimeException('Cash / Bank account is required.');
         }
+        if (! in_array(
+            (string) $voucher->cash_bank_account_code,
+            array_column($this->cashBankAccounts(), 'code'),
+            true
+        )) {
+            throw new RuntimeException('Cash / Bank account is no longer an active posting account.');
+        }
         $definition = $this->voucherDefinition($type);
         $allocations = DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->orderBy('line_no')->get();
+        if ($type === 'expense') {
+            if ($allocations->isNotEmpty()) {
+                throw new RuntimeException('Expense Vouchers cannot contain document allocations.');
+            }
+
+            $lines = DB::table('cash_voucher_expense_lines')
+                ->where('cash_voucher_id', $voucherId)
+                ->orderBy('line_no')
+                ->get();
+            if ($lines->isEmpty()) {
+                throw new RuntimeException('Expense Voucher requires at least one expense line.');
+            }
+
+            $lineAmount = 0.0;
+            $baseAmount = 0.0;
+            foreach ($lines as $line) {
+                $account = $this->expenseAccount((int) $line->expense_account_id);
+                if ((string) $line->expense_account_code !== (string) $account['code']) {
+                    throw new RuntimeException('Expense account snapshot no longer matches the Chart of Accounts.');
+                }
+                if ((float) $line->amount <= 0 || (float) $line->exchange_rate <= 0) {
+                    throw new RuntimeException('Expense line amount and exchange rate must be greater than zero.');
+                }
+                if (strtoupper((string) $line->currency_code) !== strtoupper((string) $voucher->currency_code)) {
+                    throw new RuntimeException('Expense line currency must match the voucher currency.');
+                }
+                $expectedBase = round((float) $line->amount * (float) $line->exchange_rate, 2);
+                if (abs($expectedBase - (float) $line->base_amount) > 0.005) {
+                    throw new RuntimeException('Expense line base amount does not reconcile with currency and FX.');
+                }
+                $lineAmount += (float) $line->amount;
+                $baseAmount += (float) $line->base_amount;
+            }
+
+            if (abs(round($lineAmount, 2) - round((float) $voucher->amount, 2)) > 0.005) {
+                throw new RuntimeException('Expense line total does not equal the voucher header amount.');
+            }
+            if ($baseAmount <= 0) {
+                throw new RuntimeException('Expense Voucher base total must be greater than zero.');
+            }
+            $headerBase = round(
+                (float) $voucher->amount * (float) $voucher->exchange_rate,
+                2
+            );
+            if (abs(round($baseAmount, 2) - $headerBase) > 0.005) {
+                throw new RuntimeException(
+                    'Expense line base total does not equal the Cash / Bank credit base total.'
+                );
+            }
+
+            $this->recalculate($voucherId);
+            return;
+        }
         if ($definition['target_type'] === null && $allocations->isNotEmpty()) {
             throw new RuntimeException('Explicit advance vouchers cannot contain invoice/costing allocations. Use Advance Adjustment later.');
         }
@@ -873,10 +1047,6 @@ class CashVoucherService
         $currency = (string) ($voucher->currency_code ?: 'PKR');
         $rate = (float) ($voucher->exchange_rate ?: 1);
         $bank = ['code' => (string) $voucher->cash_bank_account_code, 'name' => (string) $voucher->cash_bank_account_name];
-        $ar = $this->account('accounts_receivable');
-        $ap = $this->account('accounts_payable');
-        $ca = $this->account('customer_advances');
-        $sa = $this->account('supplier_advances');
         $lines = [];
 
         // ERP-11.3.24: preserve the user's actual voucher narration as the
@@ -888,7 +1058,47 @@ class CashVoucherService
             return $voucherNarration !== '' ? $voucherNarration : $fallback;
         };
 
-        if ($voucher->direction === 'in') {
+        if ((string) $voucher->voucher_type === 'expense') {
+            $expenseLines = DB::table('cash_voucher_expense_lines')
+                ->where('cash_voucher_id', $voucherId)
+                ->orderBy('line_no')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($expenseLines as $expenseLine) {
+                $lines[] = $this->postingLine(
+                    $voucherId,
+                    $reference,
+                    [
+                        'code' => (string) $expenseLine->expense_account_code,
+                        'name' => (string) $expenseLine->expense_account_name,
+                    ],
+                    null,
+                    null,
+                    (float) $expenseLine->amount,
+                    0,
+                    $currency,
+                    $rate,
+                    trim((string) ($expenseLine->description ?? '')) !== ''
+                        ? (string) $expenseLine->description
+                        : $narration('Direct expense '.$voucher->voucher_no)
+                );
+            }
+            $lines[] = $this->postingLine(
+                $voucherId,
+                $reference,
+                $bank,
+                null,
+                null,
+                0,
+                $amount,
+                $currency,
+                $rate,
+                $narration('Cash/Bank direct expense payment '.$voucher->voucher_no)
+            );
+        } elseif ($voucher->direction === 'in') {
+            $ar = $this->account('accounts_receivable');
+            $ca = $this->account('customer_advances');
             $lines[] = $this->postingLine($voucherId, $reference, $bank, null, null, $amount, 0, $currency, $rate, $narration('Cash/Bank receipt '.$voucher->voucher_no));
             if ($allocated > 0) {
                 $lines[] = $this->postingLine($voucherId, $reference, $ar, 'customer', $voucher->party_id, 0, $allocated, $currency, $rate, $narration('Customer receivable settlement '.$voucher->voucher_no));
@@ -897,6 +1107,8 @@ class CashVoucherService
                 $lines[] = $this->postingLine($voucherId, $reference, $ca, 'customer', $voucher->party_id, 0, $unallocated, $currency, $rate, $narration('Customer advance balance '.$voucher->voucher_no));
             }
         } else {
+            $ap = $this->account('accounts_payable');
+            $sa = $this->account('supplier_advances');
             if ($allocated > 0) {
                 $lines[] = $this->postingLine($voucherId, $reference, $ap, 'supplier', $voucher->party_id, $allocated, 0, $currency, $rate, $narration('Supplier payable settlement '.$voucher->voucher_no));
             }

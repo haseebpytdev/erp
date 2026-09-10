@@ -104,6 +104,17 @@ body{margin:0;background:#eef2f7;font-family:Arial,Helvetica,sans-serif;color:#1
     </div>
   @endif
 
+  @if($row->voucher_type==='expense' && $expenseLines->isNotEmpty())
+    <div class="alloc">
+      <div class="alloc-title">Expense Lines</div>
+      <table>
+        <thead><tr><th>#</th><th>Expense Account</th><th>Description</th><th>Amount</th></tr></thead>
+        <tbody>@foreach($expenseLines as $line)<tr><td>{{ $line->line_no }}</td><td>{{ $line->expense_account_code }} · {{ $line->expense_account_name }}</td><td>{{ $line->description ?: '—' }}</td><td>{{ $line->currency_code }} {{ number_format($line->amount,2) }}</td></tr>@endforeach</tbody>
+        <tfoot><tr><th colspan="3">Total Expense</th><th>{{ $row->currency_code }} {{ number_format($expenseLines->sum('amount'),2) }}</th></tr></tfoot>
+      </table>
+    </div>
+  @endif
+
   <div class="signatures"><div class="signature">Prepared By</div><div class="signature">Authorized Signature</div></div>
 
   @if(!empty($profile['footer']))<div class="footer">{!! $profile['footer'] !!}</div>@elseif($contact)<div class="footer">{{ implode(' · ',$contact) }}</div>@endif

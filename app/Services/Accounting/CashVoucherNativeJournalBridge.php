@@ -58,7 +58,9 @@ final class CashVoucherNativeJournalBridge
                 sourceType: 'cash_voucher',
                 sourceId: $voucherId,
                 journalNo: (string) ($voucher->posting_reference ?: $voucher->voucher_no),
-                descriptionPrefix: 'Cash voucher',
+                descriptionPrefix: (string) $voucher->voucher_type === 'expense'
+                    ? 'Expense voucher'
+                    : 'Cash voucher',
                 user: $user,
                 reversalOfId: null,
             );
@@ -979,6 +981,7 @@ SQL
         return match ($voucherType) {
             'receipt' => 'receipt',
             'payment' => 'payment',
+            'expense' => 'expense',
             'customer_advance' => 'customer_advance',
             'supplier_advance' => 'supplier_advance',
             default => 'cash_voucher',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Accounting\CashVoucherService;
 use App\Services\Administration\ErpRoleAccessPolicy;
 use Closure;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ final class PresentCashVoucherLinks
 {
     public function __construct(
         private readonly ErpRoleAccessPolicy $policy,
+        private readonly CashVoucherService $cashVouchers,
     ) {
     }
 
@@ -58,14 +60,20 @@ final class PresentCashVoucherLinks
         if ($this->policy->moduleAllowed($request->user(), 'cash_vouchers')) {
             $receiptUrl = route('accounting.cash-vouchers.index', ['type' => 'receipt']);
             $paymentUrl = route('accounting.cash-vouchers.index', ['type' => 'payment']);
+            $expenseUrl = route('accounting.cash-vouchers.index', ['mode' => 'expenses']);
 
             $onVoucherWorkspace = str_starts_with(trim($request->path(), '/'), 'accounting/cash-vouchers');
             $selectedType = strtolower(trim((string) $request->query('type', '')));
             $receiptActive = $onVoucherWorkspace && $selectedType === 'receipt' ? ' active' : '';
             $paymentActive = $onVoucherWorkspace && $selectedType === 'payment' ? ' active' : '';
+            $expenseActive = $onVoucherWorkspace
+                && strtolower((string) $request->query('mode', '')) === 'expenses'
+                ? ' active'
+                : '';
 
             $receiptLink = '<a class="nav-item'.$receiptActive.'" href="'.e($receiptUrl).'" data-et-live-accounting-nav="receipt"><span>↓</span><span>Receipts</span></a>';
             $paymentLink = '<a class="nav-item'.$paymentActive.'" href="'.e($paymentUrl).'" data-et-live-accounting-nav="payment"><span>↑</span><span>Payments</span></a>';
+            $expenseLink = '<a class="nav-item'.$expenseActive.'" href="'.e($expenseUrl).'" data-et-live-accounting-nav="expense"><span>≡</span><span>Expense Vouchers</span></a>';
 
             $html = str_replace(
                 '<div class="nav-item muted"><span>•</span><span>Receipts</span><em>Soon</em></div>',
@@ -77,6 +85,13 @@ final class PresentCashVoucherLinks
                 $paymentLink,
                 $html
             );
+
+            if (
+                $this->cashVouchers->canUseType($request->user(), 'expense', 'view')
+                && ! str_contains($html, 'data-et-live-accounting-nav="expense"')
+            ) {
+                $html = str_replace($paymentLink, $paymentLink.$expenseLink, $html);
+            }
         }
 
         // Never force sidebar display mode. Focused booking pages intentionally

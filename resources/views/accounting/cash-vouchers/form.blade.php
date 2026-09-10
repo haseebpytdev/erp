@@ -3,8 +3,11 @@
 @section($layoutMeta['content_section'] ?? 'content')
 @php
     $isIncoming = $definition['direction'] === 'in';
+    $isExpense = $type === 'expense';
     $partyLabel = $definition['party_type'] === 'supplier' ? 'Supplier' : 'Customer / Agent';
-    $subtitle = $isIncoming ? 'Money received into Cash / Bank' : 'Money paid from Cash / Bank';
+    $subtitle = $isExpense
+        ? 'Direct business expenses paid from Cash / Bank'
+        : ($isIncoming ? 'Money received into Cash / Bank' : 'Money paid from Cash / Bank');
 @endphp
 <style>
 .cvf27{max-width:1500px;margin:0 auto;color:#17243a}.cvf27 *{box-sizing:border-box}
@@ -67,20 +70,28 @@
       </div>
       <div class="cvf27-body">
         <div class="cvf27-grid">
-          <div class="cvf27-field">
-            <label>{{ $partyLabel }} *</label>
-            <select name="party_id" id="partySelect">
-              <option value="">Select {{ strtolower($partyLabel) }}</option>
-              @foreach($parties as $p)
-                <option value="{{ $p['id'] }}" @selected((string)old('party_id',$row->party_id ?? '')===(string)$p['id'])>{{ $p['name'] }}</option>
-              @endforeach
-            </select>
-          </div>
+          @if($isExpense)
+            <input type="hidden" name="party_id" value="">
+            <div class="cvf27-field cvf27-span2">
+              <label>Payee Name</label>
+              <input name="party_name" value="{{ old('party_name',$row->party_name ?? '') }}" placeholder="Optional person or organization paid">
+            </div>
+          @else
+            <div class="cvf27-field">
+              <label>{{ $partyLabel }} *</label>
+              <select name="party_id" id="partySelect">
+                <option value="">Select {{ strtolower($partyLabel) }}</option>
+                @foreach($parties as $p)
+                  <option value="{{ $p['id'] }}" @selected((string)old('party_id',$row->party_id ?? '')===(string)$p['id'])>{{ $p['name'] }}</option>
+                @endforeach
+              </select>
+            </div>
 
-          <div class="cvf27-field">
-            <label>Manual Party Name</label>
-            <input name="party_name" value="{{ old('party_name',$row->party_name ?? '') }}" placeholder="Use only when party is not in master">
-          </div>
+            <div class="cvf27-field">
+              <label>Manual Party Name</label>
+              <input name="party_name" value="{{ old('party_name',$row->party_name ?? '') }}" placeholder="Use only when party is not in master">
+            </div>
+          @endif
 
           <div class="cvf27-field">
             <label>Booking Reference</label>
@@ -103,8 +114,8 @@
           </div>
 
           <div class="cvf27-field">
-            <label>Total Amount *</label>
-            <input type="number" id="voucherAmount" step="0.01" min="0.01" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}" required>
+            <label>{{ $isExpense ? 'Total Expense' : 'Total Amount' }} *</label>
+            <input type="number" id="voucherAmount" step="0.01" min="0.01" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}" required @readonly($isExpense)>
           </div>
 
           <div class="cvf27-field">
@@ -170,7 +181,24 @@
       </div>
     </section>
 
-    @if($definition['target_type'])
+    @if($isExpense)
+      <section class="cvf27-card" data-et-expense-lines>
+        <div class="cvf27-card-head">
+          <div>
+            <div class="cvf27-card-title">Expense Lines</div>
+            <div class="cvf27-help">Distribute this payment only to active posting Expense accounts.</div>
+          </div>
+          <button type="button" class="cvf27-btn" id="addExpenseLine">+ Add Expense Line</button>
+        </div>
+        <table class="cvf27-table">
+          <colgroup><col style="width:6%"><col style="width:34%"><col style="width:38%"><col style="width:14%"><col style="width:8%"></colgroup>
+          <thead><tr><th>#</th><th>Expense Account</th><th>Description</th><th>Amount</th><th class="cvf27-action">Action</th></tr></thead>
+          <tbody id="expenseLineBody"></tbody>
+        </table>
+        <div id="expenseLineEmpty" class="cvf27-empty">At least one expense line is required.</div>
+        <div class="cvf27-totals"><span>Total Expense: <strong><span id="expenseCurrency">{{ old('currency_code',$row->currency_code ?? 'PKR') }}</span> <span id="expenseTotal">0.00</span></strong></span></div>
+      </section>
+    @elseif($definition['target_type'])
       <section class="cvf27-card">
         <div class="cvf27-card-head">
           <div>
@@ -233,6 +261,28 @@ body.addEventListener('click',e=>{if(e.target.classList.contains('cvf27-rm')){e.
 amount.addEventListener('input',calc);
 party.addEventListener('change',()=>{[...body.children].forEach(tr=>{const s=tr.querySelector('.doc');const cur=s.value;s.innerHTML=opts(cur);refreshRow(tr)});calc()});
 calc();updateEmpty();
+})();
+</script>
+@endif
+@if($isExpense)
+<script>
+(()=>{
+const accounts=@json($expenseAccounts);
+const existing=@json(old('expense_lines',($expenseLines ?? collect())->map(fn($line)=>(array)$line)->values()->all()));
+const body=document.getElementById('expenseLineBody');
+const empty=document.getElementById('expenseLineEmpty');
+const amount=document.getElementById('voucherAmount');
+const currency=document.querySelector('[name="currency_code"]');
+const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function options(selected){return '<option value="">Select expense account</option>'+accounts.map(a=>`<option value="${a.id}" ${Number(selected)===Number(a.id)?'selected':''}>${esc(a.code)} · ${esc(a.name)}</option>`).join('')}
+function renumber(){[...body.children].forEach((tr,i)=>{tr.querySelector('.lineNo').textContent=i+1;tr.querySelectorAll('[name]').forEach(el=>el.name=el.name.replace(/expense_lines\[\d+\]/,`expense_lines[${i}]`))})}
+function calculate(){const total=[...body.querySelectorAll('.expenseAmount')].reduce((sum,input)=>sum+Number(input.value||0),0);amount.value=total.toFixed(2);document.getElementById('expenseTotal').textContent=total.toFixed(2);document.getElementById('expenseCurrency').textContent=String(currency.value||'PKR').toUpperCase();empty.style.display=body.children.length?'none':'block'}
+function addLine(value={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=`<td class="lineNo">${i+1}</td><td><select name="expense_lines[${i}][expense_account_id]" required>${options(value.expense_account_id)}</select></td><td><input name="expense_lines[${i}][description]" value="${esc(value.description||'')}" placeholder="Purpose of expense"></td><td><input class="expenseAmount" type="number" name="expense_lines[${i}][amount]" min="0.01" step="0.01" value="${Number(value.amount||0).toFixed(2)}" required></td><td class="cvf27-action"><button type="button" class="cvf27-rm" aria-label="Remove expense line">×</button></td>`;body.appendChild(tr);calculate()}
+existing.forEach(addLine);if(!body.children.length)addLine();
+document.getElementById('addExpenseLine').addEventListener('click',()=>addLine());
+body.addEventListener('input',calculate);
+body.addEventListener('click',event=>{if(event.target.classList.contains('cvf27-rm')){event.target.closest('tr').remove();renumber();calculate()}});
+currency.addEventListener('input',calculate);calculate();
 })();
 </script>
 @endif
