@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.216
-APPLICATION_VERSION=v1.1.33.216-ERP11.3.216
+CURRENT_VERSION=ERP-11.3.217
+APPLICATION_VERSION=v1.1.33.217-ERP11.3.217
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.216
+LAST_PACKAGED_RELEASE=ERP-11.3.217
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -224,3 +224,8 @@ Supplier Payables, Customer Receivables, Supplier Costing allocations or Sales
 Invoice allocations. The new migration
 `database/migrations/2026_09_10_120000_create_cash_voucher_expense_lines.php`
 creates `cash_voucher_expense_lines`.
+
+ERP-11.3.217 fixes the Cash Voucher / Expense Voucher form release indicator so
+it uses the current ERP release metadata instead of the stale hard-coded
+ERP-11.3.27 label. No accounting logic, layout or workflow changes are included,
+and no new migration is added.

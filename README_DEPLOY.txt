@@ -1,4 +1,4 @@
-ERP-11.3.216 DIRECT UPLOAD — EXPENSE VOUCHER
+ERP-11.3.217 DIRECT UPLOAD — CASH VOUCHER RELEASE LABEL FIX
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,29 +9,18 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.216 includes the new migration
+ERP-11.3.217 introduces no new migration. The cumulative package still contains
 database/migrations/2026_09_10_120000_create_cash_voucher_expense_lines.php,
-which creates cash_voucher_expense_lines. Run Safe Database Upgrade after
-manual deployment and confirm the migration completes before Expense Voucher
-UAT.
+which belongs to ERP-11.3.216; run Safe Database Upgrade only when it remains
+pending on the host.
 
-ERP-11.3.216 introduces Expense Voucher accounting. Expense Vouchers support EV
-year/sequence numbering, direct business-expense recording, multiple
-Chart-of-Accounts-backed Expense Account lines, optional Payee and Booking
-references, a Cash/Bank payment account, currency and exchange rate, payment
-method, reference/narration, proof attachment, the Draft to Pending Approval to
-Approved to Posted workflow, balanced native journal posting, controlled
-reversal, printing, and dedicated navigation and permissions.
+ERP-11.3.217 fixes the Cash Voucher / Expense Voucher form release indicator so
+it uses the current ERP release metadata instead of the stale hard-coded
+ERP-11.3.27 label. No accounting logic, layout or workflow changes are included.
 
-Expense Voucher posting debits Expense Accounts and credits the selected
-Cash/Bank account. It does not create Supplier Payables, Customer Receivables,
-Supplier Costing allocations or Sales Invoice allocations.
-
-After manual deployment, run Safe Database Upgrade, clear Application Cache,
-and Ctrl+F5. Open Accounting > Expense Vouchers and create one draft UAT voucher
-for PKR 15,000 using a real posting Bank account and Electricity Expense. Verify
-the preview debits Electricity Expense and credits the selected Bank for PKR
-15,000. Do not submit, approve or post it before review.
+After manual deployment, clear Application Cache and Ctrl+F5. Open Accounting >
+Expense Vouchers > New Expense Voucher and confirm the top label shows
+ACCOUNTING · ERP-11.3.217. Then proceed with the first Expense Voucher UAT.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
