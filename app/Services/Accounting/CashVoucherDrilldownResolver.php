@@ -81,6 +81,21 @@ final class CashVoucherDrilldownResolver
         }
     }
 
+    public function nativeJournalUrlForSupplierCosting(int $costingId): ?string
+    {
+        try {
+            $journalId = $this->nativeJournal->journalIdForSupplierCosting($costingId);
+            if (! $journalId) {
+                return null;
+            }
+
+            return $this->journalUrl($journalId);
+        } catch (Throwable $e) {
+            report($e);
+            return null;
+        }
+    }
+
     public function manualJournalAuthority(): ?array
     {
         foreach (['accounting.journals.store', 'accounting.journal-entries.store'] as $name) {
@@ -122,5 +137,15 @@ final class CashVoucherDrilldownResolver
         }
 
         return null;
+    }
+
+    private function journalUrl(int $journalId): ?string
+    {
+        $nativeRoute = $this->journalDetailRoute();
+        if (! $nativeRoute) return null;
+        $name = $nativeRoute->getName();
+        $parameters = $nativeRoute->parameterNames();
+        if (! $name || count($parameters) !== 1) return null;
+        return route($name, [$parameters[0] => $journalId]);
     }
 }

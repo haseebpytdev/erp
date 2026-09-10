@@ -142,6 +142,20 @@ final class CashVoucherNativeJournalBridge
         );
     }
 
+    public function journalIdForSupplierCosting(int $costingId): ?int
+    {
+        $row = DB::table('supplier_costings')->where('id', $costingId)->first();
+        if (! $row) {
+            return null;
+        }
+
+        return $this->findJournal(
+            'supplier_costing',
+            $costingId,
+            (string) ($row->posting_reference ?? $row->costing_no)
+        );
+    }
+
     public function postSupplierCosting(int $costingId, mixed $user = null, ?string $postingReference = null): int
     {
         return DB::transaction(function () use ($costingId, $user, $postingReference): int {
