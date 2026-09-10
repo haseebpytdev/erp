@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.213
-APPLICATION_VERSION=v1.1.33.213-ERP11.3.213
+CURRENT_VERSION=ERP-11.3.214
+APPLICATION_VERSION=v1.1.33.214-ERP11.3.214
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.213
+LAST_PACKAGED_RELEASE=ERP-11.3.214
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -190,3 +190,13 @@ portion. Authoritative currency inheritance, required native structural-field
 validation, invoice-wide unique Air line numbering, deterministic/idempotent
 grouping and post-sync safeguards remain preserved. Accounting, profitability,
 workflow and booking data remain unchanged. No migration is added.
+
+ERP-11.3.214 diagnostic release introduces a temporary Super-Admin-only,
+rollback/read-only runtime diagnostic for the native Customer Ledger HTTP 503.
+It dynamically discovers the installed Customer Ledger route, controller,
+middleware and model-binding authority, reports the Sales Invoice customer
+identifiers, and probes the native GET action inside a database read-only
+transaction that is always rolled back. It redacts credential-like exception
+content and exposes no environment, cookie or session data. Sales Invoice
+posting, journal accounting, Customer Receivables, ledger balances and customer
+accounting data remain unchanged. No migration is added.

@@ -1,4 +1,4 @@
-ERP-11.3.213 DIRECT UPLOAD — MULTI-PRODUCT AIR INTEGRITY HOTFIX
+ERP-11.3.214 DIRECT UPLOAD — CUSTOMER LEDGER 503 DIAGNOSTIC
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,32 +9,27 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.213 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.214 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
-ERP-11.3.213 corrects Sales Invoice Air commercial integrity checking for
-multi-product invoices. Air integrity compares the authoritative saved-ticket
-Air total with native Air invoice lines. Whole-invoice integrity compares the
-native Sales Invoice header with the sum of all native invoice lines. A correct
-multi-product invoice is therefore not falsely blocked because its complete
-invoice total is larger than the Air-only portion.
+ERP-11.3.214 introduces a temporary Super-Admin-only rollback/read-only runtime
+diagnostic for the native Customer Ledger HTTP 503. It dynamically discovers
+the installed Customer Ledger route, controller/action, middleware and
+model-binding authority, reports the Sales Invoice customer identifiers, and
+probes only the native GET path inside a database read-only transaction that is
+always rolled back. Credential-like exception content is redacted; environment,
+cookie, session and database-credential values are not exposed.
 
-Authoritative currency inheritance, required native structural-field
-validation, invoice-wide unique Air line numbering, deterministic/idempotent
-grouped synchronization, transaction rollback and post-sync safeguards remain
-preserved. There are no accounting, profitability, SalesInvoiceService,
-workflow or booking-data changes. No migration is added.
+This diagnostic release does not fix or alter the Customer Ledger. It does not
+change Sales Invoice posting, journal accounting, Customer Receivables, ledger
+balances, customer accounting data or mappings. No migration is added.
 
-After deployment, clear Application Cache, press Ctrl+F5, and open
-https://erp.easyticket.pk/sales/invoices/7. Before workflow, confirm Invoice
-Total PKR 931,200, Total Cost PKR 938,600, Gross Margin PKR -7,400 and Products
-4. Then click Submit for Approval once. It must complete without currency,
-line_no or false commercial-synchronization errors; preserve Air PKR 718,000,
-Hotel PKR 8,000, Transport PKR 200 and Visa PKR 205,000; keep all native lines
-and the header at PKR 931,200; create no duplicate Air lines; and transition
-Draft to Pending Approval. If a genuine mismatch occurs, the invoice must
-remain Draft and no partial mutation may persist.
+After deployment, clear Application Cache and open as Super Admin:
+https://erp.easyticket.pk/system/erp-diagnostics/customer-ledger/9?invoice=7
+Capture the complete JSON result for engineering. Do not retry, reverse or
+repost SI-2026-000014 or JV-2026-000013. The diagnostic request must not create,
+update or delete accounting data.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
