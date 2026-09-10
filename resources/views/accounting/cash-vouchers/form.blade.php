@@ -39,10 +39,10 @@
 @media(max-width:650px){.cvf27-head{display:block}.cvf27-actions{justify-content:flex-start;margin-top:10px}.cvf27-grid{grid-template-columns:1fr}.cvf27-span2,.cvf27-span4{grid-column:span 1}.cvf27-bottom{display:block}.cvf27-bottom-actions{margin-top:9px}.cvf27-bottom-actions .cvf27-btn{flex:1}}
 </style>
 
-<div class="cvf27" data-et-cash-voucher-form="ERP-11.3.27">
+<div class="cvf27" data-et-cash-voucher-form="{{ config('et_erp_release.release', 'ERP-11.3') }}">
   <div class="cvf27-head">
     <div>
-      <div class="cvf27-kicker">Accounting · ERP-11.3.27</div>
+      <div class="cvf27-kicker">Accounting · {{ config('et_erp_release.release', 'ERP-11.3') }}</div>
       <h1 class="cvf27-title">{{ $row ? 'Edit '.$row->voucher_no : 'New '.$definition['label'] }}</h1>
       <div class="cvf27-sub">{{ $subtitle }}</div>
     </div>
