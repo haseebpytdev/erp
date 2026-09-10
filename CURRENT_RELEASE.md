@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.217
-APPLICATION_VERSION=v1.1.33.217-ERP11.3.217
+CURRENT_VERSION=ERP-11.3.218
+APPLICATION_VERSION=v1.1.33.218-ERP11.3.218
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.217
+LAST_PACKAGED_RELEASE=ERP-11.3.218
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -229,3 +229,14 @@ ERP-11.3.217 fixes the Cash Voucher / Expense Voucher form release indicator so
 it uses the current ERP release metadata instead of the stale hard-coded
 ERP-11.3.27 label. No accounting logic, layout or workflow changes are included,
 and no new migration is added.
+
+ERP-11.3.218 completes the controlled Voucher accounting module. It adds Contra
+Voucher for Cash-to-Bank, Bank-to-Cash and Bank-to-Bank transfers using CV
+year/sequence numbering, the existing controlled workflow, balanced native
+journal posting and controlled reversal. Voucher details now provide native GL
+Account Ledger and Journal Entry drill-downs with plain-text fallback, and the
+remaining Cash Voucher release indicators are dynamic. The existing native
+manual Journal Entry remains the authority for arbitrary balanced non-cash
+journals, so no duplicate Journal Voucher is introduced. The new migration
+`database/migrations/2026_09_10_130000_create_cash_voucher_contra_details.php`
+creates the one-to-one Contra destination and transfer-detail authority.
