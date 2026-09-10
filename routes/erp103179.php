@@ -38,6 +38,7 @@ use App\Http\Controllers\System\ReportsFilterAssetController;
 use App\Http\Controllers\System\BookingFocusAssetController;
 use App\Http\Controllers\System\GeneralProgressiveBookingAssetController;
 use App\Http\Controllers\System\AccountingJournalDiagnosticController;
+use App\Http\Controllers\System\CustomerLedgerDiagnosticController;
 use App\Http\Controllers\System\AirLinkDbDiagnosticController;
 use App\Http\Controllers\System\TransportRateResolutionDiagnosticController;
 use App\Http\Controllers\System\SalesInvoiceWorkflowCompareController;
@@ -364,6 +365,12 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         '/system/erp-diagnostics/accounting-journal',
         [AccountingJournalDiagnosticController::class, 'index']
     )->name('system.erp-diagnostics.accounting-journal');
+
+    Route::get(
+        '/system/erp-diagnostics/customer-ledger/{customer}',
+        [CustomerLedgerDiagnosticController::class, 'index']
+    )->whereNumber('customer')
+        ->name('system.erp-diagnostics.customer-ledger');
 
     Route::get(
         '/system/erp-diagnostics/sales-invoice-workflow-compare',
