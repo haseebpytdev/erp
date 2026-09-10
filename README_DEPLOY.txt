@@ -1,4 +1,4 @@
-ERP-11.3.215 DIRECT UPLOAD — CUSTOMER LEDGER 503 PHASE 2 DIAGNOSTIC
+ERP-11.3.216 DIRECT UPLOAD — EXPENSE VOUCHER
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,29 +9,29 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.215 introduces no new migration. Safe Database Upgrade remains required
-if the cumulative Air Vendor, public voucher token or Travel Status migrations
-included in this package are still pending on the host.
+ERP-11.3.216 includes the new migration
+database/migrations/2026_09_10_120000_create_cash_voucher_expense_lines.php,
+which creates cash_voucher_expense_lines. Run Safe Database Upgrade after
+manual deployment and confirm the migration completes before Expense Voucher
+UAT.
 
-ERP-11.3.215 extends the temporary Super-Admin-only rollback/read-only runtime
-diagnostic for the native Customer Ledger HTTP 503. Phase 2 derives the actual
-route/model binding, renders the native Customer Ledger View separately,
-resolves and inspects each middleware authority, checks journals.view, and runs
-progressive safe middleware probes to identify the first failing production
-HTTP stage. Middleware that may perform an irreversible write is reported but
-is not duplicated by the diagnostic. Credential-like exception content is
-redacted; environment, cookie, session and database-credential values are not
-exposed.
+ERP-11.3.216 introduces Expense Voucher accounting. Expense Vouchers support EV
+year/sequence numbering, direct business-expense recording, multiple
+Chart-of-Accounts-backed Expense Account lines, optional Payee and Booking
+references, a Cash/Bank payment account, currency and exchange rate, payment
+method, reference/narration, proof attachment, the Draft to Pending Approval to
+Approved to Posted workflow, balanced native journal posting, controlled
+reversal, printing, and dedicated navigation and permissions.
 
-This diagnostic release does not fix or alter the Customer Ledger. It does not
-change Sales Invoice posting, journal accounting, Customer Receivables, ledger
-balances, customer accounting data or mappings. No migration is added.
+Expense Voucher posting debits Expense Accounts and credits the selected
+Cash/Bank account. It does not create Supplier Payables, Customer Receivables,
+Supplier Costing allocations or Sales Invoice allocations.
 
-After deployment, clear Application Cache and open as Super Admin:
-https://erp.easyticket.pk/system/erp-diagnostics/customer-ledger/9?invoice=7
-Capture the complete JSON result for engineering. Do not retry, reverse or
-repost SI-2026-000014 or JV-2026-000013. The diagnostic request must not create,
-update or delete accounting data.
+After manual deployment, run Safe Database Upgrade, clear Application Cache,
+and Ctrl+F5. Open Accounting > Expense Vouchers and create one draft UAT voucher
+for PKR 15,000 using a real posting Bank account and Electricity Expense. Verify
+the preview debits Electricity Expense and credits the selected Bank for PKR
+15,000. Do not submit, approve or post it before review.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the

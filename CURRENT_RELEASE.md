@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.215
-APPLICATION_VERSION=v1.1.33.215-ERP11.3.215
+CURRENT_VERSION=ERP-11.3.216
+APPLICATION_VERSION=v1.1.33.216-ERP11.3.216
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.215
+LAST_PACKAGED_RELEASE=ERP-11.3.216
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -211,3 +211,16 @@ but not duplicated by the diagnostic; later independently safe middleware can
 still be isolated. No Customer Ledger functional fix, Sales Invoice posting,
 journal accounting, Customer Receivable, ledger balance or accounting-data
 change is included. No migration is added.
+
+ERP-11.3.216 introduces Expense Voucher accounting. Expense Vouchers use EV
+year/sequence numbering and support direct business-expense recording, multiple
+Chart-of-Accounts-backed Expense Account lines, optional Payee and Booking
+references, a Cash/Bank payment account, currency and exchange rate, payment
+method, reference/narration, proof attachment, the Draft to Pending Approval to
+Approved to Posted workflow, balanced native journal posting, controlled
+reversal, printing, and dedicated navigation and permissions. Posting debits
+Expense Accounts and credits the selected Cash/Bank account. It does not create
+Supplier Payables, Customer Receivables, Supplier Costing allocations or Sales
+Invoice allocations. The new migration
+`database/migrations/2026_09_10_120000_create_cash_voucher_expense_lines.php`
+creates `cash_voucher_expense_lines`.
