@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.212
-APPLICATION_VERSION=v1.1.33.212-ERP11.3.212
+CURRENT_VERSION=ERP-11.3.213
+APPLICATION_VERSION=v1.1.33.213-ERP11.3.213
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.212
+LAST_PACKAGED_RELEASE=ERP-11.3.213
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -180,3 +180,13 @@ renumbering Hotel, Transport, Visa or other non-Air lines. Deterministic Air
 ordering, idempotent synchronization, transaction rollback and the ERP-11.3.211
 currency correction remain preserved. Accounting, profitability, workflow and
 booking data remain unchanged. No migration is added.
+
+ERP-11.3.213 hotfix release corrects Sales Invoice Air commercial integrity
+checking for multi-product invoices. The authoritative saved-ticket Air total
+is compared only with native Air invoice lines, while the native Sales Invoice
+header is compared with the sum of all native invoice lines. Correct invoices
+are no longer falsely blocked because the complete invoice exceeds its Air-only
+portion. Authoritative currency inheritance, required native structural-field
+validation, invoice-wide unique Air line numbering, deterministic/idempotent
+grouping and post-sync safeguards remain preserved. Accounting, profitability,
+workflow and booking data remain unchanged. No migration is added.
