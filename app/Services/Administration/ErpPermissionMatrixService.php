@@ -525,7 +525,7 @@ class ErpPermissionMatrixService
         $n = $this->normalize($text);
         $groups = [
             'Accounting' => ['journal', 'ledger', 'trial balance', 'financial statement', 'chart of account'],
-            'Cash & Bank' => ['receipt', 'payment', 'bank reconciliation', 'cash'],
+            'Cash & Bank' => ['receipt', 'payment', 'expense voucher', 'contra', 'bank reconciliation', 'cash'],
             'Sales' => ['sales invoice', 'invoice', 'sales'],
             'Purchase & Costing' => ['supplier cost', 'costing', 'vendor bill', 'purchase'],
             'Refunds' => ['refund', 'credit note'],

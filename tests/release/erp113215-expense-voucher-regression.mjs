@@ -19,7 +19,7 @@ ok(service.includes("'expense' => 'EV'"), 'Expense Voucher uses EV year/sequence
 ok(service.includes("'label' => 'Expense Voucher'") && service.includes("'direction' => 'out'"), 'expense voucher definition is outgoing');
 ok(service.includes("'party_type' => 'expense'") && service.includes("'target_type' => null"), 'direct expense is not represented as a supplier settlement target');
 ok(service.includes("'view expense vouchers'") && service.includes("'reverse expense vouchers'"), 'Expense Voucher has dedicated permission phrases');
-ok(controller.includes("['receipt', 'payment', 'expense', 'customer_advance', 'supplier_advance']"), 'expense type extends rather than replaces existing voucher types');
+ok(controller.includes("['receipt', 'payment', 'expense', 'contra', 'customer_advance', 'supplier_advance']"), 'expense type extends rather than replaces existing voucher types');
 ok(migration.includes("Schema::create('cash_voucher_expense_lines'"), 'dedicated expense-line table is created');
 ok(migration.includes("Schema::hasTable('cash_voucher_expense_lines')"), 'expense-line migration is idempotent');
 ok(migration.includes("$table->unsignedBigInteger('expense_account_id')->nullable()"), 'native Chart account identity is stored');
@@ -46,14 +46,14 @@ ok(bridge.includes("'expense' => 'expense'"), 'native journal records Expense Vo
 ok(bridge.includes("$existing = $this->findJournal('cash_voucher'"), 'native journal bridge remains idempotent');
 ok(service.includes("'debit' => (float) $line->credit") && service.includes("'credit' => (float) $line->debit"), 'controlled reversal is equal and opposite');
 ok(service.includes('Original accounting posting lines are missing; reversal stopped.'), 'original posted entry remains immutable reversal authority');
-ok(controller.includes("$allocations = $type === 'expense'\n            ? []"), 'Expense Voucher creates no Supplier Costing or Sales Invoice allocations');
+ok(controller.includes("$allocations = in_array($type, ['expense', 'contra'], true)\n            ? []"), 'Expense Voucher creates no Supplier Costing or Sales Invoice allocations');
 ok(service.includes('if ((string) $voucher->voucher_type === \'expense\')') && service.includes("} elseif ($voucher->direction === 'in')"), 'expense posting is isolated before AR/AP branches');
 ok(show.includes('Accounting Preview') && show.includes("$expenseLines->sum('base_amount')"), 'show page previews balanced base-currency journal lines');
 ok(show.includes('Posted Journal') && show.includes('$row->posting_reference'), 'show page exposes the posted journal reference and lines');
 ok(print.includes('Expense Lines') && print.includes("$row->voucher_type==='expense'"), 'print renders a dedicated Expense Voucher distribution');
 ok(index.includes("['mode'=>'expenses']") && index.includes('＋ Expense Voucher'), 'Expense Voucher index mode and create action are available');
 ok(navigation.includes('data-et-live-accounting-nav="expense"') && navigation.includes('Expense Vouchers'), 'Accounting navigation distinguishes Expense Vouchers');
-ok(controller.includes("'booking_id' => $data['booking_id'] ?? null") && !service.includes('booking commercials'), 'optional booking is stored only as a header reference');
+ok(controller.includes("($data['booking_id'] ?? null)") && !service.includes('booking commercials'), 'optional booking is stored only as a header reference');
 ok(!migration.includes('supplier_costings') && !migration.includes('sales_invoices'), 'expense line schema has no Supplier Costing or Sales Invoice relation');
 ok(!migration.includes('accounts_receivable') && !migration.includes('accounts_payable'), 'expense line schema creates no AR or AP balance');
 ok(controller.includes("public function show(Request $request") && controller.includes("public function printVoucher(Request $request"), 'Expense GET pages remain read-only controller paths');

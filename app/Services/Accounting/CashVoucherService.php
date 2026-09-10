@@ -22,6 +22,7 @@ class CashVoucherService
             'receipt' => 'RV',
             'payment' => 'PV',
             'expense' => 'EV',
+            'contra' => 'CV',
             'customer_advance' => 'CAR',
             'supplier_advance' => 'SAP',
             default => throw new RuntimeException('Unsupported cash voucher type.'),
@@ -82,6 +83,14 @@ class CashVoucherService
                 'target_type' => null,
                 'target_label' => null,
             ],
+            'contra' => [
+                'label' => 'Contra Voucher',
+                'short' => 'Contra',
+                'direction' => 'transfer',
+                'party_type' => 'none',
+                'target_type' => null,
+                'target_label' => null,
+            ],
             'customer_advance' => [
                 'label' => 'Customer Advance Receipt',
                 'short' => 'Customer Advance',
@@ -108,7 +117,17 @@ class CashVoucherService
             return true;
         }
 
-        if ($type === 'expense') {
+        if ($type === 'contra') {
+            $phrases = [
+                'view contra vouchers',
+                'create contra vouchers',
+                'update contra vouchers',
+                'approve contra vouchers',
+                'post contra vouchers',
+                'reverse contra vouchers',
+                'manage contra vouchers',
+            ];
+        } elseif ($type === 'expense') {
             $phrases = [
                 'view expense vouchers',
                 'create expense vouchers',
@@ -317,6 +336,7 @@ class CashVoucherService
 
             if ($rows->isNotEmpty()) {
                 $accounts = $rows->map(static fn ($r): array => [
+                    'id' => isset($r->id) ? (int) $r->id : null,
                     'code' => trim((string) $r->code),
                     'name' => trim((string) $r->name),
                     'subtype' => strtoupper(trim((string) ($r->account_subtype ?? ''))),
@@ -340,8 +360,10 @@ class CashVoucherService
                 return $accounts
                     ->unique('code')
                     ->map(static fn (array $a): array => [
+                        'id' => $a['id'],
                         'code' => $a['code'],
                         'name' => $a['name'],
+                        'subtype' => $a['subtype'],
                     ])
                     ->values()
                     ->all();
@@ -359,6 +381,27 @@ class CashVoucherService
     public function paymentMethods(): array
     {
         return (array) config('cash_vouchers.payment_methods', ['Cash', 'Bank Transfer', 'Cheque', 'Card', 'Online', 'Other']);
+    }
+
+    public function transferMethods(): array
+    {
+        return (array) config('cash_vouchers.transfer_methods', ['Cash Transfer', 'Bank Transfer', 'Cheque', 'Online', 'Other']);
+    }
+
+    public function cashBankAccount(string $code): array
+    {
+        foreach ($this->cashBankAccounts() as $account) {
+            if ((string) $account['code'] === $code) {
+                return [
+                    'id' => isset($account['id']) ? (int) $account['id'] : null,
+                    'code' => (string) $account['code'],
+                    'name' => (string) $account['name'],
+                    'subtype' => (string) ($account['subtype'] ?? ''),
+                ];
+            }
+        }
+
+        throw new RuntimeException('Selected Cash / Bank account is not an active posting Cash / Bank account.');
     }
 
     /**
@@ -615,6 +658,23 @@ class CashVoucherService
         $voucher = DB::table('cash_vouchers')->where('id', $voucherId)->first();
         if (! $voucher) {
             throw new RuntimeException('Cash voucher not found.');
+        }
+        if ((string) $voucher->voucher_type === 'contra') {
+            $detail = DB::table('cash_voucher_contra_details')
+                ->where('cash_voucher_id', $voucherId)
+                ->first();
+
+            if (! $detail || (float) $detail->amount <= 0) {
+                throw new RuntimeException('Contra Voucher requires one positive destination transfer detail.');
+            }
+
+            DB::table('cash_vouchers')->where('id', $voucherId)->update([
+                'amount' => round((float) $detail->amount, 2),
+                'allocated_amount' => 0,
+                'unallocated_amount' => 0,
+                'updated_at' => now(),
+            ]);
+            return;
         }
         if ((string) $voucher->voucher_type === 'expense') {
             $amount = round((float) DB::table('cash_voucher_expense_lines')
@@ -945,6 +1005,48 @@ class CashVoucherService
         }
         $definition = $this->voucherDefinition($type);
         $allocations = DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->orderBy('line_no')->get();
+        if ($type === 'contra') {
+            if ($allocations->isNotEmpty()) {
+                throw new RuntimeException('Contra Vouchers cannot contain document allocations.');
+            }
+
+            $detail = DB::table('cash_voucher_contra_details')
+                ->where('cash_voucher_id', $voucherId)
+                ->first();
+            if (! $detail) {
+                throw new RuntimeException('Contra Voucher destination account detail is missing.');
+            }
+
+            $source = $this->cashBankAccount((string) $voucher->cash_bank_account_code);
+            $destination = $this->cashBankAccount((string) $detail->destination_account_code);
+            if ($source['code'] === $destination['code']) {
+                throw new RuntimeException('Contra Voucher source and destination accounts must be different.');
+            }
+            if ((string) $detail->destination_account_name !== $destination['name']) {
+                throw new RuntimeException('Contra destination account snapshot no longer matches the Chart of Accounts.');
+            }
+            if ((float) $detail->amount <= 0 || (float) $detail->exchange_rate <= 0) {
+                throw new RuntimeException('Contra amount and exchange rate must be greater than zero.');
+            }
+            if (strtoupper((string) $detail->currency_code) !== strtoupper((string) $voucher->currency_code)) {
+                throw new RuntimeException('Contra destination currency must match the voucher currency.');
+            }
+            if (abs((float) $detail->exchange_rate - (float) $voucher->exchange_rate) > 0.000000005) {
+                throw new RuntimeException('Contra destination exchange rate must match the voucher exchange rate.');
+            }
+            if (abs((float) $detail->amount - (float) $voucher->amount) > 0.005) {
+                throw new RuntimeException('Contra destination amount must equal the voucher header amount.');
+            }
+
+            $expectedBase = round((float) $detail->amount * (float) $detail->exchange_rate, 2);
+            $headerBase = round((float) $voucher->amount * (float) $voucher->exchange_rate, 2);
+            if (abs($expectedBase - (float) $detail->base_amount) > 0.005 || abs($expectedBase - $headerBase) > 0.005) {
+                throw new RuntimeException('Contra base debit must equal the source Cash / Bank base credit.');
+            }
+
+            $this->recalculate($voucherId);
+            return;
+        }
         if ($type === 'expense') {
             if ($allocations->isNotEmpty()) {
                 throw new RuntimeException('Expense Vouchers cannot contain document allocations.');
@@ -1058,7 +1160,21 @@ class CashVoucherService
             return $voucherNarration !== '' ? $voucherNarration : $fallback;
         };
 
-        if ((string) $voucher->voucher_type === 'expense') {
+        if ((string) $voucher->voucher_type === 'contra') {
+            $detail = DB::table('cash_voucher_contra_details')
+                ->where('cash_voucher_id', $voucherId)
+                ->lockForUpdate()
+                ->first();
+            if (! $detail) {
+                throw new RuntimeException('Contra Voucher destination account detail is missing.');
+            }
+            $destination = [
+                'code' => (string) $detail->destination_account_code,
+                'name' => (string) $detail->destination_account_name,
+            ];
+            $lines[] = $this->postingLine($voucherId, $reference, $destination, null, null, $amount, 0, $currency, $rate, $narration('Contra transfer received '.$voucher->voucher_no));
+            $lines[] = $this->postingLine($voucherId, $reference, $bank, null, null, 0, $amount, $currency, $rate, $narration('Contra transfer sent '.$voucher->voucher_no));
+        } elseif ((string) $voucher->voucher_type === 'expense') {
             $expenseLines = DB::table('cash_voucher_expense_lines')
                 ->where('cash_voucher_id', $voucherId)
                 ->orderBy('line_no')

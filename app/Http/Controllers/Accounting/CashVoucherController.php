@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
+use App\Services\Accounting\CashVoucherDrilldownResolver;
 use App\Services\Accounting\CashVoucherService;
 use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Organization\CompanyProfileSnapshotService;
 use App\Support\Accounting\AmountInWords;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -16,6 +18,7 @@ class CashVoucherController extends Controller
 {
     public function __construct(
         private readonly CashVoucherService $service,
+        private readonly CashVoucherDrilldownResolver $drilldowns,
         private readonly NativeErpLayoutResolver $layout,
         private readonly CompanyProfileSnapshotService $companyProfile,
     ) {
@@ -24,7 +27,7 @@ class CashVoucherController extends Controller
     public function index(Request $request)
     {
         $allowedTypes = array_values(array_filter(
-            ['receipt', 'payment', 'expense', 'customer_advance', 'supplier_advance'],
+            ['receipt', 'payment', 'expense', 'contra', 'customer_advance', 'supplier_advance'],
             fn (string $type): bool => $this->service->canUseType($request->user(), $type, 'view')
         ));
         abort_if($allowedTypes === [], 403);
@@ -43,6 +46,8 @@ class CashVoucherController extends Controller
                 $query->where('voucher_type', 'payment');
             } elseif ($mode === 'expenses' && in_array('expense', $allowedTypes, true)) {
                 $query->where('voucher_type', 'expense');
+            } elseif ($mode === 'contra' && in_array('contra', $allowedTypes, true)) {
+                $query->where('voucher_type', 'contra');
             } elseif ($mode === 'advances') {
                 $advanceTypes = array_values(array_intersect(
                     ['customer_advance', 'supplier_advance'],
@@ -66,16 +71,40 @@ class CashVoucherController extends Controller
             $query->whereDate('voucher_date', '<=', (string) $request->string('date_to'));
         }
         if ($request->filled('account')) {
-            $query->where('cash_bank_account_code', (string) $request->string('account'));
+            $accountCode = (string) $request->string('account');
+            $hasContraDetails = Schema::hasTable('cash_voucher_contra_details');
+            $query->where(function ($q) use ($accountCode, $hasContraDetails): void {
+                $q->where('cash_bank_account_code', $accountCode);
+                if ($hasContraDetails) {
+                    $q->orWhereExists(function ($destination) use ($accountCode): void {
+                        $destination->selectRaw('1')
+                            ->from('cash_voucher_contra_details as contra_filter')
+                            ->whereColumn('contra_filter.cash_voucher_id', 'cash_vouchers.id')
+                            ->where('contra_filter.destination_account_code', $accountCode);
+                    });
+                }
+            });
         }
         if ($request->filled('q')) {
             $term = '%'.trim((string) $request->string('q')).'%';
-            $query->where(function ($q) use ($term): void {
+            $hasContraDetails = Schema::hasTable('cash_voucher_contra_details');
+            $query->where(function ($q) use ($term, $hasContraDetails): void {
                 $q->where('voucher_no', 'like', $term)
                     ->orWhere('party_name', 'like', $term)
                     ->orWhere('transaction_reference', 'like', $term)
                     ->orWhere('instrument_no', 'like', $term)
                     ->orWhere('cash_bank_account_name', 'like', $term);
+                if ($hasContraDetails) {
+                    $q->orWhereExists(function ($destination) use ($term): void {
+                        $destination->selectRaw('1')
+                            ->from('cash_voucher_contra_details as contra_search')
+                            ->whereColumn('contra_search.cash_voucher_id', 'cash_vouchers.id')
+                            ->where(function ($detail) use ($term): void {
+                                $detail->where('contra_search.destination_account_code', 'like', $term)
+                                    ->orWhere('contra_search.destination_account_name', 'like', $term);
+                            });
+                    });
+                }
             });
         }
 
@@ -86,6 +115,7 @@ class CashVoucherController extends Controller
                 COALESCE(SUM(CASE WHEN voucher_type = 'receipt' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS receipts,
                 COALESCE(SUM(CASE WHEN voucher_type = 'payment' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS payments,
                 COALESCE(SUM(CASE WHEN voucher_type = 'expense' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS expenses,
+                COALESCE(SUM(CASE WHEN voucher_type = 'contra' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS contra,
                 COALESCE(SUM(CASE WHEN voucher_type = 'customer_advance' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS customer_advances,
                 COALESCE(SUM(CASE WHEN voucher_type = 'supplier_advance' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS supplier_advances,
                 COALESCE(SUM(CASE WHEN status = 'pending_approval' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS pending_approval,
@@ -107,8 +137,17 @@ class CashVoucherController extends Controller
             ->paginate(5, ['*'], 'adjustment_page')
             ->withQueryString();
 
+        $rows = $query->paginate(5, ['*'], 'voucher_page')->withQueryString();
+        $contraDetails = Schema::hasTable('cash_voucher_contra_details')
+            ? DB::table('cash_voucher_contra_details')
+                ->whereIn('cash_voucher_id', $rows->getCollection()->pluck('id'))
+                ->get()
+                ->keyBy('cash_voucher_id')
+            : collect();
+
         return view('accounting.cash-vouchers.index', [
-            'rows' => $query->paginate(5, ['*'], 'voucher_page')->withQueryString(),
+            'rows' => $rows,
+            'contraDetails' => $contraDetails,
             'adjustments' => $adjustments,
             'layoutMeta' => $this->layout->resolve(),
             'service' => $this->service,
@@ -121,7 +160,7 @@ class CashVoucherController extends Controller
     public function create(Request $request)
     {
         $type = (string) $request->query('type', 'receipt');
-        abort_unless(in_array($type, ['receipt', 'payment', 'expense', 'customer_advance', 'supplier_advance'], true), 404);
+        abort_unless(in_array($type, ['receipt', 'payment', 'expense', 'contra', 'customer_advance', 'supplier_advance'], true), 404);
         abort_unless($this->service->canUseType($request->user(), $type, 'create'), 403);
 
         return view('accounting.cash-vouchers.form', $this->formData(null, $type));
@@ -136,14 +175,18 @@ class CashVoucherController extends Controller
         $expenseLines = $type === 'expense'
             ? $this->validateExpenseLines($request, $data)
             : [];
-        $allocations = $type === 'expense'
+        $contraDetail = $type === 'contra'
+            ? $this->validateContraDetail($request, $data)
+            : null;
+        $allocations = in_array($type, ['expense', 'contra'], true)
             ? []
             : $this->validateAllocations($request, $definition['target_type']);
         $proof = $this->storeProof($request);
 
-        $id = DB::transaction(function () use ($request, $data, $definition, $allocations, $expenseLines, $proof): int {
+        $id = DB::transaction(function () use ($request, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof): int {
             $now = now();
-            $partyId = $data['voucher_type'] === 'expense'
+            $hasNoParty = in_array($data['voucher_type'], ['expense', 'contra'], true);
+            $partyId = $hasNoParty
                 ? null
                 : (! empty($data['party_id']) ? (int) $data['party_id'] : null);
             $account = $this->resolveCashBankAccount((string) $data['cash_bank_account']);
@@ -153,8 +196,10 @@ class CashVoucherController extends Controller
                 'direction' => $definition['direction'],
                 'party_type' => $definition['party_type'],
                 'party_id' => $partyId,
-                'party_name' => $this->service->resolvePartyName($definition['party_type'], $partyId, $data['party_name'] ?? null),
-                'booking_id' => $data['booking_id'] ?? null,
+                'party_name' => $hasNoParty && $data['voucher_type'] === 'contra'
+                    ? null
+                    : $this->service->resolvePartyName($definition['party_type'], $partyId, $data['party_name'] ?? null),
+                'booking_id' => $data['voucher_type'] === 'contra' ? null : ($data['booking_id'] ?? null),
                 'voucher_date' => $data['voucher_date'],
                 'value_date' => $data['value_date'] ?? null,
                 'currency_code' => strtoupper((string) $data['currency_code']),
@@ -179,6 +224,9 @@ class CashVoucherController extends Controller
             $this->replaceAllocations($id, $allocations, $definition['target_type'], (string) $data['currency_code']);
             if ($data['voucher_type'] === 'expense') {
                 $this->replaceExpenseLines($id, $expenseLines);
+            }
+            if ($data['voucher_type'] === 'contra' && $contraDetail) {
+                $this->replaceContraDetail($id, $contraDetail);
             }
             $this->service->recalculate($id);
             $this->service->activity($id, 'create', null, 'draft', $request->user(), 'Cash voucher draft created.');
@@ -214,12 +262,32 @@ class CashVoucherController extends Controller
         $row = $this->find($voucher);
         abort_unless($this->service->canUseType($request->user(), (string) $row->voucher_type, 'view'), 403);
 
+        $expenseLines = DB::table('cash_voucher_expense_lines')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get();
+        $contraDetail = Schema::hasTable('cash_voucher_contra_details')
+            ? DB::table('cash_voucher_contra_details')->where('cash_voucher_id', $voucher)->first()
+            : null;
+        $postings = DB::table('cash_voucher_posting_lines')->where('cash_voucher_id', $voucher)->orderBy('id')->get();
+        $accountCodes = $postings->pluck('account_code')
+            ->merge($expenseLines->pluck('expense_account_code'))
+            ->push((string) $row->cash_bank_account_code)
+            ->push((string) ($contraDetail->destination_account_code ?? ''))
+            ->filter()
+            ->unique();
+        $accountLedgerUrls = [];
+        foreach ($accountCodes as $accountCode) {
+            $accountLedgerUrls[(string) $accountCode] = $this->drilldowns->accountLedgerUrl((string) $accountCode);
+        }
+
         return view('accounting.cash-vouchers.show', [
             'row' => $row,
             'definition' => $this->service->voucherDefinition((string) $row->voucher_type),
             'allocations' => DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
-            'expenseLines' => DB::table('cash_voucher_expense_lines')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
-            'postings' => DB::table('cash_voucher_posting_lines')->where('cash_voucher_id', $voucher)->orderBy('id')->get(),
+            'expenseLines' => $expenseLines,
+            'contraDetail' => $contraDetail,
+            'postings' => $postings,
+            'accountLedgerUrls' => $accountLedgerUrls,
+            'journalUrl' => $this->drilldowns->nativeJournalUrl($voucher),
+            'reversalJournalUrl' => $this->drilldowns->nativeJournalUrl($voucher, true),
             'activities' => DB::table('cash_voucher_activities')->where('cash_voucher_id', $voucher)->orderByDesc('id')->get(),
             'layoutMeta' => $this->layout->resolve(),
             'canApprove' => $this->service->canApprove($request->user(), (string) $row->voucher_type),
@@ -237,6 +305,9 @@ class CashVoucherController extends Controller
             [
                 'allocations' => DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
                 'expenseLines' => DB::table('cash_voucher_expense_lines')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
+                'contraDetail' => Schema::hasTable('cash_voucher_contra_details')
+                    ? DB::table('cash_voucher_contra_details')->where('cash_voucher_id', $voucher)->first()
+                    : null,
             ]
         ));
     }
@@ -251,20 +322,26 @@ class CashVoucherController extends Controller
         $expenseLines = (string) $row->voucher_type === 'expense'
             ? $this->validateExpenseLines($request, $data)
             : [];
-        $allocations = (string) $row->voucher_type === 'expense'
+        $contraDetail = (string) $row->voucher_type === 'contra'
+            ? $this->validateContraDetail($request, $data)
+            : null;
+        $allocations = in_array((string) $row->voucher_type, ['expense', 'contra'], true)
             ? []
             : $this->validateAllocations($request, $definition['target_type']);
         $proof = $this->storeProof($request);
 
-        DB::transaction(function () use ($request, $voucher, $row, $data, $definition, $allocations, $expenseLines, $proof): void {
-            $partyId = (string) $row->voucher_type === 'expense'
+        DB::transaction(function () use ($request, $voucher, $row, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof): void {
+            $hasNoParty = in_array((string) $row->voucher_type, ['expense', 'contra'], true);
+            $partyId = $hasNoParty
                 ? null
                 : (! empty($data['party_id']) ? (int) $data['party_id'] : null);
             $account = $this->resolveCashBankAccount((string) $data['cash_bank_account']);
             $update = [
                 'party_id' => $partyId,
-                'party_name' => $this->service->resolvePartyName($definition['party_type'], $partyId, $data['party_name'] ?? null),
-                'booking_id' => $data['booking_id'] ?? null,
+                'party_name' => $hasNoParty && (string) $row->voucher_type === 'contra'
+                    ? null
+                    : $this->service->resolvePartyName($definition['party_type'], $partyId, $data['party_name'] ?? null),
+                'booking_id' => (string) $row->voucher_type === 'contra' ? null : ($data['booking_id'] ?? null),
                 'voucher_date' => $data['voucher_date'],
                 'value_date' => $data['value_date'] ?? null,
                 'currency_code' => strtoupper((string) $data['currency_code']),
@@ -288,6 +365,9 @@ class CashVoucherController extends Controller
             $this->replaceAllocations($voucher, $allocations, $definition['target_type'], (string) $data['currency_code']);
             if ((string) $row->voucher_type === 'expense') {
                 $this->replaceExpenseLines($voucher, $expenseLines);
+            }
+            if ((string) $row->voucher_type === 'contra' && $contraDetail) {
+                $this->replaceContraDetail($voucher, $contraDetail);
             }
             $this->service->recalculate($voucher);
             $this->service->activity($voucher, 'update', 'draft', 'draft', $request->user(), 'Draft updated.');
@@ -370,6 +450,11 @@ class CashVoucherController extends Controller
                 ->where('cash_voucher_id', $voucher)
                 ->orderBy('line_no')
                 ->get(),
+            'contraDetail' => Schema::hasTable('cash_voucher_contra_details')
+                ? DB::table('cash_voucher_contra_details')
+                    ->where('cash_voucher_id', $voucher)
+                    ->first()
+                : null,
             'bookingReference' => $bookingReference,
             'amountInWords' => AmountInWords::money(
                 (float) $row->amount,
@@ -395,14 +480,17 @@ class CashVoucherController extends Controller
             'row' => $row,
             'type' => $type,
             'definition' => $definition,
-            'parties' => $type === 'expense'
+            'parties' => in_array($type, ['expense', 'contra'], true)
                 ? []
                 : $this->service->partyOptions($definition['party_type']),
-            'bookings' => $this->service->bookingOptions(),
+            'bookings' => $type === 'contra' ? [] : $this->service->bookingOptions(),
             'cashBankAccounts' => $this->service->cashBankAccounts(),
-            'paymentMethods' => $this->service->paymentMethods(),
+            'paymentMethods' => $type === 'contra'
+                ? $this->service->transferMethods()
+                : $this->service->paymentMethods(),
             'documents' => $definition['target_type'] ? $this->service->documentOptions($definition['target_type']) : [],
             'expenseAccounts' => $type === 'expense' ? $this->service->expenseAccounts() : [],
+            'contraDetail' => null,
             'layoutMeta' => $this->layout->resolve(),
         ];
     }
@@ -410,7 +498,7 @@ class CashVoucherController extends Controller
     private function validateHeader(Request $request, ?string $lockedType = null): array
     {
         $data = $request->validate([
-            'voucher_type' => ['required', Rule::in(['receipt', 'payment', 'expense', 'customer_advance', 'supplier_advance'])],
+            'voucher_type' => ['required', Rule::in(['receipt', 'payment', 'expense', 'contra', 'customer_advance', 'supplier_advance'])],
             'party_id' => ['nullable', 'integer', 'min:1'],
             'party_name' => ['nullable', 'string', 'max:255'],
             'booking_id' => ['nullable', 'integer', 'min:1'],
@@ -431,7 +519,7 @@ class CashVoucherController extends Controller
             abort(409, 'Voucher type cannot be changed after creation.');
         }
         if (
-            $data['voucher_type'] !== 'expense'
+            ! in_array($data['voucher_type'], ['expense', 'contra'], true)
             && empty($data['party_id'])
             && trim((string) ($data['party_name'] ?? '')) === ''
         ) {
@@ -510,6 +598,46 @@ class CashVoucherController extends Controller
         DB::table('cash_voucher_expense_lines')->insert($rows);
     }
 
+    private function validateContraDetail(Request $request, array $header): array
+    {
+        $validated = $request->validate([
+            'destination_account' => ['required', 'string', 'max:80'],
+        ]);
+
+        $source = $this->resolveCashBankAccount((string) $header['cash_bank_account']);
+        $destination = $this->resolveCashBankAccount((string) $validated['destination_account']);
+        $currency = strtoupper(trim((string) $header['currency_code']));
+        if (preg_match('/^[A-Z]{3}$/', $currency) !== 1) {
+            abort(422, 'Contra Voucher currency must be a valid three-letter currency code.');
+        }
+        if ($source['code'] === $destination['code']) {
+            abort(422, 'Contra Voucher source and destination accounts must be different.');
+        }
+
+        $amount = round((float) $header['amount'], 2);
+        $rate = (float) $header['exchange_rate'];
+
+        return [
+            'destination_account_id' => $destination['id'],
+            'destination_account_code' => $destination['code'],
+            'destination_account_name' => $destination['name'],
+            'amount' => $amount,
+            'currency_code' => $currency,
+            'exchange_rate' => $rate,
+            'base_amount' => round($amount * $rate, 2),
+        ];
+    }
+
+    private function replaceContraDetail(int $voucherId, array $detail): void
+    {
+        DB::table('cash_voucher_contra_details')->where('cash_voucher_id', $voucherId)->delete();
+        DB::table('cash_voucher_contra_details')->insert(array_merge($detail, [
+            'cash_voucher_id' => $voucherId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
+    }
+
     private function replaceAllocations(int $voucherId, array $allocations, ?string $targetType, string $currencyCode): void
     {
         DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->delete();
@@ -552,12 +680,11 @@ class CashVoucherController extends Controller
 
     private function resolveCashBankAccount(string $code): array
     {
-        foreach ($this->service->cashBankAccounts() as $account) {
-            if ((string) $account['code'] === $code) {
-                return ['code' => (string) $account['code'], 'name' => (string) $account['name']];
-            }
+        try {
+            return $this->service->cashBankAccount($code);
+        } catch (\RuntimeException $e) {
+            abort(422, $e->getMessage());
         }
-        abort(422, 'Selected Cash / Bank account is not available.');
     }
 
     private function storeProof(Request $request): ?array

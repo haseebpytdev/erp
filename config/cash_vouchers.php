@@ -12,5 +12,6 @@ return [
         ['code' => '1020', 'name' => 'Bank'],
     ],
     'payment_methods' => ['Cash', 'Bank Transfer', 'Cheque', 'Card', 'Online', 'Other'],
+    'transfer_methods' => ['Cash Transfer', 'Bank Transfer', 'Cheque', 'Online', 'Other'],
     'proof_max_kb' => 5120,
 ];

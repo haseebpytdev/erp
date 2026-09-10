@@ -311,7 +311,7 @@ class ErpRoleAccessPolicy
             ],
 
             'cash_vouchers' => [
-                'labels' => ['Payments & Receipts', 'Cash Vouchers', 'Advance Adjustments'],
+                'labels' => ['Payments & Receipts', 'Cash Vouchers', 'Expense Vouchers', 'Contra Vouchers', 'Advance Adjustments'],
                 'hrefs' => ['/accounting/cash-vouchers', '/accounting/advance-adjustments'],
                 'paths' => ['/accounting/cash-vouchers', '/accounting/advance-adjustments', 'accounting.cash-vouchers', 'accounting.advance-adjustments'],
                 'capability_phrases' => [
@@ -319,6 +319,8 @@ class ErpRoleAccessPolicy
                     'view receipt vouchers', 'create receipt vouchers', 'approve receipt vouchers', 'post receipt vouchers', 'manage receipt vouchers',
                     'view payments', 'create payments', 'update payments', 'approve payments', 'post payments', 'manage payments',
                     'view payment vouchers', 'create payment vouchers', 'approve payment vouchers', 'post payment vouchers', 'manage payment vouchers',
+                    'view expense vouchers', 'create expense vouchers', 'update expense vouchers', 'approve expense vouchers', 'post expense vouchers', 'reverse expense vouchers', 'manage expense vouchers',
+                    'view contra vouchers', 'create contra vouchers', 'update contra vouchers', 'approve contra vouchers', 'post contra vouchers', 'reverse contra vouchers', 'manage contra vouchers',
                     'customer advances', 'supplier advances', 'manage customer advances', 'manage supplier advances',
                 ],
             ],

@@ -58,9 +58,11 @@ final class CashVoucherNativeJournalBridge
                 sourceType: 'cash_voucher',
                 sourceId: $voucherId,
                 journalNo: (string) ($voucher->posting_reference ?: $voucher->voucher_no),
-                descriptionPrefix: (string) $voucher->voucher_type === 'expense'
-                    ? 'Expense voucher'
-                    : 'Cash voucher',
+                descriptionPrefix: match ((string) $voucher->voucher_type) {
+                    'expense' => 'Expense voucher',
+                    'contra' => 'Contra voucher',
+                    default => 'Cash voucher',
+                },
                 user: $user,
                 reversalOfId: null,
             );
@@ -122,6 +124,22 @@ final class CashVoucherNativeJournalBridge
                 reversalOfId: $originalId,
             );
         });
+    }
+
+    public function journalIdForVoucher(int $voucherId, bool $reversal = false): ?int
+    {
+        $voucher = DB::table('cash_vouchers')->where('id', $voucherId)->first();
+        if (! $voucher) {
+            return null;
+        }
+
+        return $this->findJournal(
+            $reversal ? 'cash_voucher_reversal' : 'cash_voucher',
+            $voucherId,
+            (string) ($reversal
+                ? ($voucher->reversal_reference ?? '')
+                : ($voucher->posting_reference ?? $voucher->voucher_no))
+        );
     }
 
     public function postSupplierCosting(int $costingId, mixed $user = null, ?string $postingReference = null): int
@@ -982,6 +1000,7 @@ SQL
             'receipt' => 'receipt',
             'payment' => 'payment',
             'expense' => 'expense',
+            'contra' => 'contra',
             'customer_advance' => 'customer_advance',
             'supplier_advance' => 'supplier_advance',
             default => 'cash_voucher',

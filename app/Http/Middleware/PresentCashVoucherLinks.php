@@ -61,6 +61,7 @@ final class PresentCashVoucherLinks
             $receiptUrl = route('accounting.cash-vouchers.index', ['type' => 'receipt']);
             $paymentUrl = route('accounting.cash-vouchers.index', ['type' => 'payment']);
             $expenseUrl = route('accounting.cash-vouchers.index', ['mode' => 'expenses']);
+            $contraUrl = route('accounting.cash-vouchers.index', ['mode' => 'contra']);
 
             $onVoucherWorkspace = str_starts_with(trim($request->path(), '/'), 'accounting/cash-vouchers');
             $selectedType = strtolower(trim((string) $request->query('type', '')));
@@ -70,10 +71,15 @@ final class PresentCashVoucherLinks
                 && strtolower((string) $request->query('mode', '')) === 'expenses'
                 ? ' active'
                 : '';
+            $contraActive = $onVoucherWorkspace
+                && strtolower((string) $request->query('mode', '')) === 'contra'
+                ? ' active'
+                : '';
 
             $receiptLink = '<a class="nav-item'.$receiptActive.'" href="'.e($receiptUrl).'" data-et-live-accounting-nav="receipt"><span>↓</span><span>Receipts</span></a>';
             $paymentLink = '<a class="nav-item'.$paymentActive.'" href="'.e($paymentUrl).'" data-et-live-accounting-nav="payment"><span>↑</span><span>Payments</span></a>';
             $expenseLink = '<a class="nav-item'.$expenseActive.'" href="'.e($expenseUrl).'" data-et-live-accounting-nav="expense"><span>≡</span><span>Expense Vouchers</span></a>';
+            $contraLink = '<a class="nav-item'.$contraActive.'" href="'.e($contraUrl).'" data-et-live-accounting-nav="contra"><span>⇄</span><span>Contra Vouchers</span></a>';
 
             $html = str_replace(
                 '<div class="nav-item muted"><span>•</span><span>Receipts</span><em>Soon</em></div>',
@@ -91,6 +97,15 @@ final class PresentCashVoucherLinks
                 && ! str_contains($html, 'data-et-live-accounting-nav="expense"')
             ) {
                 $html = str_replace($paymentLink, $paymentLink.$expenseLink, $html);
+            }
+            if (
+                $this->cashVouchers->canUseType($request->user(), 'contra', 'view')
+                && ! str_contains($html, 'data-et-live-accounting-nav="contra"')
+            ) {
+                $anchor = str_contains($html, 'data-et-live-accounting-nav="expense"')
+                    ? $expenseLink
+                    : $paymentLink;
+                $html = str_replace($anchor, $anchor.$contraLink, $html);
             }
         }
 

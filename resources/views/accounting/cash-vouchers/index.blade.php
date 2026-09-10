@@ -1,5 +1,5 @@
 @extends($layoutMeta['layout'])
-@section($layoutMeta['title_section'] ?? 'title','Payments, Receipts, Expenses & Advances')
+@section($layoutMeta['title_section'] ?? 'title','Payments, Receipts, Expenses, Contra & Advances')
 @section($layoutMeta['content_section'] ?? 'content')
 @php
     $money = static fn($value) => 'PKR '.number_format((float) $value, 2);
@@ -39,7 +39,7 @@
 .et-card-head{min-height:47px;padding:12px 14px;border-bottom:1px solid #e8edf3;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .et-card-head strong{font-size:14px}
 .et-card-head a{font-size:11px;font-weight:800;text-decoration:none;color:#0b63d8}
-.et-summary-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.et-summary-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin:0 0 16px}
 .et-summary-tile{background:#fff;border:1px solid #dce5ef;border-radius:11px;box-shadow:0 4px 14px rgba(28,45,68,.04);padding:13px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:78px}
 .et-summary-left{display:flex;align-items:center;gap:10px;min-width:0}
 .et-summary-icon{width:30px;height:30px;border-radius:8px;background:#f1f6fc;display:inline-flex;align-items:center;justify-content:center;color:#0b63d8;font-weight:900;flex:0 0 auto}
@@ -60,6 +60,7 @@
 .et-type.receipt{background:#e8f7ef;color:#128055}
 .et-type.payment{background:#fdeced;color:#c74646}
 .et-type.expense{background:#fff2d8;color:#9a6208}
+.et-type.contra{background:#e7f4ff;color:#1769a8}
 .et-type.advance{background:#f1ecff;color:#7448bd}
 .et-status.posted{background:#e6f7ec;color:#158454}
 .et-status.approved{background:#e8f1ff;color:#246dc8}
@@ -115,12 +116,12 @@
 }
 </style>
 
-<div class="et-fin" data-et-finance-runtime="ERP-11.3.16">
+<div class="et-fin" data-et-finance-runtime="{{ config('et_erp_release.release', 'ERP-11.3') }}">
   <div class="et-fin-head">
     <div>
-      <div class="et-fin-kicker">Accounting · ERP-11.3.16</div>
-      <h1 class="et-fin-title">Payments, Receipts, Expenses & Advances</h1>
-      <div class="et-fin-sub">Cash/bank movement, direct expenses, document settlement and controlled advance application</div>
+      <div class="et-fin-kicker">Accounting · {{ config('et_erp_release.release', 'ERP-11.3') }}</div>
+      <h1 class="et-fin-title">Payments, Receipts, Expenses, Contra & Advances</h1>
+      <div class="et-fin-sub">Cash/bank movement, internal transfers, direct expenses, document settlement and controlled advance application</div>
     </div>
     <div class="et-fin-head-links">
       @if(app('router')->has('accounting.chart-of-accounts.workspace'))
@@ -147,6 +148,10 @@
       <a class="et-fin-mode {{ $activeMode==='expenses' ? 'active' : '' }}"
          href="{{ route('accounting.cash-vouchers.index',['mode'=>'expenses']) }}">Expense Vouchers</a>
     @endif
+    @if(in_array('contra',$allowedTypes,true))
+      <a class="et-fin-mode {{ $activeMode==='contra' ? 'active' : '' }}"
+         href="{{ route('accounting.cash-vouchers.index',['mode'=>'contra']) }}">Contra Vouchers</a>
+    @endif
     @if(array_intersect(['customer_advance','supplier_advance'],$allowedTypes))
       <a class="et-fin-mode {{ $activeMode==='advances' ? 'active' : '' }}"
          href="{{ route('accounting.cash-vouchers.index',['mode'=>'advances']) }}">Advances</a>
@@ -162,6 +167,9 @@
     @endif
     @if(in_array('expense',$allowedTypes,true))
       <a class="et-fin-btn primary" href="{{ route('accounting.cash-vouchers.create',['type'=>'expense']) }}">＋ Expense Voucher</a>
+    @endif
+    @if(in_array('contra',$allowedTypes,true))
+      <a class="et-fin-btn primary" href="{{ route('accounting.cash-vouchers.create',['type'=>'contra']) }}">⇄ Contra Voucher</a>
     @endif
     @if(in_array('customer_advance',$allowedTypes,true))
       <a class="et-fin-btn" href="{{ route('accounting.cash-vouchers.create',['type'=>'customer_advance']) }}">♙ Customer Advance</a>
@@ -185,7 +193,7 @@
       <label>Type</label>
       <select name="type">
         <option value="">All Types</option>
-        @foreach(['receipt'=>'Receipt','payment'=>'Payment','expense'=>'Expense','customer_advance'=>'Customer Advance','supplier_advance'=>'Supplier Advance'] as $k=>$v)
+        @foreach(['receipt'=>'Receipt','payment'=>'Payment','expense'=>'Expense','contra'=>'Contra','customer_advance'=>'Customer Advance','supplier_advance'=>'Supplier Advance'] as $k=>$v)
           @if(in_array($k,$allowedTypes,true))<option value="{{ $k }}" @selected(request('type')===$k)>{{ $v }}</option>@endif
         @endforeach
       </select>
@@ -244,6 +252,13 @@
     </div>
     <div class="et-summary-tile">
       <div class="et-summary-left">
+        <span class="et-summary-icon">⇄</span>
+        <div class="et-summary-meta"><strong>Contra Transfers</strong><span>Internal asset movement</span></div>
+      </div>
+      <div class="et-summary-amount advance">{{ $money($summary->contra ?? 0) }}</div>
+    </div>
+    <div class="et-summary-tile">
+      <div class="et-summary-left">
         <span class="et-summary-icon">C</span>
         <div class="et-summary-meta"><strong>Customer Advances</strong><span>Controlled balance</span></div>
       </div>
@@ -268,7 +283,7 @@
   <section class="et-card">
     <div class="et-card-head">
       <strong>Cash Voucher Register</strong>
-      <span class="et-muted">Receipt / Payment / Expense / Advance</span>
+      <span class="et-muted">Receipt / Payment / Expense / Contra / Advance</span>
     </div>
     <table class="et-table">
       <colgroup>
@@ -276,18 +291,19 @@
         <col style="width:17%"><col style="width:11%"><col style="width:10%"><col style="width:9%"><col style="width:7%">
       </colgroup>
       <thead>
-        <tr><th>Voucher</th><th>Date</th><th>Type</th><th>Party</th><th>Method / Account</th><th>Amount</th><th>Allocated</th><th>Status</th><th class="et-action-head">Action</th></tr>
+        <tr><th>Voucher</th><th>Date</th><th>Type</th><th>Party / Transfer</th><th>Method / Account</th><th>Amount</th><th>Allocated</th><th>Status</th><th class="et-action-head">Action</th></tr>
       </thead>
       <tbody>
         @forelse($rows as $r)
           @php($def=$service->voucherDefinition($r->voucher_type))
-          @php($typeClass=in_array($r->voucher_type,['customer_advance','supplier_advance'],true)?'advance':$r->voucher_type)
+            @php($typeClass=in_array($r->voucher_type,['customer_advance','supplier_advance'],true)?'advance':$r->voucher_type)
+            @php($contra=$r->voucher_type==='contra' ? ($contraDetails[$r->id] ?? null) : null)
           <tr>
             <td><a class="voucher" href="{{ route('accounting.cash-vouchers.show',$r->id) }}">{{ $r->voucher_no }}</a></td>
             <td>{{ \Carbon\Carbon::parse($r->voucher_date)->format('d M Y') }}</td>
             <td><span class="et-type {{ $typeClass }}">{{ $def['short'] }}</span></td>
-            <td>{{ $r->party_name ?: '—' }}@if($r->booking_id)<br><span class="et-muted">Booking #{{ $r->booking_id }}</span>@endif</td>
-            <td>{{ $r->payment_method }}<br><span class="et-muted">{{ $r->cash_bank_account_code }} · {{ $r->cash_bank_account_name }}</span></td>
+            <td>@if($contra){{ $r->cash_bank_account_code }} {{ $r->cash_bank_account_name }} → {{ $contra->destination_account_code }} {{ $contra->destination_account_name }}@else{{ $r->party_name ?: '—' }}@if($r->booking_id)<br><span class="et-muted">Booking #{{ $r->booking_id }}</span>@endif @endif</td>
+            <td>{{ $r->payment_method }}<br><span class="et-muted">{{ $r->cash_bank_account_code }} · {{ $r->cash_bank_account_name }}@if($contra) → {{ $contra->destination_account_code }} · {{ $contra->destination_account_name }}@endif</span></td>
             <td class="money">{{ $r->currency_code }} {{ number_format($r->amount,2) }}</td>
             <td>{{ $r->currency_code }} {{ number_format($r->allocated_amount,2) }}</td>
             <td><span class="et-status {{ $r->status }}">{{ str_replace('_',' ',$r->status) }}</span>@if($r->posting_reference)<br><span class="et-muted">{{ $r->posting_reference }}</span>@endif</td>

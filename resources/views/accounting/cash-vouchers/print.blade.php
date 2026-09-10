@@ -45,7 +45,7 @@ body{margin:0;background:#eef2f7;font-family:Arial,Helvetica,sans-serif;color:#1
   <button class="btn primary" onclick="window.print()">Print Voucher</button>
 </div>
 
-<article class="voucher" data-et-print-voucher="ERP-11.3.27">
+<article class="voucher" data-et-print-voucher="{{ config('et_erp_release.release', 'ERP-11.3') }}">
   @if($row->status !== 'posted')<div class="watermark">{{ strtoupper(str_replace('_',' ',$row->status)) }}</div>@endif
 
   <header class="header">
@@ -68,27 +68,38 @@ body{margin:0;background:#eef2f7;font-family:Arial,Helvetica,sans-serif;color:#1
     <div><div class="label">Value / Bank Date</div><div class="value">{{ $row->value_date ? \Carbon\Carbon::parse($row->value_date)->format('d M Y') : '—' }}</div></div>
   </div>
 
-  <div class="party">
-    <div>
-      <div class="label">{{ $definition['direction']==='in' ? 'Received From' : 'Paid To' }}</div>
-      <div class="party-name">{{ $row->party_name ?: '—' }}</div>
+  @if($row->voucher_type==='contra' && $contraDetail)
+    <div class="party">
+      <div><div class="label">From Account</div><div class="party-name">{{ $row->cash_bank_account_code }} · {{ $row->cash_bank_account_name }}</div></div>
+      <div style="text-align:right"><div class="label">To Account</div><div class="party-name">{{ $contraDetail->destination_account_code }} · {{ $contraDetail->destination_account_name }}</div></div>
     </div>
-    @if($bookingReference)
-      <div style="text-align:right"><div class="label">Booking Reference</div><div class="value">{{ $bookingReference }}</div></div>
-    @endif
-  </div>
+  @else
+    <div class="party">
+      <div>
+        <div class="label">{{ $definition['direction']==='in' ? 'Received From' : 'Paid To' }}</div>
+        <div class="party-name">{{ $row->party_name ?: '—' }}</div>
+      </div>
+      @if($bookingReference)
+        <div style="text-align:right"><div class="label">Booking Reference</div><div class="value">{{ $bookingReference }}</div></div>
+      @endif
+    </div>
+  @endif
 
   <div class="amount">
-    <div class="caption">{{ $definition['direction']==='in' ? 'Amount Received' : 'Amount Paid' }}</div>
+    <div class="caption">{{ $row->voucher_type==='contra' ? 'Transfer Amount' : ($definition['direction']==='in' ? 'Amount Received' : 'Amount Paid') }}</div>
     <div class="number">{{ $row->currency_code }} {{ number_format($row->amount,2) }}</div>
   </div>
 
   <div class="words"><div class="label">Amount In Words</div><div class="value">{{ $amountInWords }}</div></div>
 
   <div class="details">
-    <div class="k">Payment Method</div><div>{{ $row->payment_method ?: '—' }}</div>
-    <div class="k">Cash / Bank Account</div><div>{{ $row->cash_bank_account_code }} · {{ $row->cash_bank_account_name }}</div>
-    <div class="k">Bank Name</div><div>{{ $row->bank_name ?: '—' }}</div>
+    <div class="k">{{ $row->voucher_type==='contra' ? 'Transfer Method' : 'Payment Method' }}</div><div>{{ $row->payment_method ?: '—' }}</div>
+    <div class="k">{{ $row->voucher_type==='contra' ? 'From Account' : 'Cash / Bank Account' }}</div><div>{{ $row->cash_bank_account_code }} · {{ $row->cash_bank_account_name }}</div>
+    @if($row->voucher_type==='contra' && $contraDetail)
+      <div class="k">To Account</div><div>{{ $contraDetail->destination_account_code }} · {{ $contraDetail->destination_account_name }}</div>
+    @else
+      <div class="k">Bank Name</div><div>{{ $row->bank_name ?: '—' }}</div>
+    @endif
     <div class="k">Transaction / Bank Reference</div><div>{{ $row->transaction_reference ?: '—' }}</div>
     <div class="k">Cheque / Instrument No.</div><div>{{ $row->instrument_no ?: '—' }}</div>
     <div class="k">Narration / Remarks</div><div>{{ $row->narration ?: '—' }}</div>

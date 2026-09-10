@@ -4,10 +4,13 @@
 @php
     $isIncoming = $definition['direction'] === 'in';
     $isExpense = $type === 'expense';
+    $isContra = $type === 'contra';
     $partyLabel = $definition['party_type'] === 'supplier' ? 'Supplier' : 'Customer / Agent';
-    $subtitle = $isExpense
-        ? 'Direct business expenses paid from Cash / Bank'
-        : ($isIncoming ? 'Money received into Cash / Bank' : 'Money paid from Cash / Bank');
+    $subtitle = $isContra
+        ? 'Internal transfer between active posting Cash / Bank accounts'
+        : ($isExpense
+            ? 'Direct business expenses paid from Cash / Bank'
+            : ($isIncoming ? 'Money received into Cash / Bank' : 'Money paid from Cash / Bank'));
 @endphp
 <style>
 .cvf27{max-width:1500px;margin:0 auto;color:#17243a}.cvf27 *{box-sizing:border-box}
@@ -35,6 +38,7 @@
 .cvf27-totals{display:flex;justify-content:flex-end;gap:25px;padding:10px 13px;font-size:10.5px;color:#516278}.cvf27-totals strong{font-size:13px;color:#17243a}
 .cvf27-bottom{padding:11px 13px;background:#fff;border:1px solid #dce5ef;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}.cvf27-bottom-actions{display:flex;gap:8px;flex-wrap:wrap}
 .cvf27-note{padding:10px 12px;border:1px solid #dbe5f1;background:#f7faff;border-radius:8px;font-size:10.5px;color:#52687f;margin-bottom:13px}
+.cvf27-warning{display:none;grid-column:1/-1;padding:8px 10px;border:1px solid #edcf88;background:#fff9e8;border-radius:7px;color:#805b09;font-size:10px}
 @media(max-width:1050px){.cvf27-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cvf27-span4{grid-column:1/-1}}
 @media(max-width:650px){.cvf27-head{display:block}.cvf27-actions{justify-content:flex-start;margin-top:10px}.cvf27-grid{grid-template-columns:1fr}.cvf27-span2,.cvf27-span4{grid-column:span 1}.cvf27-bottom{display:block}.cvf27-bottom-actions{margin-top:9px}.cvf27-bottom-actions .cvf27-btn{flex:1}}
 </style>
@@ -66,11 +70,15 @@
     <section class="cvf27-card">
       <div class="cvf27-card-head">
         <div class="cvf27-card-title">Voucher Information</div>
-        <div class="cvf27-help">Receipt and Payment use the same controlled accounting workflow.</div>
+        <div class="cvf27-help">All vouchers use the same controlled Draft → Approval → Posted workflow.</div>
       </div>
       <div class="cvf27-body">
         <div class="cvf27-grid">
-          @if($isExpense)
+          @if($isContra)
+            <input type="hidden" name="party_id" value="">
+            <input type="hidden" name="party_name" value="">
+            <input type="hidden" name="booking_id" value="">
+          @elseif($isExpense)
             <input type="hidden" name="party_id" value="">
             <div class="cvf27-field cvf27-span2">
               <label>Payee Name</label>
@@ -93,15 +101,17 @@
             </div>
           @endif
 
-          <div class="cvf27-field">
-            <label>Booking Reference</label>
-            <select name="booking_id">
-              <option value="">Optional</option>
-              @foreach($bookings as $b)
-                <option value="{{ $b['id'] }}" @selected((string)old('booking_id',$row->booking_id ?? '')===(string)$b['id'])>{{ $b['reference'] }}</option>
-              @endforeach
-            </select>
-          </div>
+          @unless($isContra)
+            <div class="cvf27-field">
+              <label>Booking Reference</label>
+              <select name="booking_id">
+                <option value="">Optional</option>
+                @foreach($bookings as $b)
+                  <option value="{{ $b['id'] }}" @selected((string)old('booking_id',$row->booking_id ?? '')===(string)$b['id'])>{{ $b['reference'] }}</option>
+                @endforeach
+              </select>
+            </div>
+          @endunless
 
           <div class="cvf27-field">
             <label>Voucher Date *</label>
@@ -114,7 +124,7 @@
           </div>
 
           <div class="cvf27-field">
-            <label>{{ $isExpense ? 'Total Expense' : 'Total Amount' }} *</label>
+            <label>{{ $isContra ? 'Transfer Amount' : ($isExpense ? 'Total Expense' : 'Total Amount') }} *</label>
             <input type="number" id="voucherAmount" step="0.01" min="0.01" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}" required @readonly($isExpense)>
           </div>
 
@@ -129,8 +139,8 @@
           </div>
 
           <div class="cvf27-field">
-            <label>Payment Method *</label>
-            <select name="payment_method">
+            <label>{{ $isContra ? 'Transfer Method' : 'Payment Method' }} *</label>
+            <select name="payment_method" id="paymentMethod">
               @foreach($paymentMethods as $m)
                 <option value="{{ $m }}" @selected(old('payment_method',$row->payment_method ?? 'Bank Transfer')===$m)>{{ $m }}</option>
               @endforeach
@@ -138,19 +148,37 @@
           </div>
 
           <div class="cvf27-field">
-            <label>Cash / Bank Account *</label>
-            <select name="cash_bank_account" required>
+            <label>{{ $isContra ? 'From Cash / Bank Account' : 'Cash / Bank Account' }} *</label>
+            <select name="cash_bank_account" id="cashBankAccount" required>
               <option value="">Select account</option>
               @foreach($cashBankAccounts as $a)
-                <option value="{{ $a['code'] }}" @selected(old('cash_bank_account',$row->cash_bank_account_code ?? '')===$a['code'])>{{ $a['code'] }} · {{ $a['name'] }}</option>
+                <option value="{{ $a['code'] }}" data-account-subtype="{{ $a['subtype'] ?? '' }}" @selected(old('cash_bank_account',$row->cash_bank_account_code ?? '')===$a['code'])>{{ $a['code'] }} · {{ $a['name'] }}</option>
               @endforeach
             </select>
           </div>
 
-          <div class="cvf27-field">
-            <label>Bank Name</label>
-            <input name="bank_name" value="{{ old('bank_name',$row->bank_name ?? '') }}">
-          </div>
+          @if($isContra)
+            <div class="cvf27-field">
+              <label>To Cash / Bank Account *</label>
+              <select name="destination_account" id="destinationAccount" required>
+                <option value="">Select destination account</option>
+                @foreach($cashBankAccounts as $a)
+                  <option value="{{ $a['code'] }}" data-account-subtype="{{ $a['subtype'] ?? '' }}" @selected(old('destination_account',$contraDetail->destination_account_code ?? '')===$a['code'])>{{ $a['code'] }} · {{ $a['name'] }}</option>
+                @endforeach
+              </select>
+            </div>
+          @endif
+
+          @if($isContra)
+            <input type="hidden" name="bank_name" value="">
+          @else
+            <div class="cvf27-field">
+              <label>Bank Name</label>
+              <input name="bank_name" value="{{ old('bank_name',$row->bank_name ?? '') }}">
+            </div>
+          @endif
+
+          <div id="paymentMethodWarning" class="cvf27-warning"></div>
 
           <div class="cvf27-field">
             <label>Transaction / Bank Reference</label>
@@ -221,6 +249,8 @@
           <span>Advance / Unallocated: <strong id="unallocatedTotal">0.00</strong></span>
         </div>
       </section>
+    @elseif($isContra)
+      <div class="cvf27-note">Contra transfers move funds only between the selected Cash / Bank accounts. They do not create expense, revenue, payable, receivable, advance, Sales Invoice or Supplier Costing allocations.</div>
     @else
       <div class="cvf27-note">{{ $definition['label'] }} is recorded as an advance and may be applied later through Advance Adjustment.</div>
     @endif
@@ -235,6 +265,19 @@
     </div>
   </form>
 </div>
+
+<script>
+(()=>{
+const method=document.getElementById('paymentMethod');
+const source=document.getElementById('cashBankAccount');
+const destination=document.getElementById('destinationAccount');
+const warning=document.getElementById('paymentMethodWarning');
+if(!method||!source||!warning)return;
+const kind=select=>{const option=select?.selectedOptions?.[0];const subtype=String(option?.dataset?.accountSubtype||'').toLowerCase();const label=String(option?.textContent||'').toLowerCase();if(subtype.includes('bank')||label.includes('bank'))return 'bank';if(subtype.includes('cash')||label.includes('cash'))return 'cash';return ''};
+function refresh(){const selected=String(method.value||'').toLowerCase();const sourceKind=kind(source);let message='';if(selected.includes('cash')&&sourceKind==='bank')message='The selected method refers to Cash but the source account appears to be a Bank account. Please confirm before saving.';if(selected.includes('bank')&&sourceKind==='cash')message='The selected method refers to Bank but the source account appears to be Cash. Please confirm before saving.';if(destination&&source.value&&destination.value&&source.value===destination.value)message='From and To accounts must be different.';warning.textContent=message;warning.style.display=message?'block':'none'}
+[method,source,destination].filter(Boolean).forEach(element=>element.addEventListener('change',refresh));refresh();
+})();
+</script>
 
 @if($definition['target_type'])
 <script>
