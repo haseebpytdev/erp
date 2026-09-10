@@ -1,4 +1,4 @@
-ERP-11.3.214 DIRECT UPLOAD — CUSTOMER LEDGER 503 DIAGNOSTIC
+ERP-11.3.215 DIRECT UPLOAD — CUSTOMER LEDGER 503 PHASE 2 DIAGNOSTIC
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,17 +9,19 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.214 introduces no new migration. Safe Database Upgrade remains required
+ERP-11.3.215 introduces no new migration. Safe Database Upgrade remains required
 if the cumulative Air Vendor, public voucher token or Travel Status migrations
 included in this package are still pending on the host.
 
-ERP-11.3.214 introduces a temporary Super-Admin-only rollback/read-only runtime
-diagnostic for the native Customer Ledger HTTP 503. It dynamically discovers
-the installed Customer Ledger route, controller/action, middleware and
-model-binding authority, reports the Sales Invoice customer identifiers, and
-probes only the native GET path inside a database read-only transaction that is
-always rolled back. Credential-like exception content is redacted; environment,
-cookie, session and database-credential values are not exposed.
+ERP-11.3.215 extends the temporary Super-Admin-only rollback/read-only runtime
+diagnostic for the native Customer Ledger HTTP 503. Phase 2 derives the actual
+route/model binding, renders the native Customer Ledger View separately,
+resolves and inspects each middleware authority, checks journals.view, and runs
+progressive safe middleware probes to identify the first failing production
+HTTP stage. Middleware that may perform an irreversible write is reported but
+is not duplicated by the diagnostic. Credential-like exception content is
+redacted; environment, cookie, session and database-credential values are not
+exposed.
 
 This diagnostic release does not fix or alter the Customer Ledger. It does not
 change Sales Invoice posting, journal accounting, Customer Receivables, ledger

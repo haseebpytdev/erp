@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.214
-APPLICATION_VERSION=v1.1.33.214-ERP11.3.214
+CURRENT_VERSION=ERP-11.3.215
+APPLICATION_VERSION=v1.1.33.215-ERP11.3.215
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.214
+LAST_PACKAGED_RELEASE=ERP-11.3.215
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -200,3 +200,14 @@ transaction that is always rolled back. It redacts credential-like exception
 content and exposes no environment, cookie or session data. Sales Invoice
 posting, journal accounting, Customer Receivables, ledger balances and customer
 accounting data remain unchanged. No migration is added.
+
+ERP-11.3.215 diagnostic release extends the temporary Customer Ledger HTTP 503
+diagnostic. Phase 2 dynamically derives the native route/model binding, renders
+the native Customer Ledger View as a separate rollback-only stage, resolves and
+inspects each middleware authority, checks `journals.view`, and progressively
+probes safe middleware stages to identify the first production HTTP pipeline
+failure. Middleware whose source indicates an irreversible write is reported
+but not duplicated by the diagnostic; later independently safe middleware can
+still be isolated. No Customer Ledger functional fix, Sales Invoice posting,
+journal accounting, Customer Receivable, ledger balance or accounting-data
+change is included. No migration is added.
