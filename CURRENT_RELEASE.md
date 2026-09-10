@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.218
-APPLICATION_VERSION=v1.1.33.218-ERP11.3.218
+CURRENT_VERSION=ERP-11.3.219
+APPLICATION_VERSION=v1.1.33.219-ERP11.3.219
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.218
+LAST_PACKAGED_RELEASE=ERP-11.3.219
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -240,3 +240,17 @@ manual Journal Entry remains the authority for arbitrary balanced non-cash
 journals, so no duplicate Journal Voucher is introduced. The new migration
 `database/migrations/2026_09_10_130000_create_cash_voucher_contra_details.php`
 creates the one-to-one Contra destination and transfer-detail authority.
+
+ERP-11.3.219 makes Supplier Costing booking-driven and vendor-safe. Selecting a
+booking resolves authoritative Air, Hotel, Transport and Visa vendor-cost
+obligations, limits selection to suppliers attached to those obligations and
+automatically loads only the selected supplier's source lines. Booking base
+cost remains read-only while Draft tax and other charges remain adjustable.
+Each line retains deterministic source traceability and a globally unique
+source key prevents the same booking obligation from being costed twice across
+Draft, Pending Approval, Approved and Posted documents. Workflow transitions
+revalidate supplier, source and cost integrity before the existing balanced
+native posting of product Cost Accounts to Vendor Payable. The new migration
+`database/migrations/2026_09_10_140000_create_supplier_costing_source_links.php`
+creates the source-link authority. Payment Voucher allocation remains separate
+and available only against Posted Supplier Costing documents.

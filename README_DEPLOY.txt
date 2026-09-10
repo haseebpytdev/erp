@@ -1,4 +1,4 @@
-ERP-11.3.218 DIRECT UPLOAD — COMPLETE VOUCHER MODULE
+ERP-11.3.219 DIRECT UPLOAD — BOOKING-DRIVEN SUPPLIER COSTING
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,33 +9,33 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.218 includes the new migration
-database/migrations/2026_09_10_130000_create_cash_voucher_contra_details.php,
-which creates the one-to-one Contra destination and transfer-detail authority.
-Run Safe Database Upgrade after manual deployment and confirm the migration
-completes before Contra Voucher UAT.
+ERP-11.3.219 includes the new migration
+database/migrations/2026_09_10_140000_create_supplier_costing_source_links.php,
+which creates deterministic booking-source traceability for Supplier Costing.
+Run Safe Database Upgrade after manual deployment and confirm this migration
+completes before Supplier Costing UAT.
 
-ERP-11.3.218 completes the controlled Voucher accounting module. It adds Contra
-Voucher for Cash-to-Bank, Bank-to-Cash and Bank-to-Bank transfers using CV
-year/sequence numbering. Contra uses the existing Draft to Pending Approval to
-Approved to Posted lifecycle, posts a debit to the destination Cash/Bank account
-and an equal credit to the source Cash/Bank account through the native journal
-bridge, and supports controlled equal-and-opposite reversal.
+ERP-11.3.219 makes Supplier Costing booking-driven and vendor-safe. Selecting a
+booking resolves authoritative Air, Hotel, Transport and Visa supplier-cost
+obligations. The supplier selector is limited to actual booking vendors, and
+the selected supplier receives only its own automatically populated product
+source lines. One document therefore creates one supplier payable; a supplier
+may carry multiple product types, but different suppliers cannot be mixed.
 
-Contra adds dedicated permissions, navigation, register and print support. It
-does not create customer, supplier, expense, revenue, receivable, payable,
-Sales Invoice or Supplier Costing allocations. Voucher detail pages now link
-resolvable accounts to the native Account Ledger and posting references to the
-actual native Journal Entry, with plain text when a safe link cannot resolve.
-Cash Voucher release indicators are dynamic. The existing native manual Journal
-Entry remains the authority for arbitrary balanced non-cash journals, so no
-duplicate Journal Voucher is added.
+Booking base cost remains controlled by the persisted booking source. Draft Tax
+and Other Charges remain editable. Deterministic source keys prevent duplicate
+costing across Draft, Pending Approval, Approved and Posted documents. Before
+each workflow transition, source ownership and cost are revalidated. Existing
+posting remains debit to the applicable product Cost Account(s) and credit to
+Vendor Payable for the same supplier through the native journal bridge. Posted
+Supplier Costing documents remain available to the existing Payment Voucher
+allocation flow.
 
 After manual deployment, run Safe Database Upgrade, clear Application Cache and
-Ctrl+F5. Open Accounting > Contra Vouchers > New Contra Voucher. Choose two
-different real Cash/Bank posting accounts, enter PKR 10,000 at exchange rate 1,
-and save a Draft only. Confirm the preview debits the destination and credits the
-source for PKR 10,000. Do not submit, approve or post before reviewing the Draft.
+Ctrl+F5. Open Operations > Supplier Costing > New Supplier Cost and select only
+BK-2026-000054. Do not select a supplier or save a Draft yet. First capture and
+review the Booking Supplier Obligations screen, verifying actual persisted
+vendors, source statuses and the expected PKR 938,600 UAT cost reconciliation.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
