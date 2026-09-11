@@ -48,6 +48,7 @@ use App\Http\Controllers\Purchase\SupplierCostingController;
 use App\Http\Controllers\Accounting\CashVoucherController;
 use App\Http\Controllers\Accounting\AdvanceAdjustmentController;
 use App\Http\Controllers\Accounting\ChartOfAccountsWorkspaceController;
+use App\Http\Controllers\Accounting\ManagementAccountingReportController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentChartOfAccountsWorkspace;
@@ -308,6 +309,16 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::get('/accounting/chart-of-accounts-workspace', [ChartOfAccountsWorkspaceController::class, 'index'])
         ->middleware(EnforceErpRoleScopedAccess::class)
         ->name('accounting.chart-of-accounts.workspace');
+
+    // ERP-11.3 management reporting: read-only projections over native posted journals.
+    Route::get('/accounting/reports/management', [ManagementAccountingReportController::class, 'management'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.management');
+    Route::get('/accounting/reports/profit-and-loss', [ManagementAccountingReportController::class, 'profitAndLoss'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.profit-and-loss');
+    Route::get('/accounting/reports/balance-sheet', [ManagementAccountingReportController::class, 'balanceSheet'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.balance-sheet');
+    Route::get('/accounting/reports/trial-balance', [ManagementAccountingReportController::class, 'trialBalance'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.trial-balance');
 
     // ERP-11.3.1 Chart of Accounts UX / Performance Completion
     Route::get('/accounting/chart-of-accounts/next-code', [ChartOfAccountsWorkspaceController::class, 'nextCode'])

@@ -58,6 +58,7 @@ final class PresentAccountingReportsWorkspace
         $html = $this->enrichCashVoucherRows($html);
         $html = $this->enrichSupplierCostingRows($html);
         $html = $this->replaceNativeFilter($request, $html);
+        $html = $this->injectManagementReportingNavigation($html);
         $html = $this->reconcilePartyControlLedger($request, $html);
         $html = $this->reconcileGeneralLedgerAccountFilter($request, $html);
         $html = $this->formatLedgerAmounts($html);
@@ -478,6 +479,49 @@ HTML;
         }
 
         return $html;
+    }
+
+    private function injectManagementReportingNavigation(string $html): string
+    {
+        if (str_contains($html, 'data-et-management-report-nav=')) {
+            return $html;
+        }
+
+        try {
+            $links = [
+                ['Management Overview', route('accounting.management-reports.management')],
+                ['Profit & Loss', route('accounting.management-reports.profit-and-loss')],
+                ['Trial Balance', route('accounting.management-reports.trial-balance')],
+                ['Balance Sheet', route('accounting.management-reports.balance-sheet')],
+                ['Ledger Reports', route('accounting.reports.index')],
+            ];
+        } catch (Throwable) {
+            return $html;
+        }
+
+        $items = '';
+        foreach ($links as [$label, $url]) {
+            $items .= '<a href="'.e($url).'">'.e($label).'</a>';
+        }
+
+        $release = (string) config('et_erp_release.release', 'ERP-11.3');
+        $navigation = <<<'HTML'
+<style data-et-management-report-nav-style="__RELEASE__">
+.et-management-report-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 13px;padding:10px;border:1px solid #dbe4ef;border-radius:9px;background:#f8fafc}
+.et-management-report-nav a{display:inline-flex;align-items:center;min-height:34px;padding:7px 11px;border:1px solid #d3deea;border-radius:7px;background:#fff;color:#29415f!important;text-decoration:none!important;font-size:10px;font-weight:850}
+.et-management-report-nav a:hover{border-color:#1769d2;color:#1769d2!important}
+@media(max-width:650px){.et-management-report-nav a{flex:1 1 calc(50% - 6px);justify-content:center;text-align:center}}
+@media print{.et-management-report-nav{display:none!important}}
+</style>
+<nav class="et-management-report-nav" data-et-management-report-nav="__RELEASE__" aria-label="Management accounting reports">__LINKS__</nav>
+HTML;
+        $navigation = str_replace(['__LINKS__', '__RELEASE__'], [$items, e($release)], $navigation);
+
+        if (preg_match('/<form\b/i', $html, $match, PREG_OFFSET_CAPTURE)) {
+            return substr_replace($html, $navigation, $match[0][1], 0);
+        }
+
+        return $navigation.$html;
     }
 
     private function controlAfterLabel(string $form, callable $matches): ?array
