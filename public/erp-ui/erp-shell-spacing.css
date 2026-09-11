@@ -1,11 +1,16 @@
-/* ERP-11.3.240 — authoritative ERP shell and spacing geometry.
+/* ERP-11.3.241 — authoritative ERP shell, navigation and spacing geometry.
    Presentation only. One outer frame, one horizontal gutter, one vertical rhythm. */
 
 :root{
   --et-shell-gutter-x:24px;
   --et-shell-gutter-y:20px;
   --et-shell-bottom:28px;
-  --et-sidebar-inner-x:8px;
+  --et-sidebar-inner-x:6px;
+  --et-page-title-size:26px;
+  --et-page-subtitle-size:13px;
+  --et-control-height:36px;
+  --et-card-radius:10px;
+  --et-section-gap:16px;
 }
 
 /* --------------------------------------------------------------------------
@@ -96,66 +101,209 @@ body.et-ui-professional .et-shell-content-frame{
 }
 
 /* --------------------------------------------------------------------------
-   Sidebar: CSS is the single spacing authority. Runtime JS only groups rows.
+   ERP-11.3.241 sidebar: one hidden normalization pass, no row reordering.
    -------------------------------------------------------------------------- */
+html body.et-ui-professional .sidebar,
+html body.et-ui-professional .navbar-vertical,
+html body.et-ui-professional .side-nav{
+  overflow-x:hidden!important;
+  scrollbar-gutter:stable;
+}
+
+/* Compact brand/logo area: remove the oversized dead zone seen in .240. */
 html body.et-ui-professional .sidebar .sidebar-header,
 html body.et-ui-professional .sidebar .brand,
 html body.et-ui-professional .sidebar .logo,
 html body.et-ui-professional .navbar-vertical .navbar-brand{
-  min-height:64px!important;
-  padding:10px 12px!important;
-  gap:9px!important;
+  min-height:52px!important;
+  height:auto!important;
+  padding:6px 10px!important;
+  gap:8px!important;
+  margin:0!important;
+  align-items:center!important;
 }
 
 html body.et-ui-professional .sidebar .sidebar-header img,
 html body.et-ui-professional .sidebar .brand img,
 html body.et-ui-professional .navbar-vertical .navbar-brand img{
-  width:40px!important;
-  height:40px!important;
+  width:34px!important;
+  height:34px!important;
+  max-width:34px!important;
+  max-height:34px!important;
+  object-fit:contain!important;
+  margin:0!important;
 }
 
-html body.et-ui-professional .sidebar .nav,
-html body.et-ui-professional .navbar-vertical .nav,
-html body.et-ui-professional .side-nav .nav{
-  padding:8px var(--et-sidebar-inner-x) 10px!important;
+/* Root nav owns top-level spacing only. */
+html body.et-ui-professional .sidebar .nav[data-et-sidebar-stable],
+html body.et-ui-professional .navbar-vertical .nav[data-et-sidebar-stable],
+html body.et-ui-professional .side-nav .nav[data-et-sidebar-stable]{
+  padding:5px var(--et-sidebar-inner-x) 10px!important;
+  margin:0!important;
   gap:0!important;
 }
 
-html body.et-ui-professional .sidebar a,
-html body.et-ui-professional .navbar-vertical a,
-html body.et-ui-professional .side-nav a{
-  margin:0!important;
-  padding:6px 8px!important;
-  gap:8px!important;
+html body.et-ui-professional .nav[data-et-sidebar-stable] > [data-et-sidebar-level="root"]{
+  position:static!important;
+  margin:0 0 2px!important;
+  padding:0!important;
+  min-height:0!important;
 }
 
-html body.et-ui-professional .sidebar .nav-section,
-html body.et-ui-professional .sidebar .nav-heading,
-html body.et-ui-professional .sidebar .menu-title,
-html body.et-ui-professional .navbar-vertical .nav-section,
-html body.et-ui-professional .navbar-vertical .nav-heading,
-html body.et-ui-professional .et-ui-nav-section{
+html body.et-ui-professional .nav[data-et-sidebar-stable] > [data-et-sidebar-level="root"] > a,
+html body.et-ui-professional .nav[data-et-sidebar-stable] > a[data-et-sidebar-level="root"]{
+  display:flex!important;
+  align-items:center!important;
+  min-height:34px!important;
+  height:auto!important;
+  margin:0!important;
+  padding:7px 8px!important;
+  gap:8px!important;
+  line-height:1.2!important;
+  border-radius:7px!important;
+  white-space:normal!important;
+}
+
+/* Section headings are independent static rows and can never overlap links. */
+html body.et-ui-professional .nav[data-et-sidebar-stable] > .et-ui-nav-section{
+  display:block!important;
+  position:static!important;
+  float:none!important;
+  clear:both!important;
+  width:auto!important;
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
-  margin:16px 8px 8px!important;
+  margin:14px 8px 6px!important;
   padding:0!important;
-  line-height:1.15!important;
+  font-size:10px!important;
+  font-weight:700!important;
+  line-height:1.2!important;
+  letter-spacing:.08em!important;
+  text-transform:uppercase!important;
+  opacity:.72!important;
+  overflow:visible!important;
+  pointer-events:none!important;
 }
 
-html body.et-ui-professional .et-ui-nav-section+[data-et-sidebar-group],
-html body.et-ui-professional [data-et-sidebar-section]+[data-et-sidebar-group]{
+html body.et-ui-professional .nav[data-et-sidebar-stable] > [data-et-sidebar-group="dashboard"]{
   margin-top:0!important;
+  margin-bottom:4px!important;
 }
 
-html body.et-ui-professional [data-et-sidebar-group="dashboard"]{
-  margin-bottom:2px!important;
+/* Nested menus have their own indentation and row height. They do NOT inherit
+   the root-link geometry, preventing heading/sub-link collisions. */
+html body.et-ui-professional .nav[data-et-sidebar-level="nested"],
+html body.et-ui-professional [data-et-sidebar-level="root"] .nav:not([data-et-sidebar-stable]){
+  position:static!important;
+  float:none!important;
+  width:auto!important;
+  margin:2px 0 6px 22px!important;
+  padding:2px 0 2px 7px!important;
+  border-left:1px solid rgba(148,163,184,.28)!important;
+  overflow:visible!important;
+}
+
+html body.et-ui-professional .nav[data-et-sidebar-level="nested"] [data-et-sidebar-level="nested-row"],
+html body.et-ui-professional [data-et-sidebar-level="root"] .nav [data-et-sidebar-level="nested-row"]{
+  position:static!important;
+  margin:0 0 1px!important;
+  padding:0!important;
+  min-height:0!important;
+}
+
+html body.et-ui-professional .nav[data-et-sidebar-level="nested"] a,
+html body.et-ui-professional [data-et-sidebar-level="root"] .nav a{
+  display:flex!important;
+  align-items:center!important;
+  min-height:30px!important;
+  height:auto!important;
+  margin:0!important;
+  padding:5px 8px!important;
+  gap:7px!important;
+  font-size:12px!important;
+  line-height:1.25!important;
+  border-radius:6px!important;
+  white-space:normal!important;
+}
+
+html body.et-ui-professional .nav[data-et-sidebar-stable] .et-ui-nav-chevron{
+  margin-left:auto!important;
+  flex:0 0 auto!important;
+}
+
+/* Native server state wins. The finalizer only annotates it; path-only JS no
+   longer paints multiple voucher links or a stale previous-page item. */
+html body.et-ui-professional .nav[data-et-sidebar-stable] a[data-et-native-active="true"],
+html body.et-ui-professional .nav[data-et-sidebar-stable] a[aria-current="page"],
+html body.et-ui-professional .nav[data-et-sidebar-stable] a.active{
+  background:rgba(16,85,176,.72)!important;
+  color:#fff!important;
+  border-left-color:#60a5fa!important;
+  font-weight:650!important;
+  box-shadow:none!important;
+}
+
+/* A parent row that merely contains an active nested child must not look like a
+   second selected destination. */
+html body.et-ui-professional .nav[data-et-sidebar-stable] [data-et-sidebar-children="true"]:has(.nav [data-et-native-active="true"]) > a,
+html body.et-ui-professional .nav[data-et-sidebar-stable] [data-et-sidebar-children="true"]:has(.nav a[aria-current="page"]) > a{
+  background:transparent!important;
+  color:inherit!important;
+  font-weight:600!important;
+  box-shadow:none!important;
 }
 
 html body.et-ui-professional .sidebar footer,
 html body.et-ui-professional .sidebar .sidebar-footer{
-  min-height:42px!important;
-  padding:7px 12px!important;
+  min-height:40px!important;
+  padding:6px 10px!important;
+}
+
+/* --------------------------------------------------------------------------
+   Global component rhythm: same page-title/control/card language everywhere.
+   -------------------------------------------------------------------------- */
+body.et-ui-professional main h1{
+  max-width:100%!important;
+  margin-top:0!important;
+  margin-bottom:6px!important;
+  font-size:var(--et-page-title-size)!important;
+  line-height:1.15!important;
+  letter-spacing:-.02em!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+}
+
+body.et-ui-professional main h1 + p,
+body.et-ui-professional main h1 + .text-muted,
+body.et-ui-professional main h1 + small{
+  margin-top:0!important;
+  font-size:var(--et-page-subtitle-size)!important;
+  line-height:1.45!important;
+}
+
+body.et-ui-professional main .card{
+  border-radius:var(--et-card-radius)!important;
+}
+
+body.et-ui-professional main input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+body.et-ui-professional main select,
+body.et-ui-professional main textarea{
+  min-height:var(--et-control-height)!important;
+}
+
+body.et-ui-professional main .nav-tabs,
+body.et-ui-professional main .nav-pills{
+  gap:6px!important;
+  row-gap:6px!important;
+}
+
+body.et-ui-professional main .nav-tabs .nav-link,
+body.et-ui-professional main .nav-pills .nav-link{
+  min-height:34px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  line-height:1.2!important;
 }
 
 /* --------------------------------------------------------------------------
@@ -176,7 +324,6 @@ body.et-ui-professional .br-top{
   margin-bottom:16px!important;
 }
 
-/* Accounting previously accumulated header + tab top margins. Keep one gap. */
 body.et-ui-professional .et-fin-head{margin-bottom:16px!important}
 body.et-ui-professional .et-fin-modes{margin:0 0 12px!important}
 body.et-ui-professional .et-fin-actions{margin:0 0 14px!important}
@@ -197,6 +344,12 @@ html.et-register-workspace-server body.et-ui-professional .et-reg-header{
     --et-shell-gutter-x:16px;
     --et-shell-gutter-y:16px;
     --et-shell-bottom:22px;
+    --et-page-title-size:23px;
+  }
+
+  html body.et-ui-professional .nav[data-et-sidebar-level="nested"],
+  html body.et-ui-professional [data-et-sidebar-level="root"] .nav:not([data-et-sidebar-stable]){
+    margin-left:18px!important;
   }
 }
 
