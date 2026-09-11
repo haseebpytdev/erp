@@ -1,0 +1,212 @@
+/* ERP-11.3.240 — authoritative ERP shell and spacing geometry.
+   Presentation only. One outer frame, one horizontal gutter, one vertical rhythm. */
+
+:root{
+  --et-shell-gutter-x:24px;
+  --et-shell-gutter-y:20px;
+  --et-shell-bottom:28px;
+  --et-sidebar-inner-x:8px;
+}
+
+/* --------------------------------------------------------------------------
+   Application frame
+   -------------------------------------------------------------------------- */
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .content-wrapper,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .page-wrapper,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .main-content{
+  min-width:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  background:var(--et-bg)!important;
+}
+
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .content-wrapper>main,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .page-wrapper>main,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main.content,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main.container,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main.container-fluid,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main[data-et-register-workspace]{
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0 var(--et-shell-gutter-x) var(--et-shell-bottom)!important;
+}
+
+/* Native utility topbar remains full-width while page content uses one gutter. */
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.topbar,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.top-bar,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.app-header,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.main-header,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.navbar-horizontal,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.et-ui-utility-topbar{
+  width:calc(100% + (var(--et-shell-gutter-x) * 2))!important;
+  max-width:none!important;
+  min-height:54px!important;
+  height:54px!important;
+  margin-left:calc(var(--et-shell-gutter-x) * -1)!important;
+  margin-right:calc(var(--et-shell-gutter-x) * -1)!important;
+  margin-bottom:0!important;
+  border-radius:0!important;
+}
+
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.topbar+*,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.top-bar+*,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.app-header+*,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.main-header+*,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.navbar-horizontal+*,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.et-ui-utility-topbar+*{
+  margin-top:var(--et-shell-gutter-y)!important;
+}
+
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>:first-child:not(.topbar):not(.top-bar):not(.app-header):not(.main-header):not(.navbar-horizontal):not(.et-ui-utility-topbar){
+  margin-top:var(--et-shell-gutter-y)!important;
+}
+
+/* Remove the second Bootstrap/native horizontal gutter inside the main frame. */
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.container,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.container-xl,
+body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.container-fluid{
+  width:100%!important;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+
+/* One width authority for module workspaces. */
+body.et-ui-professional .et-shell-content-frame,
+body.et-ui-professional .et-register-server-shell,
+body.et-ui-professional .et-reg-shell,
+body.et-ui-professional .et-fin,
+body.et-ui-professional .sci,
+body.et-ui-professional .scs,
+body.et-ui-professional .scb,
+body.et-ui-professional .mr,
+body.et-ui-professional .aa-wrap,
+body.et-ui-professional .br-wrap{
+  width:100%!important;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}
+
+body.et-ui-professional .et-shell-content-frame{
+  padding:0!important;
+}
+
+/* --------------------------------------------------------------------------
+   Sidebar: CSS is the single spacing authority. Runtime JS only groups rows.
+   -------------------------------------------------------------------------- */
+html body.et-ui-professional .sidebar .sidebar-header,
+html body.et-ui-professional .sidebar .brand,
+html body.et-ui-professional .sidebar .logo,
+html body.et-ui-professional .navbar-vertical .navbar-brand{
+  min-height:64px!important;
+  padding:10px 12px!important;
+  gap:9px!important;
+}
+
+html body.et-ui-professional .sidebar .sidebar-header img,
+html body.et-ui-professional .sidebar .brand img,
+html body.et-ui-professional .navbar-vertical .navbar-brand img{
+  width:40px!important;
+  height:40px!important;
+}
+
+html body.et-ui-professional .sidebar .nav,
+html body.et-ui-professional .navbar-vertical .nav,
+html body.et-ui-professional .side-nav .nav{
+  padding:8px var(--et-sidebar-inner-x) 10px!important;
+  gap:0!important;
+}
+
+html body.et-ui-professional .sidebar a,
+html body.et-ui-professional .navbar-vertical a,
+html body.et-ui-professional .side-nav a{
+  margin:0!important;
+  padding:6px 8px!important;
+  gap:8px!important;
+}
+
+html body.et-ui-professional .sidebar .nav-section,
+html body.et-ui-professional .sidebar .nav-heading,
+html body.et-ui-professional .sidebar .menu-title,
+html body.et-ui-professional .navbar-vertical .nav-section,
+html body.et-ui-professional .navbar-vertical .nav-heading,
+html body.et-ui-professional .et-ui-nav-section{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:16px 8px 8px!important;
+  padding:0!important;
+  line-height:1.15!important;
+}
+
+html body.et-ui-professional .et-ui-nav-section+[data-et-sidebar-group],
+html body.et-ui-professional [data-et-sidebar-section]+[data-et-sidebar-group]{
+  margin-top:0!important;
+}
+
+html body.et-ui-professional [data-et-sidebar-group="dashboard"]{
+  margin-bottom:2px!important;
+}
+
+html body.et-ui-professional .sidebar footer,
+html body.et-ui-professional .sidebar .sidebar-footer{
+  min-height:42px!important;
+  padding:7px 12px!important;
+}
+
+/* --------------------------------------------------------------------------
+   Cross-module vertical rhythm
+   -------------------------------------------------------------------------- */
+body.et-ui-professional .et-page-header,
+body.et-ui-professional .et-reg-header,
+body.et-ui-professional .et-fin-head,
+body.et-ui-professional .sci-head,
+body.et-ui-professional .scs-head,
+body.et-ui-professional .scb-head,
+body.et-ui-professional .cvs27-head,
+body.et-ui-professional .cvf27-head,
+body.et-ui-professional .aa-head,
+body.et-ui-professional .mr-head,
+body.et-ui-professional .br-top{
+  margin-top:0!important;
+  margin-bottom:16px!important;
+}
+
+/* Accounting previously accumulated header + tab top margins. Keep one gap. */
+body.et-ui-professional .et-fin-head{margin-bottom:16px!important}
+body.et-ui-professional .et-fin-modes{margin:0 0 12px!important}
+body.et-ui-professional .et-fin-actions{margin:0 0 14px!important}
+body.et-ui-professional .et-fin-filter{margin:0 0 14px!important}
+body.et-ui-professional .et-summary-strip{margin:0 0 14px!important}
+
+/* Register pages use the same outer frame as every other module. */
+html.et-register-workspace-server body.et-ui-professional .et-reg-shell{
+  max-width:none!important;
+  margin:0!important;
+}
+html.et-register-workspace-server body.et-ui-professional .et-reg-header{
+  margin-bottom:16px!important;
+}
+
+@media(max-width:899px){
+  :root{
+    --et-shell-gutter-x:16px;
+    --et-shell-gutter-y:16px;
+    --et-shell-bottom:22px;
+  }
+}
+
+@media print{
+  body.et-ui-professional main,
+  body.et-ui-professional .content-wrapper>main,
+  body.et-ui-professional .page-wrapper>main{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+  }
+}
