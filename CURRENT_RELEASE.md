@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.237
-APPLICATION_VERSION=v1.1.33.237-ERP11.3.237
+CURRENT_VERSION=ERP-11.3.238
+APPLICATION_VERSION=v1.1.33.238-ERP11.3.238
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.237
+LAST_PACKAGED_RELEASE=ERP-11.3.238
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -404,3 +404,16 @@ workflow, invoicing, permissions, posting, persistence and database behavior are
 unchanged. ERP-11.3.236 shared Sales Invoice/Supplier Costing register styling,
 ERP-11.3.235 accounting voucher styling and ERP-11.3.234 sidebar stabilization
 remain intact. No migration is required.
+ERP-11.3.238 extends the approved ERP-11.3.237 Booking Register reference visual
+system to the Sales Invoice and Supplier Costing registers. Sales Invoices now
+use Total Invoices, Pending Approval, Approved and Posted KPI cards; Customer,
+Booking, Date and Status filtering; quick workflow filters; dynamic register
+count; safe client-side CSV export; row selection; compact action menus; 15-row
+pagination; Quick Workflow; Invoices by Status; and Recent Activity. Supplier
+Costing receives the equivalent structure using Total Costings, Supplier,
+Product and workflow-specific presentation plus Costings by Product. Both pages
+reuse the approved Booking Register visual classes for consistent geometry and
+spacing. Existing invoice and supplier-costing rows, native Open links, workflow
+authority, posting, accounting, persistence and database behavior remain
+unchanged. ERP-11.3.237 Booking Register design, ERP-11.3.235 voucher design and
+ERP-11.3.234 sidebar stabilization remain intact. No migration is required.

@@ -31,7 +31,7 @@ ok(assetController.includes("base_path('public/erp-ui/erp-operation-registers.js
 ok(assetController.includes('file_get_contents($registerUi)\n            ."\\n".file_get_contents($base)'), 'register marker executes before base/finalizer JavaScript');
 ok(assetController.includes('file_get_contents($voucherUi)\n            ."\\n".file_get_contents($registerUi)'), 'register CSS loads after the existing voucher visual layer');
 ok(assetController.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned professional asset caching remains intact');
-ok(version === 'v1.1.33.237-ERP11.3.237', 'functional UI checkpoint does not bump production release metadata');
+ok(version === 'v1.1.33.238-ERP11.3.238', 'functional UI checkpoint does not bump production release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

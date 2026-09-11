@@ -34,7 +34,7 @@ ok(assetController.includes("base_path('public/erp-ui/erp-booking-register-refer
 ok(assetController.indexOf('file_get_contents($registerUi)') < assetController.indexOf('file_get_contents($bookingRegisterUi)'), 'reference assets load after shared register layer');
 ok(assetController.indexOf('file_get_contents($bookingRegisterUi)') < assetController.lastIndexOf('file_get_contents($base)'), 'reference JS executes before base/finalizer sequence');
 ok(assetController.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned immutable browser cache policy remains intact');
-ok(version === 'v1.1.33.237-ERP11.3.237', 'functional reference-match checkpoint does not bump production release metadata');
+ok(version === 'v1.1.33.238-ERP11.3.238', 'functional reference-match checkpoint does not bump production release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

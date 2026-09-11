@@ -38,7 +38,7 @@ ok(controller.includes("base_path('public/erp-ui/erp-commercial-register-referen
 ok(controller.indexOf('file_get_contents($bookingRegisterUi)') < controller.indexOf('file_get_contents($commercialRegisterUi)'), 'commercial reference JS loads after Booking reference JS');
 ok(controller.indexOf('file_get_contents($commercialRegisterUi)') < controller.lastIndexOf('file_get_contents($base)'), 'commercial reference JS executes before base/finalizer sequence');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned immutable browser caching remains intact');
-ok(version === 'v1.1.33.237-ERP11.3.237', 'functional ERP-11.3.238 checkpoint does not bump production release metadata');
+ok(version === 'v1.1.33.238-ERP11.3.238', 'functional ERP-11.3.238 checkpoint does not bump production release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

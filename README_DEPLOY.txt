@@ -1,4 +1,4 @@
-ERP-11.3.237 DIRECT UPLOAD - BOOKING REGISTER REFERENCE MATCH
+ERP-11.3.238 DIRECT UPLOAD - COMMERCIAL REGISTER REFERENCE MATCH
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,14 +9,15 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.237 rebuilds the Booking Register presentation to match the approved
-professional reference. The page now includes Total Bookings, Pending
-Confirmation, Confirmed and Cancelled KPI cards, quick filters, full Search /
-Customer / Travel Type / Travel Date / Status filtering, a dynamic register
-count, safe client-side CSV export, row selection and action menus, 15-row
-pagination, Quick Workflow, Bookings by Type and Recent Activity. Existing
-authoritative Booking rows and links remain unchanged as the source of truth.
-ERP-11.3.236 shared Sales Invoice and Supplier Costing register styling,
+ERP-11.3.238 extends the approved Booking Register reference presentation to the
+Sales Invoice and Supplier Costing registers. Sales Invoices now use Total
+Invoices, Pending Approval, Approved and Posted KPI cards, quick workflow
+filters, Customer / Booking / Date / Status filtering, a dynamic register count,
+safe client-side CSV export, row selection, compact action menus, 15-row
+pagination, Quick Workflow, Invoices by Status and Recent Activity. Supplier
+Costing uses the same approved visual geometry with Total Costings, Supplier,
+Product and workflow-specific presentation plus Costings by Product. Existing
+rows and native Open links remain authoritative. ERP-11.3.237 Booking Register,
 ERP-11.3.235 voucher styling and ERP-11.3.234 sidebar stabilization remain
 unchanged.
 
