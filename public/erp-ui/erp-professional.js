@@ -15,29 +15,56 @@
   const sidebarNav = document.querySelector('.sidebar .nav,.navbar-vertical .nav,.side-nav .nav');
   if (sidebarNav) {
     const links = Array.from(sidebarNav.querySelectorAll('a[href]'));
-    const linkLabel = link => link.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+    const normalizedText = value => value.replace(/\s+/g, ' ').trim().toLowerCase();
+    const linkMatches = (link, aliases) => {
+      const leafLabels = Array.from(link.querySelectorAll('span,strong,b,small'))
+        .filter(node => !node.children.length)
+        .map(node => normalizedText(node.textContent));
+      const wholeLabel = normalizedText(link.textContent);
+      return aliases.some(alias => leafLabels.includes(alias) || wholeLabel === alias || wholeLabel.endsWith(` ${alias}`));
+    };
+    const topLevelRow = link => {
+      let row = link;
+      while (row.parentElement && row.parentElement !== sidebarNav) row = row.parentElement;
+      return row.parentElement === sidebarNav ? row : null;
+    };
     const sections = [
-      ['main', 'MAIN', ['dashboard']],
-      ['administration', 'ADMINISTRATION', ['administration', 'organization', 'foundation']],
-      ['master-data', 'MASTER DATA', ['party master', 'travel masters', 'products & services', 'currency rates', 'financial years']],
-      ['operations', 'OPERATIONS', ['bookings', 'sales invoices', 'supplier costing']],
-      ['accounting-reports', 'ACCOUNTING / REPORTS', ['vouchers', 'receipt voucher', 'payment voucher', 'expense voucher', 'contra voucher', 'advances', 'journals', 'chart of accounts', 'account mappings', 'ledgers', 'reports']],
+      ['main', 'MAIN', [['dashboard']]],
+      ['administration', 'ADMINISTRATION', [['administration'], ['organization'], ['foundation']]],
+      ['master-data', 'MASTER DATA', [['party master'], ['travel masters'], ['products & services'], ['currency rates'], ['financial years']]],
+      ['operations', 'OPERATIONS', [['bookings'], ['sales invoices'], ['supplier costing']]],
+      ['accounting', 'ACCOUNTING', [['chart of accounts'], ['account mappings'], ['journals'], ['receipts', 'receipt voucher', 'receipt vouchers', 'vouchers'], ['payments', 'payment voucher', 'payment vouchers'], ['expense voucher', 'expense vouchers'], ['contra voucher', 'contra vouchers'], ['ledgers'], ['reports']]],
+      ['system', 'SYSTEM', [['health & updates', 'system health & updates', 'system settings']]],
     ];
 
-    sections.forEach(([key, title, labels]) => {
-      const firstLink = links.find(link => labels.includes(linkLabel(link)));
-      if (!firstLink) return;
-      const firstRow = firstLink.classList.contains('nav-item') ? firstLink : (firstLink.closest('.nav-item,li') || firstLink);
-      const parent = firstRow.parentElement;
-      if (!parent) return;
-      const existing = Array.from(sidebarNav.querySelectorAll('.nav-section,.nav-heading,.menu-title'))
-        .find(node => node.textContent.replace(/\s+/g, ' ').trim().toLowerCase() === title.toLowerCase());
-      const heading = existing || document.createElement('div');
+    Array.from(sidebarNav.querySelectorAll('.nav-section,.nav-heading,.menu-title,.et-ui-nav-section'))
+      .filter(node => !node.querySelector('a[href]'))
+      .forEach(node => node.remove());
+
+    const groupedRows = new Set();
+    sections.forEach(([key, title, itemAliases]) => {
+      const rows = [];
+      itemAliases.forEach(aliases => {
+        const link = links.find(candidate => linkMatches(candidate, aliases));
+        const row = link && topLevelRow(link);
+        if (row && !groupedRows.has(row)) {
+          groupedRows.add(row);
+          rows.push(row);
+        }
+      });
+      if (!rows.length) return;
+      const heading = document.createElement('div');
       heading.classList.add('nav-section', 'et-ui-nav-section');
       heading.dataset.etSidebarSection = key;
       heading.textContent = title;
-      if (heading !== firstRow.previousElementSibling) parent.insertBefore(heading, firstRow);
+      sidebarNav.appendChild(heading);
+      rows.forEach(row => sidebarNav.appendChild(row));
     });
+
+    Array.from(sidebarNav.children)
+      .filter(row => row.querySelector && row.querySelector('a[href]') && !groupedRows.has(row))
+      .forEach(row => sidebarNav.appendChild(row));
+    sidebarNav.dataset.etSidebarGrouped = 'true';
   }
 
   document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href]').forEach(link => {

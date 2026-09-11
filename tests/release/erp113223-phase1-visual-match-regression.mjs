@@ -34,7 +34,7 @@ ok(!releaseMiddleware.includes("asset('erp-ui/erp-professional.js')"), 'old publ
 ok((releaseMiddleware.match(/data-et-professional-ui=/g) || []).length >= 2, 'shared UI has a single-injection sentinel');
 ok(releaseMiddleware.includes("str_contains($html, 'data-et-professional-ui=')"), 'duplicate shared injection is blocked');
 
-const activeBlock = css.match(/html body\.et-ui-professional \.sidebar \.nav-item\.active,[\s\S]*?box-shadow:none!important;\s*}/)?.[0] || '';
+const activeBlock = css.match(/html body\.et-ui-professional \.sidebar a\.nav-item\.active,[\s\S]*?box-shadow:none!important;\s*}/)?.[0] || '';
 ok(activeBlock.length > 0, 'approved active-navigation override exists');
 ok(activeBlock.includes('rgba(37,99,235,.18)'), 'active navigation uses a subtle blue tint');
 ok(activeBlock.includes('border-left:3px solid #60a5fa'), 'active navigation has a restrained left marker');
@@ -44,18 +44,25 @@ ok(activeBlock.includes('border-radius:6px') && activeBlock.includes('font-weigh
 ok(js.includes("link.style.setProperty('background', 'rgba(37,99,235,.18)'"), 'runtime active state defeats legacy white inline styling');
 ok(js.includes("link.style.setProperty('color', '#fff'"), 'active navigation retains strong label contrast');
 ok(js.includes("link.style.setProperty('border-left-color', '#60a5fa'"), 'runtime active state uses the thin approved marker');
-ok(css.includes('height:35px!important') && css.includes('max-height:35px!important'), 'sidebar rows are compact');
+ok(css.includes('height:31px!important') && css.includes('max-height:31px!important'), 'sidebar clickable rows are compact');
+ok(!css.includes('html body.et-ui-professional .sidebar .nav-item,\nhtml body.et-ui-professional .sidebar a'), 'expandable nav containers are not assigned the fixed clickable-row height');
 ok(css.includes('scrollbar-gutter:auto!important'), 'sidebar avoids premature scrollbar gutter');
 ok(css.includes('scrollbar-color:transparent transparent') && css.includes('.nav:hover::-webkit-scrollbar-thumb'), 'sidebar scrollbar remains quiet until interaction');
 ok(css.includes('width:18px!important') && css.includes('min-width:18px!important'), 'sidebar icons use a consistent aligned footprint');
 ok(css.includes('color:#91a6bf!important') && css.includes('letter-spacing:.1em!important'), 'sidebar section headings remain clear and restrained');
 ok(css.includes('width:38px!important') && css.includes('height:38px!important'), 'sidebar logo area is compact and aligned');
-ok(css.includes('min-height:46px!important') && css.includes('opacity:.58'), 'sidebar footer is compact and restrained');
-for (const heading of ['MAIN','ADMINISTRATION','MASTER DATA','OPERATIONS','ACCOUNTING / REPORTS']) {
+ok(css.includes('min-height:42px!important') && css.includes('opacity:.58'), 'sidebar footer is compact and restrained');
+ok(css.includes('min-height:60px!important') && css.includes('margin:10px 9px 2px!important'), 'logo and section rhythm are compact');
+for (const heading of ['MAIN','ADMINISTRATION','MASTER DATA','OPERATIONS','ACCOUNTING','SYSTEM']) {
   ok(js.includes(`'${heading}'`), `sidebar grouping includes ${heading}`);
 }
 ok(js.includes("document.createElement('div')") && js.includes("heading.classList.add('nav-section', 'et-ui-nav-section')"), 'sidebar grouping adds presentation headings only');
-ok(js.includes('parent.insertBefore(heading, firstRow)') && !js.includes("document.createElement('a')"), 'sidebar grouping preserves existing links and their permission authority');
+ok(js.includes('sidebarNav.appendChild(row)') && !js.includes("document.createElement('a')"), 'sidebar grouping moves existing rows without creating links');
+ok(js.includes("['party master'], ['travel masters'], ['products & services'], ['currency rates'], ['financial years']"), 'Master Data has the approved order');
+ok(js.includes("['bookings'], ['sales invoices'], ['supplier costing']"), 'Operations preserves Supplier Costing in the approved order');
+ok(js.includes("['chart of accounts'], ['account mappings'], ['journals']") && js.includes("['expense voucher', 'expense vouchers']"), 'Accounting uses the approved existing-link order');
+ok(js.includes("['health & updates', 'system health & updates', 'system settings']"), 'System preserves its existing health/settings link');
+ok(js.includes("node.remove()") && js.includes("sidebarNav.dataset.etSidebarGrouped = 'true'"), 'legacy headings are replaced once without duplicate section labels');
 for (const module of ['dashboard','administration','organization','master-data','travel','operations','sales','purchase','accounting','reports','system']) {
   ok(css.includes(`href*=\"${module}\"`), `module accent remains available for ${module}`);
 }
@@ -116,7 +123,7 @@ for (const key of ['today_sales','month_sales','receivables','payables','cash_ba
   ok(dashboardService.includes(`'${key}'`), `Dashboard service still supplies ${key}`);
 }
 ok(!/DB::|->insert\(|->update\(|->delete\(|->save\(/.test(css + js), 'Phase 1 browser assets cannot mutate data');
-ok(version === 'v1.1.33.225-ERP11.3.225', 'version is not incremented');
+ok(version === 'v1.1.33.226-ERP11.3.226', 'version is not incremented');
 const migrations = fs.readdirSync(new URL('../../database/migrations/', import.meta.url));
 ok(!migrations.some(file => file.includes('visual_match') || file.includes('phase1')), 'Phase 1 adds no migration');
 

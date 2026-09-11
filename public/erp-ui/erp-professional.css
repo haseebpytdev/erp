@@ -81,18 +81,15 @@ body.et-ui-professional .top-bar small{font-size:11px!important;color:var(--et-m
 }
 body.et-ui-professional .sidebar .nav,
 body.et-ui-professional .navbar-vertical .nav,
-body.et-ui-professional .side-nav .nav{padding:8px 7px 12px!important;gap:1px!important}
-body.et-ui-professional .sidebar .nav-item,
+body.et-ui-professional .side-nav .nav{padding:5px 7px 7px!important;gap:0!important}
 body.et-ui-professional .sidebar a,
-body.et-ui-professional .navbar-vertical .nav-item,
 body.et-ui-professional .navbar-vertical a,
-body.et-ui-professional .side-nav .nav-item,
 body.et-ui-professional .side-nav a{
   --et-nav-accent:#75aef6;
-  min-height:36px!important;
-  margin:1px 0!important;
-  padding:7px 9px!important;
-  gap:9px!important;
+  min-height:31px!important;
+  margin:0!important;
+  padding:5px 9px!important;
+  gap:8px!important;
   border:0!important;
   border-left:3px solid transparent!important;
   border-radius:7px!important;
@@ -112,15 +109,16 @@ body.et-ui-professional .sidebar a[href*="purchase"],body.et-ui-professional .na
 body.et-ui-professional .sidebar a[href*="accounting"],body.et-ui-professional .navbar-vertical a[href*="accounting"]{--et-nav-accent:#8296f5}
 body.et-ui-professional .sidebar a[href*="reports"],body.et-ui-professional .navbar-vertical a[href*="reports"]{--et-nav-accent:#47c1b2}
 body.et-ui-professional .sidebar a[href*="system"],body.et-ui-professional .navbar-vertical a[href*="system"]{--et-nav-accent:#9aaabe}
-body.et-ui-professional .sidebar .nav-item:hover,
 body.et-ui-professional .sidebar a:hover,
-body.et-ui-professional .navbar-vertical .nav-item:hover,
-body.et-ui-professional .navbar-vertical a:hover{background:rgba(255,255,255,.055)!important;color:#fff!important}
-body.et-ui-professional .sidebar .nav-item.active,
+body.et-ui-professional .navbar-vertical a:hover,
+body.et-ui-professional .side-nav a:hover{background:rgba(255,255,255,.05)!important;color:#fff!important}
+body.et-ui-professional .sidebar a.nav-item.active,
+body.et-ui-professional .sidebar .nav-item.active>a,
 body.et-ui-professional .sidebar a.active,
 body.et-ui-professional .sidebar a.et-ui-current,
 body.et-ui-professional .sidebar a[aria-current="page"],
-body.et-ui-professional .navbar-vertical .nav-item.active,
+body.et-ui-professional .navbar-vertical a.nav-item.active,
+body.et-ui-professional .navbar-vertical .nav-item.active>a,
 body.et-ui-professional .navbar-vertical a.active,
 body.et-ui-professional .navbar-vertical a.et-ui-current,
 body.et-ui-professional .navbar-vertical a[aria-current="page"]{
@@ -150,7 +148,7 @@ body.et-ui-professional .sidebar .nav-heading,
 body.et-ui-professional .sidebar .menu-title,
 body.et-ui-professional .navbar-vertical .nav-section,
 body.et-ui-professional .navbar-vertical .nav-heading{
-  margin:13px 9px 5px!important;
+  margin:10px 9px 2px!important;
   color:#91a6bf!important;
   font-size:9.5px!important;
   font-weight:800!important;
@@ -369,8 +367,8 @@ html body.et-ui-professional .sidebar .sidebar-header,
 html body.et-ui-professional .sidebar .brand,
 html body.et-ui-professional .sidebar .logo,
 html body.et-ui-professional .navbar-vertical .navbar-brand{
-  min-height:64px!important;
-  padding:10px 13px!important;
+  min-height:60px!important;
+  padding:9px 13px!important;
   margin:0!important;
   gap:10px!important;
   border-bottom:1px solid rgba(255,255,255,.07)!important;
@@ -381,7 +379,7 @@ html body.et-ui-professional .navbar-vertical .navbar-brand img{width:38px!impor
 html body.et-ui-professional .sidebar .nav,
 html body.et-ui-professional .navbar-vertical .nav,
 html body.et-ui-professional .side-nav .nav{
-  padding:7px 8px 9px!important;
+  padding:5px 8px 7px!important;
   gap:0!important;
   scrollbar-gutter:auto!important;
   scrollbar-width:thin;
@@ -397,17 +395,15 @@ html body.et-ui-professional .sidebar .nav:hover,
 html body.et-ui-professional .navbar-vertical .nav:hover{scrollbar-color:rgba(150,177,207,.3) transparent}
 html body.et-ui-professional .sidebar .nav:hover::-webkit-scrollbar-thumb,
 html body.et-ui-professional .navbar-vertical .nav:hover::-webkit-scrollbar-thumb{background:rgba(150,177,207,.3)}
-html body.et-ui-professional .sidebar .nav-item,
 html body.et-ui-professional .sidebar a,
-html body.et-ui-professional .navbar-vertical .nav-item,
 html body.et-ui-professional .navbar-vertical a,
-html body.et-ui-professional .side-nav .nav-item,
 html body.et-ui-professional .side-nav a{
-  height:35px!important;
-  min-height:35px!important;
-  max-height:35px!important;
+  height:31px!important;
+  min-height:31px!important;
+  max-height:31px!important;
   margin:0!important;
-  padding:7px 9px!important;
+  padding:5px 9px!important;
+  gap:8px!important;
   border-radius:6px!important;
   font-size:12px!important;
 }
@@ -419,18 +415,18 @@ html body.et-ui-professional .navbar-vertical .nav-heading{
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
-  margin:13px 9px 5px!important;
+  margin:10px 9px 2px!important;
   padding:0!important;
   font-size:9.5px!important;
   color:#91a6bf!important;
   letter-spacing:.1em!important;
 }
-html body.et-ui-professional .sidebar .nav-item.active,
+html body.et-ui-professional .sidebar a.nav-item.active,
 html body.et-ui-professional .sidebar .nav-item.active>a,
 html body.et-ui-professional .sidebar a.active,
 html body.et-ui-professional .sidebar a.et-ui-current,
 html body.et-ui-professional .sidebar a[aria-current="page"],
-html body.et-ui-professional .navbar-vertical .nav-item.active,
+html body.et-ui-professional .navbar-vertical a.nav-item.active,
 html body.et-ui-professional .navbar-vertical .nav-item.active>a,
 html body.et-ui-professional .navbar-vertical a.active,
 html body.et-ui-professional .navbar-vertical a.et-ui-current,
@@ -443,14 +439,18 @@ html body.et-ui-professional .navbar-vertical a[aria-current="page"]{
   font-weight:650!important;
   box-shadow:none!important;
 }
-html body.et-ui-professional .sidebar .nav-item.active *,
+html body.et-ui-professional .sidebar a.nav-item.active *,
+html body.et-ui-professional .sidebar .nav-item.active>a *,
 html body.et-ui-professional .sidebar a.et-ui-current *,
-html body.et-ui-professional .navbar-vertical .nav-item.active *,
+html body.et-ui-professional .navbar-vertical a.nav-item.active *,
+html body.et-ui-professional .navbar-vertical .nav-item.active>a *,
 html body.et-ui-professional .navbar-vertical a.et-ui-current *{color:inherit!important}
-html body.et-ui-professional .sidebar .nav-item.active>span:first-child,
+html body.et-ui-professional .sidebar a.nav-item.active>span:first-child,
+html body.et-ui-professional .sidebar .nav-item.active>a>span:first-child,
 html body.et-ui-professional .sidebar a.et-ui-current>span:first-child,
 html body.et-ui-professional .sidebar a[aria-current="page"]>span:first-child,
-html body.et-ui-professional .navbar-vertical .nav-item.active>span:first-child,
+html body.et-ui-professional .navbar-vertical a.nav-item.active>span:first-child,
+html body.et-ui-professional .navbar-vertical .nav-item.active>a>span:first-child,
 html body.et-ui-professional .navbar-vertical a.et-ui-current>span:first-child,
 html body.et-ui-professional .navbar-vertical a[aria-current="page"]>span:first-child,
 html body.et-ui-professional .sidebar a.et-ui-current>i:first-child,
@@ -459,8 +459,8 @@ html body.et-ui-professional .sidebar a.et-ui-current>svg:first-child,
 html body.et-ui-professional .navbar-vertical a.et-ui-current>svg:first-child{color:#7dd3fc!important}
 html body.et-ui-professional .sidebar footer,
 html body.et-ui-professional .sidebar .sidebar-footer{
-  min-height:46px!important;
-  padding:7px 13px!important;
+  min-height:42px!important;
+  padding:6px 13px!important;
   border-top:1px solid rgba(255,255,255,.07)!important;
   font-size:9px!important;
   line-height:1.35!important;
