@@ -9,6 +9,13 @@
     try { return new URL(value, location.origin).pathname.replace(/\/+$/g, '') || '/'; }
     catch (_) { return ''; }
   };
+  const normalizeSearch = value => {
+    const params = new URLSearchParams(String(value || '').replace(/^\?/, ''));
+    return Array.from(params.entries())
+      .sort(([ak, av], [bk, bv]) => ak.localeCompare(bk) || av.localeCompare(bv))
+      .map(([key, val]) => `${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
+      .join('&');
+  };
 
   const sidebar = document.querySelector('.sidebar,.navbar-vertical,.side-nav');
   if (sidebar) {
@@ -145,6 +152,39 @@
       });
 
       canonicalNav.dataset.etSidebarGrouped = 'reference-v2';
+
+      // The base professional script historically marked every link sharing the
+      // current pathname as selected. Cash voucher workspaces share one path and
+      // differ only by ?type= / ?mode=, so Receipts, Payments, Expense and Contra
+      // could all appear active together. Native server-side .active remains
+      // authoritative; otherwise require an exact path + query-string match.
+      const currentPath = normalizePath(location.pathname);
+      const currentSearch = normalizeSearch(location.search);
+      allLinks.forEach(link => {
+        let linkUrl;
+        try { linkUrl = new URL(link.getAttribute('href'), location.origin); }
+        catch (_) { return; }
+
+        const nativeActive = link.classList.contains('active')
+          || Boolean(link.parentElement && link.parentElement.classList.contains('active'));
+        const exactLocation = normalizePath(linkUrl.pathname) === currentPath
+          && normalizeSearch(linkUrl.search) === currentSearch;
+        const shouldBeCurrent = nativeActive || exactLocation;
+        const wasUiCurrent = link.classList.contains('et-ui-current');
+
+        if (shouldBeCurrent) {
+          link.classList.add('et-ui-current');
+          link.setAttribute('aria-current', 'page');
+          return;
+        }
+
+        link.classList.remove('et-ui-current');
+        if (link.getAttribute('aria-current') === 'page') link.removeAttribute('aria-current');
+        if (wasUiCurrent && !nativeActive) {
+          ['background', 'color', 'border-left-color', 'border-radius', 'font-weight', 'box-shadow']
+            .forEach(property => link.style.removeProperty(property));
+        }
+      });
     }
   }
 
