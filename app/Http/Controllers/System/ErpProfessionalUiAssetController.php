@@ -11,42 +11,35 @@ final class ErpProfessionalUiAssetController extends Controller
     {
         $prepaint = base_path('public/erp-ui/erp-sidebar-prepaint.css');
         $base = base_path('public/erp-ui/erp-professional.css');
-        $voucherUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
-        $registerUi = base_path('public/erp-ui/erp-operation-registers.css');
-        $bookingRegisterUi = base_path('public/erp-ui/erp-booking-register-reference.css');
+        $accountingUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
+        $registerWorkspaceUi = base_path('public/erp-ui/erp-booking-register-reference.css');
 
         abort_unless(
             is_file($prepaint)
             && is_file($base)
-            && is_file($voucherUi)
-            && is_file($registerUi)
-            && is_file($bookingRegisterUi),
+            && is_file($accountingUi)
+            && is_file($registerWorkspaceUi),
             404
         );
 
         return $this->textAsset(
             file_get_contents($prepaint)
             ."\n".file_get_contents($base)
-            ."\n".file_get_contents($voucherUi)
-            ."\n".file_get_contents($registerUi)
-            ."\n".file_get_contents($bookingRegisterUi),
+            ."\n".file_get_contents($accountingUi)
+            ."\n".file_get_contents($registerWorkspaceUi),
             'text/css; charset=UTF-8'
         );
     }
 
     public function js(): Response
     {
-        $registerUi = base_path('public/erp-ui/erp-operation-registers.js');
-        $bookingRegisterUi = base_path('public/erp-ui/erp-booking-register-reference.js');
-        $commercialRegisterUi = base_path('public/erp-ui/erp-commercial-register-reference.js');
+        $registerWorkspaceUi = base_path('public/erp-ui/erp-register-workspace.js');
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
         $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
 
         abort_unless(
-            is_file($registerUi)
-            && is_file($bookingRegisterUi)
-            && is_file($commercialRegisterUi)
+            is_file($registerWorkspaceUi)
             && is_file($base)
             && is_file($finalizer)
             && is_file($ready),
@@ -54,9 +47,7 @@ final class ErpProfessionalUiAssetController extends Controller
         );
 
         return $this->textAsset(
-            file_get_contents($registerUi)
-            ."\n".file_get_contents($bookingRegisterUi)
-            ."\n".file_get_contents($commercialRegisterUi)
+            file_get_contents($registerWorkspaceUi)
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($finalizer)
             ."\n".file_get_contents($ready),
