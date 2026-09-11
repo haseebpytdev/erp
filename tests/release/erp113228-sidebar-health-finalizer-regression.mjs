@@ -20,7 +20,7 @@ for (const label of ['receipts','payments','expense vouchers','contra vouchers',
   ok(finalizer.includes(`['${label}']`), `Accounting ordering includes ${label}`);
 }
 ok(finalizer.includes("canonicalNav.dataset.etSidebarGrouped = 'reference-v2'"), 'final canonical grouping is marked');
-ok(finalizer.includes("heading.style.setProperty('margin', '10px 9px 0', 'important')"), 'section headings remain tight to their first child');
+ok(finalizer.includes("heading.style.setProperty('margin', '16px 9px 0', 'important')"), 'section headings retain approved separation from the preceding group');
 ok(finalizer.includes("normalize(node.textContent) === 'safe web-based application maintenance'"), 'System Health legacy maintenance title is detected');
 ok(finalizer.includes("healthHeading.textContent = 'System Health'"), 'System Health page gets concise title');
 ok(finalizer.includes("status.textContent = 'Database schema is up to date.'"), 'database status copy is concise');
@@ -28,7 +28,7 @@ ok(finalizer.includes('ticket-level sale, purchase and commissions are visible')
 ok(finalizer.includes("card.dataset.etObsoleteHealthCommercialCopy = 'hidden'"), 'commercial explanation block is hidden as presentation-only cleanup');
 ok(assetController.includes("base_path('public/erp-ui/erp-professional-finalize.js')"), 'Laravel asset response includes the finalizer');
 ok(assetController.includes('file_get_contents($base)."\\n".file_get_contents($finalizer)'), 'base UI runs before finalizer');
-ok(version === 'v1.1.33.230-ERP11.3.230', 'functional checkpoint does not bump release version');
+ok(version === 'v1.1.33.231-ERP11.3.231', 'functional checkpoint does not bump release version');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

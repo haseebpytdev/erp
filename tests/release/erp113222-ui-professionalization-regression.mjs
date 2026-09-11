@@ -90,17 +90,17 @@ ok(pnlController.includes('profitAndLossPresentation(array $report, array $accou
 for (const key of ['revenue','direct_cost','gross_profit','operating_expenses','operating_profit','other_income','other_expense','net_profit']) {
   ok(managementService.includes(`'${key}' =>`), `management calculation ${key} remains present`);
 }
-ok(version === 'v1.1.33.230-ERP11.3.230', 'packaged release version is current');
+ok(version === 'v1.1.33.231-ERP11.3.231', 'packaged release version is current');
 
 const staleVisibleLabels = {
-  'resources/views/system/sales-invoice-workflow-compare-v11379.blade.php': 'System Diagnostic · ERP-11.3.79',
-  'resources/views/system/production-data-reset-v103172.blade.php': 'System Maintenance · ERP-10.31.72',
-  'resources/views/system/post-reset-financial-cleanup-v103179.blade.php': 'System Maintenance · ERP-10.31.79',
-  'resources/views/system/cash-voucher-native-journal-repair-v11319.blade.php': 'System Repair · ERP-11.3.21',
-  'resources/views/system/accounting-journal-diagnostic-v11318.blade.php': 'System Diagnostic · ERP-11.3.21',
-  'resources/views/administration/erp-user-management.blade.php': 'ERP-02 · Users · ERP-10.31.75',
-  'resources/views/operations/bookings/group-package-unified-v103172.blade.php': 'Group Umrah Booking · ERP-10.31.72',
-  'resources/views/accounting/chart-of-accounts/workspace.blade.php': 'Accounting Foundation · ERP-11.3.10',
+  'resources/views/system/sales-invoice-workflow-compare-v11379.blade.php': 'System Diagnostic Â· ERP-11.3.79',
+  'resources/views/system/production-data-reset-v103172.blade.php': 'System Maintenance Â· ERP-10.31.72',
+  'resources/views/system/post-reset-financial-cleanup-v103179.blade.php': 'System Maintenance Â· ERP-10.31.79',
+  'resources/views/system/cash-voucher-native-journal-repair-v11319.blade.php': 'System Repair Â· ERP-11.3.21',
+  'resources/views/system/accounting-journal-diagnostic-v11318.blade.php': 'System Diagnostic Â· ERP-11.3.21',
+  'resources/views/administration/erp-user-management.blade.php': 'ERP-02 Â· Users Â· ERP-10.31.75',
+  'resources/views/operations/bookings/group-package-unified-v103172.blade.php': 'Group Umrah Booking Â· ERP-10.31.72',
+  'resources/views/accounting/chart-of-accounts/workspace.blade.php': 'Accounting Foundation Â· ERP-11.3.10',
 };
 for (const [path, label] of Object.entries(staleVisibleLabels)) {
   ok(!read(path).includes(label), `${path} has no stale visible release label`);

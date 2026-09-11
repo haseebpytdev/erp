@@ -17,7 +17,7 @@ ok(js.includes("heading.style.setProperty('margin', '10px 9px 0', 'important')")
 ok(js.includes("heading.style.setProperty('line-height', '1', 'important')"), 'section headings use tight reference line height');
 ok(js.includes("heading.style.setProperty('min-height', '0', 'important')"), 'section headings cannot inherit clickable-row height');
 ok(!js.includes("document.createElement('a')"), 'dashboard recovery does not create a fake navigation link');
-ok(version === 'v1.1.33.230-ERP11.3.230', 'functional checkpoint does not bump release version');
+ok(version === 'v1.1.33.231-ERP11.3.231', 'functional checkpoint does not bump release version');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

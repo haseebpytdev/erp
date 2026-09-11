@@ -1,13 +1,13 @@
-# Easy Ticket ERP — Current Local Authority
+# Easy Ticket ERP â€” Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.230
-APPLICATION_VERSION=v1.1.33.230-ERP11.3.230
+CURRENT_VERSION=ERP-11.3.231
+APPLICATION_VERSION=v1.1.33.231-ERP11.3.231
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.230
+LAST_PACKAGED_RELEASE=ERP-11.3.231
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -29,7 +29,7 @@ non-logo voucher behavior changed.
 
 ERP-11.3.158 release candidate: completes embedded Company report-logo value
 resolution and changes General/Multi-Service voucher footer authority to the
-approved Saudi Company Footer → Company Default Footer rule. Pakistan IATA
+approved Saudi Company Footer â†’ Company Default Footer rule. Pakistan IATA
 footer inheritance is removed; no migration is added.
 
 ERP-11.3.159 release candidate: constrains the real voucher header logo to an
@@ -337,3 +337,10 @@ cash-voucher routes use path + query-string authority so Receipts, Payments,
 Expense Vouchers and Contra Vouchers cannot all appear selected simultaneously.
 No business, accounting, booking or database logic changes are included and no
 migration is required.
+ERP-11.3.231 finalizes the approved shared ERP sidebar section-heading rhythm.
+Generated section headings retain 16px separation from the preceding group,
+9px child padding before the first permitted row and line-height 1.15.
+Authenticated professional-UI delivery, guest-login redirect protection,
+query-aware cash-voucher active states, native rendered-link authority and
+permissions remain unchanged. No business, accounting, booking or database
+logic changes are included and no migration is required.

@@ -1,4 +1,4 @@
-ERP-11.3.230 DIRECT UPLOAD — SIDEBAR RUNTIME CORRECTIONS
+ERP-11.3.230 DIRECT UPLOAD â€” SIDEBAR RUNTIME CORRECTIONS
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.230 finalizes shared ERP sidebar runtime behavior. Section headings
-retain controlled spacing above their first child, guest/login pages no longer
-load authenticated ERP UI asset URLs, and cash-voucher navigation uses exact
-path plus query-string matching so only the current voucher workspace is shown
-as selected.
+ERP-11.3.231 finalizes shared ERP sidebar section-heading rhythm. Generated
+section headings retain 16px separation from the preceding group, 9px child
+padding before the first permitted row and line-height 1.15. Authenticated
+professional-UI delivery, guest-login redirect protection and query-aware
+cash-voucher active-state behavior remain unchanged.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
