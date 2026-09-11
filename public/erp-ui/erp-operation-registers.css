@@ -1,0 +1,445 @@
+/* ERP-11.3.236 — shared professional register styling for Bookings, Sales Invoices and Supplier Costing.
+   Presentation only: no booking, invoice, supplier-costing, workflow, posting or persistence behavior is changed. */
+
+html.et-register-workspace body.et-ui-professional{
+  --et-reg-blue:#0b67df;
+  --et-reg-blue-strong:#075bc7;
+  --et-reg-border:#dce5ef;
+  --et-reg-border-soft:#e9eef4;
+  --et-reg-text:#17243a;
+  --et-reg-muted:#718197;
+  --et-reg-bg:#f4f7fb;
+  --et-reg-surface:#fff;
+  --et-reg-green:#16845f;
+  --et-reg-amber:#a86d0b;
+  --et-reg-red:#c84d57;
+  --et-reg-radius:12px;
+  --et-reg-shadow:0 5px 18px rgba(28,45,68,.045);
+}
+
+html.et-register-workspace body.et-ui-professional .et-reg-shell{
+  width:100%;
+  max-width:1500px;
+  margin:0 auto;
+  color:var(--et-reg-text);
+}
+
+/* Page heading */
+html.et-register-workspace body.et-ui-professional .et-reg-header{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:18px!important;
+  margin:0 0 16px!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-title-block{
+  min-width:0;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-title{
+  margin:4px 0!important;
+  color:var(--et-reg-text)!important;
+  font-size:28px!important;
+  line-height:1.08!important;
+  font-weight:850!important;
+  letter-spacing:-.025em!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-header .text-muted,
+html.et-register-workspace body.et-ui-professional .et-reg-title-block .text-muted,
+html.et-register-workspace body.et-ui-professional .et-reg-title + div,
+html.et-register-workspace body.et-ui-professional .et-reg-title + p{
+  max-width:850px;
+  color:var(--et-reg-muted)!important;
+  font-size:12px!important;
+  line-height:1.48!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-header [class*="kicker"],
+html.et-register-workspace body.et-ui-professional .et-reg-title-block > small:first-child{
+  color:var(--et-reg-blue)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:.055em!important;
+  text-transform:uppercase!important;
+}
+
+html.et-register-workspace body.et-ui-professional .et-reg-primary-action{
+  min-height:39px!important;
+  padding:8px 14px!important;
+  border:1px solid var(--et-reg-blue)!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,#1374ec 0%,#0963d7 100%)!important;
+  color:#fff!important;
+  box-shadow:0 4px 11px rgba(11,103,223,.16)!important;
+  font-size:10.5px!important;
+  font-weight:850!important;
+  text-decoration:none!important;
+  white-space:nowrap!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-primary-action:hover{
+  background:linear-gradient(180deg,#0f6fe8 0%,#075bc7 100%)!important;
+  color:#fff!important;
+}
+
+/* KPI / status cards already rendered by the host ERP. */
+html.et-register-workspace body.et-ui-professional .et-reg-metric{
+  min-height:84px!important;
+  padding:13px 14px!important;
+  border:1px solid var(--et-reg-border)!important;
+  border-radius:var(--et-reg-radius)!important;
+  background:var(--et-reg-surface)!important;
+  box-shadow:var(--et-reg-shadow)!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-metric small,
+html.et-register-workspace body.et-ui-professional .et-reg-metric .text-muted{
+  color:#7a899c!important;
+  font-size:9px!important;
+  font-weight:700!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-metric strong,
+html.et-register-workspace body.et-ui-professional .et-reg-metric h3,
+html.et-register-workspace body.et-ui-professional .et-reg-metric h4{
+  color:var(--et-reg-text)!important;
+  font-size:18px!important;
+  line-height:1.1!important;
+  font-weight:900!important;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Search / filter area */
+html.et-register-workspace body.et-ui-professional .et-reg-filter{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr))!important;
+  gap:10px 12px!important;
+  align-items:end!important;
+  margin:0 0 16px!important;
+  padding:12px 14px 14px!important;
+  border:1px solid var(--et-reg-border)!important;
+  border-radius:var(--et-reg-radius)!important;
+  background:#fff!important;
+  box-shadow:var(--et-reg-shadow)!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-filter::before{
+  content:"Search & Filter";
+  grid-column:1 / -1;
+  min-height:31px;
+  display:flex;
+  align-items:center;
+  padding:0 0 8px;
+  border-bottom:1px solid #edf1f6;
+  color:#23364d;
+  font-size:12px;
+  font-weight:900;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-filter > *{
+  min-width:0;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-filter label{
+  display:block!important;
+  margin:0 0 5px!important;
+  color:#596b82!important;
+  font-size:9px!important;
+  line-height:1.2!important;
+  font-weight:900!important;
+  letter-spacing:.04em!important;
+  text-transform:uppercase!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-filter input:not([type="hidden"]),
+html.et-register-workspace body.et-ui-professional .et-reg-filter select{
+  width:100%!important;
+  min-height:40px!important;
+  border:1px solid #d5dfea!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#293b52!important;
+  font-size:11px!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-filter button,
+html.et-register-workspace body.et-ui-professional .et-reg-filter .btn,
+html.et-register-workspace body.et-ui-professional .et-reg-filter a.btn,
+html.et-register-workspace body.et-ui-professional .et-reg-filter .sci-btn{
+  min-height:40px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-filter button[type="submit"],
+html.et-register-workspace body.et-ui-professional .et-reg-filter .btn-primary{
+  border-color:var(--et-reg-blue)!important;
+  background:linear-gradient(180deg,#1374ea 0%,#0963d7 100%)!important;
+  color:#fff!important;
+}
+
+/* Register card / table */
+html.et-register-workspace body.et-ui-professional .et-reg-table-card{
+  overflow:hidden!important;
+  border:1px solid var(--et-reg-border)!important;
+  border-radius:var(--et-reg-radius)!important;
+  background:#fff!important;
+  box-shadow:var(--et-reg-shadow)!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-table-card.table-responsive,
+html.et-register-workspace body.et-ui-professional .et-reg-table-card .table-responsive{
+  overflow-x:auto!important;
+  -webkit-overflow-scrolling:touch;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table{
+  width:100%!important;
+  margin:0!important;
+  border-collapse:collapse!important;
+  border-spacing:0!important;
+  background:#fff!important;
+  table-layout:auto!important;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table th,
+html.et-register-workspace body.et-ui-professional table.et-reg-table td{
+  padding:10px 10px!important;
+  border:0!important;
+  border-bottom:1px solid #edf1f5!important;
+  vertical-align:middle!important;
+  text-align:left!important;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table th{
+  background:#f7f9fc!important;
+  color:#53647a!important;
+  font-size:8.8px!important;
+  line-height:1.2!important;
+  font-weight:900!important;
+  letter-spacing:.025em!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table td{
+  color:#2b3b50!important;
+  font-size:10.5px!important;
+  line-height:1.35!important;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table tbody tr:hover{
+  background:#fafdff!important;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table tbody tr:last-child td{
+  border-bottom:0!important;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table a{
+  color:#0961cf!important;
+  font-weight:800!important;
+  text-decoration:none!important;
+}
+html.et-register-workspace body.et-ui-professional table.et-reg-table a:hover{
+  color:#0758ba!important;
+  text-decoration:underline!important;
+}
+
+/* Common statuses */
+html.et-register-workspace body.et-ui-professional .et-reg-status{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:21px!important;
+  padding:4px 7px!important;
+  border:1px solid transparent!important;
+  border-radius:999px!important;
+  font-size:8.5px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+  white-space:nowrap!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-status-draft{
+  border-color:#e1e7ee!important;
+  background:#edf1f5!important;
+  color:#5c6c80!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-status-pending{
+  border-color:#f1dfb7!important;
+  background:#fff4dd!important;
+  color:#9a6508!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-status-success{
+  border-color:#cdebdc!important;
+  background:#e7f7ef!important;
+  color:#148158!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-status-danger{
+  border-color:#f3ced2!important;
+  background:#fdecef!important;
+  color:#b8424e!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-status-info{
+  border-color:#cfe1f7!important;
+  background:#eaf3ff!important;
+  color:#2569bd!important;
+}
+
+/* Row action affordance */
+html.et-register-workspace body.et-ui-professional .et-reg-row-action{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:30px!important;
+  min-height:30px!important;
+  padding:5px 8px!important;
+  border:1px solid #dfe7f0!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#1764c3!important;
+  text-decoration:none!important;
+  font-size:10px!important;
+  font-weight:850!important;
+}
+html.et-register-workspace body.et-ui-professional .et-reg-row-action:hover{
+  border-color:#b9cbe0!important;
+  background:#f7faff!important;
+}
+
+/* Pagination */
+html.et-register-workspace body.et-ui-professional .pagination{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:5px!important;
+  margin:13px 0 0!important;
+}
+html.et-register-workspace body.et-ui-professional .pagination .page-link,
+html.et-register-workspace body.et-ui-professional .pagination a,
+html.et-register-workspace body.et-ui-professional .pagination span{
+  min-width:29px!important;
+  min-height:29px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0 8px!important;
+  border:1px solid #dfe7f0!important;
+  border-radius:6px!important;
+  background:#fff!important;
+  color:#405269!important;
+  font-size:10px!important;
+  text-decoration:none!important;
+}
+html.et-register-workspace body.et-ui-professional .pagination .active .page-link,
+html.et-register-workspace body.et-ui-professional .pagination .active,
+html.et-register-workspace body.et-ui-professional .pagination [aria-current="page"]{
+  border-color:var(--et-reg-blue)!important;
+  background:var(--et-reg-blue)!important;
+  color:#fff!important;
+  font-weight:900!important;
+}
+
+/* Supplier Costing native overlay view uses its own stable class names. */
+html.et-register-supplier-costing body.et-ui-professional .sci{
+  max-width:1500px!important;
+  margin:0 auto!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-head{
+  align-items:flex-start!important;
+  margin-bottom:16px!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-kicker{
+  color:var(--et-reg-blue)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:.055em!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-head h2{
+  margin:4px 0!important;
+  color:var(--et-reg-text)!important;
+  font-size:28px!important;
+  line-height:1.08!important;
+  font-weight:850!important;
+  letter-spacing:-.025em!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-tools{
+  display:grid!important;
+  grid-template-columns:minmax(240px,1.6fr) minmax(180px,.8fr) auto!important;
+  gap:10px!important;
+  align-items:end!important;
+  margin:0 0 16px!important;
+  padding:12px 14px 14px!important;
+  border:1px solid var(--et-reg-border)!important;
+  border-radius:var(--et-reg-radius)!important;
+  background:#fff!important;
+  box-shadow:var(--et-reg-shadow)!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-tools::before{
+  content:"Search & Filter";
+  grid-column:1 / -1;
+  min-height:31px;
+  display:flex;
+  align-items:center;
+  padding-bottom:8px;
+  border-bottom:1px solid #edf1f6;
+  color:#23364d;
+  font-size:12px;
+  font-weight:900;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-tools input,
+html.et-register-supplier-costing body.et-ui-professional .sci-tools select{
+  width:100%!important;
+  min-height:40px!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-tools button{
+  min-width:110px!important;
+  min-height:40px!important;
+  border-color:var(--et-reg-blue)!important;
+  background:linear-gradient(180deg,#1374ea 0%,#0963d7 100%)!important;
+  color:#fff!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-card{
+  overflow-x:auto!important;
+  border-color:var(--et-reg-border)!important;
+  border-radius:var(--et-reg-radius)!important;
+  box-shadow:var(--et-reg-shadow)!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-table th,
+html.et-register-supplier-costing body.et-ui-professional .sci-table td{
+  padding:10px!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-table th{
+  background:#f7f9fc!important;
+  color:#53647a!important;
+  font-size:8.8px!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-table td{
+  color:#2b3b50!important;
+  font-size:10.5px!important;
+}
+html.et-register-supplier-costing body.et-ui-professional .sci-badge{
+  display:inline-flex!important;
+  align-items:center!important;
+  min-height:21px!important;
+  padding:4px 7px!important;
+  border-radius:999px!important;
+  font-size:8.5px!important;
+  font-weight:900!important;
+  text-transform:uppercase!important;
+}
+
+@media(max-width:980px){
+  html.et-register-workspace body.et-ui-professional .et-reg-header{
+    flex-direction:column!important;
+    align-items:stretch!important;
+  }
+  html.et-register-workspace body.et-ui-professional .et-reg-primary-action{
+    align-self:flex-start!important;
+  }
+  html.et-register-supplier-costing body.et-ui-professional .sci-tools{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+
+@media(max-width:650px){
+  html.et-register-workspace body.et-ui-professional .et-reg-title,
+  html.et-register-supplier-costing body.et-ui-professional .sci-head h2{
+    font-size:23px!important;
+  }
+  html.et-register-workspace body.et-ui-professional .et-reg-filter,
+  html.et-register-supplier-costing body.et-ui-professional .sci-tools{
+    grid-template-columns:1fr!important;
+  }
+  html.et-register-workspace body.et-ui-professional table.et-reg-table{
+    min-width:760px!important;
+  }
+  html.et-register-workspace body.et-ui-professional .et-reg-table-card{
+    overflow-x:auto!important;
+  }
+}

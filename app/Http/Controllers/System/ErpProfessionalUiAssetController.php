@@ -12,25 +12,45 @@ final class ErpProfessionalUiAssetController extends Controller
         $prepaint = base_path('public/erp-ui/erp-sidebar-prepaint.css');
         $base = base_path('public/erp-ui/erp-professional.css');
         $voucherUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
+        $registerUi = base_path('public/erp-ui/erp-operation-registers.css');
 
-        abort_unless(is_file($prepaint) && is_file($base) && is_file($voucherUi), 404);
+        abort_unless(
+            is_file($prepaint)
+            && is_file($base)
+            && is_file($voucherUi)
+            && is_file($registerUi),
+            404
+        );
 
         return $this->textAsset(
-            file_get_contents($prepaint)."\n".file_get_contents($base)."\n".file_get_contents($voucherUi),
+            file_get_contents($prepaint)
+            ."\n".file_get_contents($base)
+            ."\n".file_get_contents($voucherUi)
+            ."\n".file_get_contents($registerUi),
             'text/css; charset=UTF-8'
         );
     }
 
     public function js(): Response
     {
+        $registerUi = base_path('public/erp-ui/erp-operation-registers.js');
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
         $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
 
-        abort_unless(is_file($base) && is_file($finalizer) && is_file($ready), 404);
+        abort_unless(
+            is_file($registerUi)
+            && is_file($base)
+            && is_file($finalizer)
+            && is_file($ready),
+            404
+        );
 
         return $this->textAsset(
-            file_get_contents($base)."\n".file_get_contents($finalizer)."\n".file_get_contents($ready),
+            file_get_contents($registerUi)
+            ."\n".file_get_contents($base)
+            ."\n".file_get_contents($finalizer)
+            ."\n".file_get_contents($ready),
             'application/javascript; charset=UTF-8'
         );
     }
