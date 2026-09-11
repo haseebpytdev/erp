@@ -1,0 +1,127 @@
+/* ERP-11.3.237 — Booking Register reference-match presentation layer.
+   Read-only DOM enhancement: existing booking rows/links remain authoritative. */
+
+html.et-booking-register-reference body.et-ui-professional{
+  --et-booking-ref-blue:#0d6fe8;
+  --et-booking-ref-blue-dark:#075fc8;
+  --et-booking-ref-green:#13a06c;
+  --et-booking-ref-amber:#f1a528;
+  --et-booking-ref-red:#e25461;
+  --et-booking-ref-ink:#15253b;
+  --et-booking-ref-muted:#718097;
+  --et-booking-ref-border:#dde6ef;
+  --et-booking-ref-soft:#f6f9fc;
+  --et-booking-ref-shadow:0 8px 24px rgba(22,43,70,.055);
+}
+
+html.et-booking-register-reference body.et-ui-professional .et-booking-native-superseded{display:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-reg-shell{max-width:1500px!important}
+html.et-booking-register-reference body.et-ui-professional .et-reg-header{margin-bottom:18px!important}
+html.et-booking-register-reference body.et-ui-professional .et-reg-title{font-size:29px!important;line-height:1.08!important;letter-spacing:-.026em!important}
+html.et-booking-register-reference body.et-ui-professional .et-reg-primary-action{min-height:43px!important;padding:9px 17px!important;border-radius:8px!important;background:linear-gradient(180deg,#147bf2 0%,#0967db 100%)!important;box-shadow:0 6px 15px rgba(13,111,232,.18)!important}
+
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 18px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi{min-height:105px;display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:center;padding:15px 16px;border:1px solid var(--et-booking-ref-border);border-radius:12px;background:#fff;box-shadow:var(--et-booking-ref-shadow)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:16px;font-weight:900}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-blue .et-booking-ref-kpi-icon{background:#eaf3ff;color:var(--et-booking-ref-blue)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-amber .et-booking-ref-kpi-icon{background:#fff5df;color:#d88b13}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-green .et-booking-ref-kpi-icon{background:#e9f8f1;color:var(--et-booking-ref-green)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-red .et-booking-ref-kpi-icon{background:#fdecee;color:var(--et-booking-ref-red)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-label{margin-bottom:5px;color:#40536c;font-size:11px;font-weight:800}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-line{display:flex;align-items:center;gap:9px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-line strong{color:var(--et-booking-ref-ink);font-size:25px;line-height:1;font-weight:900;font-variant-numeric:tabular-nums}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-trend{min-height:22px;display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:9px;line-height:1;font-weight:900}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-trend-up{background:#e8f8f0;color:#169267}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-trend-down{background:#fdecef;color:#c74754}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-trend-flat{background:#eef2f7;color:#67788d}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpi-caption{margin-top:4px;color:#8794a5;font-size:8.5px}
+
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-card{margin:0 0 18px;padding:0 17px 17px;border:1px solid var(--et-booking-ref-border);border-radius:12px;background:#fff;box-shadow:var(--et-booking-ref-shadow)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-head{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #edf1f5}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-title{display:flex;align-items:center;gap:9px;color:#23364f;font-size:12px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-title>span{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#ebf4ff;color:var(--et-booking-ref-blue);font-size:13px;font-weight:900}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-title strong{font-weight:900}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-quick{display:flex;align-items:center;gap:6px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-quick>span{margin-right:5px;color:#4f6076;font-size:9px;font-weight:800}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-quick button{min-height:29px!important;padding:5px 12px!important;border:1px solid #e4eaf1!important;border-radius:7px!important;background:#f6f8fb!important;color:#506176!important;font-size:9px!important;font-weight:850!important;box-shadow:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-quick button.active{border-color:var(--et-booking-ref-blue)!important;background:var(--et-booking-ref-blue)!important;color:#fff!important;box-shadow:0 3px 8px rgba(13,111,232,.16)!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px 14px;padding-top:13px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-grid label{display:block!important;margin:0!important;color:#53657b!important;font-size:9px!important;line-height:1.2!important;font-weight:850!important;text-transform:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-grid input,html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-grid select{width:100%!important;min-height:42px!important;margin-top:6px!important;border:1px solid #d7e0ea!important;border-radius:7px!important;background:#fff!important;color:#2a3b51!important;font-size:10.5px!important;box-shadow:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:14px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-actions button{min-height:39px!important;min-width:126px;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px;padding:7px 13px!important;border-radius:7px!important;font-size:10px!important;font-weight:850!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-apply{border:1px solid var(--et-booking-ref-blue)!important;background:linear-gradient(180deg,#147af1 0%,#0966d9 100%)!important;color:#fff!important;box-shadow:0 4px 11px rgba(13,111,232,.16)!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-reset{border:1px solid #d9e2ec!important;background:#fff!important;color:#54667c!important}
+
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-register-card{position:relative;overflow:visible!important;margin:0!important;border:1px solid var(--et-booking-ref-border)!important;border-radius:12px!important;background:#fff!important;box-shadow:var(--et-booking-ref-shadow)!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-head{min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 15px;border-bottom:1px solid #e9eef4;background:#fff;border-radius:12px 12px 0 0}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-title{display:flex;align-items:center;gap:9px;color:#20344d;font-size:13px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-title>span{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#edf5ff;color:var(--et-booking-ref-blue);font-size:12px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-title strong{font-weight:900}
+html.et-booking-register-reference body.et-ui-professional .et-booking-export{position:relative}
+html.et-booking-register-reference body.et-ui-professional .et-booking-export-button{min-height:34px!important;display:inline-flex!important;align-items:center!important;gap:7px;padding:6px 10px!important;border:1px solid #d9e3ed!important;border-radius:7px!important;background:#fff!important;color:#40536a!important;font-size:9.5px!important;font-weight:850!important;box-shadow:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-export-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:50;width:170px;padding:5px;border:1px solid #dbe4ee;border-radius:8px;background:#fff;box-shadow:0 10px 28px rgba(22,43,70,.14)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-export.open .et-booking-export-menu{display:block}
+html.et-booking-register-reference body.et-ui-professional .et-booking-export-menu button{width:100%;min-height:32px!important;padding:6px 8px!important;border:0!important;border-radius:6px!important;background:#fff!important;color:#3d5068!important;text-align:left!important;font-size:9.5px!important;font-weight:700!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-export-menu button:hover{background:#f3f7fc!important;color:#0a62d1!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-register-card table.et-reg-table{min-width:900px!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-register-card table.et-reg-table th,html.et-booking-register-reference body.et-ui-professional .et-booking-ref-register-card table.et-reg-table td{padding:10px 9px!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-register-card table.et-reg-table th{background:#f6f8fb!important;color:#4f6177!important;font-size:8.5px!important;font-weight:900!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-register-card table.et-reg-table td{font-size:10px!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-select-cell{width:34px!important;min-width:34px!important;text-align:center!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-select-cell input{width:14px!important;min-width:14px!important;height:14px!important;min-height:14px!important;margin:0!important;padding:0!important;border-radius:4px!important;accent-color:var(--et-booking-ref-blue)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-action-head,html.et-booking-register-reference body.et-ui-professional .et-booking-action-cell{width:55px!important;min-width:55px!important;text-align:center!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-row-menu{position:relative;display:inline-block}
+html.et-booking-register-reference body.et-ui-professional .et-booking-row-menu-button{width:29px!important;min-width:29px!important;height:29px!important;min-height:29px!important;padding:0!important;border:1px solid #dce5ee!important;border-radius:6px!important;background:#fff!important;color:#597089!important;font-size:16px!important;line-height:1!important;font-weight:900!important;box-shadow:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-row-menu-panel{display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:70;width:150px;padding:5px;border:1px solid #dbe4ee;border-radius:8px;background:#fff;box-shadow:0 10px 28px rgba(22,43,70,.15)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-row-menu.open .et-booking-row-menu-panel{display:block}
+html.et-booking-register-reference body.et-ui-professional .et-booking-row-menu-panel a,html.et-booking-register-reference body.et-ui-professional .et-booking-row-menu-panel span{min-height:31px;display:flex;align-items:center;padding:6px 8px;border-radius:6px;color:#40536a!important;font-size:9.5px!important;font-weight:750!important;text-decoration:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-row-menu-panel a:hover{background:#f3f7fc!important;color:#0b62cf!important}
+
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-footer{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 15px;border-top:1px solid #e9eef4;background:#fff;border-radius:0 0 12px 12px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-range{color:#718197;font-size:9.5px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-pagination{display:flex;align-items:center;gap:5px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-pagination button,html.et-booking-register-reference body.et-ui-professional .et-booking-ref-pagination span{width:28px;min-width:28px;height:28px;min-height:28px;display:flex;align-items:center;justify-content:center;padding:0!important;border:1px solid #dde5ee!important;border-radius:6px!important;background:#fff!important;color:#53667c!important;font-size:9.5px!important;font-weight:800!important;box-shadow:none!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-pagination span{border-color:transparent!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-pagination button.active{border-color:var(--et-booking-ref-blue)!important;background:var(--et-booking-ref-blue)!important;color:#fff!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-pagination button:disabled{opacity:.45;cursor:not-allowed}
+
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insights{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px;margin:18px 0 0}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insight-card{min-height:178px;overflow:hidden;border:1px solid var(--et-booking-ref-border);border-radius:12px;background:#fff;box-shadow:var(--et-booking-ref-shadow)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insight-head{min-height:47px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;border-bottom:1px solid #edf1f5}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insight-head>div{display:flex;align-items:center;gap:8px;color:#263950;font-size:11px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insight-head>div>span{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#edf5ff;color:var(--et-booking-ref-blue);font-size:11px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insight-head strong{font-weight:900}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insight-head button{min-height:28px!important;padding:5px 9px!important;border:0!important;border-radius:6px!important;background:#eff6ff!important;color:#1766c8!important;font-size:8.5px!important;font-weight:850!important}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-track{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:24px 14px 15px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step::after{content:"";position:absolute;left:calc(50% + 18px);right:calc(-50% + 18px);top:14px;height:1px;background:#d4dfea}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step:last-child::after{display:none}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step b{position:relative;z-index:1;width:29px;height:29px;display:flex;align-items:center;justify-content:center;border:1px solid #cbd9e8;border-radius:50%;background:#fff;color:#2b6cc3;font-size:10px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step.active b{border-color:var(--et-booking-ref-blue);background:var(--et-booking-ref-blue);color:#fff}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step strong{margin-top:9px;color:#33465d;font-size:9.5px;font-weight:850}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step small{margin-top:3px;color:#8190a2;font-size:7.5px;line-height:1.25}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-type-body{display:grid;grid-template-columns:112px minmax(0,1fr);gap:13px;align-items:center;padding:16px 14px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-donut{width:94px;height:94px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-donut span{width:52px;height:52px;display:block;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1px #edf1f5}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-type-legend{display:grid;gap:5px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-type-legend>div{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:6px;align-items:center;min-width:0;color:#53657a;font-size:8px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-type-legend i{width:6px;height:6px;display:block;border-radius:50%}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-type-legend span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-type-legend strong{color:#31445b;font-size:8px;font-weight:900}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-list{padding:9px 14px 12px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row{min-height:37px;display:grid;grid-template-columns:11px minmax(0,1fr) auto;gap:8px;align-items:center;border-bottom:1px solid #f0f3f7}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row:last-child{border-bottom:0}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row>i{width:8px;height:8px;display:block;border-radius:50%;box-shadow:0 0 0 4px rgba(26,113,223,.08)}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row>i.blue{background:#2475d9}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row>i.green{background:#19a36f}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row>i.red{background:#e2525e}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row>div{min-width:0}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row strong{display:block;overflow:hidden;color:#3c4f65;font-size:8.5px;line-height:1.2;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row small{display:block;margin-top:2px;color:#8190a3;font-size:7.5px}
+html.et-booking-register-reference body.et-ui-professional .et-booking-ref-activity-row time{color:#8a98aa;font-size:7px;white-space:nowrap}
+
+@media(max-width:1180px){html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insights{grid-template-columns:1fr 1fr}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow{grid-column:1 / -1}}
+@media(max-width:900px){html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-head{align-items:flex-start;flex-direction:column;padding:13px 0}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-quick{flex-wrap:wrap}}
+@media(max-width:650px){html.et-booking-register-reference body.et-ui-professional .et-booking-ref-kpis,html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-grid,html.et-booking-register-reference body.et-ui-professional .et-booking-ref-insights{grid-template-columns:1fr}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow{grid-column:auto}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-head,html.et-booking-register-reference body.et-ui-professional .et-booking-ref-table-footer{align-items:flex-start;flex-direction:column;padding-top:12px;padding-bottom:12px}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-actions{display:grid;grid-template-columns:1fr 1fr}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-filter-actions button{min-width:0;width:100%}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-track{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 0}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-workflow-step:nth-child(2)::after{display:none}html.et-booking-register-reference body.et-ui-professional .et-booking-ref-type-body{grid-template-columns:100px minmax(0,1fr)}}
