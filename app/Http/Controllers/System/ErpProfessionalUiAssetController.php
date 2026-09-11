@@ -17,9 +17,20 @@ final class ErpProfessionalUiAssetController extends Controller
 
     public function js(): Response
     {
-        return $this->asset(
-            base_path('public/erp-ui/erp-professional.js'),
-            'application/javascript; charset=UTF-8'
+        $base = base_path('public/erp-ui/erp-professional.js');
+        $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
+
+        abort_unless(is_file($base) && is_file($finalizer), 404);
+
+        return response(
+            file_get_contents($base)."\n".file_get_contents($finalizer),
+            200,
+            [
+                'Content-Type' => 'application/javascript; charset=UTF-8',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'X-Content-Type-Options' => 'nosniff',
+            ]
         );
     }
 
