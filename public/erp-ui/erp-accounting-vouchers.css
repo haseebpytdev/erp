@@ -1,0 +1,526 @@
+/* ERP-11.3.235 — Accounting voucher workspace visual system.
+   Presentation only: cash-voucher/advance business logic remains authoritative. */
+
+body.et-ui-professional{
+  --et-voucher-blue:#0b67df;
+  --et-voucher-blue-strong:#075ac8;
+  --et-voucher-green:#16845f;
+  --et-voucher-border:#dce5ef;
+  --et-voucher-border-soft:#e9eef4;
+  --et-voucher-text:#17243a;
+  --et-voucher-muted:#718197;
+  --et-voucher-surface:#ffffff;
+  --et-voucher-soft:#f8fafc;
+  --et-voucher-radius:12px;
+  --et-voucher-shadow:0 5px 18px rgba(28,45,68,.045);
+}
+
+/* --------------------------------------------------------------------------
+   Cash / bank voucher register
+   -------------------------------------------------------------------------- */
+body.et-ui-professional .et-fin{
+  max-width:1500px!important;
+  margin:0 auto!important;
+  color:var(--et-voucher-text)!important;
+}
+body.et-ui-professional .et-fin-head{
+  gap:22px!important;
+  margin-bottom:14px!important;
+}
+body.et-ui-professional .et-fin-kicker{
+  color:var(--et-voucher-blue)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:.055em!important;
+}
+body.et-ui-professional .et-fin-title{
+  margin:5px 0 4px!important;
+  color:var(--et-voucher-text)!important;
+  font-size:28px!important;
+  line-height:1.08!important;
+  font-weight:850!important;
+  letter-spacing:-.025em!important;
+}
+body.et-ui-professional .et-fin-sub{
+  max-width:820px!important;
+  color:var(--et-voucher-muted)!important;
+  font-size:12px!important;
+  line-height:1.45!important;
+}
+body.et-ui-professional .et-fin-head-links{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:7px!important;
+  min-width:158px!important;
+  justify-items:stretch!important;
+}
+body.et-ui-professional .et-fin-head-links .et-fin-btn{
+  min-height:35px!important;
+  justify-content:flex-start!important;
+  border-color:var(--et-voucher-border)!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  color:#155fc0!important;
+  box-shadow:0 2px 7px rgba(28,45,68,.025)!important;
+}
+
+/* Compact segmented voucher navigation from the approved visual mockup. */
+body.et-ui-professional .et-fin-modes{
+  display:flex!important;
+  align-items:stretch!important;
+  gap:0!important;
+  margin:14px 0 10px!important;
+  padding:5px!important;
+  overflow:hidden!important;
+  border:1px solid var(--et-voucher-border)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:var(--et-voucher-shadow)!important;
+}
+body.et-ui-professional .et-fin-mode{
+  flex:1 1 0!important;
+  min-width:0!important;
+  min-height:40px!important;
+  margin:0!important;
+  padding:0 13px!important;
+  gap:8px!important;
+  border:0!important;
+  border-left:1px solid #edf1f6!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:#293b52!important;
+  box-shadow:none!important;
+  font-size:10.5px!important;
+  font-weight:850!important;
+  white-space:nowrap!important;
+}
+body.et-ui-professional .et-fin-mode:first-child{
+  border-left:0!important;
+}
+body.et-ui-professional .et-fin-mode-all{
+  flex:1.35 1 0!important;
+}
+body.et-ui-professional .et-fin-mode::before{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:18px!important;
+  min-width:18px!important;
+  color:var(--et-voucher-blue)!important;
+  font-size:14px!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+body.et-ui-professional .et-fin-mode-all::before{content:"▦"}
+body.et-ui-professional .et-fin-mode[href*="mode=payments"]::before{content:"▣"}
+body.et-ui-professional .et-fin-mode[href*="mode=receipts"]::before{content:"↓"}
+body.et-ui-professional .et-fin-mode[href*="mode=expenses"]::before{content:"▤"}
+body.et-ui-professional .et-fin-mode[href*="mode=contra"]::before{content:"⇄"}
+body.et-ui-professional .et-fin-mode[href*="mode=advances"]::before{content:"▥"}
+body.et-ui-professional .et-fin-mode:hover{
+  background:#f7faff!important;
+  color:#145ebc!important;
+}
+body.et-ui-professional .et-fin-mode.active{
+  border-left-color:transparent!important;
+  border-radius:8px!important;
+  background:linear-gradient(180deg,#1174ed 0%,#0965db 100%)!important;
+  color:#fff!important;
+  box-shadow:0 4px 10px rgba(11,103,223,.18)!important;
+}
+body.et-ui-professional .et-fin-mode.active::before{color:#fff!important}
+body.et-ui-professional .et-fin-mode.active + .et-fin-mode{border-left-color:transparent!important}
+
+/* Secondary create/action toolbar. */
+body.et-ui-professional .et-fin-actions{
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  flex-wrap:wrap!important;
+  margin:0 0 16px!important;
+  padding:8px!important;
+  border:1px solid var(--et-voucher-border)!important;
+  border-radius:11px!important;
+  background:#fff!important;
+  box-shadow:0 4px 14px rgba(28,45,68,.035)!important;
+}
+body.et-ui-professional .et-fin-actions .et-fin-btn{
+  min-width:0!important;
+  min-height:34px!important;
+  padding:7px 11px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+  font-weight:850!important;
+  box-shadow:none!important;
+}
+body.et-ui-professional .et-fin-actions .et-fin-btn.primary{
+  border-color:var(--et-voucher-blue)!important;
+  background:linear-gradient(180deg,#1374ea 0%,#0963d7 100%)!important;
+  color:#fff!important;
+}
+body.et-ui-professional .et-fin-actions .et-fin-btn:not(.primary):not(.success){
+  border-color:#dce5ef!important;
+  background:#fbfdff!important;
+  color:#2b4564!important;
+}
+body.et-ui-professional .et-fin-actions .et-fin-btn.success{
+  margin-left:auto!important;
+  border-color:var(--et-voucher-green)!important;
+  background:linear-gradient(180deg,#1b946d 0%,#14815f 100%)!important;
+  color:#fff!important;
+}
+
+/* Search/filter becomes a structured card with its own compact header. */
+body.et-ui-professional .et-fin-filter{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:10px!important;
+  align-items:end!important;
+  margin-bottom:16px!important;
+  padding:11px 14px 14px!important;
+  border:1px solid var(--et-voucher-border)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:var(--et-voucher-shadow)!important;
+}
+body.et-ui-professional .et-fin-filter::before{
+  content:"⌕  Search & Filter"!important;
+  grid-column:1 / 4!important;
+  align-self:center!important;
+  min-height:31px!important;
+  display:flex!important;
+  align-items:center!important;
+  padding-bottom:8px!important;
+  border-bottom:1px solid #edf1f6!important;
+  color:#23364d!important;
+  font-size:12px!important;
+  font-weight:900!important;
+}
+body.et-ui-professional .et-fin-filter > a.et-fin-btn:last-child{
+  grid-column:4!important;
+  grid-row:1!important;
+  justify-self:end!important;
+  min-height:29px!important;
+  padding:5px 10px!important;
+  border-color:#dde6f0!important;
+  background:#fff!important;
+  color:#1765c5!important;
+  font-size:9.5px!important;
+}
+body.et-ui-professional .et-fin-filter > button.et-fin-btn.primary{
+  grid-column:3 / 5!important;
+  min-height:40px!important;
+  border-radius:7px!important;
+}
+body.et-ui-professional .et-field label{
+  margin-bottom:5px!important;
+  color:#596b82!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  letter-spacing:.045em!important;
+}
+body.et-ui-professional .et-field input,
+body.et-ui-professional .et-field select{
+  height:40px!important;
+  border-color:#d5dfea!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#293b52!important;
+  font-size:11px!important;
+}
+
+/* Summary cards: 3-column dashboard rhythm from the approved mockup. */
+body.et-ui-professional .et-summary-strip{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:11px!important;
+  margin-bottom:16px!important;
+}
+body.et-ui-professional .et-summary-tile{
+  min-height:73px!important;
+  padding:12px 13px!important;
+  border-color:var(--et-voucher-border)!important;
+  border-radius:12px!important;
+  box-shadow:0 4px 14px rgba(28,45,68,.035)!important;
+}
+body.et-ui-professional .et-summary-icon{
+  width:32px!important;
+  height:32px!important;
+  border-radius:8px!important;
+  background:#eef5ff!important;
+  color:var(--et-voucher-blue)!important;
+}
+body.et-ui-professional .et-summary-meta strong{font-size:10.5px!important}
+body.et-ui-professional .et-summary-meta span{font-size:9px!important}
+body.et-ui-professional .et-summary-amount{font-size:13px!important}
+
+body.et-ui-professional .et-card{
+  border-color:var(--et-voucher-border)!important;
+  border-radius:12px!important;
+  box-shadow:var(--et-voucher-shadow)!important;
+}
+body.et-ui-professional .et-card-head{
+  min-height:46px!important;
+  padding:11px 13px!important;
+  border-bottom-color:var(--et-voucher-border-soft)!important;
+  background:#fff!important;
+}
+body.et-ui-professional .et-card-head strong{font-size:12.5px!important}
+body.et-ui-professional .et-table th{background:#f7f9fc!important}
+body.et-ui-professional .et-table tbody tr:hover{background:#fafdff!important}
+body.et-ui-professional .et-action{
+  border-color:#dfe7f0!important;
+  background:#fff!important;
+  color:#1764c3!important;
+}
+body.et-ui-professional .et-bottom-row{gap:14px!important}
+
+/* --------------------------------------------------------------------------
+   Cash voucher create / edit form
+   -------------------------------------------------------------------------- */
+body.et-ui-professional .cvf27,
+body.et-ui-professional .cvs27,
+body.et-ui-professional .aa-wrap{
+  max-width:1500px!important;
+  margin:0 auto!important;
+  color:var(--et-voucher-text)!important;
+}
+body.et-ui-professional .cvf27-head,
+body.et-ui-professional .cvs27-head,
+body.et-ui-professional .aa-head{
+  gap:18px!important;
+  margin-bottom:14px!important;
+  align-items:flex-start!important;
+}
+body.et-ui-professional .cvf27-kicker,
+body.et-ui-professional .cvs27-kicker{
+  color:var(--et-voucher-blue)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:.05em!important;
+}
+body.et-ui-professional .cvf27-title,
+body.et-ui-professional .cvs27-title{
+  margin:4px 0!important;
+  color:var(--et-voucher-text)!important;
+  font-size:26px!important;
+  line-height:1.1!important;
+  font-weight:850!important;
+  letter-spacing:-.02em!important;
+}
+body.et-ui-professional .cvf27-sub,
+body.et-ui-professional .cvs27-sub{color:var(--et-voucher-muted)!important}
+body.et-ui-professional .cvf27-actions,
+body.et-ui-professional .cvs27-actions,
+body.et-ui-professional .aa-actions{
+  gap:7px!important;
+}
+body.et-ui-professional .cvf27-btn,
+body.et-ui-professional .cvs27-btn,
+body.et-ui-professional .aa-btn{
+  min-height:35px!important;
+  padding:7px 11px!important;
+  border-color:#d7e1ec!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#2a3d54!important;
+  box-shadow:none!important;
+  font-size:10.5px!important;
+  font-weight:850!important;
+}
+body.et-ui-professional .cvf27-btn:hover,
+body.et-ui-professional .cvs27-btn:hover,
+body.et-ui-professional .aa-btn:hover{
+  border-color:#a8bdd5!important;
+  background:#f8fbff!important;
+}
+body.et-ui-professional .cvf27-btn.primary,
+body.et-ui-professional .cvs27-primary,
+body.et-ui-professional .aa-primary{
+  border-color:var(--et-voucher-blue)!important;
+  background:linear-gradient(180deg,#1274eb 0%,#0963d7 100%)!important;
+  color:#fff!important;
+}
+body.et-ui-professional .cvs27-success,
+body.et-ui-professional .aa-success{
+  border-color:var(--et-voucher-green)!important;
+  background:linear-gradient(180deg,#1b946d 0%,#14815f 100%)!important;
+  color:#fff!important;
+}
+
+body.et-ui-professional .cvf27-card,
+body.et-ui-professional .cvs27-card,
+body.et-ui-professional .aa-card{
+  border:1px solid var(--et-voucher-border)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:var(--et-voucher-shadow)!important;
+}
+body.et-ui-professional .cvf27-card-head,
+body.et-ui-professional .cvs27-card-head{
+  min-height:47px!important;
+  padding:11px 14px!important;
+  border-bottom-color:var(--et-voucher-border-soft)!important;
+  background:#fff!important;
+}
+body.et-ui-professional .cvf27-card-title,
+body.et-ui-professional .cvs27-card-head{
+  color:#24364c!important;
+  font-size:12.5px!important;
+  font-weight:900!important;
+}
+body.et-ui-professional .cvf27-help{color:#7a899c!important;font-size:9.5px!important}
+body.et-ui-professional .cvf27-body,
+body.et-ui-professional .cvs27-body{padding:14px!important}
+body.et-ui-professional .cvf27-grid{gap:11px 13px!important}
+body.et-ui-professional .cvf27-field label{
+  color:#53667e!important;
+  font-size:9px!important;
+  font-weight:900!important;
+  letter-spacing:.025em!important;
+}
+body.et-ui-professional .cvf27-field input,
+body.et-ui-professional .cvf27-field select,
+body.et-ui-professional .cvf27-field textarea,
+body.et-ui-professional .aa-field input,
+body.et-ui-professional .aa-field select,
+body.et-ui-professional .aa-field textarea{
+  border-color:#d5dfea!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#273a51!important;
+  box-shadow:none!important;
+}
+body.et-ui-professional .cvf27-field input:focus,
+body.et-ui-professional .cvf27-field select:focus,
+body.et-ui-professional .cvf27-field textarea:focus,
+body.et-ui-professional .aa-field input:focus,
+body.et-ui-professional .aa-field select:focus,
+body.et-ui-professional .aa-field textarea:focus{
+  border-color:#5795df!important;
+  box-shadow:0 0 0 3px rgba(11,103,223,.08)!important;
+  outline:0!important;
+}
+body.et-ui-professional .cvf27-upload{
+  border-color:#bfd1e5!important;
+  border-radius:8px!important;
+  background:#f9fcff!important;
+}
+body.et-ui-professional .cvf27-bottom{
+  padding:10px 12px!important;
+  border-color:var(--et-voucher-border)!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:var(--et-voucher-shadow)!important;
+}
+body.et-ui-professional .cvf27-table th,
+body.et-ui-professional .cvs27-table th,
+body.et-ui-professional .aa-table th{background:#f7f9fc!important}
+
+/* Voucher detail information reads as compact dashboard tiles. */
+body.et-ui-professional .cvs27-grid{gap:10px!important}
+body.et-ui-professional .cvs27-item{
+  min-height:61px!important;
+  padding:10px 11px!important;
+  border:1px solid #e8eef5!important;
+  border-radius:8px!important;
+  background:#fafcff!important;
+  color:#2b3e55!important;
+}
+body.et-ui-professional .cvs27-item b{
+  margin-bottom:5px!important;
+  color:#77879a!important;
+  font-size:8.5px!important;
+  letter-spacing:.035em!important;
+}
+body.et-ui-professional .cvs27-item strong{color:#17243a!important}
+body.et-ui-professional .cvs27-badge,
+body.et-ui-professional .aa-badge{
+  border:1px solid #dce5ef!important;
+  background:#f3f7fb!important;
+  color:#40546b!important;
+}
+
+/* --------------------------------------------------------------------------
+   Advance adjustment create/detail pages
+   -------------------------------------------------------------------------- */
+body.et-ui-professional .aa-wrap .aa-head > div:first-child > div:first-child{
+  color:var(--et-voucher-blue)!important;
+  font-size:10px!important;
+  font-weight:900!important;
+  letter-spacing:.05em!important;
+  text-transform:uppercase!important;
+}
+body.et-ui-professional .aa-wrap .aa-head h2{
+  margin:4px 0!important;
+  color:var(--et-voucher-text)!important;
+  font-size:26px!important;
+  line-height:1.1!important;
+  font-weight:850!important;
+  letter-spacing:-.02em!important;
+}
+body.et-ui-professional .aa-card{
+  padding:14px!important;
+  margin-bottom:13px!important;
+}
+body.et-ui-professional .aa-grid{gap:11px 13px!important}
+body.et-ui-professional .aa-field label{
+  margin-bottom:5px!important;
+  color:#53667e!important;
+  font-size:9.5px!important;
+  font-weight:900!important;
+}
+body.et-ui-professional .aa-field input,
+body.et-ui-professional .aa-field select{min-height:40px!important}
+body.et-ui-professional .aa-info{
+  padding:11px 12px!important;
+  border:1px solid #d9e7f7!important;
+  border-radius:8px!important;
+  background:#f6faff!important;
+  color:#536b84!important;
+}
+body.et-ui-professional .aa-item{
+  min-height:61px!important;
+  padding:10px 11px!important;
+  border:1px solid #e8eef5!important;
+  border-radius:8px!important;
+  background:#fafcff!important;
+  color:#2b3e55!important;
+  font-size:11px!important;
+}
+body.et-ui-professional .aa-item b{
+  margin-bottom:5px!important;
+  color:#77879a!important;
+  font-size:8.5px!important;
+  letter-spacing:.035em!important;
+}
+
+/* Responsive behavior keeps controls usable without restoring oversized buttons. */
+@media(max-width:1180px){
+  body.et-ui-professional .et-fin-modes{overflow-x:auto!important}
+  body.et-ui-professional .et-fin-mode{flex:0 0 auto!important;min-width:130px!important}
+  body.et-ui-professional .et-fin-mode-all{min-width:205px!important}
+  body.et-ui-professional .et-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:900px){
+  body.et-ui-professional .et-fin-head-links{display:flex!important;min-width:0!important}
+  body.et-ui-professional .et-fin-filter{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body.et-ui-professional .et-fin-filter::before{grid-column:1 / 2!important}
+  body.et-ui-professional .et-fin-filter > a.et-fin-btn:last-child{grid-column:2!important;grid-row:1!important}
+  body.et-ui-professional .et-fin-filter > button.et-fin-btn.primary{grid-column:1 / -1!important}
+  body.et-ui-professional .et-fin-actions .et-fin-btn.success{margin-left:0!important}
+}
+@media(max-width:620px){
+  body.et-ui-professional .et-fin-title,
+  body.et-ui-professional .cvf27-title,
+  body.et-ui-professional .cvs27-title,
+  body.et-ui-professional .aa-wrap .aa-head h2{font-size:23px!important}
+  body.et-ui-professional .et-fin-modes{padding:4px!important}
+  body.et-ui-professional .et-fin-mode{min-width:125px!important}
+  body.et-ui-professional .et-fin-actions .et-fin-btn{flex:1 1 calc(50% - 7px)!important}
+  body.et-ui-professional .et-fin-filter{grid-template-columns:1fr!important}
+  body.et-ui-professional .et-fin-filter::before,
+  body.et-ui-professional .et-fin-filter > a.et-fin-btn:last-child,
+  body.et-ui-professional .et-fin-filter > button.et-fin-btn.primary{grid-column:1!important}
+  body.et-ui-professional .et-fin-filter > a.et-fin-btn:last-child{grid-row:auto!important;justify-self:stretch!important}
+  body.et-ui-professional .et-summary-strip{grid-template-columns:1fr!important}
+}

@@ -11,11 +11,12 @@ final class ErpProfessionalUiAssetController extends Controller
     {
         $prepaint = base_path('public/erp-ui/erp-sidebar-prepaint.css');
         $base = base_path('public/erp-ui/erp-professional.css');
+        $voucherUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
 
-        abort_unless(is_file($prepaint) && is_file($base), 404);
+        abort_unless(is_file($prepaint) && is_file($base) && is_file($voucherUi), 404);
 
         return $this->textAsset(
-            file_get_contents($prepaint)."\n".file_get_contents($base),
+            file_get_contents($prepaint)."\n".file_get_contents($base)."\n".file_get_contents($voucherUi),
             'text/css; charset=UTF-8'
         );
     }
