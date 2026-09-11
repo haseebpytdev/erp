@@ -130,9 +130,9 @@
         heading.style.setProperty('height', 'auto', 'important');
         heading.style.setProperty('min-height', '0', 'important');
         heading.style.setProperty('max-height', 'none', 'important');
-        heading.style.setProperty('margin', '12px 9px 5px', 'important');
-        heading.style.setProperty('padding', '0', 'important');
-        heading.style.setProperty('line-height', '1.1', 'important');
+        heading.style.setProperty('margin', '16px 9px 0', 'important');
+        heading.style.setProperty('padding', '0 0 8px', 'important');
+        heading.style.setProperty('line-height', '1.15', 'important');
         canonicalNav.appendChild(heading);
 
         sectionRows.forEach(row => {
