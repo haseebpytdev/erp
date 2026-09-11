@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.238
-APPLICATION_VERSION=v1.1.33.238-ERP11.3.238
+CURRENT_VERSION=ERP-11.3.239
+APPLICATION_VERSION=v1.1.33.239-ERP11.3.239
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.238
+LAST_PACKAGED_RELEASE=ERP-11.3.239
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -417,3 +417,19 @@ spacing. Existing invoice and supplier-costing rows, native Open links, workflow
 authority, posting, accounting, persistence and database behavior remain
 unchanged. ERP-11.3.237 Booking Register design, ERP-11.3.235 voucher design and
 ERP-11.3.234 sidebar stabilization remain intact. No migration is required.
+ERP-11.3.239 consolidates the Booking Register, Sales Invoice Register and
+Supplier Costing Register into server-rendered professional workspaces. The
+native controllers, middleware, permissions, row data and server pagination
+remain authoritative; final register markup is normalized on the server before
+professional CSS and JavaScript are injected, eliminating the previous
+old-layout-to-new-layout browser reconstruction path. The obsolete ERP-11.3.236,
+ERP-11.3.237 and ERP-11.3.238 register reconstruction JavaScript and the old
+shared register patch stylesheet are no longer delivered by the professional
+asset controller. One shared register visual system remains, with a small
+interaction-only script for filtering, row selection, CSV export, menus and
+15-row client interaction pagination over the authoritative rendered rows.
+Accounting Cash/Bank Vouchers and Advance Adjustments remain server-rendered and
+continue using the authoritative ERP-11.3.235 accounting visual stylesheet.
+No accounting formulas, workflow authority, posting, booking persistence,
+permissions, database schema or business logic changed. ERP-11.3.234 sidebar
+stabilization remains protected. No migration is required.

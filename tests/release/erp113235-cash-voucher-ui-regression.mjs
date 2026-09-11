@@ -23,7 +23,7 @@ ok(!css.includes('display:none'), 'Accounting UI does not hide business controls
 ok(assetController.includes("base_path('public/erp-ui/erp-accounting-vouchers.css')"), 'one authoritative Accounting stylesheet is served');
 ok(assetController.includes('file_get_contents($base)\n            ."\\n".file_get_contents($accountingUi)'), 'Accounting stylesheet loads after shared professional base CSS');
 ok(assetController.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned professional assets retain immutable caching');
-ok(version === 'v1.1.33.238-ERP11.3.238', 'functional consolidation checkpoint does not bump release metadata');
+ok(version === 'v1.1.33.239-ERP11.3.239', 'functional consolidation checkpoint does not bump release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

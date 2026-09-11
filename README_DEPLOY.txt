@@ -1,4 +1,4 @@
-ERP-11.3.238 DIRECT UPLOAD - COMMERCIAL REGISTER REFERENCE MATCH
+ERP-11.3.239 DIRECT UPLOAD - SERVER UI CONSOLIDATION
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,17 +9,17 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.238 extends the approved Booking Register reference presentation to the
-Sales Invoice and Supplier Costing registers. Sales Invoices now use Total
-Invoices, Pending Approval, Approved and Posted KPI cards, quick workflow
-filters, Customer / Booking / Date / Status filtering, a dynamic register count,
-safe client-side CSV export, row selection, compact action menus, 15-row
-pagination, Quick Workflow, Invoices by Status and Recent Activity. Supplier
-Costing uses the same approved visual geometry with Total Costings, Supplier,
-Product and workflow-specific presentation plus Costings by Product. Existing
-rows and native Open links remain authoritative. ERP-11.3.237 Booking Register,
-ERP-11.3.235 voucher styling and ERP-11.3.234 sidebar stabilization remain
-unchanged.
+ERP-11.3.239 consolidates the Booking Register, Sales Invoice Register and
+Supplier Costing Register into server-rendered professional workspaces. Native
+controllers continue to own permissions, filtering, source rows and server
+pagination, while final register markup is prepared before browser asset
+injection. The obsolete ERP-11.3.236 / .237 / .238 post-load register
+reconstruction layers are no longer delivered. One shared register visual
+system remains with a minimal interaction-only script for filters, row
+selection, CSV export, action menus and 15-row browser pagination over the
+already-rendered authoritative rows. Cash/Bank Vouchers and Advance Adjustments
+remain server-rendered and retain the existing accounting visual system.
+ERP-11.3.234 sidebar stabilization remains unchanged. No migration is required.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

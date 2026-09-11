@@ -60,7 +60,7 @@ ok(registerCss.includes('.et-booking-ref-kpis') && registerCss.includes('.et-boo
 ok(finalizer.includes("heading.style.setProperty('margin', '16px 9px 9px', 'important')"), 'ERP-11.3.234 sidebar heading spacing remains protected');
 ok(finalizer.includes("if (index === 0) row.style.setProperty('margin-top', '9px', 'important')"), 'ERP-11.3.234 sidebar first-row spacing remains protected');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned immutable browser caching remains intact');
-ok(version === 'v1.1.33.238-ERP11.3.238', 'functional .239 checkpoint intentionally retains .238 release metadata');
+ok(version === 'v1.1.33.239-ERP11.3.239', 'functional .239 checkpoint intentionally retains .238 release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
