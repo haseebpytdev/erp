@@ -515,7 +515,7 @@ html,body{
 <div id="gp-booking">
     <div class="gp-top">
         <div>
-            <div class="gp-kicker">Group Umrah Booking · ERP-10.31.72</div>
+            <div class="gp-kicker">Group Umrah Booking</div>
             <h1>{{ $bookingId ? 'Edit Group Umrah Booking' : 'Create Group Umrah Booking' }}</h1>
             <div class="gp-sub">Commercial package first. Passenger names and operational details may be completed later.</div>
             <div class="gp-title-meta">

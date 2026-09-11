@@ -12,7 +12,7 @@
 <div class="coa-wrap">
     <div class="coa-head">
         <div>
-            <div class="coa-kicker">Accounting Foundation · ERP-11.3.10</div>
+            <div class="coa-kicker">Accounting Foundation</div>
             <h2>Chart of Accounts</h2>
             <div class="coa-muted">Controlled ledger structure with parent-driven account codes and server-side pagination.</div>
         </div>

@@ -87,6 +87,8 @@ class ApplyErpReleaseMetadata
             $html
         );
 
+        $html = $this->injectProfessionalUi($request, $html, $version);
+
         /*
          * Only calculate DB readiness on the actual System Health page.
          */
@@ -170,6 +172,72 @@ class ApplyErpReleaseMetadata
         $response->setContent($html);
 
         return $response;
+    }
+
+    private function injectProfessionalUi(Request $request, string $html, string $version): string
+    {
+        if (str_contains($html, 'data-et-professional-ui=')) {
+            return $html;
+        }
+
+        $path = strtolower(trim($request->path(), '/'));
+        $routeName = strtolower((string) optional($request->route())->getName());
+        if (
+            str_starts_with($path, 'voucher/')
+            || str_contains($path, '/print')
+            || str_contains($routeName, '.print')
+            || str_contains($routeName, '.pdf')
+        ) {
+            return $html;
+        }
+
+        $module = $this->uiModule($path);
+        $marker = e($version);
+        $styleUrl = e(asset('erp-ui/erp-professional.css').'?v='.rawurlencode($version));
+        $scriptUrl = e(asset('erp-ui/erp-professional.js').'?v='.rawurlencode($version));
+        $assets = '<link rel="stylesheet" href="'.$styleUrl.'" data-et-professional-ui="'.$marker.'">'
+            .'<script src="'.$scriptUrl.'" defer data-et-professional-ui-script="'.$marker.'"></script>';
+
+        $html = preg_replace_callback(
+            '/<body\b([^>]*)>/i',
+            static function (array $match) use ($module): string {
+                $attributes = $match[1];
+                $classes = 'et-ui-professional et-ui-module-'.$module;
+                if (preg_match('/\bclass\s*=\s*(["\'])(.*?)\1/i', $attributes, $classMatch)) {
+                    $replacement = 'class='.$classMatch[1].trim($classMatch[2].' '.$classes).$classMatch[1];
+                    $attributes = preg_replace('/\bclass\s*=\s*(["\'])(.*?)\1/i', $replacement, $attributes, 1) ?? $attributes;
+                } else {
+                    $attributes .= ' class="'.$classes.'"';
+                }
+                return '<body'.$attributes.' data-et-ui-module="'.$module.'">';
+            },
+            $html,
+            1
+        ) ?? $html;
+
+        if (stripos($html, '</head>') !== false) {
+            return preg_replace('/<\/head>/i', $assets.'</head>', $html, 1) ?? $html;
+        }
+
+        return $assets.$html;
+    }
+
+    private function uiModule(string $path): string
+    {
+        return match (true) {
+            $path === '', $path === 'dashboard', str_starts_with($path, 'dashboard/') => 'dashboard',
+            str_starts_with($path, 'administration/') => 'administration',
+            str_starts_with($path, 'organization/') => 'organization',
+            str_starts_with($path, 'master-data/travel'), str_contains($path, 'visa-management') => 'travel',
+            str_starts_with($path, 'master-data/') => 'master-data',
+            str_starts_with($path, 'operations/'), str_starts_with($path, 'bookings/') => 'operations',
+            str_starts_with($path, 'sales/') => 'sales',
+            str_starts_with($path, 'purchase/'), str_starts_with($path, 'purchases/') => 'purchase',
+            str_starts_with($path, 'accounting/reports') => 'reports',
+            str_starts_with($path, 'accounting/') => 'accounting',
+            str_starts_with($path, 'system/') => 'system',
+            default => 'foundation',
+        };
     }
 
     private function databaseReady(array $release): bool

@@ -12,7 +12,7 @@
 </head>
 <body>
 <div class="page">
-<div class="topbar"><div><div class="kicker">System Maintenance · ERP-10.31.79</div><h1>Final Go-Live Financial Reconciliation</h1><div class="sub">Reconcile any remaining Payables, Supplier Cost, Gross Profit, account opening/closing balance and dashboard financial residue before staff begin live entries.</div></div><a class="btn" href="{{ route('system.production-data-reset.index') }}">← Production Reset</a></div>
+<div class="topbar"><div><div class="kicker">System Maintenance</div><h1>Final Go-Live Financial Reconciliation</h1><div class="sub">Reconcile remaining financial balances before staff begin live entries.</div></div><a class="btn" href="{{ route('system.production-data-reset.index') }}">← Production Reset</a></div>
 
 @if(session('cleanup_success'))<div class="notice success">{{ session('cleanup_success') }}</div>@endif
 @if(session('cleanup_error'))<div class="notice">{{ session('cleanup_error') }}</div>@endif

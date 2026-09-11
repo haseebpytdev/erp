@@ -7,7 +7,7 @@
 <div class="scs" data-et-supplier-costing-show="{{ config('et_erp_release.release', 'ERP-11.3') }}">
   <div class="scs-head">
     <div>
-      <div class="scs-kicker">Supplier Costing · {{ config('et_erp_release.release', 'ERP-11.3') }}</div>
+      <div class="scs-kicker">Supplier Costing</div>
       <h2 style="margin:4px 0">{{ $row->costing_no }}</h2>
       <div>
         @if($bookingUrl)<a href="{{ $bookingUrl }}">Booking #{{ $row->booking_id }}</a>@else Booking {{ $row->booking_id ? '#'.$row->booking_id : '—' }}@endif
@@ -53,7 +53,7 @@
       @if($previewError)<div class="alert alert-warning">Accounting preview is unavailable: {{ $previewError }}</div>@endif
       <table class="scs-table"><thead><tr><th>Account</th><th>Party</th><th class="scs-num">Debit</th><th class="scs-num">Credit</th></tr></thead><tbody>
       @foreach($accountingRows as $posting)
-        <tr><td>@if(!empty($accountLedgerUrls[$posting->account_code]))<a href="{{ $accountLedgerUrls[$posting->account_code] }}">{{ $posting->account_code }} · {{ $posting->account_name }}</a>@else{{ $posting->account_code }} · {{ $posting->account_name }}@endif</td><td>{{ $posting->party_type ? ucfirst($posting->party_type).' #'.$posting->party_id : '—' }}</td><td class="scs-num">{{ number_format($posting->debit,2) }}</td><td class="scs-num">{{ number_format($posting->credit,2) }}</td></tr>
+        <tr><td>@if(!empty($accountLedgerUrls[$posting->account_code]))<a href="{{ $accountLedgerUrls[$posting->account_code] }}">{{ $posting->account_code }} · {{ $posting->account_name }}</a>@else{{ $posting->account_code }} · {{ $posting->account_name }}@endif</td><td>@if(in_array(strtolower((string) $posting->party_type), ['supplier','vendor'], true) && (int) $posting->party_id === (int) $row->supplier_id && trim((string) $row->supplier_name) !== ''){{ $row->supplier_name }}@elseif($posting->party_type){{ ucfirst($posting->party_type).' #'.$posting->party_id }}@else—@endif</td><td class="scs-num">{{ number_format($posting->debit,2) }}</td><td class="scs-num">{{ number_format($posting->credit,2) }}</td></tr>
       @endforeach
       </tbody><tfoot><tr><th colspan="2">Total</th><th class="scs-num">{{ number_format($accountingRows->sum('debit'),2) }}</th><th class="scs-num">{{ number_format($accountingRows->sum('credit'),2) }}</th></tr></tfoot></table>
       @if($row->posting_reference)<div style="margin-top:9px"><strong>Posting Reference:</strong> @if($journalUrl)<a href="{{ $journalUrl }}">{{ $row->posting_reference }}</a>@else{{ $row->posting_reference }}@endif</div>@endif

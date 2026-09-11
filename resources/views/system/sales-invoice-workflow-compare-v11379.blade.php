@@ -25,7 +25,7 @@
 <div class="sic" data-et-invoice-compare="ERP-11.3.79">
   <div class="sic-head">
     <div>
-      <div class="sic-kicker">System Diagnostic · ERP-11.3.79</div>
+      <div class="sic-kicker">System Diagnostic</div>
       <h1>AIR ONLY vs GENERAL — Sales Invoice Workflow</h1>
       <div class="sic-sub">Read-only comparison of the failing AIR invoice against the working GENERAL invoice.</div>
     </div>

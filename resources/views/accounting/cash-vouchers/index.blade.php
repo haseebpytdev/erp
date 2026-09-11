@@ -119,7 +119,7 @@
 <div class="et-fin" data-et-finance-runtime="{{ config('et_erp_release.release', 'ERP-11.3') }}">
   <div class="et-fin-head">
     <div>
-      <div class="et-fin-kicker">Accounting · {{ config('et_erp_release.release', 'ERP-11.3') }}</div>
+      <div class="et-fin-kicker">Accounting</div>
       <h1 class="et-fin-title">Payments, Receipts, Expenses, Contra & Advances</h1>
       <div class="et-fin-sub">Cash/bank movement, internal transfers, direct expenses, document settlement and controlled advance application</div>
     </div>

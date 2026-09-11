@@ -241,7 +241,7 @@
 <div class="page">
     <div class="topbar">
         <div>
-            <div class="kicker">System Maintenance · ERP-10.31.72</div>
+            <div class="kicker">System Maintenance</div>
             <h1>Production Transaction Reset</h1>
             <div class="sub">
                 One-time cleanup of UAT/test business transactions before staff begin entering real production data.

@@ -67,7 +67,7 @@
 <div id="et-user-management-103175">
     <div class="u-top">
         <div>
-            <div class="u-kicker">ERP-02 · Users · ERP-10.31.75</div>
+            <div class="u-kicker">Administration · Users</div>
             <h1>ERP User Management</h1>
             <div class="u-sub">Edit existing logins, reset passwords, activate/deactivate access, maintain roles/branches and intentionally synchronize Login Email with the linked Staff profile.</div>
         </div>

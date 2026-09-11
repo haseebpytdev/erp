@@ -9,7 +9,7 @@
   $bookingReference=collect($bookings)->firstWhere('id',$selectedBookingId)['reference'] ?? null;
 @endphp
 <div class="scb" data-et-supplier-costing-form="{{ config('et_erp_release.release', 'ERP-11.3') }}">
-  <div class="scb-head"><div><div class="scb-kicker">Supplier Costing · {{ config('et_erp_release.release', 'ERP-11.3') }}</div><h2>{{ $row ? 'Edit '.$row->costing_no : 'New Supplier Cost' }}</h2><div>Booking-driven vendor obligations with one supplier per document.</div></div></div>
+  <div class="scb-head"><div><div class="scb-kicker">Supplier Costing</div><h2>{{ $row ? 'Edit '.$row->costing_no : 'New Supplier Cost' }}</h2><div>Supplier costs and payable posting.</div></div></div>
   @if($errors->any())<div class="alert alert-danger">{{ $errors->first() }}</div>@endif
   @if($legacyMode)<div class="scb-note" style="margin-bottom:14px"><strong>Legacy Draft:</strong> this existing document has no deterministic booking-source links. It remains editable without guessed backfill; new documents use the booking-driven flow.</div>@endif
 

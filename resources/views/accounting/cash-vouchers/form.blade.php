@@ -46,7 +46,7 @@
 <div class="cvf27" data-et-cash-voucher-form="{{ config('et_erp_release.release', 'ERP-11.3') }}">
   <div class="cvf27-head">
     <div>
-      <div class="cvf27-kicker">Accounting · {{ config('et_erp_release.release', 'ERP-11.3') }}</div>
+      <div class="cvf27-kicker">Accounting</div>
       <h1 class="cvf27-title">{{ $row ? 'Edit '.$row->voucher_no : 'New '.$definition['label'] }}</h1>
       <div class="cvf27-sub">{{ $subtitle }}</div>
     </div>

@@ -14,7 +14,7 @@
 <div class="cvs27" data-et-cash-voucher-show="{{ config('et_erp_release.release', 'ERP-11.3') }}">
   <div class="cvs27-head">
     <div>
-      <div class="cvs27-kicker">{{ strtoupper($definition['label']) }} · {{ config('et_erp_release.release', 'ERP-11.3') }}</div>
+      <div class="cvs27-kicker">{{ strtoupper($definition['label']) }}</div>
       <h1 class="cvs27-title">{{ $row->voucher_no }}</h1>
       <div class="cvs27-sub">Status: <span class="cvs27-badge">{{ str_replace('_',' ',$row->status) }}</span></div>
     </div>

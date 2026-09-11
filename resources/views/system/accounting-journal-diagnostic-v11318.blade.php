@@ -23,7 +23,7 @@
 <div class="ajd" data-et-accounting-diagnostic="ERP-11.3.21">
   <div class="ajd-head">
     <div>
-      <div class="ajd-kicker">System Diagnostic · ERP-11.3.21</div>
+      <div class="ajd-kicker">System Diagnostic</div>
       <h1>Native Accounting Journal Integration</h1>
       <div class="ajd-sub">Read-only inspection for Receipt / Payment → Vendor / Customer Ledger integration.</div>
     </div>

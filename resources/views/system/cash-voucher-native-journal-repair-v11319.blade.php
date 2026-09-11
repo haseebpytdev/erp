@@ -12,7 +12,7 @@
 </style>
 <div class="cjr">
   <div class="cjr-head">
-    <div><div class="cjr-kicker">System Repair · ERP-11.3.21</div><h1>Posted Cash Voucher → Native Journal Repair</h1><div class="cjr-sub">Idempotent repair for historical Posted Receipts / Payments / Advances that are missing from native ledgers.</div></div>
+    <div><div class="cjr-kicker">System Repair</div><h1>Posted Cash Voucher → Native Journal Repair</h1><div class="cjr-sub">Repair historical posted cash vouchers missing from native ledgers.</div></div>
     <a class="cjr-btn" href="{{ route('system.erp-diagnostics.accounting-journal') }}">Diagnostic</a>
   </div>
 
@@ -67,7 +67,7 @@
       <h3>Backfill Missing Native Journals</h3>
       <div class="cjr-body">
         <div class="cjr-warning">
-          This action creates native <strong>journal_entries</strong> and <strong>journal_lines</strong> only for Posted cash vouchers that do not already have a native journal. Existing linked vouchers are skipped. The source debit/credit lines are the already-posted controlled cash-voucher lines. ERP-11.3.21 also resolves the required native accounting period from each voucher date.
+          This action creates native <strong>journal_entries</strong> and <strong>journal_lines</strong> only for Posted cash vouchers that do not already have a native journal. Existing linked vouchers are skipped. The source debit/credit lines are the already-posted controlled cash-voucher lines. The required accounting period is resolved from each voucher date.
         </div>
         <form method="post" action="{{ route('system.erp-repair.cash-voucher-native-journals.execute') }}" class="cjr-confirm">
           @csrf
