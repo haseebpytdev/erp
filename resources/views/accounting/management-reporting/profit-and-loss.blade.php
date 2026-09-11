@@ -9,10 +9,35 @@
   <div class="mr-kicker">Accounting · {{ config('et_erp_release.release','ERP-11.3') }}</div><h2>Profit &amp; Loss Statement</h2><div class="mr-sub">Accounting / Posted Profit · {{ $filters['from'] }} — {{ $filters['to'] }}</div>
   @include('accounting.management-reporting._navigation')
   <form class="mr-filter" method="get"><div class="mr-field"><label>From</label><input type="date" name="from" value="{{ $filters['from'] }}"></div><div class="mr-field"><label>To</label><input type="date" name="to" value="{{ $filters['to'] }}"></div>@if($filters['branch_supported'])<div class="mr-field"><label>Branch</label><select name="branch_id"><option value="">All Branches</option>@foreach($filters['branches'] as $branch)<option value="{{ $branch['id'] }}" @selected((int)$filters['branch_id']===(int)$branch['id'])>{{ $branch['name'] }}</option>@endforeach</select></div>@endif<button class="mr-btn">Apply</button><button class="mr-btn" type="button" onclick="window.print()">Print</button></form>
-  @php($titles=['revenue'=>'Revenue','direct_cost'=>'Less: Direct Travel / Supplier Cost','operating_expense'=>'Less: Operating Expenses','other_income'=>'Other Income','other_expense'=>'Other Expense'])
+  @php
+    $titles = ['revenue'=>'Revenue','direct_cost'=>'Less: Direct Travel / Supplier Cost','operating_expense'=>'Less: Operating Expenses','other_income'=>'Other Income','other_expense'=>'Other Expense'];
+  @endphp
   <section class="mr-card"><h3>Selected Period with Previous Comparable Period</h3><div class="mr-table"><table><thead><tr><th>Account</th><th class="num">Current Period</th><th class="num">Previous Period</th><th class="num">Variance</th><th class="num">Variance %</th></tr></thead><tbody>
-  @foreach($titles as $key=>$title)<tr class="total"><td colspan="5">{{ strtoupper($title) }}</td></tr>@php($previousByCode=collect($report['previous']['sections'][$key])->keyBy('code'))@forelse($report['sections'][$key] as $line)@php($previous=(float)($previousByCode[$line['code']]['amount']??0);$variance=$line['amount']-$previous;$percent=abs($previous)>0.005?$variance/abs($previous)*100:null) <tr><td>@if($accountUrls[$line['code']]??null)<a href="{{ $accountUrls[$line['code']] }}">{{ $line['code'] }} · {{ $line['name'] }}</a>@else{{ $line['code'] }} · {{ $line['name'] }}@endif</td><td class="num">{{ $money($line['amount']) }}</td><td class="num">{{ $money($previous) }}</td><td class="num">{{ $money($variance) }}</td><td class="num">{{ $percent===null?'—':number_format($percent,2).'%' }}</td></tr>@empty<tr><td colspan="5">No posted activity in this section.</td></tr>@endforelse @endforeach
-  @foreach([['TOTAL REVENUE','revenue'],['TOTAL DIRECT COST','direct_cost'],['GROSS PROFIT','gross_profit'],['TOTAL OPERATING EXPENSES','operating_expenses'],['OPERATING PROFIT','operating_profit'],['OTHER INCOME','other_income'],['OTHER EXPENSE','other_expense'],['NET PROFIT / LOSS','net_profit']] as [$label,$key])@php($value=$report[$key];$previous=$report['previous'][$key];$variance=$value-$previous;$percent=abs($previous)>0.005?$variance/abs($previous)*100:null)<tr class="{{ $key==='net_profit'?'grand':'total' }}"><td>{{ $label }}</td><td class="num {{ str_contains($key,'profit')?($value>=0?'good':'bad'):'' }}">{{ $money($value) }}</td><td class="num">{{ $money($previous) }}</td><td class="num">{{ $money($variance) }}</td><td class="num">{{ $percent===null?'—':number_format($percent,2).'%' }}</td></tr>@endforeach
+  @foreach($titles as $key=>$title)
+    <tr class="total"><td colspan="5">{{ strtoupper($title) }}</td></tr>
+    @php
+      $previousByCode = collect($report['previous']['sections'][$key])->keyBy('code');
+    @endphp
+    @forelse($report['sections'][$key] as $line)
+      @php
+        $previous = (float) ($previousByCode[$line['code']]['amount'] ?? 0);
+        $variance = $line['amount'] - $previous;
+        $percent = abs($previous) > 0.005 ? $variance / abs($previous) * 100 : null;
+      @endphp
+      <tr><td>@if($accountUrls[$line['code']]??null)<a href="{{ $accountUrls[$line['code']] }}">{{ $line['code'] }} · {{ $line['name'] }}</a>@else{{ $line['code'] }} · {{ $line['name'] }}@endif</td><td class="num">{{ $money($line['amount']) }}</td><td class="num">{{ $money($previous) }}</td><td class="num">{{ $money($variance) }}</td><td class="num">{{ $percent===null?'—':number_format($percent,2).'%' }}</td></tr>
+    @empty
+      <tr><td colspan="5">No posted activity in this section.</td></tr>
+    @endforelse
+  @endforeach
+  @foreach([['TOTAL REVENUE','revenue'],['TOTAL DIRECT COST','direct_cost'],['GROSS PROFIT','gross_profit'],['TOTAL OPERATING EXPENSES','operating_expenses'],['OPERATING PROFIT','operating_profit'],['OTHER INCOME','other_income'],['OTHER EXPENSE','other_expense'],['NET PROFIT / LOSS','net_profit']] as [$label,$key])
+    @php
+      $value = $report[$key];
+      $previous = $report['previous'][$key];
+      $variance = $value - $previous;
+      $percent = abs($previous) > 0.005 ? $variance / abs($previous) * 100 : null;
+    @endphp
+    <tr class="{{ $key==='net_profit'?'grand':'total' }}"><td>{{ $label }}</td><td class="num {{ str_contains($key,'profit')?($value>=0?'good':'bad'):'' }}">{{ $money($value) }}</td><td class="num">{{ $money($previous) }}</td><td class="num">{{ $money($variance) }}</td><td class="num">{{ $percent===null?'—':number_format($percent,2).'%' }}</td></tr>
+  @endforeach
   </tbody></table></div></section>
 </main>
 @endsection
