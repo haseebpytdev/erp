@@ -1,4 +1,4 @@
-ERP-11.3.225 DIRECT UPLOAD — PROFESSIONAL UI ASSET DELIVERY
+ERP-11.3.226 DIRECT UPLOAD — SIDEBAR POLISH
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.225 fixes production delivery of the professional ERP stylesheet and
-JavaScript. These assets are now served through authenticated Laravel routes
-with explicit MIME types, no-sniff protection and no-cache headers, matching the
-existing cPanel-safe asset-delivery pattern. The Phase 1 shell, Dashboard and
-System Health presentation behavior is unchanged.
+ERP-11.3.226 polishes the shared ERP sidebar with a subtle selected-navigation
+tint, thin left indicator, consistent icon footprint, clearer section headings,
+quiet scrollbar behavior and compact logo and footer spacing. Presentation-only
+group headings reuse existing permission-filtered links and do not introduce new
+navigation routes.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
