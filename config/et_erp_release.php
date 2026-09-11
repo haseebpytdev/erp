@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.223-ERP11.3.223',
-    'release' => 'ERP-11.3.223',
-    'package' => 'ERP-11.3.223 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.223 introduces the shared professional ERP interface and visual consistency system.',
+    'version' => 'v1.1.33.224-ERP11.3.224',
+    'release' => 'ERP-11.3.224',
+    'package' => 'ERP-11.3.224 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.224 refines the ERP shell, Dashboard and System Health to the approved visual reference.',
 ];

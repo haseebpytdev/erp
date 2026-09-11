@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.223
-APPLICATION_VERSION=v1.1.33.223-ERP11.3.223
+CURRENT_VERSION=ERP-11.3.224
+APPLICATION_VERSION=v1.1.33.224-ERP11.3.224
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.223
+LAST_PACKAGED_RELEASE=ERP-11.3.224
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -287,3 +287,11 @@ layouts, concise labels and safe supplier-name presentation. Public voucher,
 print and PDF routes remain excluded from the global UI injection. No business,
 accounting, booking, workflow or persistence logic changes, and no migration is
 added.
+
+ERP-11.3.224 refines visual-match Phase 1 for the shared shell, compact blue
+active navigation, generic utility topbar, single Dashboard page-header
+authority, responsive non-truncating KPI layout and denser Dashboard cards. It
+also removes obsolete visible System Health wording and isolates the preserved
+production reset and financial cleanup tools under Advanced / Dangerous Actions.
+Public voucher, print and PDF exclusions remain unchanged. No business,
+accounting or database logic changes, and no migration is added.

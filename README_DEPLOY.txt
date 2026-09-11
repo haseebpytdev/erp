@@ -1,4 +1,4 @@
-ERP-11.3.223 DIRECT UPLOAD — ERP UI PROFESSIONALIZATION
+ERP-11.3.224 DIRECT UPLOAD — VISUAL MATCH PHASE 1
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,16 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.223 introduces shared professional presentation across normal ERP
-pages: a compact shell and sidebar, restrained module accents, clearer active
-navigation, standardized typography, forms, buttons, cards, tables and status
-badges, responsive safeguards, concise visible labels and safe supplier-name
-display where the resolved supplier identity matches the posting party.
+ERP-11.3.224 refines the shared shell and Dashboard against the approved visual
+reference. It replaces the oversized white active-navigation treatment with a
+compact blue state, reduces sidebar and topbar density, establishes one
+Dashboard page-header authority, prevents KPI financial-value truncation and
+bounds oversized Dashboard chart/card presentation responsively.
+
+System Health now hides obsolete historical implementation copy while retaining
+real health functionality. Production Transaction Reset and Post-Reset Financial
+Cleanup remain available but are visually isolated under Advanced / Dangerous
+Actions.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
