@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.227
-APPLICATION_VERSION=v1.1.33.227-ERP11.3.227
+CURRENT_VERSION=ERP-11.3.228
+APPLICATION_VERSION=v1.1.33.228-ERP11.3.228
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.227
+LAST_PACKAGED_RELEASE=ERP-11.3.228
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -316,3 +316,10 @@ real-child chevrons, a release/Live footer and the approved Operations,
 Accounting, Master Data and Administration ordering. Existing rendered links,
 hrefs, permissions and nested behavior remain authoritative. No business,
 accounting or database logic changes, and no migration is added.
+
+ERP-11.3.228 restores deterministic Dashboard/Home discovery in the shared
+sidebar and tightens generated section-heading spacing so each heading sits
+directly above its first permitted link. Existing rendered links, hrefs,
+permissions, active-state behavior and real nested menus remain authoritative.
+No business, accounting, booking or database logic changes are included, and
+no migration is added.

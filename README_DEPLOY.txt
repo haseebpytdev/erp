@@ -1,4 +1,4 @@
-ERP-11.3.227 DIRECT UPLOAD — APPROVED SIDEBAR REFERENCE
+ERP-11.3.228 DIRECT UPLOAD — SIDEBAR HOME + HEADING SPACING
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.227 recomposes the shared ERP sidebar to the approved visual reference.
-It uses a 224px navy shell, compact coloured icon tiles, reference-selected
-navigation, chevrons only for real child menus, clear group hierarchy and a
-release footer with a restrained Live badge. Existing permission-filtered links,
-destinations and nested behavior remain authoritative.
+ERP-11.3.228 corrects the approved shared ERP sidebar by restoring deterministic
+Dashboard/Home discovery and tightening generated section-heading spacing so
+each section heading sits directly above its first permitted link. Existing
+rendered links, destinations, permissions, active-state behavior and real
+nested menus remain authoritative.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
