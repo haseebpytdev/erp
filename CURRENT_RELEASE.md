@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.228
-APPLICATION_VERSION=v1.1.33.228-ERP11.3.228
+CURRENT_VERSION=ERP-11.3.229
+APPLICATION_VERSION=v1.1.33.229-ERP11.3.229
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.228
+LAST_PACKAGED_RELEASE=ERP-11.3.229
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -323,3 +323,10 @@ directly above its first permitted link. Existing rendered links, hrefs,
 permissions, active-state behavior and real nested menus remain authoritative.
 No business, accounting, booking or database logic changes are included, and
 no migration is added.
+ERP-11.3.229 finalizes the approved shared ERP sidebar presentation. Dashboard
+is restored as the first navigation row, accounting voucher links are normalized
+under Accounting using exact label matching, and generated section headings keep
+tight child spacing. System Health presentation is also cleaned to use concise
+health/database copy while preserving operational maintenance functions and
+Dangerous Actions. No business, accounting, booking or database logic changes
+are included and no migration is required.

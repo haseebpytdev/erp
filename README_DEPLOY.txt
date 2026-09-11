@@ -1,4 +1,4 @@
-ERP-11.3.228 DIRECT UPLOAD — SIDEBAR HOME + HEADING SPACING
+ERP-11.3.229 DIRECT UPLOAD — SIDEBAR + SYSTEM HEALTH FINALIZER
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.228 corrects the approved shared ERP sidebar by restoring deterministic
-Dashboard/Home discovery and tightening generated section-heading spacing so
-each section heading sits directly above its first permitted link. Existing
-rendered links, destinations, permissions, active-state behavior and real
-nested menus remain authoritative.
+ERP-11.3.229 finalizes the approved shared ERP sidebar and System Health
+presentation. Dashboard remains first, accounting voucher rows are normalized
+under Accounting with exact matching, section headings retain compact spacing,
+and obsolete System Health explanatory copy is removed while maintenance
+functions and Dangerous Actions remain available.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
