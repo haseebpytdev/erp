@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.232
-APPLICATION_VERSION=v1.1.33.232-ERP11.3.232
+CURRENT_VERSION=ERP-11.3.233
+APPLICATION_VERSION=v1.1.33.233-ERP11.3.233
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.232
+LAST_PACKAGED_RELEASE=ERP-11.3.233
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -351,3 +351,11 @@ section now owns an explicit 9px top margin. This prevents an active highlighted
 row from intruding into the section heading area. Login protection, query-aware
 voucher active states, rendered-link permission authority and all accounting,
 booking and persistence behavior remain unchanged. No migration is required.
+ERP-11.3.233 finalizes the sidebar section-heading spacing confirmed during
+ERP-11.3.232 live UAT and browser DevTools verification. Generated section
+headings now use an explicit 16px top, 9px horizontal and 9px bottom margin,
+with zero heading padding and line-height 1.15. The first permitted row also
+retains its 9px top margin. This provides stable visual separation for both
+active and inactive first rows. Login protection, query-aware voucher active
+states, rendered-link permission authority and all accounting, booking and
+persistence behavior remain unchanged. No migration is required.
