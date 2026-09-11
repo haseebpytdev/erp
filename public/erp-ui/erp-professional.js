@@ -33,6 +33,15 @@
       const link = links.find(candidate => linkMatches(candidate, aliases));
       return link && topLevelRow(link);
     };
+    const findDashboardRow = () => {
+      const byLabel = links.find(candidate => linkMatches(candidate, ['dashboard', 'home']));
+      if (byLabel) return topLevelRow(byLabel);
+      const byPath = links.find(candidate => {
+        const candidatePath = normalizePath(candidate.getAttribute('href'));
+        return ['/', '/dashboard', '/home'].includes(candidatePath);
+      });
+      return byPath && topLevelRow(byPath);
+    };
     const sections = [
       ['operations', 'OPERATIONS', [['bookings'], ['sales invoices'], ['supplier costing'], ['vouchers'], ['advances']]],
       ['accounting', 'ACCOUNTING', [['chart of accounts'], ['account mappings'], ['journals'], ['ledgers'], ['reports']]],
@@ -45,7 +54,7 @@
       .forEach(node => node.remove());
 
     const groupedRows = new Set();
-    const dashboardRow = findRow(['dashboard']);
+    const dashboardRow = findDashboardRow();
     if (dashboardRow) {
       groupedRows.add(dashboardRow);
       dashboardRow.dataset.etSidebarGroup = 'dashboard';
