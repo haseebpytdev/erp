@@ -1,4 +1,4 @@
-ERP-11.3.226 DIRECT UPLOAD — SIDEBAR POLISH
+ERP-11.3.227 DIRECT UPLOAD — APPROVED SIDEBAR REFERENCE
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.226 polishes the shared ERP sidebar with a subtle selected-navigation
-tint, thin left indicator, consistent icon footprint, clearer section headings,
-quiet scrollbar behavior and compact logo and footer spacing. Presentation-only
-group headings reuse existing permission-filtered links and do not introduce new
-navigation routes.
+ERP-11.3.227 recomposes the shared ERP sidebar to the approved visual reference.
+It uses a 224px navy shell, compact coloured icon tiles, reference-selected
+navigation, chevrons only for real child menus, clear group hierarchy and a
+release footer with a restrained Live badge. Existing permission-filtered links,
+destinations and nested behavior remain authoritative.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

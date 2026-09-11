@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.226
-APPLICATION_VERSION=v1.1.33.226-ERP11.3.226
+CURRENT_VERSION=ERP-11.3.227
+APPLICATION_VERSION=v1.1.33.227-ERP11.3.227
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.226
+LAST_PACKAGED_RELEASE=ERP-11.3.227
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -309,3 +309,10 @@ headings, a quieter interactive scrollbar and more compact logo and release
 footer areas. Presentation grouping reuses only links already rendered by native
 permission authority and creates no new routes. No business, accounting or
 database logic changes, and no migration is added.
+
+ERP-11.3.227 recomposes the sidebar presentation to the approved reference with
+a 224px navy shell, compact coloured icon tiles, reference-selected navigation,
+real-child chevrons, a release/Live footer and the approved Operations,
+Accounting, Master Data and Administration ordering. Existing rendered links,
+hrefs, permissions and nested behavior remain authoritative. No business,
+accounting or database logic changes, and no migration is added.
