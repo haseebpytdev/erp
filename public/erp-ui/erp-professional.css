@@ -125,23 +125,36 @@ body.et-ui-professional .navbar-vertical a.active,
 body.et-ui-professional .navbar-vertical a.et-ui-current,
 body.et-ui-professional .navbar-vertical a[aria-current="page"]{
   border-left-color:var(--et-nav-accent)!important;
-  background:rgba(255,255,255,.1)!important;
+  background:rgba(37,99,235,.18)!important;
   color:#fff!important;
-  font-weight:750!important;
+  font-weight:650!important;
 }
 body.et-ui-professional .sidebar .nav-item>span:first-child,
 body.et-ui-professional .sidebar a>span:first-child,
-body.et-ui-professional .navbar-vertical a>span:first-child{color:var(--et-nav-accent)!important;min-width:17px;text-align:center;font-size:14px!important}
+body.et-ui-professional .navbar-vertical a>span:first-child,
+body.et-ui-professional .side-nav a>span:first-child,
+body.et-ui-professional .sidebar a>i:first-child,
+body.et-ui-professional .navbar-vertical a>i:first-child,
+body.et-ui-professional .side-nav a>i:first-child,
+body.et-ui-professional .sidebar a>svg:first-child,
+body.et-ui-professional .navbar-vertical a>svg:first-child,
+body.et-ui-professional .side-nav a>svg:first-child{
+  width:18px!important;
+  min-width:18px!important;
+  color:var(--et-nav-accent)!important;
+  text-align:center;
+  font-size:14px!important;
+}
 body.et-ui-professional .sidebar .nav-section,
 body.et-ui-professional .sidebar .nav-heading,
 body.et-ui-professional .sidebar .menu-title,
 body.et-ui-professional .navbar-vertical .nav-section,
 body.et-ui-professional .navbar-vertical .nav-heading{
-  margin:10px 9px 4px!important;
-  color:#8092a8!important;
-  font-size:9px!important;
+  margin:13px 9px 5px!important;
+  color:#91a6bf!important;
+  font-size:9.5px!important;
   font-weight:800!important;
-  letter-spacing:.08em!important;
+  letter-spacing:.1em!important;
   text-transform:uppercase!important;
 }
 body.et-ui-professional .sidebar footer,
@@ -356,11 +369,15 @@ html body.et-ui-professional .sidebar .sidebar-header,
 html body.et-ui-professional .sidebar .brand,
 html body.et-ui-professional .sidebar .logo,
 html body.et-ui-professional .navbar-vertical .navbar-brand{
-  min-height:68px!important;
-  padding:11px 14px!important;
+  min-height:64px!important;
+  padding:10px 13px!important;
   margin:0!important;
+  gap:10px!important;
   border-bottom:1px solid rgba(255,255,255,.07)!important;
 }
+html body.et-ui-professional .sidebar .sidebar-header img,
+html body.et-ui-professional .sidebar .brand img,
+html body.et-ui-professional .navbar-vertical .navbar-brand img{width:38px!important;height:38px!important;object-fit:contain!important}
 html body.et-ui-professional .sidebar .nav,
 html body.et-ui-professional .navbar-vertical .nav,
 html body.et-ui-professional .side-nav .nav{
@@ -368,12 +385,18 @@ html body.et-ui-professional .side-nav .nav{
   gap:0!important;
   scrollbar-gutter:auto!important;
   scrollbar-width:thin;
-  scrollbar-color:rgba(150,177,207,.42) transparent;
+  scrollbar-color:transparent transparent;
 }
 html body.et-ui-professional .sidebar .nav::-webkit-scrollbar,
-html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar{width:5px}
+html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar{width:4px}
 html body.et-ui-professional .sidebar .nav::-webkit-scrollbar-thumb,
-html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar-thumb{background:rgba(150,177,207,.38);border-radius:8px}
+html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}
+html body.et-ui-professional .sidebar .nav::-webkit-scrollbar-track,
+html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar-track{background:transparent}
+html body.et-ui-professional .sidebar .nav:hover,
+html body.et-ui-professional .navbar-vertical .nav:hover{scrollbar-color:rgba(150,177,207,.3) transparent}
+html body.et-ui-professional .sidebar .nav:hover::-webkit-scrollbar-thumb,
+html body.et-ui-professional .navbar-vertical .nav:hover::-webkit-scrollbar-thumb{background:rgba(150,177,207,.3)}
 html body.et-ui-professional .sidebar .nav-item,
 html body.et-ui-professional .sidebar a,
 html body.et-ui-professional .navbar-vertical .nav-item,
@@ -396,9 +419,11 @@ html body.et-ui-professional .navbar-vertical .nav-heading{
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
-  margin:9px 9px 3px!important;
+  margin:13px 9px 5px!important;
   padding:0!important;
   font-size:9.5px!important;
+  color:#91a6bf!important;
+  letter-spacing:.1em!important;
 }
 html body.et-ui-professional .sidebar .nav-item.active,
 html body.et-ui-professional .sidebar .nav-item.active>a,
@@ -410,24 +435,36 @@ html body.et-ui-professional .navbar-vertical .nav-item.active>a,
 html body.et-ui-professional .navbar-vertical a.active,
 html body.et-ui-professional .navbar-vertical a.et-ui-current,
 html body.et-ui-professional .navbar-vertical a[aria-current="page"]{
-  background:linear-gradient(90deg,rgba(23,105,210,.62),rgba(23,105,210,.32))!important;
-  background-color:#155ca9!important;
-  border-left:3px solid #79b5ff!important;
+  background:rgba(37,99,235,.18)!important;
+  background-color:rgba(37,99,235,.18)!important;
+  border-left:3px solid #60a5fa!important;
+  border-radius:6px!important;
   color:#fff!important;
+  font-weight:650!important;
   box-shadow:none!important;
 }
 html body.et-ui-professional .sidebar .nav-item.active *,
 html body.et-ui-professional .sidebar a.et-ui-current *,
 html body.et-ui-professional .navbar-vertical .nav-item.active *,
 html body.et-ui-professional .navbar-vertical a.et-ui-current *{color:inherit!important}
+html body.et-ui-professional .sidebar .nav-item.active>span:first-child,
+html body.et-ui-professional .sidebar a.et-ui-current>span:first-child,
+html body.et-ui-professional .sidebar a[aria-current="page"]>span:first-child,
+html body.et-ui-professional .navbar-vertical .nav-item.active>span:first-child,
+html body.et-ui-professional .navbar-vertical a.et-ui-current>span:first-child,
+html body.et-ui-professional .navbar-vertical a[aria-current="page"]>span:first-child,
+html body.et-ui-professional .sidebar a.et-ui-current>i:first-child,
+html body.et-ui-professional .navbar-vertical a.et-ui-current>i:first-child,
+html body.et-ui-professional .sidebar a.et-ui-current>svg:first-child,
+html body.et-ui-professional .navbar-vertical a.et-ui-current>svg:first-child{color:#7dd3fc!important}
 html body.et-ui-professional .sidebar footer,
 html body.et-ui-professional .sidebar .sidebar-footer{
-  min-height:52px!important;
-  padding:8px 13px!important;
+  min-height:46px!important;
+  padding:7px 13px!important;
   border-top:1px solid rgba(255,255,255,.07)!important;
   font-size:9px!important;
   line-height:1.35!important;
-  opacity:.72;
+  opacity:.58;
 }
 
 html body.et-ui-professional .et-ui-utility-topbar{

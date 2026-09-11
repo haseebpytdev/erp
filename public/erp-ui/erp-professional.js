@@ -12,16 +12,46 @@
     catch (_) { return ''; }
   };
 
+  const sidebarNav = document.querySelector('.sidebar .nav,.navbar-vertical .nav,.side-nav .nav');
+  if (sidebarNav) {
+    const links = Array.from(sidebarNav.querySelectorAll('a[href]'));
+    const linkLabel = link => link.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+    const sections = [
+      ['main', 'MAIN', ['dashboard']],
+      ['administration', 'ADMINISTRATION', ['administration', 'organization', 'foundation']],
+      ['master-data', 'MASTER DATA', ['party master', 'travel masters', 'products & services', 'currency rates', 'financial years']],
+      ['operations', 'OPERATIONS', ['bookings', 'sales invoices', 'supplier costing']],
+      ['accounting-reports', 'ACCOUNTING / REPORTS', ['vouchers', 'receipt voucher', 'payment voucher', 'expense voucher', 'contra voucher', 'advances', 'journals', 'chart of accounts', 'account mappings', 'ledgers', 'reports']],
+    ];
+
+    sections.forEach(([key, title, labels]) => {
+      const firstLink = links.find(link => labels.includes(linkLabel(link)));
+      if (!firstLink) return;
+      const firstRow = firstLink.classList.contains('nav-item') ? firstLink : (firstLink.closest('.nav-item,li') || firstLink);
+      const parent = firstRow.parentElement;
+      if (!parent) return;
+      const existing = Array.from(sidebarNav.querySelectorAll('.nav-section,.nav-heading,.menu-title'))
+        .find(node => node.textContent.replace(/\s+/g, ' ').trim().toLowerCase() === title.toLowerCase());
+      const heading = existing || document.createElement('div');
+      heading.classList.add('nav-section', 'et-ui-nav-section');
+      heading.dataset.etSidebarSection = key;
+      heading.textContent = title;
+      if (heading !== firstRow.previousElementSibling) parent.insertBefore(heading, firstRow);
+    });
+  }
+
   document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href]').forEach(link => {
     const linkPath = normalizePath(link.getAttribute('href'));
     const currentPath = location.pathname.replace(/\/+$/g, '') || '/';
     if (linkPath && linkPath === currentPath) {
       link.classList.add('et-ui-current');
       link.setAttribute('aria-current', 'page');
-      link.style.setProperty('background', 'linear-gradient(90deg,rgba(23,105,210,.62),rgba(23,105,210,.32))', 'important');
+      link.style.setProperty('background', 'rgba(37,99,235,.18)', 'important');
       link.style.setProperty('color', '#fff', 'important');
-      link.style.setProperty('border-left-color', '#79b5ff', 'important');
+      link.style.setProperty('border-left-color', '#60a5fa', 'important');
       link.style.setProperty('border-radius', '6px', 'important');
+      link.style.setProperty('font-weight', '650', 'important');
+      link.style.setProperty('box-shadow', 'none', 'important');
     }
   });
 
