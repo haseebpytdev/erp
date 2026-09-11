@@ -28,7 +28,7 @@ ok(finalizer.includes('ticket-level sale, purchase and commissions are visible')
 ok(finalizer.includes("card.dataset.etObsoleteHealthCommercialCopy = 'hidden'"), 'commercial explanation block is hidden as presentation-only cleanup');
 ok(assetController.includes("base_path('public/erp-ui/erp-professional-finalize.js')"), 'Laravel asset response includes the finalizer');
 ok(assetController.includes('file_get_contents($base)."\\n".file_get_contents($finalizer)'), 'base UI runs before finalizer');
-ok(version === 'v1.1.33.229-ERP11.3.229', 'functional checkpoint does not bump release version');
+ok(version === 'v1.1.33.230-ERP11.3.230', 'functional checkpoint does not bump release version');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

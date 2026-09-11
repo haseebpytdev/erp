@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.229
-APPLICATION_VERSION=v1.1.33.229-ERP11.3.229
+CURRENT_VERSION=ERP-11.3.230
+APPLICATION_VERSION=v1.1.33.230-ERP11.3.230
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.229
+LAST_PACKAGED_RELEASE=ERP-11.3.230
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -330,3 +330,10 @@ tight child spacing. System Health presentation is also cleaned to use concise
 health/database copy while preserving operational maintenance functions and
 Dangerous Actions. No business, accounting, booking or database logic changes
 are included and no migration is required.
+ERP-11.3.230 finalizes the shared ERP navigation runtime corrections. Section
+headings now maintain controlled spacing from their first child link; unauthenticated
+login pages no longer receive authenticated professional-UI asset URLs; and shared
+cash-voucher routes use path + query-string authority so Receipts, Payments,
+Expense Vouchers and Contra Vouchers cannot all appear selected simultaneously.
+No business, accounting, booking or database logic changes are included and no
+migration is required.

@@ -1,4 +1,4 @@
-ERP-11.3.229 DIRECT UPLOAD — SIDEBAR + SYSTEM HEALTH FINALIZER
+ERP-11.3.230 DIRECT UPLOAD — SIDEBAR RUNTIME CORRECTIONS
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.229 finalizes the approved shared ERP sidebar and System Health
-presentation. Dashboard remains first, accounting voucher rows are normalized
-under Accounting with exact matching, section headings retain compact spacing,
-and obsolete System Health explanatory copy is removed while maintenance
-functions and Dangerous Actions remain available.
+ERP-11.3.230 finalizes shared ERP sidebar runtime behavior. Section headings
+retain controlled spacing above their first child, guest/login pages no longer
+load authenticated ERP UI asset URLs, and cash-voucher navigation uses exact
+path plus query-string matching so only the current voucher workspace is shown
+as selected.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
