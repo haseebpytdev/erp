@@ -1,4 +1,4 @@
-ERP-11.3.231 DIRECT UPLOAD - FINAL SIDEBAR HEADING SPACING
+ERP-11.3.232 DIRECT UPLOAD - SIDEBAR PHYSICAL SEPARATION FIX
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,11 +9,13 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.231 finalizes shared ERP sidebar section-heading rhythm. Generated
-section headings retain 16px separation from the preceding group, 9px child
-padding before the first permitted row and line-height 1.15. Authenticated
-professional-UI delivery, guest-login redirect protection and query-aware
-cash-voucher active-state behavior remain unchanged.
+ERP-11.3.232 corrects the remaining sidebar section-heading overlap found in
+live ERP-11.3.231 UAT. Section headings retain 16px separation from the preceding
+group and line-height 1.15. The first permitted row in every generated section
+now owns an explicit 9px top margin so active highlighted rows cannot intrude
+into section-heading space. Authenticated professional-UI delivery, guest-login
+redirect protection and query-aware cash-voucher active-state behavior remain
+unchanged.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

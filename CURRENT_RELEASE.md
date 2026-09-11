@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.231
-APPLICATION_VERSION=v1.1.33.231-ERP11.3.231
+CURRENT_VERSION=ERP-11.3.232
+APPLICATION_VERSION=v1.1.33.232-ERP11.3.232
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.231
+LAST_PACKAGED_RELEASE=ERP-11.3.232
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -344,3 +344,10 @@ Authenticated professional-UI delivery, guest-login redirect protection,
 query-aware cash-voucher active states, native rendered-link authority and
 permissions remain unchanged. No business, accounting, booking or database
 logic changes are included and no migration is required.
+ERP-11.3.232 corrects the remaining sidebar section-heading overlap found during
+ERP-11.3.231 live UAT. Section headings retain 16px separation from the preceding
+group and line-height 1.15, while the first permitted row in each generated
+section now owns an explicit 9px top margin. This prevents an active highlighted
+row from intruding into the section heading area. Login protection, query-aware
+voucher active states, rendered-link permission authority and all accounting,
+booking and persistence behavior remain unchanged. No migration is required.

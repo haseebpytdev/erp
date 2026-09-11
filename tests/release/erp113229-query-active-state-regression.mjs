@@ -15,7 +15,7 @@ ok(finalizer.includes("link.classList.remove('et-ui-current')"), 'incorrect path
 ok(finalizer.includes("link.removeAttribute('aria-current')"), 'incorrect aria-current state is removed');
 ok(finalizer.includes("const nativeActive = link.classList.contains('active')"), 'native server-side active state remains authoritative');
 ok(cashLinks.includes("$receiptActive") && cashLinks.includes("$paymentActive") && cashLinks.includes("$expenseActive") && cashLinks.includes("$contraActive"), 'cash voucher middleware keeps one query-aware native active authority');
-ok(version === 'v1.1.33.231-ERP11.3.231', 'functional checkpoint does not bump deployed release metadata');
+ok(version === 'v1.1.33.232-ERP11.3.232', 'functional checkpoint does not bump deployed release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
