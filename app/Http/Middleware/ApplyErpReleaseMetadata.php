@@ -181,6 +181,14 @@ class ApplyErpReleaseMetadata
             return $html;
         }
 
+        // The professional UI assets are served by authenticated ERP routes.
+        // Never inject those authenticated asset URLs into guest/login pages,
+        // otherwise Laravel can store the asset URL as the intended login
+        // destination and redirect the user to raw JavaScript after sign-in.
+        if (! $request->user()) {
+            return $html;
+        }
+
         $path = strtolower(trim($request->path(), '/'));
         $routeName = strtolower((string) optional($request->route())->getName());
         if (
