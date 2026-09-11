@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.219
-APPLICATION_VERSION=v1.1.33.219-ERP11.3.219
+CURRENT_VERSION=ERP-11.3.220
+APPLICATION_VERSION=v1.1.33.220-ERP11.3.220
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.219
+LAST_PACKAGED_RELEASE=ERP-11.3.220
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -254,3 +254,13 @@ native posting of product Cost Accounts to Vendor Payable. The new migration
 `database/migrations/2026_09_10_140000_create_supplier_costing_source_links.php`
 creates the source-link authority. Payment Voucher allocation remains separate
 and available only against Posted Supplier Costing documents.
+
+ERP-11.3.220 adds read-only management accounting and posted-profit reporting.
+Management Overview separates revenue from cash movement and provides daily,
+month-to-date, previous-month and fiscal-year-to-date profit visibility alongside
+Cash/Bank, Customer Receivable, Vendor Payable and advance positions. Profit &
+Loss, Balance Sheet, posted product profitability and native Account Ledger
+drill-downs all derive from the same posted native journal population. The native
+Trial Balance and Report & Print Center remain authoritative and gain direct
+navigation to the new reports. No accounting record is mutated and no migration
+is added.

@@ -14,6 +14,8 @@ const pnl = read('resources/views/accounting/management-reporting/profit-and-los
 const balance = read('resources/views/accounting/management-reporting/balance-sheet.blade.php');
 const navigation = read('resources/views/accounting/management-reporting/_navigation.blade.php');
 const version = read('VERSION.txt').trim();
+const releaseConfig = read('config/et_erp_release.php');
+const configuredVersion = releaseConfig.match(/'version'\s*=>\s*'([^']+)'/)?.[1];
 
 ok(service.includes("where('je.status', 'posted')"), 'posted journal status is the financial-report authority');
 ok(!service.includes("where('je.status', 'draft')"), 'draft journals are not selected');
@@ -101,7 +103,7 @@ ok(management.includes('@media print') && pnl.includes('@media print') && balanc
 ok(management.includes('@media(max-width:520px)') && pnl.includes('@media(max-width:700px)') && balance.includes('@media(max-width:750px)'), 'all reports include responsive behavior');
 ok(management.includes("config('et_erp_release.release','ERP-11.3')") && pnl.includes("config('et_erp_release.release','ERP-11.3')") && balance.includes("config('et_erp_release.release','ERP-11.3')"), 'report labels use dynamic release metadata');
 ok(!management.includes('ERP-11.3.219</') && !pnl.includes('ERP-11.3.219</') && !balance.includes('ERP-11.3.219</'), 'no visible release label is hard-coded');
-ok(version === 'v1.1.33.219-ERP11.3.219', 'VERSION remains unchanged for functional reporting work');
+ok(/^v1\.1\.33\.\d+-ERP11\.3\.\d+$/.test(version) && version === configuredVersion, 'VERSION and release configuration remain consistent');
 
 const pnlFixture = { revenue: 931200, direct: 938600, operating: 12000, otherIncome: 3000, otherExpense: 500 };
 const gross = pnlFixture.revenue - pnlFixture.direct;

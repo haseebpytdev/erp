@@ -1,4 +1,4 @@
-ERP-11.3.219 DIRECT UPLOAD — BOOKING-DRIVEN SUPPLIER COSTING
+ERP-11.3.220 DIRECT UPLOAD — MANAGEMENT ACCOUNTING AND PROFIT REPORTING
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,33 +9,26 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.219 includes the new migration
-database/migrations/2026_09_10_140000_create_supplier_costing_source_links.php,
-which creates deterministic booking-source traceability for Supplier Costing.
-Run Safe Database Upgrade after manual deployment and confirm this migration
-completes before Supplier Costing UAT.
+ERP-11.3.220 adds read-only Management Overview, Profit & Loss and Balance Sheet
+reporting over the installed native posted journals. It preserves the native
+Trial Balance, General Ledger, Customer Ledger, Vendor Ledger and Report & Print
+Center as accounting authorities and adds safe navigation and Account Ledger
+drill-downs.
 
-ERP-11.3.219 makes Supplier Costing booking-driven and vendor-safe. Selecting a
-booking resolves authoritative Air, Hotel, Transport and Visa supplier-cost
-obligations. The supplier selector is limited to actual booking vendors, and
-the selected supplier receives only its own automatically populated product
-source lines. One document therefore creates one supplier payable; a supplier
-may carry multiple product types, but different suppliers cannot be mixed.
+Management Overview provides Today, Yesterday, month-to-date, previous-month
+and fiscal-year-to-date posted profit. Revenue, direct supplier cost, gross
+profit, operating expenses and net profit remain separate from Cash/Bank inflow
+and outflow. Cash/Bank balances, Customer Receivables, Vendor Payables, Customer
+Advances and Supplier Advances are shown without netting control accounts.
+Product profitability comes from posted Revenue and Direct Cost journals, not
+booking commercial snapshots.
 
-Booking base cost remains controlled by the persisted booking source. Draft Tax
-and Other Charges remain editable. Deterministic source keys prevent duplicate
-costing across Draft, Pending Approval, Approved and Posted documents. Before
-each workflow transition, source ownership and cost are revalidated. Existing
-posting remains debit to the applicable product Cost Account(s) and credit to
-Vendor Payable for the same supplier through the native journal bridge. Posted
-Supplier Costing documents remain available to the existing Payment Voucher
-allocation flow.
-
-After manual deployment, run Safe Database Upgrade, clear Application Cache and
-Ctrl+F5. Open Operations > Supplier Costing > New Supplier Cost and select only
-BK-2026-000054. Do not select a supplier or save a Draft yet. First capture and
-review the Booking Supplier Obligations screen, verifying actual persisted
-vendors, source statuses and the expected PKR 938,600 UAT cost reconciliation.
+This release introduces no new migration and performs no accounting mutation.
+After manual deployment, clear Application Cache and Ctrl+F5. Browser-test
+Management Overview for Today and MTD, Profit & Loss for the current month,
+native Trial Balance for the same period, and Balance Sheet as of today. Confirm
+Account Ledger drill-downs for 1130 Customer Receivables, 2110 Vendor Payables,
+one active Bank account, one Revenue account and one Direct Cost account.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
