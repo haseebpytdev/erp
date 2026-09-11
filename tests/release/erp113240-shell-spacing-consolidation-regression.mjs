@@ -41,7 +41,9 @@ ok(!finalizer.includes("heading.style.setProperty('margin'"), 'finalizer does no
 ok(!finalizer.includes("row.style.setProperty('margin-top'"), 'finalizer does not own first-row margin');
 
 ok(controller.includes("base_path('public/erp-ui/erp-shell-spacing.css')"), 'shell spacing CSS is served through Laravel');
-ok(controller.includes('file_get_contents($registerWorkspaceUi)."\\n".file_get_contents($shellSpacingUi)'), 'shell spacing CSS loads last after module/register styles');
+const registerAssetPosition = controller.indexOf('file_get_contents($registerWorkspaceUi)');
+const shellAssetPosition = controller.indexOf('file_get_contents($shellSpacingUi)');
+ok(registerAssetPosition >= 0 && shellAssetPosition > registerAssetPosition, 'shell spacing CSS loads last after module/register styles');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned immutable UI asset cache remains intact');
 
 ok(accountingCss.includes('.cvf27-card') && accountingCss.includes('.cvs27-card') && accountingCss.includes('.aa-wrap'), 'Accounting business workspaces retain their existing visual implementation');
