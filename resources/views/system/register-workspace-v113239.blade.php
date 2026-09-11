@@ -126,13 +126,7 @@
                             data-row-id="{{ $row['id'] }}">
                             <td class="et-booking-select-cell"><input type="checkbox" data-register-row-select aria-label="Select {{ $row['id'] }}"></td>
                             @foreach($headers as $cellIndex => $header)
-                                <td>
-                                    @if(str_contains(mb_strtolower($header), 'status'))
-                                        <span class="et-register-status et-register-status-{{ $row['status'] }}">{{ $row['status_label'] }}</span>
-                                    @else
-                                        {!! $row['cells'][$cellIndex]['html'] ?? '' !!}
-                                    @endif
-                                </td>
+                                <td>{!! $row['cells'][$cellIndex]['html'] ?? '' !!}</td>
                             @endforeach
                             <td class="et-booking-action-cell">
                                 <div class="et-booking-row-menu">
@@ -160,21 +154,25 @@
         </div>
     </section>
 
+    @if($nativePaginatorHtml !== '')
+        <div class="et-register-native-pagination" aria-label="Server result pages">{!! $nativePaginatorHtml !!}</div>
+    @endif
+
     <section class="et-booking-ref-insights">
-        <article class="et-booking-ref-insight-card">
-            <div class="et-booking-ref-insight-head"><strong>Quick Workflow</strong><span>Current lifecycle</span></div>
-            <div class="et-register-workflow-list">
+        <article class="et-booking-ref-insight-card et-booking-ref-workflow">
+            <div class="et-booking-ref-insight-head"><div><span aria-hidden="true">⇄</span><strong>Quick Workflow</strong></div><small>Current lifecycle</small></div>
+            <div class="et-booking-ref-workflow-track">
                 @foreach($config['workflow'] as $index => $step)
-                    <div class="et-register-workflow-step"><span>{{ $index + 1 }}</span><div><strong>{{ $step[0] }}</strong><small>{{ $step[1] }}</small></div></div>
+                    <div class="et-booking-ref-workflow-step {{ $index === 0 ? 'active' : '' }}"><b>{{ $index + 1 }}</b><strong>{{ $step[0] }}</strong><small>{{ $step[1] }}</small></div>
                 @endforeach
             </div>
         </article>
 
         <article class="et-booking-ref-insight-card">
-            <div class="et-booking-ref-insight-head"><strong>{{ $config['breakdown_title'] }}</strong><span>{{ count($rows) }} records</span></div>
-            <div class="et-register-breakdown">
-                <div class="et-register-donut" style="background:conic-gradient({{ implode(',', $gradientStops) }})"><span>{{ count($rows) }}</span></div>
-                <div class="et-register-breakdown-list">
+            <div class="et-booking-ref-insight-head"><div><span aria-hidden="true">◔</span><strong>{{ $config['breakdown_title'] }}</strong></div><small>{{ count($rows) }} records</small></div>
+            <div class="et-booking-ref-type-body">
+                <div class="et-booking-ref-donut" style="background:conic-gradient({{ implode(',', $gradientStops) }})"><span></span></div>
+                <div class="et-booking-ref-type-legend">
                     @forelse($breakdown as $index => $item)
                         <div><i style="background:{{ $palette[$index % count($palette)] }}"></i><span>{{ $item['label'] }}</span><strong>{{ $item['count'] }}</strong></div>
                     @empty
@@ -185,10 +183,10 @@
         </article>
 
         <article class="et-booking-ref-insight-card">
-            <div class="et-booking-ref-insight-head"><strong>Recent Activity</strong><span>Latest rows</span></div>
-            <div class="et-register-activity-list">
+            <div class="et-booking-ref-insight-head"><div><span aria-hidden="true">◷</span><strong>Recent Activity</strong></div><small>Latest rows</small></div>
+            <div class="et-booking-ref-activity-list">
                 @forelse(array_slice($rows, 0, 5) as $row)
-                    <div class="et-register-activity"><span>•</span><div><strong>{{ $row['id'] }}</strong><small>{{ $row['status_label'] }}{{ $row['date_label'] ? ' · '.$row['date_label'] : '' }}</small></div></div>
+                    <div class="et-booking-ref-activity-row"><i class="blue"></i><div><strong>{{ $row['id'] }}</strong><small>{{ $row['status_label'] }}</small></div><time>{{ $row['date_label'] }}</time></div>
                 @empty
                     <small>No recent activity.</small>
                 @endforelse
