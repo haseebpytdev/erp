@@ -9,8 +9,13 @@ final class ErpProfessionalUiAssetController extends Controller
 {
     public function css(): Response
     {
-        return $this->asset(
-            base_path('public/erp-ui/erp-professional.css'),
+        $prepaint = base_path('public/erp-ui/erp-sidebar-prepaint.css');
+        $base = base_path('public/erp-ui/erp-professional.css');
+
+        abort_unless(is_file($prepaint) && is_file($base), 404);
+
+        return $this->textAsset(
+            file_get_contents($prepaint)."\n".file_get_contents($base),
             'text/css; charset=UTF-8'
         );
     }
@@ -19,32 +24,27 @@ final class ErpProfessionalUiAssetController extends Controller
     {
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
+        $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
 
-        abort_unless(is_file($base) && is_file($finalizer), 404);
+        abort_unless(is_file($base) && is_file($finalizer) && is_file($ready), 404);
 
-        return response(
-            file_get_contents($base)."\n".file_get_contents($finalizer),
-            200,
-            [
-                'Content-Type' => 'application/javascript; charset=UTF-8',
-                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-                'Pragma' => 'no-cache',
-                'X-Content-Type-Options' => 'nosniff',
-            ]
+        return $this->textAsset(
+            file_get_contents($base)."\n".file_get_contents($finalizer)."\n".file_get_contents($ready),
+            'application/javascript; charset=UTF-8'
         );
     }
 
-    private function asset(string $path, string $contentType): Response
+    private function textAsset(string $content, string $contentType): Response
     {
-        abort_unless(is_file($path), 404);
-
         return response(
-            file_get_contents($path),
+            $content,
             200,
             [
                 'Content-Type' => $contentType,
-                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-                'Pragma' => 'no-cache',
+                // Asset URLs already carry the ERP release version. Browser-only
+                // immutable caching removes repeated authenticated round-trips on
+                // every navigation without allowing a shared proxy to cache them.
+                'Cache-Control' => 'private, max-age=31536000, immutable',
                 'X-Content-Type-Options' => 'nosniff',
             ]
         );
