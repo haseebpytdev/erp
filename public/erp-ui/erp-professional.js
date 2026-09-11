@@ -76,6 +76,13 @@
       heading.classList.add('nav-section', 'et-ui-nav-section');
       heading.dataset.etSidebarSection = key;
       heading.textContent = title;
+      heading.style.setProperty('display', 'block', 'important');
+      heading.style.setProperty('height', 'auto', 'important');
+      heading.style.setProperty('min-height', '0', 'important');
+      heading.style.setProperty('max-height', 'none', 'important');
+      heading.style.setProperty('margin', '10px 9px 0', 'important');
+      heading.style.setProperty('padding', '0', 'important');
+      heading.style.setProperty('line-height', '1', 'important');
       sidebarNav.appendChild(heading);
       rows.forEach(row => sidebarNav.appendChild(row));
     });
