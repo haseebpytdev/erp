@@ -13,6 +13,9 @@ ok(js.includes("linkMatches(candidate, ['dashboard', 'home'])"), 'native Dashboa
 ok(js.includes("['/', '/dashboard', '/home'].includes(candidatePath)"), 'canonical dashboard/home paths are accepted as fallback');
 ok(js.includes('const dashboardRow = findDashboardRow();'), 'dashboard row uses robust discovery before section regrouping');
 ok(js.includes("dashboardRow.dataset.etSidebarGroup = 'dashboard'"), 'dashboard row remains outside grouped sections at the top');
+ok(js.includes("heading.style.setProperty('margin', '10px 9px 0', 'important')"), 'section headings keep a compact gap above and no extra gap below');
+ok(js.includes("heading.style.setProperty('line-height', '1', 'important')"), 'section headings use tight reference line height');
+ok(js.includes("heading.style.setProperty('min-height', '0', 'important')"), 'section headings cannot inherit clickable-row height');
 ok(!js.includes("document.createElement('a')"), 'dashboard recovery does not create a fake navigation link');
 ok(version === 'v1.1.33.227-ERP11.3.227', 'functional checkpoint does not bump release version');
 
