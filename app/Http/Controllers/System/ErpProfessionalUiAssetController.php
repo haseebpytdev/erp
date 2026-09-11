@@ -38,6 +38,7 @@ final class ErpProfessionalUiAssetController extends Controller
     {
         $registerUi = base_path('public/erp-ui/erp-operation-registers.js');
         $bookingRegisterUi = base_path('public/erp-ui/erp-booking-register-reference.js');
+        $commercialRegisterUi = base_path('public/erp-ui/erp-commercial-register-reference.js');
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
         $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
@@ -45,6 +46,7 @@ final class ErpProfessionalUiAssetController extends Controller
         abort_unless(
             is_file($registerUi)
             && is_file($bookingRegisterUi)
+            && is_file($commercialRegisterUi)
             && is_file($base)
             && is_file($finalizer)
             && is_file($ready),
@@ -54,6 +56,7 @@ final class ErpProfessionalUiAssetController extends Controller
         return $this->textAsset(
             file_get_contents($registerUi)
             ."\n".file_get_contents($bookingRegisterUi)
+            ."\n".file_get_contents($commercialRegisterUi)
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($finalizer)
             ."\n".file_get_contents($ready),
