@@ -1,4 +1,4 @@
-ERP-11.3.233 DIRECT UPLOAD - FINAL SIDEBAR SECTION SPACING
+ERP-11.3.234 DIRECT UPLOAD - SIDEBAR FIRST-PAINT STABILIZATION
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,13 +9,13 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.233 finalizes sidebar section-heading spacing after live browser
-verification. Generated headings use an explicit 16px top, 9px horizontal and
-9px bottom margin, zero padding and line-height 1.15. The first permitted row
-also retains its explicit 9px top margin. This prevents active or inactive first
-rows from visually crowding section headings. Authenticated professional-UI
-delivery, guest-login redirect protection and query-aware cash-voucher
-active-state behavior remain unchanged.
+ERP-11.3.234 stabilizes sidebar first paint during ERP page navigation. Native
+navigation remains visually hidden while the professional sidebar finalizer
+normalizes grouping and ordering, then becomes visible only after the final UI
+sequence completes. A 2-second CSS failsafe prevents navigation from remaining
+hidden if JavaScript fails. Versioned professional CSS and JavaScript responses
+are browser-cacheable to avoid unnecessary refetching on repeated navigation.
+ERP-11.3.233 heading and first-row spacing remains unchanged.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

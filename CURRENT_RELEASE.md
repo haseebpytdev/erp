@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.233
-APPLICATION_VERSION=v1.1.33.233-ERP11.3.233
+CURRENT_VERSION=ERP-11.3.234
+APPLICATION_VERSION=v1.1.33.234-ERP11.3.234
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.233
+LAST_PACKAGED_RELEASE=ERP-11.3.234
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -359,3 +359,14 @@ retains its 9px top margin. This provides stable visual separation for both
 active and inactive first rows. Login protection, query-aware voucher active
 states, rendered-link permission authority and all accounting, booking and
 persistence behavior remain unchanged. No migration is required.
+ERP-11.3.234 corrects sidebar first-paint flashing observed during ERP-11.3.233
+live UAT. Native sidebar navigation is hidden only during professional sidebar
+normalization, preserving its layout footprint, then revealed immediately after
+the final UI sequence completes. A 2-second CSS failsafe reveals the native
+navigation if JavaScript fails. Versioned professional UI assets now use private
+immutable browser caching so repeated ERP navigation does not unnecessarily
+refetch unchanged CSS and JavaScript. Final ERP-11.3.233 sidebar spacing remains
+unchanged: headings use 16px 9px 9px margins, zero padding, line-height 1.15,
+and the first permitted row retains 9px top separation. No accounting, booking,
+permission, voucher, ledger, persistence or database behavior is changed. No
+migration is required.
