@@ -1,4 +1,4 @@
-ERP-11.3.221 DIRECT UPLOAD — PROFIT & LOSS RENDER HOTFIX
+ERP-11.3.222 DIRECT UPLOAD — RENDER-SAFE PROFIT & LOSS
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,10 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.221 fixes the Profit & Loss report HTTP 500 introduced in ERP-11.3.220.
-Unsafe inline multi-statement Blade `@php(...)` directives were replaced with
-valid block `@php` / `@endphp` syntax. Current Period, Previous Period, Variance
-and Variance % values retain the same read-only posted-journal calculations.
+ERP-11.3.222 makes the Profit & Loss report render-safe by removing all
+Blade-local calculation variables and PHP directives. The controller supplies
+complete sectionRows and summaryRows with formatted Current Period, Previous
+Period, Variance and Variance % values plus native Account Ledger URLs. The
+Blade view now only iterates and displays prepared data.
 
 No accounting formula, posted-journal authority, Management Overview, Balance
 Sheet, native Trial Balance, ledger, print or workflow behavior changes. This
