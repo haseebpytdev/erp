@@ -13,11 +13,11 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * ERP-11.3.239
  *
- * Server-side register presentation for the three primary operational/commercial
- * registers. The native controller + middleware stack remains authoritative for
- * permissions, filtering, pagination and row data. This presenter reads the
- * rendered native table and replaces only the register <main> canvas before the
- * response reaches the browser, eliminating post-paint DOM reconstruction.
+ * Server-side presentation for the three primary operational/commercial
+ * registers. Native controllers and middleware remain authoritative for data,
+ * permissions, filters and workflow. Only the already-rendered register canvas
+ * is normalized before the response reaches the browser, so the old register
+ * layout is never painted and then rebuilt by JavaScript.
  */
 final class PresentUnifiedRegisterWorkspace
 {
@@ -26,13 +26,17 @@ final class PresentUnifiedRegisterWorkspace
         /** @var Response $response */
         $response = $next($request);
 
+        return $this->present($request, $response);
+    }
+
+    public function present(Request $request, Response $response): Response
+    {
         if ($request->method() !== 'GET') {
             return $response;
         }
 
         $path = strtolower(trim($request->path(), '/'));
         $config = $this->config($path);
-
         if ($config === null) {
             return $response;
         }
@@ -59,13 +63,13 @@ final class PresentUnifiedRegisterWorkspace
 
             $fragment = view('system.register-workspace-v113239', $workspace)->render();
             $presented = $this->replaceMain($html, $fragment);
-
             if ($presented === null) {
                 return $response;
             }
 
-            $presented = $this->markHtml($presented, (string) $config['key']);
-            $response->setContent($presented);
+            $response->setContent(
+                $this->markHtml($presented, (string) $config['key'])
+            );
         } catch (\Throwable $exception) {
             report($exception);
         }
@@ -91,7 +95,7 @@ final class PresentUnifiedRegisterWorkspace
                 'pending_label' => 'Pending Confirmation',
                 'approved_label' => 'Confirmed',
                 'fourth_label' => 'Cancelled',
-                'pending_status' => 'pending',
+                'pending_status' => 'pending_approval',
                 'approved_status' => 'confirmed',
                 'fourth_status' => 'cancelled',
                 'field2_label' => 'Customer',
@@ -109,7 +113,7 @@ final class PresentUnifiedRegisterWorkspace
                 'create_tokens' => ['new booking'],
                 'quick' => [
                     ['all', 'All'],
-                    ['pending', 'Pending'],
+                    ['pending_approval', 'Pending'],
                     ['confirmed', 'Confirmed'],
                     ['cancelled', 'Cancelled'],
                 ],
@@ -217,7 +221,6 @@ final class PresentUnifiedRegisterWorkspace
 
         $xpath = new DOMXPath($dom);
         $table = $this->findRegisterTable($xpath, $config);
-
         if (! $table) {
             return null;
         }
@@ -308,16 +311,12 @@ final class PresentUnifiedRegisterWorkspace
         $createHref = $this->findCreateHref($xpath, (array) $config['create_tokens']);
         $groups = $this->uniqueValues(array_column($rows, 'group'));
         $secondary = $this->uniqueValues(array_column($rows, 'secondary'));
-
         $counts = [
             'total' => count($rows),
             'pending' => $this->countStatus($rows, (string) $config['pending_status']),
             'approved' => $this->countStatus($rows, (string) $config['approved_status']),
             'fourth' => $this->countStatus($rows, (string) $config['fourth_status']),
         ];
-
-        $metricCaptions = $this->metricCaptions($rows, $config, $counts);
-        $breakdown = $this->breakdown($rows, $config);
 
         return [
             'config' => $config,
@@ -329,38 +328,33 @@ final class PresentUnifiedRegisterWorkspace
             'groups' => $groups,
             'secondaryOptions' => $secondary,
             'counts' => $counts,
-            'metricCaptions' => $metricCaptions,
-            'breakdown' => $breakdown,
+            'metricCaptions' => $this->metricCaptions($rows, $config, $counts),
+            'breakdown' => $this->breakdown($rows, $config),
             'createHref' => $createHref,
+            'nativePaginatorHtml' => $this->nativePaginatorHtml($xpath),
         ];
     }
 
     private function findRegisterTable(DOMXPath $xpath, array $config): ?DOMElement
     {
         $tables = $xpath->query('//table');
-        if (! $tables) {
-            return null;
-        }
+        if (! $tables) return null;
 
         foreach ($tables as $table) {
-            if (! $table instanceof DOMElement) {
-                continue;
-            }
+            if (! $table instanceof DOMElement) continue;
 
             $headers = $xpath->query('.//thead//th', $table);
-            if (! $headers || $headers->length === 0) {
-                continue;
-            }
+            if (! $headers || $headers->length === 0) continue;
 
             $labels = [];
             foreach ($headers as $header) {
                 $labels[] = $this->lower($header->textContent);
             }
 
-            $hasId = $this->labelsContain($labels, (string) $config['id_header']);
-            $hasStatus = $this->labelsContain($labels, (string) $config['status_header']);
-
-            if ($hasId && $hasStatus) {
+            if (
+                $this->labelsContain($labels, (string) $config['id_header'])
+                && $this->labelsContain($labels, (string) $config['status_header'])
+            ) {
                 return $table;
             }
         }
@@ -374,22 +368,11 @@ final class PresentUnifiedRegisterWorkspace
 
         foreach ($headers as $index => $header) {
             $label = $this->lower($header);
-
-            if ($indexes['id'] < 0 && str_contains($label, (string) $config['id_header'])) {
-                $indexes['id'] = $index;
-            }
-            if ($indexes['date'] < 0 && str_contains($label, (string) $config['date_header'])) {
-                $indexes['date'] = $index;
-            }
-            if ($indexes['group'] < 0 && str_contains($label, (string) $config['group_header'])) {
-                $indexes['group'] = $index;
-            }
-            if ($indexes['secondary'] < 0 && str_contains($label, (string) $config['secondary_header'])) {
-                $indexes['secondary'] = $index;
-            }
-            if ($indexes['status'] < 0 && str_contains($label, (string) $config['status_header'])) {
-                $indexes['status'] = $index;
-            }
+            if ($indexes['id'] < 0 && str_contains($label, (string) $config['id_header'])) $indexes['id'] = $index;
+            if ($indexes['date'] < 0 && str_contains($label, (string) $config['date_header'])) $indexes['date'] = $index;
+            if ($indexes['group'] < 0 && str_contains($label, (string) $config['group_header'])) $indexes['group'] = $index;
+            if ($indexes['secondary'] < 0 && str_contains($label, (string) $config['secondary_header'])) $indexes['secondary'] = $index;
+            if ($indexes['status'] < 0 && str_contains($label, (string) $config['status_header'])) $indexes['status'] = $index;
         }
 
         return $indexes;
@@ -398,11 +381,8 @@ final class PresentUnifiedRegisterWorkspace
     private function labelsContain(array $labels, string $needle): bool
     {
         foreach ($labels as $label) {
-            if (str_contains($label, $needle)) {
-                return true;
-            }
+            if (str_contains($label, $needle)) return true;
         }
-
         return false;
     }
 
@@ -413,26 +393,14 @@ final class PresentUnifiedRegisterWorkspace
 
         if ($links) {
             foreach ($links as $link) {
-                if (! $link instanceof DOMElement) {
-                    continue;
-                }
+                if (! $link instanceof DOMElement) continue;
 
                 $href = trim((string) $link->getAttribute('href'));
-                if ($href === '') {
-                    continue;
-                }
-
-                if ($fallback === '') {
-                    $fallback = $href;
-                }
+                if ($href === '') continue;
+                if ($fallback === '') $fallback = $href;
 
                 $label = $this->lower($link->textContent);
-                if (
-                    $label === 'open'
-                    || $label === 'view'
-                    || $label === 'details'
-                    || str_contains($label, 'open')
-                ) {
+                if ($label === 'open' || $label === 'view' || $label === 'details' || str_contains($label, 'open')) {
                     return $href;
                 }
             }
@@ -453,21 +421,15 @@ final class PresentUnifiedRegisterWorkspace
 
     private function findCreateHref(DOMXPath $xpath, array $tokens): string
     {
-        if ($tokens === []) {
-            return '';
-        }
+        if ($tokens === []) return '';
 
         $links = $xpath->query('//a[@href]');
-        if (! $links) {
-            return '';
-        }
+        if (! $links) return '';
 
         foreach ($links as $link) {
-            if (! $link instanceof DOMElement) {
-                continue;
-            }
-
+            if (! $link instanceof DOMElement) continue;
             $label = $this->lower($link->textContent);
+
             foreach ($tokens as $token) {
                 if (str_contains($label, $this->lower((string) $token))) {
                     return trim((string) $link->getAttribute('href'));
@@ -478,13 +440,27 @@ final class PresentUnifiedRegisterWorkspace
         return '';
     }
 
+    private function nativePaginatorHtml(DOMXPath $xpath): string
+    {
+        $nodes = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " pagination ")]');
+        if (! $nodes || $nodes->length === 0) return '';
+
+        $node = $nodes->item(0);
+        if (! $node instanceof DOMElement) return '';
+
+        $wrapper = $node->parentNode instanceof DOMElement && strtolower($node->parentNode->tagName) === 'nav'
+            ? $node->parentNode
+            : $node;
+
+        return $wrapper->ownerDocument?->saveHTML($wrapper) ?? '';
+    }
+
     private function innerHtml(DOMNode $node): string
     {
         $html = '';
         foreach ($node->childNodes as $child) {
             $html .= $node->ownerDocument?->saveHTML($child) ?? '';
         }
-
         return $html;
     }
 
@@ -493,12 +469,9 @@ final class PresentUnifiedRegisterWorkspace
         $result = [];
         foreach ($values as $value) {
             $label = $this->clean((string) $value);
-            if ($label !== '') {
-                $result[$this->lower($label)] = $label;
-            }
+            if ($label !== '') $result[$this->lower($label)] = $label;
         }
         ksort($result, SORT_NATURAL | SORT_FLAG_CASE);
-
         return array_values($result);
     }
 
@@ -531,26 +504,17 @@ final class PresentUnifiedRegisterWorkspace
             $previous = 0;
 
             foreach ($rows as $row) {
-                if ($status !== null && ($row['status'] ?? '') !== $status) {
-                    continue;
-                }
-
-                $date = $row['date'] ?? '';
-                if ($date === '') {
-                    continue;
-                }
+                if ($status !== null && ($row['status'] ?? '') !== $status) continue;
+                if (($row['date'] ?? '') === '') continue;
 
                 try {
-                    $value = \Carbon\Carbon::parse($date);
+                    $value = \Carbon\Carbon::parse($row['date']);
                 } catch (\Throwable) {
                     continue;
                 }
 
-                if ($value->greaterThanOrEqualTo($currentStart)) {
-                    $current++;
-                } elseif ($value->betweenIncluded($previousStart, $previousEnd)) {
-                    $previous++;
-                }
+                if ($value->greaterThanOrEqualTo($currentStart)) $current++;
+                elseif ($value->betweenIncluded($previousStart, $previousEnd)) $previous++;
             }
 
             if ($previous === 0) {
@@ -582,21 +546,16 @@ final class PresentUnifiedRegisterWorkspace
         $counts = [];
 
         foreach ($rows as $row) {
-            if (($config['key'] ?? '') === 'sales-invoices') {
-                $label = $row['status_label'] ?: ucfirst(str_replace('_', ' ', (string) $row['status']));
-            } else {
-                $label = $row['secondary'] ?: 'Other';
-            }
+            $label = ($config['key'] ?? '') === 'sales-invoices'
+                ? ($row['status_label'] ?: ucfirst(str_replace('_', ' ', (string) $row['status'])))
+                : ($row['secondary'] ?: 'Other');
 
             $key = $this->lower($label);
-            if (! isset($counts[$key])) {
-                $counts[$key] = ['label' => $label, 'count' => 0];
-            }
+            if (! isset($counts[$key])) $counts[$key] = ['label' => $label, 'count' => 0];
             $counts[$key]['count']++;
         }
 
         usort($counts, static fn (array $a, array $b): int => $b['count'] <=> $a['count']);
-
         return array_slice($counts, 0, 5);
     }
 
@@ -623,9 +582,7 @@ final class PresentUnifiedRegisterWorkspace
 
         foreach (['d/m/Y', 'd-m-Y', 'Y-m-d', 'd M Y', 'd F Y'] as $format) {
             $date = \DateTimeImmutable::createFromFormat('!'.$format, $value);
-            if ($date instanceof \DateTimeImmutable) {
-                return $date->format('Y-m-d');
-            }
+            if ($date instanceof \DateTimeImmutable) return $date->format('Y-m-d');
         }
 
         try {
