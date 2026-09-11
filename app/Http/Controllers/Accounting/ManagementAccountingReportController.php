@@ -32,10 +32,16 @@ final class ManagementAccountingReportController extends Controller
     public function profitAndLoss(Request $request)
     {
         $filters = $this->reports->filters($request, 'profit-and-loss');
-        return view('accounting.management-reporting.profit-and-loss', $this->viewData($filters) + [
-            'report' => $this->reports->profitAndLoss($filters),
-            'accountUrls' => $this->accountUrls($this->reports->accounts()),
-        ]);
+        $report = $this->reports->profitAndLoss($filters);
+        $presentation = $this->profitAndLossPresentation(
+            $report,
+            $this->accountUrls($this->reports->accounts())
+        );
+
+        return view(
+            'accounting.management-reporting.profit-and-loss',
+            $this->viewData($filters) + $presentation
+        );
     }
 
     public function balanceSheet(Request $request)
@@ -101,5 +107,91 @@ final class ManagementAccountingReportController extends Controller
             'as_of' => $filters['as_of'], 'date_from' => $filters['from'], 'date_to' => $filters['to'],
             'branch_id' => $filters['branch_id'],
         ], static fn ($value): bool => $value !== null && $value !== '');
+    }
+
+    private function profitAndLossPresentation(array $report, array $accountUrls): array
+    {
+        $sectionDefinitions = [
+            'revenue' => 'Revenue',
+            'direct_cost' => 'Less: Direct Travel / Supplier Cost',
+            'operating_expense' => 'Less: Operating Expenses',
+            'other_income' => 'Other Income',
+            'other_expense' => 'Other Expense',
+        ];
+        $sectionRows = [];
+
+        foreach ($sectionDefinitions as $key => $title) {
+            $previousByCode = collect($report['previous']['sections'][$key])->keyBy('code');
+            $lines = [];
+
+            foreach ($report['sections'][$key] as $line) {
+                $previous = (float) ($previousByCode[$line['code']]['amount'] ?? 0);
+                $lines[] = $this->profitAndLossDisplayRow(
+                    (float) $line['amount'],
+                    $previous
+                ) + [
+                    'code' => (string) $line['code'],
+                    'name' => (string) $line['name'],
+                    'account_url' => $accountUrls[$line['code']] ?? null,
+                ];
+            }
+
+            $sectionRows[] = ['key' => $key, 'title' => $title, 'lines' => $lines];
+        }
+
+        $summaryDefinitions = [
+            ['TOTAL REVENUE', 'revenue'],
+            ['TOTAL DIRECT COST', 'direct_cost'],
+            ['GROSS PROFIT', 'gross_profit'],
+            ['TOTAL OPERATING EXPENSES', 'operating_expenses'],
+            ['OPERATING PROFIT', 'operating_profit'],
+            ['OTHER INCOME', 'other_income'],
+            ['OTHER EXPENSE', 'other_expense'],
+            ['NET PROFIT / LOSS', 'net_profit'],
+        ];
+        $summaryRows = [];
+
+        foreach ($summaryDefinitions as [$label, $key]) {
+            $current = (float) $report[$key];
+            $summaryRows[] = $this->profitAndLossDisplayRow(
+                $current,
+                (float) $report['previous'][$key]
+            ) + [
+                'label' => $label,
+                'key' => $key,
+                'row_class' => $key === 'net_profit' ? 'grand' : 'total',
+                'current_class' => str_contains($key, 'profit')
+                    ? ($current >= 0 ? 'good' : 'bad')
+                    : '',
+            ];
+        }
+
+        return ['sectionRows' => $sectionRows, 'summaryRows' => $summaryRows];
+    }
+
+    private function profitAndLossDisplayRow(float $current, float $previous): array
+    {
+        $variance = round($current - $previous, 2);
+        $variancePercent = abs($previous) > 0.005
+            ? round($variance / abs($previous) * 100, 2)
+            : null;
+
+        return [
+            'current' => round($current, 2),
+            'previous' => round($previous, 2),
+            'variance' => $variance,
+            'variance_percent' => $variancePercent,
+            'current_display' => $this->money($current),
+            'previous_display' => $this->money($previous),
+            'variance_display' => $this->money($variance),
+            'variance_percent_display' => $variancePercent === null
+                ? '—'
+                : number_format($variancePercent, 2).'%',
+        ];
+    }
+
+    private function money(float $value): string
+    {
+        return 'PKR '.number_format($value, 2);
     }
 }

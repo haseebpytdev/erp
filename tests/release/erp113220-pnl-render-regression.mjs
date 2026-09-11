@@ -51,11 +51,12 @@ for (const [path, source] of Object.entries(views)) {
   ok(blockStarts === blockEnds, `${path} has balanced block @php directives`);
 }
 
-ok(pnl.includes('$previous = (float) ($previousByCode[$line[\'code\']][\'amount\'] ?? 0);'), 'line comparison previous value uses a block statement');
-ok(pnl.includes('$variance = $line[\'amount\'] - $previous;'), 'line comparison variance uses a block statement');
-ok(pnl.includes('$percent = abs($previous) > 0.005 ? $variance / abs($previous) * 100 : null;'), 'line comparison percentage uses a block statement');
-ok(pnl.includes("$value = $report[$key];") && pnl.includes("$previous = $report['previous'][$key];"), 'summary comparison statements use a block directive');
-ok(!/@php\([^\r\n]*;[^\r\n]*\)/.test(pnl), 'production P&L failure pattern is absent');
+ok(!pnl.includes('@php') && !pnl.includes('@endphp'), 'P&L template contains zero PHP directives');
+ok(!/\$[A-Za-z_]\w*\s*=(?!=)/.test(pnl), 'P&L template contains no local variable assignments');
+ok(!pnl.includes('$titles') && !pnl.includes('$previousByCode') && !pnl.includes('$money'), 'P&L template has no hidden calculation state');
+ok(pnl.includes('@foreach($sectionRows as $section)'), 'P&L iterates controller-prepared sections');
+ok(pnl.includes('@foreach($summaryRows as $summary)'), 'P&L iterates controller-prepared summaries');
+ok(!/@php\([^\r\n]*;[^\r\n]*\)/.test(pnl), 'original production parse-failure pattern is absent');
 
 for (const key of ['sections', 'revenue', 'direct_cost', 'gross_profit', 'operating_expenses', 'operating_profit', 'other_income', 'other_expense', 'net_profit']) {
   ok(service.includes(`'${key}' =>`), `report service exposes ${key}`);
@@ -64,11 +65,21 @@ for (const section of ['revenue', 'direct_cost', 'operating_expense', 'other_inc
   ok(service.includes(`'${section}' => []`), `report service initializes ${section} section`);
 }
 ok(service.includes("$current['previous'] = $previous"), 'P&L report includes previous comparable period');
-ok(controller.includes("view('accounting.management-reporting.profit-and-loss'"), 'controller renders the corrected P&L view');
-ok(pnl.includes("$accountUrls[$line['code']]"), 'native account drilldowns remain rendered');
+ok(controller.includes("'accounting.management-reporting.profit-and-loss'"), 'controller renders the corrected P&L view');
+ok(controller.includes('private function profitAndLossPresentation(array $report, array $accountUrls): array'), 'controller owns the complete P&L presentation model');
+ok(controller.includes("return ['sectionRows' => $sectionRows, 'summaryRows' => $summaryRows]"), 'controller supplies both top-level P&L view collections');
+ok(controller.includes('private function profitAndLossDisplayRow(float $current, float $previous): array'), 'controller prepares comparison arithmetic once');
+ok(controller.includes("'current_display' => $this->money($current)") && controller.includes("'variance_percent_display' =>"), 'controller supplies formatted display fields');
+ok(controller.includes("'account_url' => $accountUrls[$line['code']] ?? null"), 'controller attaches safe native account drilldowns');
+ok(pnl.includes("$line['account_url']"), 'native account drilldowns remain rendered');
 ok(pnl.includes('onclick="window.print()"'), 'P&L print action remains rendered');
 ok(pnl.includes('Current Period') && pnl.includes('Previous Period') && pnl.includes('Variance %'), 'current and previous comparison columns remain rendered');
-ok(pnl.includes('NET PROFIT / LOSS'), 'net profit/loss summary remains rendered');
+ok(controller.includes("['NET PROFIT / LOSS', 'net_profit']"), 'net profit/loss summary remains supplied');
+
+const referencedVariables = new Set([...pnl.matchAll(/\$([A-Za-z_]\w*)/g)].map(match => match[1]));
+const suppliedOrScoped = new Set(['layoutMeta', 'filters', 'branch', 'sectionRows', 'section', 'line', 'summaryRows', 'summary']);
+ok([...referencedVariables].every(variable => suppliedOrScoped.has(variable)), 'every P&L Blade variable is controller-supplied or loop-scoped');
+ok(controller.includes("'filters' => $filters") && controller.includes("'layoutMeta' => $this->layout->resolve()"), 'shared controller view data supplies filters and layout metadata');
 
 const representative = {
   revenue: 1000,
