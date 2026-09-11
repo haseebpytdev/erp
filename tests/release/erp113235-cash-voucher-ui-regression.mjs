@@ -24,7 +24,7 @@ ok(!css.includes('display:none'), 'voucher UI layer does not hide business contr
 ok(assetController.includes("base_path('public/erp-ui/erp-accounting-vouchers.css')"), 'professional CSS response includes the voucher visual layer');
 ok(assetController.includes('file_get_contents($base)."\\n".file_get_contents($voucherUi)'), 'voucher visual layer loads after the base professional stylesheet');
 ok(assetController.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned professional assets retain immutable browser caching');
-ok(version === 'v1.1.33.235-ERP11.3.235', 'functional UI checkpoint does not bump production release metadata');
+ok(version === 'v1.1.33.236-ERP11.3.236', 'functional UI checkpoint does not bump production release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

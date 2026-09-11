@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.235
-APPLICATION_VERSION=v1.1.33.235-ERP11.3.235
+CURRENT_VERSION=ERP-11.3.236
+APPLICATION_VERSION=v1.1.33.236-ERP11.3.236
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.235
+LAST_PACKAGED_RELEASE=ERP-11.3.236
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -381,3 +381,14 @@ Print voucher presentation is intentionally unchanged. Existing accounting
 posting authority, allocations, workflow states, permissions, journals,
 ledgers, reversals, persistence and database behavior remain unchanged. No
 migration is required.
+ERP-11.3.236 unifies the three primary operational registers — Bookings, Sales
+Invoices and Supplier Costing — under the approved professional ERP visual
+system. The exact register routes now share consistent page-heading hierarchy,
+primary actions, KPI/status cards where already rendered, structured Search &
+Filter treatment, register-table geometry, semantic status pills, compact row
+actions and responsive behavior. The enhancement is strictly presentation-only:
+existing Booking, Sales Invoice and Supplier Costing controllers, permissions,
+workflow transitions, posting authority, calculations, persistence and database
+behavior remain unchanged. ERP-11.3.235 accounting voucher styling and
+ERP-11.3.234 sidebar first-paint stabilization remain intact. No migration is
+required.

@@ -1,4 +1,4 @@
-ERP-11.3.235 DIRECT UPLOAD - ACCOUNTING VOUCHER UI POLISH
+ERP-11.3.236 DIRECT UPLOAD - OPERATIONS REGISTER UI UNIFICATION
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,14 +9,15 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.235 refreshes the accounting cash/bank voucher workspace using the
-approved professional ERP visual direction. Voucher modes use compact segmented
-navigation, voucher creation actions use a separate compact toolbar, search and
-filtering use a structured card treatment, and summary values use a balanced
-three-column dashboard layout. Receipt, Payment, Expense, Contra, Customer
-Advance, Supplier Advance, voucher detail/workflow and Advance Adjustment pages
-share the same visual system. ERP-11.3.234 sidebar first-paint stabilization and
-approved sidebar spacing remain unchanged.
+ERP-11.3.236 unifies the Bookings, Sales Invoices and Supplier Costing register
+pages using the approved professional ERP visual direction. All three registers
+share the same page-heading hierarchy, primary New action treatment, KPI/status
+cards where already available, structured Search & Filter card, compact table
+geometry, semantic status pills and row actions. The visual enhancement is
+scoped to the exact register routes only; booking workspaces, Sales Invoice
+detail/workflow pages and Supplier Costing create/detail workflows retain their
+existing behavior. ERP-11.3.235 accounting voucher styling and ERP-11.3.234
+sidebar stabilization remain unchanged.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

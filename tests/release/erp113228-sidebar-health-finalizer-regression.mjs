@@ -39,7 +39,7 @@ ok(assetController.includes("base_path('public/erp-ui/erp-sidebar-ready.js')"), 
 ok(assetController.includes('file_get_contents($base)."\\n".file_get_contents($finalizer)."\\n".file_get_contents($ready)'), 'ready marker runs only after base UI and finalizer');
 ok(assetController.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned authenticated UI assets are browser-cacheable');
 ok(!assetController.includes('no-store'), 'professional UI assets no longer force a network refetch on every navigation');
-ok(version === 'v1.1.33.235-ERP11.3.235', 'functional checkpoint does not bump release version');
+ok(version === 'v1.1.33.236-ERP11.3.236', 'functional checkpoint does not bump release version');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
