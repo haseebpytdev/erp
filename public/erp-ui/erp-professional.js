@@ -28,13 +28,16 @@
       while (row.parentElement && row.parentElement !== sidebarNav) row = row.parentElement;
       return row.parentElement === sidebarNav ? row : null;
     };
+    const rowLink = row => row.matches('a[href]') ? row : row.querySelector(':scope > a[href],:scope > .nav-item > a[href]');
+    const findRow = aliases => {
+      const link = links.find(candidate => linkMatches(candidate, aliases));
+      return link && topLevelRow(link);
+    };
     const sections = [
-      ['main', 'MAIN', [['dashboard']]],
-      ['administration', 'ADMINISTRATION', [['administration'], ['organization'], ['foundation']]],
-      ['master-data', 'MASTER DATA', [['party master'], ['travel masters'], ['products & services'], ['currency rates'], ['financial years']]],
-      ['operations', 'OPERATIONS', [['bookings'], ['sales invoices'], ['supplier costing']]],
-      ['accounting', 'ACCOUNTING', [['chart of accounts'], ['account mappings'], ['journals'], ['receipts', 'receipt voucher', 'receipt vouchers', 'vouchers'], ['payments', 'payment voucher', 'payment vouchers'], ['expense voucher', 'expense vouchers'], ['contra voucher', 'contra vouchers'], ['ledgers'], ['reports']]],
-      ['system', 'SYSTEM', [['health & updates', 'system health & updates', 'system settings']]],
+      ['operations', 'OPERATIONS', [['bookings'], ['sales invoices'], ['supplier costing'], ['vouchers'], ['advances']]],
+      ['accounting', 'ACCOUNTING', [['chart of accounts'], ['account mappings'], ['journals'], ['ledgers'], ['reports']]],
+      ['master-data', 'MASTER DATA', [['party master'], ['travel masters'], ['products & services']]],
+      ['administration', 'ADMINISTRATION', [['organization'], ['currency rates'], ['financial years'], ['health & updates', 'system health & updates', 'system settings'], ['administration'], ['foundation']]],
     ];
 
     Array.from(sidebarNav.querySelectorAll('.nav-section,.nav-heading,.menu-title,.et-ui-nav-section'))
@@ -42,13 +45,20 @@
       .forEach(node => node.remove());
 
     const groupedRows = new Set();
+    const dashboardRow = findRow(['dashboard']);
+    if (dashboardRow) {
+      groupedRows.add(dashboardRow);
+      dashboardRow.dataset.etSidebarGroup = 'dashboard';
+      sidebarNav.appendChild(dashboardRow);
+    }
+
     sections.forEach(([key, title, itemAliases]) => {
       const rows = [];
       itemAliases.forEach(aliases => {
-        const link = links.find(candidate => linkMatches(candidate, aliases));
-        const row = link && topLevelRow(link);
+        const row = findRow(aliases);
         if (row && !groupedRows.has(row)) {
           groupedRows.add(row);
+          row.dataset.etSidebarGroup = key;
           rows.push(row);
         }
       });
@@ -61,10 +71,52 @@
       rows.forEach(row => sidebarNav.appendChild(row));
     });
 
-    Array.from(sidebarNav.children)
+    const remainingRows = Array.from(sidebarNav.children)
       .filter(row => row.querySelector && row.querySelector('a[href]') && !groupedRows.has(row))
-      .forEach(row => sidebarNav.appendChild(row));
-    sidebarNav.dataset.etSidebarGrouped = 'true';
+      .filter(row => !row.matches('a[href]') || row !== dashboardRow);
+    remainingRows.forEach(row => {
+      row.dataset.etSidebarGroup = 'administration-extra';
+      sidebarNav.appendChild(row);
+    });
+
+    Array.from(groupedRows).concat(remainingRows).forEach(row => {
+      const parentLink = rowLink(row);
+      if (!parentLink) return;
+      const icon = Array.from(parentLink.children).find(child => child.matches('span,i,svg'));
+      if (icon) icon.classList.add('et-ui-nav-icon');
+      const controlledId = parentLink.getAttribute('aria-controls');
+      const controlledMenu = controlledId && document.getElementById(controlledId);
+      const hasChildren = row.querySelectorAll('a[href]').length > 1
+        || Boolean(controlledMenu && controlledMenu.querySelector('a[href]'));
+      if (!hasChildren) return;
+      row.dataset.etSidebarChildren = 'true';
+      const existingChevron = parentLink.querySelector('.et-ui-nav-chevron,[class*="chevron"]')
+        || Array.from(parentLink.children).find(child => /^[⌄⌃∨∧›»]$/.test(child.textContent.trim()));
+      if (existingChevron) {
+        existingChevron.classList.add('et-ui-nav-chevron');
+      } else {
+        const chevron = document.createElement('span');
+        chevron.className = 'et-ui-nav-chevron';
+        chevron.setAttribute('aria-hidden', 'true');
+        chevron.textContent = '⌄';
+        parentLink.appendChild(chevron);
+      }
+    });
+    sidebarNav.dataset.etSidebarGrouped = 'reference';
+
+    const sidebar = sidebarNav.closest('.sidebar,.navbar-vertical,.side-nav');
+    const footer = sidebar && sidebar.querySelector('.sidebar-foot,.sidebar-footer,footer');
+    if (footer && !footer.querySelector('.et-ui-live-badge')) {
+      const releaseLine = Array.from(footer.querySelectorAll('div,p,span,small'))
+        .find(node => !node.children.length && /ERP-\d+(?:\.\d+)+/i.test(node.textContent));
+      if (releaseLine) {
+        releaseLine.classList.add('et-ui-sidebar-release');
+        const liveBadge = document.createElement('span');
+        liveBadge.className = 'et-ui-live-badge';
+        liveBadge.textContent = 'Live';
+        releaseLine.appendChild(liveBadge);
+      }
+    }
   }
 
   document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href]').forEach(link => {
@@ -73,7 +125,7 @@
     if (linkPath && linkPath === currentPath) {
       link.classList.add('et-ui-current');
       link.setAttribute('aria-current', 'page');
-      link.style.setProperty('background', 'rgba(37,99,235,.18)', 'important');
+      link.style.setProperty('background', 'rgba(16,85,176,.72)', 'important');
       link.style.setProperty('color', '#fff', 'important');
       link.style.setProperty('border-left-color', '#60a5fa', 'important');
       link.style.setProperty('border-radius', '6px', 'important');
