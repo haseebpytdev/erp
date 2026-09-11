@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.222
-APPLICATION_VERSION=v1.1.33.222-ERP11.3.222
+CURRENT_VERSION=ERP-11.3.223
+APPLICATION_VERSION=v1.1.33.223-ERP11.3.223
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.222
+LAST_PACKAGED_RELEASE=ERP-11.3.223
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -279,3 +279,11 @@ Account Ledger URLs before rendering. The Blade view only iterates and presents
 that supplied data. Posted-journal authority, accounting formulas, Management
 Overview, Trial Balance and Balance Sheet remain unchanged. No accounting data
 is mutated and no migration is added.
+
+ERP-11.3.223 introduces a shared professional UI system across normal ERP HTML
+pages. It provides a compact shell and sidebar, restrained module accents,
+consistent typography, forms, buttons, cards, tables and statuses, responsive
+layouts, concise labels and safe supplier-name presentation. Public voucher,
+print and PDF routes remain excluded from the global UI injection. No business,
+accounting, booking, workflow or persistence logic changes, and no migration is
+added.
