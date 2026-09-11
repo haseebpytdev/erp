@@ -32,7 +32,6 @@ class ApplyErpReleaseMetadata
         app(Erp11310ObsoleteFileCleaner::class)->run();
         app(Erp11330StabilizationCleaner::class)->run();
 
-
         /*
          * ERP-11.3.30 — Dashboard native-finance synchronization.
          *
@@ -44,6 +43,21 @@ class ApplyErpReleaseMetadata
             $response = app(PresentDashboardFinancialSnapshot::class)->handle(
                 $request,
                 static fn () => $response
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        /*
+         * ERP-11.3.239 — Final register markup is produced server-side before
+         * professional CSS/JS is injected. Native controllers still own the
+         * rows, permissions and workflow; only the rendered register canvas is
+         * normalized here. This removes the old-page -> new-page paint jump.
+         */
+        try {
+            $response = app(PresentUnifiedRegisterWorkspace::class)->present(
+                $request,
+                $response
             );
         } catch (\Throwable $e) {
             report($e);
