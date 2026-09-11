@@ -10,6 +10,7 @@ const interactions = read('public/erp-ui/erp-register-workspace.js');
 const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
 const registerCss = read('public/erp-ui/erp-booking-register-reference.css');
 const accountingCss = read('public/erp-ui/erp-accounting-vouchers.css');
+const shellCss = read('public/erp-ui/erp-shell-spacing.css');
 const finalizer = read('public/erp-ui/erp-professional-finalize.js');
 const cashIndex = read('resources/views/accounting/cash-vouchers/index.blade.php');
 const cashForm = read('resources/views/accounting/cash-vouchers/form.blade.php');
@@ -24,8 +25,10 @@ ok(presenter.includes("'operations/bookings' => ["), 'Booking Register has serve
 ok(presenter.includes("'sales/invoices' => ["), 'Sales Invoice Register has server-side presentation configuration');
 ok(presenter.includes("'supplier-costing' => ["), 'Supplier Costing Register has server-side presentation configuration');
 ok(presenter.includes("view('system.register-workspace-v113239'"), 'presenter renders one final shared register fragment server-side');
-ok(presenter.includes("'/<main\\b([^>]*)>[\\s\\S]*?<\\/main>/i'"), 'presenter replaces only the register main canvas before response delivery');
-ok(presenter.includes('data-et-register-server="ERP-11.3.239"'), 'server-rendered register response receives deterministic first-paint marker');
+ok(presenter.includes("'/<main\\b([^>]*)>([\\s\\S]*?)<\\/main>/i'"), 'presenter normalizes the native main canvas before response delivery');
+ok(presenter.includes('utilityTopbarHtml($nativeMain)'), 'presenter preserves the native utility topbar before replacing register content');
+ok(presenter.includes('class="et-shell-content-frame et-register-content-frame"'), 'final register markup is wrapped in the shared shell canvas');
+ok(presenter.includes('data-et-register-server="ERP-11.3.239"'), 'server-rendered register response keeps deterministic first-paint marker');
 ok(releaseMiddleware.includes('app(PresentUnifiedRegisterWorkspace::class)->present('), 'server register presentation runs before professional asset injection');
 ok(releaseMiddleware.indexOf('PresentUnifiedRegisterWorkspace::class') < releaseMiddleware.indexOf('$html = $this->injectProfessionalUi'), 'final register HTML exists before browser assets are injected');
 
@@ -50,6 +53,8 @@ ok(!controller.includes("base_path('public/erp-ui/erp-booking-register-reference
 ok(!controller.includes("base_path('public/erp-ui/erp-commercial-register-reference.js')"), 'obsolete .238 commercial DOM reconstruction is removed from served bundle');
 ok(controller.includes("base_path('public/erp-ui/erp-booking-register-reference.css')"), 'one approved register visual stylesheet is served');
 ok(controller.includes("base_path('public/erp-ui/erp-register-workspace.js')"), 'one minimal register interaction script is served');
+ok(controller.includes("base_path('public/erp-ui/erp-shell-spacing.css')"), 'shell spacing authority is served after module styles');
+ok(controller.includes('file_get_contents($registerWorkspaceUi)."\\n".file_get_contents($shellSpacingUi)'), 'shell spacing authority is the final CSS layer');
 
 ok(controller.includes("base_path('public/erp-ui/erp-accounting-vouchers.css')"), 'authoritative Accounting voucher stylesheet remains served');
 ok(accountingCss.includes('.et-fin-modes') && accountingCss.includes('.cvf27-card') && accountingCss.includes('.cvs27-card') && accountingCss.includes('.aa-wrap'), 'Accounting register/form/detail/adjustment design remains consolidated in one stylesheet');
@@ -57,10 +62,10 @@ ok(cashIndex.includes('et-fin') && cashForm.includes('cvf27') && cashShow.includ
 ok(!interactions.includes('accounting/'), 'new register interaction script does not mask or reconstruct Accounting pages');
 
 ok(registerCss.includes('.et-booking-ref-kpis') && registerCss.includes('.et-booking-ref-filter-card') && registerCss.includes('.et-booking-ref-register-card') && registerCss.includes('.et-booking-ref-insights'), 'approved register visual system remains intact');
-ok(finalizer.includes("heading.style.setProperty('margin', '16px 9px 9px', 'important')"), 'ERP-11.3.234 sidebar heading spacing remains protected');
-ok(finalizer.includes("if (index === 0) row.style.setProperty('margin-top', '9px', 'important')"), 'ERP-11.3.234 sidebar first-row spacing remains protected');
+ok(shellCss.includes('--et-shell-gutter-x:24px') && shellCss.includes('--et-shell-gutter-y:20px'), 'one desktop shell gutter system is authoritative');
+ok(!finalizer.includes("heading.style.setProperty('margin'"), 'sidebar finalizer no longer competes with CSS spacing');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned immutable browser caching remains intact');
-ok(version === 'v1.1.33.239-ERP11.3.239', 'functional .239 checkpoint intentionally retains .238 release metadata');
+ok(version === 'v1.1.33.239-ERP11.3.239', 'functional .240 checkpoint retains deployed .239 release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
