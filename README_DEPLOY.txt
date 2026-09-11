@@ -1,4 +1,4 @@
-ERP-11.3.239 DIRECT UPLOAD - SERVER UI CONSOLIDATION
+ERP-11.3.240 DIRECT UPLOAD - SHELL AND SPACING CONSOLIDATION
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,17 +9,18 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.239 consolidates the Booking Register, Sales Invoice Register and
-Supplier Costing Register into server-rendered professional workspaces. Native
-controllers continue to own permissions, filtering, source rows and server
-pagination, while final register markup is prepared before browser asset
-injection. The obsolete ERP-11.3.236 / .237 / .238 post-load register
-reconstruction layers are no longer delivered. One shared register visual
-system remains with a minimal interaction-only script for filters, row
-selection, CSV export, action menus and 15-row browser pagination over the
-already-rendered authoritative rows. Cash/Bank Vouchers and Advance Adjustments
-remain server-rendered and retain the existing accounting visual system.
-ERP-11.3.234 sidebar stabilization remains unchanged. No migration is required.
+ERP-11.3.240 consolidates the shared ERP shell and spacing geometry. Normal
+desktop workspaces now use one 24px horizontal content gutter and one 20px
+vertical page gutter, duplicate wrapper and nested-container padding is removed,
+and Operations and Accounting align to the same outer canvas. Booking Register,
+Sales Invoice Register and Supplier Costing retain the ERP-11.3.239
+server-rendered architecture while preserving the native authenticated utility
+topbar above the register workspace. Accounting header, tab, action, filter and
+summary spacing is normalized without changing its server-rendered business
+forms. Sidebar grouping remains presentation-only, but CSS is now the sole
+authority for section and row spacing instead of runtime JavaScript margins.
+No booking, accounting, posting, journal, ledger, permission or persistence
+logic changes. No migration is required.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

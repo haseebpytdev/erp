@@ -49,7 +49,7 @@ ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable
 ok(accountingCss.includes('.cvf27-card') && accountingCss.includes('.cvs27-card') && accountingCss.includes('.aa-wrap'), 'Accounting business workspaces retain their existing visual implementation');
 ok(!registerJs.includes('accounting/'), 'register interaction JS remains isolated from Accounting');
 ok(!/fetch\s*\(|XMLHttpRequest|FormData\(|requestSubmit\(/.test(registerJs), 'register interaction remains read-only and local');
-ok(version === 'v1.1.33.239-ERP11.3.239', 'functional .240 checkpoint intentionally retains live .239 release metadata');
+ok(version === 'v1.1.33.240-ERP11.3.240', 'ERP-11.3.240 release metadata is promoted for packaging');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

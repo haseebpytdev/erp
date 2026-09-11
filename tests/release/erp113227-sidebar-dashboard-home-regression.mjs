@@ -19,7 +19,7 @@ ok(!js.includes("heading.style.setProperty('padding'"), 'base grouping script no
 ok(js.includes("heading.style.setProperty('min-height', '0', 'important')"), 'section headings cannot inherit clickable-row height');
 ok(shellCss.includes('margin:16px 8px 8px!important'), 'authoritative shell CSS owns section spacing');
 ok(!js.includes("document.createElement('a')"), 'dashboard recovery does not create a fake navigation link');
-ok(version === 'v1.1.33.239-ERP11.3.239', 'functional .240 checkpoint retains deployed .239 release metadata');
+ok(version === 'v1.1.33.240-ERP11.3.240', 'functional .240 checkpoint retains deployed .239 release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

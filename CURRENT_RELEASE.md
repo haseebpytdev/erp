@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.239
-APPLICATION_VERSION=v1.1.33.239-ERP11.3.239
+CURRENT_VERSION=ERP-11.3.240
+APPLICATION_VERSION=v1.1.33.240-ERP11.3.240
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.239
+LAST_PACKAGED_RELEASE=ERP-11.3.240
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -433,3 +433,15 @@ continue using the authoritative ERP-11.3.235 accounting visual stylesheet.
 No accounting formulas, workflow authority, posting, booking persistence,
 permissions, database schema or business logic changed. ERP-11.3.234 sidebar
 stabilization remains protected. No migration is required.
+ERP-11.3.240 shell and spacing consolidation establishes one authoritative
+application frame across the ERP. Normal desktop pages use one 24px horizontal
+content gutter and one 20px vertical page gutter, while duplicate wrapper and
+nested container spacing is removed. The native authenticated utility topbar is
+preserved on Booking Register, Sales Invoice Register and Supplier Costing while
+the ERP-11.3.239 server-rendered register architecture remains authoritative.
+Accounting register, action, filter and summary spacing is normalized to the same
+outer canvas. Sidebar grouping remains presentation-only, but runtime JavaScript
+no longer writes section-heading or first-row margins; final sidebar geometry is
+owned by CSS. Existing booking, Sales Invoice, Supplier Costing, voucher,
+accounting, journal, ledger, reporting, permission and database authorities are
+unchanged. No migration is required.
