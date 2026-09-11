@@ -37,6 +37,7 @@ use App\Http\Controllers\System\PostResetFinancialCleanupController;
 use App\Http\Controllers\System\ReportsFilterAssetController;
 use App\Http\Controllers\System\BookingFocusAssetController;
 use App\Http\Controllers\System\GeneralProgressiveBookingAssetController;
+use App\Http\Controllers\System\ErpProfessionalUiAssetController;
 use App\Http\Controllers\System\AccountingJournalDiagnosticController;
 use App\Http\Controllers\System\CustomerLedgerDiagnosticController;
 use App\Http\Controllers\System\AirLinkDbDiagnosticController;
@@ -129,6 +130,16 @@ try {
 }
 
 Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
+
+    Route::get(
+        '/system/erp-assets/erp-professional.css',
+        [ErpProfessionalUiAssetController::class, 'css']
+    )->name('system.erp-assets.erp-professional-css');
+
+    Route::get(
+        '/system/erp-assets/erp-professional.js',
+        [ErpProfessionalUiAssetController::class, 'js']
+    )->name('system.erp-assets.erp-professional-js');
 
     // ERP-11.3.34: serve Reports dynamic switch logic through Laravel itself.
     // Production uses a separate cPanel document root, so files under the

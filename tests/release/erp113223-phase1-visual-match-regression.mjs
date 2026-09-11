@@ -8,13 +8,29 @@ const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 
 const css = read('public/erp-ui/erp-professional.css');
 const js = read('public/erp-ui/erp-professional.js');
 const releaseMiddleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
+const assetController = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
 const dashboardPresenter = read('app/Http/Middleware/PresentDashboardFinancialSnapshot.php');
 const dashboardService = read('app/Services/Dashboard/NativeFinancialSnapshotService.php');
 const routes = read('routes/erp103179.php');
 const version = read('VERSION.txt').trim();
 
-ok(releaseMiddleware.includes("asset('erp-ui/erp-professional.css')"), 'shared stylesheet still loads');
-ok(releaseMiddleware.includes("asset('erp-ui/erp-professional.js')"), 'shared script still loads');
+ok(routes.includes("'/system/erp-assets/erp-professional.css'"), 'professional stylesheet has a Laravel asset route');
+ok(routes.includes("'/system/erp-assets/erp-professional.js'"), 'professional script has a Laravel asset route');
+ok(routes.includes("system.erp-assets.erp-professional-css"), 'professional stylesheet route is named');
+ok(routes.includes("system.erp-assets.erp-professional-js"), 'professional script route is named');
+ok(routes.includes("Route::middleware(['auth'])->group") && routes.includes('ErpProfessionalUiAssetController::class'), 'professional asset routes remain in the authenticated route group');
+ok(assetController.includes("base_path('public/erp-ui/erp-professional.css')"), 'stylesheet controller uses the fixed professional CSS path');
+ok(assetController.includes("base_path('public/erp-ui/erp-professional.js')"), 'script controller uses the fixed professional JS path');
+ok(assetController.includes("'text/css; charset=UTF-8'"), 'stylesheet response has the correct MIME contract');
+ok(assetController.includes("'application/javascript; charset=UTF-8'"), 'script response has the correct MIME contract');
+ok(assetController.includes("'X-Content-Type-Options' => 'nosniff'"), 'professional asset responses prevent MIME sniffing');
+ok(assetController.includes("'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0'"), 'professional assets use the required cache contract');
+ok(assetController.includes("'Pragma' => 'no-cache'"), 'professional assets use the legacy no-cache contract');
+ok(assetController.includes('abort_unless(is_file($path), 404)'), 'missing professional assets return 404');
+ok(releaseMiddleware.includes("route('system.erp-assets.erp-professional-css')"), 'middleware uses the named Laravel stylesheet route');
+ok(releaseMiddleware.includes("route('system.erp-assets.erp-professional-js')"), 'middleware uses the named Laravel script route');
+ok(!releaseMiddleware.includes("asset('erp-ui/erp-professional.css')"), 'old public-path stylesheet authority is removed');
+ok(!releaseMiddleware.includes("asset('erp-ui/erp-professional.js')"), 'old public-path script authority is removed');
 ok((releaseMiddleware.match(/data-et-professional-ui=/g) || []).length >= 2, 'shared UI has a single-injection sentinel');
 ok(releaseMiddleware.includes("str_contains($html, 'data-et-professional-ui=')"), 'duplicate shared injection is blocked');
 
@@ -88,7 +104,7 @@ for (const key of ['today_sales','month_sales','receivables','payables','cash_ba
   ok(dashboardService.includes(`'${key}'`), `Dashboard service still supplies ${key}`);
 }
 ok(!/DB::|->insert\(|->update\(|->delete\(|->save\(/.test(css + js), 'Phase 1 browser assets cannot mutate data');
-ok(version === 'v1.1.33.223-ERP11.3.223', 'version is not incremented');
+ok(version === 'v1.1.33.224-ERP11.3.224', 'version is not incremented');
 const migrations = fs.readdirSync(new URL('../../database/migrations/', import.meta.url));
 ok(!migrations.some(file => file.includes('visual_match') || file.includes('phase1')), 'Phase 1 adds no migration');
 

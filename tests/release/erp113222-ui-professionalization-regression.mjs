@@ -21,8 +21,8 @@ const cashVoucherPrint = read('resources/views/accounting/cash-vouchers/print.bl
 const routes = read('routes/erp103179.php');
 const version = read('VERSION.txt').trim();
 
-ok(middleware.includes("asset('erp-ui/erp-professional.css')"), 'shared stylesheet is injected');
-ok(middleware.includes("asset('erp-ui/erp-professional.js')"), 'small shared behaviour layer is injected');
+ok(middleware.includes("route('system.erp-assets.erp-professional-css')"), 'shared stylesheet is injected through Laravel');
+ok(middleware.includes("route('system.erp-assets.erp-professional-js')"), 'small shared behaviour layer is injected through Laravel');
 ok(middleware.includes("config('et_erp_release'"), 'release authority remains configuration-driven');
 ok(middleware.includes("data-et-professional-ui=\"'.$marker.'\""), 'shared assets use current release marker');
 ok(middleware.includes('rawurlencode($version)'), 'asset cache keys use the current version');
@@ -90,7 +90,7 @@ ok(pnlController.includes('profitAndLossPresentation(array $report, array $accou
 for (const key of ['revenue','direct_cost','gross_profit','operating_expenses','operating_profit','other_income','other_expense','net_profit']) {
   ok(managementService.includes(`'${key}' =>`), `management calculation ${key} remains present`);
 }
-ok(version === 'v1.1.33.223-ERP11.3.223', 'packaged release version is current');
+ok(version === 'v1.1.33.224-ERP11.3.224', 'packaged release version is current');
 
 const staleVisibleLabels = {
   'resources/views/system/sales-invoice-workflow-compare-v11379.blade.php': 'System Diagnostic · ERP-11.3.79',
