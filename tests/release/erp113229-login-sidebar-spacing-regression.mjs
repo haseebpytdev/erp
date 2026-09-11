@@ -11,7 +11,7 @@ let pass = 0;
 const ok = (condition, label) => { assert.ok(condition, label); pass++; };
 
 ok(finalizer.includes("heading.style.setProperty('margin', '16px 9px 0', 'important')"), 'section heading has stronger separation from the preceding group');
-ok(finalizer.includes("heading.style.setProperty('padding', '0 0 8px', 'important')"), 'section heading reserves explicit breathing room before its first link');
+ok(finalizer.includes("heading.style.setProperty('padding', '0 0 9px', 'important')"), 'section heading reserves explicit breathing room before its first link');
 ok(finalizer.includes("heading.style.setProperty('line-height', '1.15', 'important')"), 'section heading line-height remains visually separated from first row');
 ok(middleware.includes('if (! $request->user())'), 'guest pages skip professional UI asset injection');
 ok(middleware.includes('Never inject those authenticated asset URLs into guest/login pages'), 'guest/login redirect rationale is documented');
