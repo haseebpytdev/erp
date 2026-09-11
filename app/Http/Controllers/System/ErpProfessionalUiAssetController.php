@@ -13,12 +13,14 @@ final class ErpProfessionalUiAssetController extends Controller
         $base = base_path('public/erp-ui/erp-professional.css');
         $voucherUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
         $registerUi = base_path('public/erp-ui/erp-operation-registers.css');
+        $bookingRegisterUi = base_path('public/erp-ui/erp-booking-register-reference.css');
 
         abort_unless(
             is_file($prepaint)
             && is_file($base)
             && is_file($voucherUi)
-            && is_file($registerUi),
+            && is_file($registerUi)
+            && is_file($bookingRegisterUi),
             404
         );
 
@@ -26,7 +28,8 @@ final class ErpProfessionalUiAssetController extends Controller
             file_get_contents($prepaint)
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($voucherUi)
-            ."\n".file_get_contents($registerUi),
+            ."\n".file_get_contents($registerUi)
+            ."\n".file_get_contents($bookingRegisterUi),
             'text/css; charset=UTF-8'
         );
     }
@@ -34,12 +37,14 @@ final class ErpProfessionalUiAssetController extends Controller
     public function js(): Response
     {
         $registerUi = base_path('public/erp-ui/erp-operation-registers.js');
+        $bookingRegisterUi = base_path('public/erp-ui/erp-booking-register-reference.js');
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
         $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
 
         abort_unless(
             is_file($registerUi)
+            && is_file($bookingRegisterUi)
             && is_file($base)
             && is_file($finalizer)
             && is_file($ready),
@@ -48,6 +53,7 @@ final class ErpProfessionalUiAssetController extends Controller
 
         return $this->textAsset(
             file_get_contents($registerUi)
+            ."\n".file_get_contents($bookingRegisterUi)
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($finalizer)
             ."\n".file_get_contents($ready),
