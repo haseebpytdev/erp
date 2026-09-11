@@ -19,14 +19,14 @@
 @endphp
 
 <div class="et-reg-shell et-register-server-shell" data-et-register-workspace="ERP-11.3.239" data-register-key="{{ $config['key'] }}">
-    <section class="et-reg-header et-register-server-header">
+    <section class="et-reg-header et-page-header et-register-server-header">
         <div class="et-reg-title-block">
-            <small class="et-commercial-reference-kicker">{{ $config['kicker'] }}</small>
-            <h1 class="et-reg-title">{{ $config['title'] }}</h1>
-            <p class="text-muted">{{ $config['subtitle'] }}</p>
+            <small class="et-page-kicker et-commercial-reference-kicker">{{ $config['kicker'] }}</small>
+            <h1 class="et-reg-title et-page-title">{{ $config['title'] }}</h1>
+            <p class="text-muted et-page-subtitle">{{ $config['subtitle'] }}</p>
         </div>
         @if($createHref !== '')
-            <div><a class="et-reg-primary-action" href="{{ $createHref }}">+ {{ $config['key'] === 'bookings' ? 'New Booking' : 'New Supplier Cost' }}</a></div>
+            <div><a class="et-reg-primary-action et-btn primary" href="{{ $createHref }}">+ {{ $config['key'] === 'bookings' ? 'New Booking' : 'New Supplier Cost' }}</a></div>
         @endif
     </section>
 
