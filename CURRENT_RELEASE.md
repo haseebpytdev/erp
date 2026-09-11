@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.236
-APPLICATION_VERSION=v1.1.33.236-ERP11.3.236
+CURRENT_VERSION=ERP-11.3.237
+APPLICATION_VERSION=v1.1.33.237-ERP11.3.237
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.236
+LAST_PACKAGED_RELEASE=ERP-11.3.237
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -392,3 +392,15 @@ workflow transitions, posting authority, calculations, persistence and database
 behavior remain unchanged. ERP-11.3.235 accounting voucher styling and
 ERP-11.3.234 sidebar first-paint stabilization remain intact. No migration is
 required.
+ERP-11.3.237 rebuilds the Booking Register presentation to match the approved
+professional reference. The register now provides Total Bookings, Pending
+Confirmation, Confirmed and Cancelled KPI cards; quick status filters; Search,
+Customer, Travel Type, Travel Date From/To and Status filters; a dynamic
+Bookings count; safe client-side CSV export; row selection; compact row action
+menus; and 15-row pagination. Read-only Quick Workflow, Bookings by Type and
+Recent Activity panels complete the reference layout. Existing authoritative
+Booking rows and links remain the data source. Booking create/edit, confirmation,
+workflow, invoicing, permissions, posting, persistence and database behavior are
+unchanged. ERP-11.3.236 shared Sales Invoice/Supplier Costing register styling,
+ERP-11.3.235 accounting voucher styling and ERP-11.3.234 sidebar stabilization
+remain intact. No migration is required.

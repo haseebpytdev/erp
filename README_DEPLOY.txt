@@ -1,4 +1,4 @@
-ERP-11.3.236 DIRECT UPLOAD - OPERATIONS REGISTER UI UNIFICATION
+ERP-11.3.237 DIRECT UPLOAD - BOOKING REGISTER REFERENCE MATCH
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,15 +9,16 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.236 unifies the Bookings, Sales Invoices and Supplier Costing register
-pages using the approved professional ERP visual direction. All three registers
-share the same page-heading hierarchy, primary New action treatment, KPI/status
-cards where already available, structured Search & Filter card, compact table
-geometry, semantic status pills and row actions. The visual enhancement is
-scoped to the exact register routes only; booking workspaces, Sales Invoice
-detail/workflow pages and Supplier Costing create/detail workflows retain their
-existing behavior. ERP-11.3.235 accounting voucher styling and ERP-11.3.234
-sidebar stabilization remain unchanged.
+ERP-11.3.237 rebuilds the Booking Register presentation to match the approved
+professional reference. The page now includes Total Bookings, Pending
+Confirmation, Confirmed and Cancelled KPI cards, quick filters, full Search /
+Customer / Travel Type / Travel Date / Status filtering, a dynamic register
+count, safe client-side CSV export, row selection and action menus, 15-row
+pagination, Quick Workflow, Bookings by Type and Recent Activity. Existing
+authoritative Booking rows and links remain unchanged as the source of truth.
+ERP-11.3.236 shared Sales Invoice and Supplier Costing register styling,
+ERP-11.3.235 voucher styling and ERP-11.3.234 sidebar stabilization remain
+unchanged.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
