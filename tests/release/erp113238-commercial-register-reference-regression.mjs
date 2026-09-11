@@ -30,7 +30,7 @@ ok(!/createElement\(['"](?:section|article|table|form)/.test(interactions), 'com
 ok(!interactions.includes('fetch(') && !interactions.includes('XMLHttpRequest') && !interactions.includes('localStorage') && !interactions.includes('sessionStorage'), 'commercial interaction layer performs no network/persistent state mutation');
 ok(controller.includes("base_path('public/erp-ui/erp-register-workspace.js')"), 'minimal shared interaction asset is served');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned immutable browser caching remains intact');
-ok(version === 'v1.1.33.240-ERP11.3.240', 'functional consolidation checkpoint does not bump release metadata');
+ok(version === 'v1.1.33.241-ERP11.3.241', 'functional consolidation checkpoint does not bump release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

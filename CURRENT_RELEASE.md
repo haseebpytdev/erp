@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.240
-APPLICATION_VERSION=v1.1.33.240-ERP11.3.240
+CURRENT_VERSION=ERP-11.3.241
+APPLICATION_VERSION=v1.1.33.241-ERP11.3.241
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.240
+LAST_PACKAGED_RELEASE=ERP-11.3.241
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -445,3 +445,18 @@ no longer writes section-heading or first-row margins; final sidebar geometry is
 owned by CSS. Existing booking, Sales Invoice, Supplier Costing, voucher,
 accounting, journal, ledger, reporting, permission and database authorities are
 unchanged. No migration is required.
+ERP-11.3.241 sidebar and global UI stabilization removes the duplicate
+post-load navigation regrouping that could cause sidebar row movement, incorrect
+temporary active states and heading/submenu overlap during navigation. Native
+permission-rendered sidebar row order remains authoritative. A single hidden
+prepaint finalization pass inserts presentation-only section headings in place,
+classifies root and nested navigation levels, and uses native active state first
+with an exact path/query fallback only when no native active state exists. Root,
+nested and section geometry now use separate CSS contracts, the brand/logo area
+is more compact, and an active nested child cannot visually promote its parent
+into a second selected destination. Shared page-title, form-control, card and tab
+tokens are normalized across ERP modules while preserving the ERP-11.3.240 outer
+frame and ERP-11.3.239 server-rendered register architecture. Booking,
+Sales Invoice, Supplier Costing, voucher, accounting, journal, ledger,
+permission, persistence and database behavior are unchanged. No migration is
+required.

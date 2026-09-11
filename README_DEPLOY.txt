@@ -1,4 +1,4 @@
-ERP-11.3.240 DIRECT UPLOAD - SHELL AND SPACING CONSOLIDATION
+ERP-11.3.241 DIRECT UPLOAD - SIDEBAR AND GLOBAL UI STABILIZATION
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,18 +9,18 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.240 consolidates the shared ERP shell and spacing geometry. Normal
-desktop workspaces now use one 24px horizontal content gutter and one 20px
-vertical page gutter, duplicate wrapper and nested-container padding is removed,
-and Operations and Accounting align to the same outer canvas. Booking Register,
-Sales Invoice Register and Supplier Costing retain the ERP-11.3.239
-server-rendered architecture while preserving the native authenticated utility
-topbar above the register workspace. Accounting header, tab, action, filter and
-summary spacing is normalized without changing its server-rendered business
-forms. Sidebar grouping remains presentation-only, but CSS is now the sole
-authority for section and row spacing instead of runtime JavaScript margins.
-No booking, accounting, posting, journal, ledger, permission or persistence
-logic changes. No migration is required.
+ERP-11.3.241 stabilizes the sidebar and shared ERP component system. Native
+permission-rendered sidebar row order is preserved and the previous duplicate
+browser regrouping/reordering passes are removed. One hidden prepaint finalizer
+adds presentation section headings in place, separates root and nested menu
+levels, preserves native active-state authority and uses an exact path/query
+fallback only when necessary. Root rows, nested rows and section headings now
+have independent geometry, the brand/logo area is more compact, and active
+nested children no longer make their parent appear as a second selected page.
+Shared page-title, form-control, card and tab tokens are also normalized across
+modules. ERP-11.3.240 shell geometry, ERP-11.3.239 server-rendered registers and
+all booking/accounting/business authorities remain unchanged. No migration is
+required.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

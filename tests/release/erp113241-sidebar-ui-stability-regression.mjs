@@ -43,7 +43,7 @@ const registerAssetPosition = controller.indexOf('file_get_contents($registerWor
 const shellAssetPosition = controller.indexOf('file_get_contents($shellSpacingUi)');
 ok(registerAssetPosition >= 0 && shellAssetPosition > registerAssetPosition, 'stabilized shell CSS remains final CSS authority');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned UI asset cache remains immutable');
-ok(version === 'v1.1.33.240-ERP11.3.240', 'functional .241 checkpoint retains deployed .240 metadata');
+ok(version === 'v1.1.33.241-ERP11.3.241', 'ERP-11.3.241 release metadata is promoted for packaging');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
