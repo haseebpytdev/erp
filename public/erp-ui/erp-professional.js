@@ -80,9 +80,6 @@
       heading.style.setProperty('height', 'auto', 'important');
       heading.style.setProperty('min-height', '0', 'important');
       heading.style.setProperty('max-height', 'none', 'important');
-      heading.style.setProperty('margin', '10px 9px 0', 'important');
-      heading.style.setProperty('padding', '0', 'important');
-      heading.style.setProperty('line-height', '1', 'important');
       sidebarNav.appendChild(heading);
       rows.forEach(row => sidebarNav.appendChild(row));
     });
