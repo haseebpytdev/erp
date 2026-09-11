@@ -66,7 +66,7 @@ ok(css.includes('display:none!important') && css.includes('.sidebar'), 'applicat
 ok(!css.includes('@import') && !css.includes('http://') && !css.includes('https://'), 'no external CSS framework or font dependency was added');
 
 ok(js.includes("aria-current', 'page'"), 'active sidebar link remains accessible');
-ok(js.includes("node.textContent = 'Easy Ticket ERP'"), 'non-dashboard topbar becomes generic company context');
+ok(js.includes("shellDashboard.textContent = 'Easy Ticket ERP'"), 'topbar becomes generic company context');
 ok(js.includes("'pending approval'") && js.includes("'travel ready'") && js.includes("'posted'"), 'shared semantic statuses are recognized');
 ok(!/fetch\s*\(|XMLHttpRequest|axios\s*\(/.test(js), 'presentation script performs no API requests');
 

@@ -144,12 +144,13 @@ class ApplyErpReleaseMetadata
                         'system.production-data-reset.index'
                     );
 
-                    $panel = '<div data-et-production-reset="ERP-10.31.72" style="margin:16px 0;padding:14px;border:1px solid #dbe5f0;border-radius:10px;background:#fff;">'
-                        .'<div style="font-weight:800;color:#17243a;">Production Readiness</div>'
-                        .'<div style="margin-top:4px;color:#6b7a90;font-size:13px;">One-time Super Admin tool to clear UAT/test transactions before staff enter live data.</div>'
-                        .'<div style="margin-top:10px;"><a href="'.e($resetUrl).'" style="display:inline-block;padding:8px 12px;border-radius:6px;background:#b4232f;color:#fff;text-decoration:none;font-weight:800;font-size:12px;">Production Transaction Reset</a></div>'
-                        .'<div style="margin-top:8px;"><a href="'.e(route('system.post-reset-financial-cleanup.index')).'" style="display:inline-block;padding:8px 12px;border-radius:6px;background:#1769d2;color:#fff;text-decoration:none;font-weight:800;font-size:12px;">Post-Reset Financial Cleanup</a></div>'
-                        .'</div>';
+                    $panel = '<section data-et-production-reset="ERP-10.31.72" data-et-dangerous-actions="true">'
+                        .'<div class="et-dangerous-kicker">Advanced</div>'
+                        .'<div class="et-dangerous-title">Dangerous Actions</div>'
+                        .'<p class="et-dangerous-copy">Restricted production reset and financial reconciliation tools. Use only through an approved maintenance procedure.</p>'
+                        .'<div class="et-dangerous-actions"><a href="'.e($resetUrl).'">Production Transaction Reset</a>'
+                        .'<a href="'.e(route('system.post-reset-financial-cleanup.index')).'">Post-Reset Financial Cleanup</a></div>'
+                        .'</section>';
 
                     if (str_contains($html, '</main>')) {
                         $html = str_replace(
