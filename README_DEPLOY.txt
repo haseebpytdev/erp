@@ -1,4 +1,4 @@
-ERP-11.3.224 DIRECT UPLOAD — VISUAL MATCH PHASE 1
+ERP-11.3.225 DIRECT UPLOAD — PROFESSIONAL UI ASSET DELIVERY
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,16 +9,11 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.224 refines the shared shell and Dashboard against the approved visual
-reference. It replaces the oversized white active-navigation treatment with a
-compact blue state, reduces sidebar and topbar density, establishes one
-Dashboard page-header authority, prevents KPI financial-value truncation and
-bounds oversized Dashboard chart/card presentation responsively.
-
-System Health now hides obsolete historical implementation copy while retaining
-real health functionality. Production Transaction Reset and Post-Reset Financial
-Cleanup remain available but are visually isolated under Advanced / Dangerous
-Actions.
+ERP-11.3.225 fixes production delivery of the professional ERP stylesheet and
+JavaScript. These assets are now served through authenticated Laravel routes
+with explicit MIME types, no-sniff protection and no-cache headers, matching the
+existing cPanel-safe asset-delivery pattern. The Phase 1 shell, Dashboard and
+System Health presentation behavior is unchanged.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
