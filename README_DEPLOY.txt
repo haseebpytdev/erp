@@ -1,4 +1,4 @@
-ERP-11.3.234 DIRECT UPLOAD - SIDEBAR FIRST-PAINT STABILIZATION
+ERP-11.3.235 DIRECT UPLOAD - ACCOUNTING VOUCHER UI POLISH
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,13 +9,14 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.234 stabilizes sidebar first paint during ERP page navigation. Native
-navigation remains visually hidden while the professional sidebar finalizer
-normalizes grouping and ordering, then becomes visible only after the final UI
-sequence completes. A 2-second CSS failsafe prevents navigation from remaining
-hidden if JavaScript fails. Versioned professional CSS and JavaScript responses
-are browser-cacheable to avoid unnecessary refetching on repeated navigation.
-ERP-11.3.233 heading and first-row spacing remains unchanged.
+ERP-11.3.235 refreshes the accounting cash/bank voucher workspace using the
+approved professional ERP visual direction. Voucher modes use compact segmented
+navigation, voucher creation actions use a separate compact toolbar, search and
+filtering use a structured card treatment, and summary values use a balanced
+three-column dashboard layout. Receipt, Payment, Expense, Contra, Customer
+Advance, Supplier Advance, voucher detail/workflow and Advance Adjustment pages
+share the same visual system. ERP-11.3.234 sidebar first-paint stabilization and
+approved sidebar spacing remain unchanged.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

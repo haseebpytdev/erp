@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.234
-APPLICATION_VERSION=v1.1.33.234-ERP11.3.234
+CURRENT_VERSION=ERP-11.3.235
+APPLICATION_VERSION=v1.1.33.235-ERP11.3.235
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.234
+LAST_PACKAGED_RELEASE=ERP-11.3.235
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -369,4 +369,15 @@ refetch unchanged CSS and JavaScript. Final ERP-11.3.233 sidebar spacing remains
 unchanged: headings use 16px 9px 9px margins, zero padding, line-height 1.15,
 and the first permitted row retains 9px top separation. No accounting, booking,
 permission, voucher, ledger, persistence or database behavior is changed. No
+migration is required.
+ERP-11.3.235 refreshes the accounting cash/bank voucher workspace using the
+approved professional ERP visual direction. Voucher modes now use compact
+segmented navigation, voucher creation actions use a separate compact toolbar,
+search and filtering use a structured card treatment, and summary values use a
+balanced three-column dashboard rhythm. The same card, field and action styling
+is applied consistently to Receipt, Payment, Expense, Contra, Customer Advance,
+Supplier Advance, voucher detail/workflow and Advance Adjustment workspaces.
+Print voucher presentation is intentionally unchanged. Existing accounting
+posting authority, allocations, workflow states, permissions, journals,
+ledgers, reversals, persistence and database behavior remain unchanged. No
 migration is required.
