@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.220
-APPLICATION_VERSION=v1.1.33.220-ERP11.3.220
+CURRENT_VERSION=ERP-11.3.221
+APPLICATION_VERSION=v1.1.33.221-ERP11.3.221
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.220
+LAST_PACKAGED_RELEASE=ERP-11.3.221
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -264,3 +264,10 @@ drill-downs all derive from the same posted native journal population. The nativ
 Trial Balance and Report & Print Center remain authoritative and gain direct
 navigation to the new reports. No accounting record is mutated and no migration
 is added.
+
+ERP-11.3.221 fixes the Profit & Loss report HTTP 500 caused by unsafe inline
+multi-statement Blade `@php(...)` directives. The affected comparison-row and
+summary calculations now use valid `@php` / `@endphp` blocks. Posted-journal
+authority, P&L formulas, Management Overview, Trial Balance, Balance Sheet,
+account drill-downs and print behavior remain unchanged. No accounting data is
+mutated and no migration is added.

@@ -1,4 +1,4 @@
-ERP-11.3.220 DIRECT UPLOAD — MANAGEMENT ACCOUNTING AND PROFIT REPORTING
+ERP-11.3.221 DIRECT UPLOAD — PROFIT & LOSS RENDER HOTFIX
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -9,26 +9,21 @@ Deployment without SSH:
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 
-ERP-11.3.220 adds read-only Management Overview, Profit & Loss and Balance Sheet
-reporting over the installed native posted journals. It preserves the native
-Trial Balance, General Ledger, Customer Ledger, Vendor Ledger and Report & Print
-Center as accounting authorities and adds safe navigation and Account Ledger
-drill-downs.
+ERP-11.3.221 fixes the Profit & Loss report HTTP 500 introduced in ERP-11.3.220.
+Unsafe inline multi-statement Blade `@php(...)` directives were replaced with
+valid block `@php` / `@endphp` syntax. Current Period, Previous Period, Variance
+and Variance % values retain the same read-only posted-journal calculations.
 
-Management Overview provides Today, Yesterday, month-to-date, previous-month
-and fiscal-year-to-date posted profit. Revenue, direct supplier cost, gross
-profit, operating expenses and net profit remain separate from Cash/Bank inflow
-and outflow. Cash/Bank balances, Customer Receivables, Vendor Payables, Customer
-Advances and Supplier Advances are shown without netting control accounts.
-Product profitability comes from posted Revenue and Direct Cost journals, not
-booking commercial snapshots.
+No accounting formula, posted-journal authority, Management Overview, Balance
+Sheet, native Trial Balance, ledger, print or workflow behavior changes. This
+release introduces no migration and performs no accounting mutation.
 
-This release introduces no new migration and performs no accounting mutation.
-After manual deployment, clear Application Cache and Ctrl+F5. Browser-test
-Management Overview for Today and MTD, Profit & Loss for the current month,
-native Trial Balance for the same period, and Balance Sheet as of today. Confirm
-Account Ledger drill-downs for 1130 Customer Receivables, 2110 Vendor Payables,
-one active Bank account, one Revenue account and one Direct Cost account.
+After manual deployment, clear Application Cache and Ctrl+F5. Open
+/accounting/reports/profit-and-loss?from=2026-09-01&to=2026-09-11 and confirm
+HTTP 200 plus Revenue, Direct Cost, Gross Profit, Operating Expenses, Operating
+Profit, Other Income, Other Expense and Net Profit / Loss. Then confirm
+Management Overview loads, Balance Sheet remains balanced and native Trial
+Balance remains balanced. Do not post or mutate accounting records during UAT.
 
 First verify booking BK-2026-000054. Internal Client Voucher Preview and its
 opaque public /voucher/<token> QR destination must both load. The voucher must use the
