@@ -11,13 +11,13 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * ERP-11.3.239
+ * ERP-11.3.240
  *
  * Server-side presentation for the three primary operational/commercial
  * registers. Native controllers and middleware remain authoritative for data,
- * permissions, filters and workflow. Only the already-rendered register canvas
- * is normalized before the response reaches the browser, so the old register
- * layout is never painted and then rebuilt by JavaScript.
+ * permissions, filters and workflow. The native utility topbar is preserved;
+ * only the page canvas beneath it is replaced with the final register markup
+ * before the response reaches the browser.
  */
 final class PresentUnifiedRegisterWorkspace
 {
@@ -606,13 +606,22 @@ final class PresentUnifiedRegisterWorkspace
     {
         $count = 0;
         $result = preg_replace_callback(
-            '/<main\b([^>]*)>[\s\S]*?<\/main>/i',
-            static function (array $match) use ($fragment): string {
+            '/<main\b([^>]*)>([\s\S]*?)<\/main>/i',
+            function (array $match) use ($fragment): string {
                 $attributes = $match[1] ?? '';
+                $nativeMain = $match[2] ?? '';
+                $topbar = $this->utilityTopbarHtml($nativeMain);
+
                 if (! str_contains($attributes, 'data-et-register-workspace')) {
                     $attributes .= ' data-et-register-workspace="ERP-11.3.239"';
                 }
-                return '<main'.$attributes.'>'.$fragment.'</main>';
+
+                return '<main'.$attributes.'>'
+                    .$topbar
+                    .'<div class="et-shell-content-frame et-register-content-frame">'
+                    .$fragment
+                    .'</div>'
+                    .'</main>';
             },
             $html,
             1,
@@ -620,6 +629,60 @@ final class PresentUnifiedRegisterWorkspace
         );
 
         return $count === 1 && is_string($result) ? $result : null;
+    }
+
+    private function utilityTopbarHtml(string $mainHtml): string
+    {
+        if (trim($mainHtml) === '') return '';
+
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            $loaded = $dom->loadHTML(
+                '<?xml encoding="UTF-8"><div id="et-main-fragment">'.$mainHtml.'</div>',
+                LIBXML_NOWARNING | LIBXML_NOERROR | LIBXML_NONET
+            );
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+
+        if (! $loaded) return '';
+
+        $xpath = new DOMXPath($dom);
+        $query = '//*[@id="et-main-fragment"]//*['
+            .'contains(concat(" ", normalize-space(@class), " "), " topbar ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " top-bar ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " app-header ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " main-header ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " navbar-horizontal ")'
+            .']';
+
+        $nodes = $xpath->query($query);
+        if ($nodes && $nodes->length > 0) {
+            $node = $nodes->item(0);
+            if ($node instanceof DOMElement) {
+                return $node->ownerDocument?->saveHTML($node) ?? '';
+            }
+        }
+
+        $headers = $xpath->query('//*[@id="et-main-fragment"]//header');
+        if ($headers) {
+            foreach ($headers as $header) {
+                if (! $header instanceof DOMElement) continue;
+                $text = $this->lower($header->textContent);
+                if (
+                    str_contains($text, 'easy ticket')
+                    || str_contains($text, 'dashboard')
+                    || str_contains($text, 'sign out')
+                ) {
+                    return $header->ownerDocument?->saveHTML($header) ?? '';
+                }
+            }
+        }
+
+        return '';
     }
 
     private function markHtml(string $html, string $key): string
