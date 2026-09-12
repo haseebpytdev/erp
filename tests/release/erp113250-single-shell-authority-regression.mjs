@@ -23,7 +23,7 @@ const ok = (condition, label) => {
   pass++;
 };
 
-ok(version === 'v1.1.33.249-ERP11.3.249', 'functional checkpoint does not bump VERSION.txt');
+ok(version === 'v1.1.33.250-ERP11.3.250', 'ERP-11.3.250 packaged release metadata is current');
 
 for (const token of [
   '--et-shell-sidebar-width:224px',

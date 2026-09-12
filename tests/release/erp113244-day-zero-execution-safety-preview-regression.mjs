@@ -48,7 +48,7 @@ ok(view.includes('Counter reset preview'), 'view exposes exact counter reset pre
 ok(view.includes('Fresh backup validation'), 'view exposes fresh backup validation state');
 ok(view.includes('Day-Zero Reset Locked'), 'destructive control remains disabled');
 
-ok(version === 'v1.1.33.249-ERP11.3.249', 'ERP-11.3.246 controlled execution release metadata is promoted for packaging');
+ok(version === 'v1.1.33.250-ERP11.3.250', 'ERP-11.3.250 release metadata is promoted for packaging');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

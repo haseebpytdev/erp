@@ -1,4 +1,4 @@
-ERP-11.3.249 DIRECT UPLOAD - FINAL DAY-ONE PRODUCTION NUMBERING
+ERP-11.3.250 DIRECT UPLOAD - SINGLE AUTHENTICATED ERP SHELL
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -7,13 +7,27 @@ Deployment without SSH:
 2. Open System Health & Updates.
 3. Do not run Safe Database Upgrade; this release has no migration.
 4. Click Clear Application Cache.
-5. Open the completed Day-Zero / Day-One screen and inspect the live preview.
-6. Require READY=PASS before entering RESET DAY ONE SEQUENCES.
-7. Confirm business identities/next numbers are 1000, last-used counters are
-   999 and number_sequences.padding is 4.
-8. audit_logs/login_events are retained runtime telemetry; they are not deleted
-   or identity-reseeded. Every genuine business CLEAR table remains fail-closed.
-9. Ctrl+F5 after the one-time action completes.
+5. Ctrl+F5.
+6. Verify the Dashboard and representative register, accounting and booking
+   pages at desktop, laptop, tablet and mobile widths.
+
+ERP-11.3.250 uses one final external authenticated shell geometry authority:
+public/erp-ui/erp-shell-spacing.css.
+
+- Desktop/laptop sidebar: 224px
+- Desktop brand region: 64px
+- Logo footprint and navigation rows: 36px
+- Utility header: 56px
+- Desktop main gutter: 24px
+- Responsive main gutter: 16px
+- Booking, General and Air focus outer geometry is consolidated
+- Booking Register outer cap is removed
+- Group Package runtime workspace sizing is removed
+- Cash Voucher middleware no longer owns sidebar geometry
+
+Module cards, forms and tables, Sales Invoice focus, Day-One/reset logic,
+booking/accounting business behavior and print/voucher layouts are unchanged.
+Do not execute Day-One as part of this visual release deployment.
 ERP-11.3.245 is the locked Day-Zero FK RESOLUTION PREVIEW release. It resolves
 the structural issues discovered by the ERP-11.3.244 production safety audit.
 service_cost_allocations is classified CLEAR rather than PRESERVE. Preserved
