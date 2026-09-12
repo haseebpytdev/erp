@@ -8,13 +8,15 @@ use RuntimeException;
 use Throwable;
 
 /**
- * ERP-11.3.244 functional checkpoint
+ * ERP-11.3.245 functional checkpoint
  *
- * Day-Zero / Fresh Production execution-safety planner.
+ * Day-Zero / Fresh Production FK-resolution preview.
  *
- * IMPORTANT: this checkpoint audits the approved production classifications,
- * live foreign-key dependencies, safe child-before-parent delete order and
- * counter reset columns. Destructive execution remains intentionally locked.
+ * IMPORTANT: this checkpoint resolves the live ERP-11.3.244 execution-safety
+ * blockers without enabling destructive execution. It reclassifies
+ * service_cost_allocations as transactional CLEAR data, previews schema-proven
+ * nullable FK neutralization for preserved masters, exposes exact cycle edges,
+ * and recalculates the effective child-before-parent delete order.
  */
 class DayZeroDataResetService
 {
@@ -63,7 +65,6 @@ class DayZeroDataResetService
         'account_mappings',
         'account_mapping',
         'accounting_mappings',
-        'service_cost_allocations',
 
         // Workflow/security policy foundation retained for existing users.
         'approval_policies',
@@ -153,6 +154,9 @@ class DayZeroDataResetService
         'parties',
         'party_roles',
 
+        // Transactional allocation rows belong to UAT/business transactions.
+        'service_cost_allocations',
+
         // Business-entered Day-1 masters/commercials are intentionally rebuilt.
         'exchange_rates',
         'group_travel_packages',
@@ -165,6 +169,25 @@ class DayZeroDataResetService
         'transport_vehicle_types',
         'visa_rate_cards',
         'visa_service_operators',
+    ];
+
+    /**
+     * Preserved master columns that may be neutralized before their CLEAR
+     * parent is removed, but only when the live schema proves the FK nullable.
+     *
+     * @var array<int,array{table:string,column:string,parent_table:string}>
+     */
+    private array $nullableNeutralizationCandidates = [
+        [
+            'table' => 'airlines',
+            'column' => 'default_vendor_party_id',
+            'parent_table' => 'parties',
+        ],
+        [
+            'table' => 'booking_sources',
+            'column' => 'default_vendor_party_id',
+            'parent_table' => 'parties',
+        ],
     ];
 
     public function plan(): array
@@ -238,12 +261,17 @@ class DayZeroDataResetService
             'confirmation' => self::CONFIRMATION,
             'execution_enabled' => self::EXECUTION_ENABLED,
 
-            // ERP-11.3.244 execution-safety preview.
+            // ERP-11.3.245 FK-resolution preview.
             'fk_relationships' => count($dependency['relationships']),
+            'raw_fk_blockers' => count($dependency['raw_blockers']),
+            'raw_fk_blocker_items' => $dependency['raw_blockers'],
             'fk_blockers' => count($dependency['blockers']),
             'fk_blocker_items' => $dependency['blockers'],
+            'neutralization_preview' => $dependency['neutralizations'],
+            'neutralization_warnings' => $dependency['neutralization_warnings'],
             'dependency_cycles' => count($dependency['cycle_tables']),
             'dependency_cycle_tables' => $dependency['cycle_tables'],
+            'dependency_cycle_edges' => $dependency['cycle_edges'],
             'dependency_warnings' => $dependency['warnings'],
             'delete_order' => $dependency['delete_order'],
             'dependency_plan_ready' => $dependency['ready'],
@@ -282,7 +310,7 @@ class DayZeroDataResetService
             $this->gzWrite(
                 $handle,
                 '"meta":'.json_encode([
-                    'release' => 'ERP-11.3.244-EXECUTION-SAFETY-PREVIEW',
+                    'release' => 'ERP-11.3.245-FK-RESOLUTION-PREVIEW',
                     'created_at' => now()->toIso8601String(),
                     'actor_id' => $this->userId($user),
                     'actor_name' => $this->userName($user),
@@ -364,8 +392,8 @@ class DayZeroDataResetService
 
         if (! self::EXECUTION_ENABLED) {
             throw new RuntimeException(
-                'Day-Zero execution is intentionally LOCKED in ERP-11.3.244 execution safety preview. '
-                .'Foreign-key dependencies, delete order and counter resets may be inspected, but no database rows were changed.'
+                'Day-Zero execution is intentionally LOCKED in ERP-11.3.245 FK resolution preview. '
+                .'Nullable FK neutralization and cycle edges may be inspected, but no database rows were changed.'
             );
         }
 
@@ -504,8 +532,12 @@ class DayZeroDataResetService
         } catch (Throwable $e) {
             return [
                 'relationships' => [],
+                'raw_blockers' => [],
                 'blockers' => [],
+                'neutralizations' => [],
+                'neutralization_warnings' => [],
                 'cycle_tables' => [],
+                'cycle_edges' => [],
                 'warnings' => [
                     'Unable to inspect foreign-key dependencies safely: '.$e->getMessage(),
                 ],
@@ -514,9 +546,11 @@ class DayZeroDataResetService
             ];
         }
 
+        $rawBlockers = [];
         $blockers = [];
+        $neutralizations = [];
+        $neutralizationWarnings = [];
         $clearTables = [];
-        $edges = [];
 
         foreach ($actions as $table => $action) {
             if ($action === 'clear') {
@@ -526,41 +560,313 @@ class DayZeroDataResetService
 
         sort($clearTables);
 
+        $candidateMap = [];
+        foreach ($this->nullableNeutralizationCandidates as $candidate) {
+            $candidateMap[
+                $candidate['table']."\0".$candidate['column']."\0".$candidate['parent_table']
+            ] = true;
+        }
+
         foreach ($relationships as $relationship) {
             $child = $relationship['child_table'];
             $parent = $relationship['parent_table'];
             $childAction = $actions[$child] ?? 'review';
             $parentAction = $actions[$parent] ?? 'review';
 
-            if ($parentAction === 'clear' && $childAction !== 'clear') {
-                $blockers[] = $relationship + [
-                    'child_action' => $childAction,
-                    'parent_action' => $parentAction,
-                    'reason' => strtoupper($childAction).' table references a CLEAR parent table.',
-                ];
+            if ($parentAction !== 'clear' || $childAction === 'clear') {
+                continue;
             }
 
-            if ($childAction === 'clear' && $parentAction === 'clear') {
-                $edges[] = [$child, $parent];
+            $raw = $relationship + [
+                'child_action' => $childAction,
+                'parent_action' => $parentAction,
+                'reason' => strtoupper($childAction).' table references a CLEAR parent table.',
+            ];
+            $rawBlockers[] = $raw;
+
+            $candidateKey = $child."\0".$relationship['child_column']."\0".$parent;
+
+            if (! isset($candidateMap[$candidateKey])) {
+                $blockers[] = $raw;
+                continue;
+            }
+
+            $nullable = $this->isColumnNullable($child, $relationship['child_column']);
+            $neutralization = $raw + [
+                'nullable' => $nullable,
+                'status' => $nullable === true ? 'pass' : 'blocked',
+                'operation' => $nullable === true
+                    ? $child.'.'.$relationship['child_column'].' = NULL before clearing '.$parent
+                    : 'No safe NULL neutralization available.',
+            ];
+            $neutralizations[] = $neutralization;
+
+            if ($nullable !== true) {
+                $blockers[] = $raw;
+                $neutralizationWarnings[] = [
+                    'table' => $child,
+                    'column' => $relationship['child_column'],
+                    'reason' => $nullable === false
+                        ? 'Neutralization candidate is NOT NULL; cannot safely clear parent.'
+                        : 'Unable to determine column nullability safely.',
+                ];
             }
         }
 
-        $deleteOrder = $this->topologicalDeleteOrder($clearTables, $edges);
+        $cycleAudit = $this->cycleEdgeAudit($clearTables, $relationships, $actions);
+        $breakableCycleKeys = [];
+
+        foreach ($cycleAudit['edges'] as $edge) {
+            if (($edge['can_break_with_null'] ?? false) === true) {
+                $breakableCycleKeys[$this->relationshipKey($edge)] = true;
+            }
+        }
+
+        $effectiveEdges = [];
+
+        foreach ($relationships as $relationship) {
+            $child = $relationship['child_table'];
+            $parent = $relationship['parent_table'];
+
+            if (($actions[$child] ?? null) !== 'clear' || ($actions[$parent] ?? null) !== 'clear') {
+                continue;
+            }
+
+            if (isset($breakableCycleKeys[$this->relationshipKey($relationship)])) {
+                continue;
+            }
+
+            $effectiveEdges[] = [$child, $parent];
+        }
+
+        $deleteOrder = $this->topologicalDeleteOrder($clearTables, $effectiveEdges);
         $cycleTables = array_values(array_diff($clearTables, $deleteOrder));
         sort($cycleTables);
 
+        $dependencyWarnings = [];
+        if ($cycleTables !== []) {
+            $dependencyWarnings[] = 'Dependency cycle remains after applying only schema-proven nullable preview resolutions: '.implode(', ', $cycleTables).'.';
+        }
+
         return [
             'relationships' => $relationships,
+            'raw_blockers' => $rawBlockers,
             'blockers' => $blockers,
+            'neutralizations' => $neutralizations,
+            'neutralization_warnings' => $neutralizationWarnings,
             'cycle_tables' => $cycleTables,
-            'warnings' => [],
+            'cycle_edges' => $cycleAudit['edges'],
+            'warnings' => $dependencyWarnings,
             'delete_order' => $deleteOrder,
             'ready' => (
                 empty($blockers)
+                && empty($neutralizationWarnings)
                 && empty($cycleTables)
                 && count($deleteOrder) === count($clearTables)
             ),
         ];
+    }
+
+    /**
+     * Return only FK edges that are actually inside a cyclic strongly-connected
+     * component. This avoids labelling unrelated residual edges as cycle edges.
+     *
+     * @param array<int,string> $clearTables
+     * @param array<int,array<string,string>> $relationships
+     * @param array<string,string> $actions
+     * @return array{edges:array<int,array<string,mixed>>}
+     */
+    private function cycleEdgeAudit(array $clearTables, array $relationships, array $actions): array
+    {
+        $adjacency = [];
+        foreach ($clearTables as $table) {
+            $adjacency[$table] = [];
+        }
+
+        foreach ($relationships as $relationship) {
+            $child = $relationship['child_table'];
+            $parent = $relationship['parent_table'];
+
+            if (($actions[$child] ?? null) !== 'clear' || ($actions[$parent] ?? null) !== 'clear') {
+                continue;
+            }
+
+            if (isset($adjacency[$child], $adjacency[$parent])) {
+                $adjacency[$child][$parent] = true;
+            }
+        }
+
+        $index = 0;
+        $indices = [];
+        $lowLink = [];
+        $stack = [];
+        $onStack = [];
+        $components = [];
+
+        $strongConnect = function (string $node) use (&$strongConnect, &$index, &$indices, &$lowLink, &$stack, &$onStack, &$components, $adjacency): void {
+            $indices[$node] = $index;
+            $lowLink[$node] = $index;
+            $index++;
+            $stack[] = $node;
+            $onStack[$node] = true;
+
+            foreach (array_keys($adjacency[$node] ?? []) as $next) {
+                if (! array_key_exists($next, $indices)) {
+                    $strongConnect($next);
+                    $lowLink[$node] = min($lowLink[$node], $lowLink[$next]);
+                } elseif (! empty($onStack[$next])) {
+                    $lowLink[$node] = min($lowLink[$node], $indices[$next]);
+                }
+            }
+
+            if ($lowLink[$node] !== $indices[$node]) {
+                return;
+            }
+
+            $component = [];
+            do {
+                $member = array_pop($stack);
+                if ($member === null) {
+                    break;
+                }
+                $onStack[$member] = false;
+                $component[] = $member;
+            } while ($member !== $node);
+
+            sort($component);
+            $components[] = $component;
+        };
+
+        foreach ($clearTables as $table) {
+            if (! array_key_exists($table, $indices)) {
+                $strongConnect($table);
+            }
+        }
+
+        $componentId = [];
+        $cyclicComponentIds = [];
+
+        foreach ($components as $id => $component) {
+            foreach ($component as $table) {
+                $componentId[$table] = $id;
+            }
+
+            if (count($component) > 1) {
+                $cyclicComponentIds[$id] = true;
+                continue;
+            }
+
+            $only = $component[0] ?? null;
+            if ($only !== null && isset($adjacency[$only][$only])) {
+                $cyclicComponentIds[$id] = true;
+            }
+        }
+
+        $edges = [];
+
+        foreach ($relationships as $relationship) {
+            $child = $relationship['child_table'];
+            $parent = $relationship['parent_table'];
+
+            if (($actions[$child] ?? null) !== 'clear' || ($actions[$parent] ?? null) !== 'clear') {
+                continue;
+            }
+
+            $childComponent = $componentId[$child] ?? null;
+            $parentComponent = $componentId[$parent] ?? null;
+
+            if ($childComponent === null || $childComponent !== $parentComponent || ! isset($cyclicComponentIds[$childComponent])) {
+                continue;
+            }
+
+            $nullable = $this->isColumnNullable($child, $relationship['child_column']);
+            $edges[] = $relationship + [
+                'nullable' => $nullable,
+                'can_break_with_null' => $nullable === true,
+                'operation' => $nullable === true
+                    ? $child.'.'.$relationship['child_column'].' = NULL before delete ordering'
+                    : 'Cycle edge cannot be safely neutralized by NULL.',
+            ];
+        }
+
+        return ['edges' => $edges];
+    }
+
+    /** @param array<string,mixed> $relationship */
+    private function relationshipKey(array $relationship): string
+    {
+        return implode("\0", [
+            (string) ($relationship['child_table'] ?? ''),
+            (string) ($relationship['child_column'] ?? ''),
+            (string) ($relationship['parent_table'] ?? ''),
+            (string) ($relationship['parent_column'] ?? ''),
+            (string) ($relationship['constraint'] ?? ''),
+        ]);
+    }
+
+    private function isColumnNullable(string $table, string $column): ?bool
+    {
+        $connection = DB::connection();
+        $driver = strtolower((string) $connection->getDriverName());
+
+        try {
+            if ($driver === 'mysql' || $driver === 'mariadb') {
+                $row = DB::selectOne(
+                    'SELECT IS_NULLABLE AS is_nullable FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                    [$table, $column]
+                );
+
+                if ($row === null) {
+                    return null;
+                }
+
+                return strtoupper((string) (((array) $row)['is_nullable'] ?? ((array) $row)['IS_NULLABLE'] ?? '')) === 'YES';
+            }
+
+            if ($driver === 'pgsql') {
+                $row = DB::selectOne(
+                    'SELECT is_nullable FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = ?',
+                    [$table, $column]
+                );
+
+                if ($row === null) {
+                    return null;
+                }
+
+                return strtoupper((string) (((array) $row)['is_nullable'] ?? '')) === 'YES';
+            }
+
+            if ($driver === 'sqlsrv') {
+                $row = DB::selectOne(
+                    'SELECT IS_NULLABLE AS is_nullable FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?',
+                    [$table, $column]
+                );
+
+                if ($row === null) {
+                    return null;
+                }
+
+                return strtoupper((string) (((array) $row)['is_nullable'] ?? ((array) $row)['IS_NULLABLE'] ?? '')) === 'YES';
+            }
+
+            if ($driver === 'sqlite') {
+                $quoted = '"'.str_replace('"', '""', $table).'"';
+                foreach (DB::select('PRAGMA table_info('.$quoted.')') as $row) {
+                    $array = (array) $row;
+                    if (strcasecmp((string) ($array['name'] ?? ''), $column) !== 0) {
+                        continue;
+                    }
+
+                    return ((int) ($array['notnull'] ?? 0)) === 0;
+                }
+
+                return null;
+            }
+        } catch (Throwable) {
+            return null;
+        }
+
+        return null;
     }
 
     /**
