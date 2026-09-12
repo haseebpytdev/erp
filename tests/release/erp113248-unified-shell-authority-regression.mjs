@@ -30,8 +30,8 @@ const ok = (condition, label) => {
 };
 
 ok(
-  version === 'v1.1.33.247-ERP11.3.247',
-  'functional .248 UI checkpoint retains deployed .247 metadata'
+  version === 'v1.1.33.248-ERP11.3.248',
+  'ERP-11.3.248 release metadata is current'
 );
 
 for (const token of [

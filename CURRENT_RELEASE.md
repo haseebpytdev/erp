@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.247
-APPLICATION_VERSION=v1.1.33.247-ERP11.3.247
+CURRENT_VERSION=ERP-11.3.248
+APPLICATION_VERSION=v1.1.33.248-ERP11.3.248
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.247
+LAST_PACKAGED_RELEASE=ERP-11.3.248
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -561,3 +561,28 @@ changing invoice amounts, workflow, posting or accounting behavior.
 
 A permanent Day-One sequence completion marker prevents replay. No migration is
 required and the ERP-11.3.240 accepted UI baseline remains unchanged.
+
+ERP-11.3.248 unified shell consolidation replaces the fragmented authenticated
+page-shell geometry with one final CSS authority loaded after module styles.
+
+The same outer frame now applies to Dashboard, registers, Accounting,
+New Booking / General Progressive Booking and Air focus workspaces. The previous
+shell stylesheet excluded gp-focus-mode and et-air-focus-mode-103172, which left
+booking screens on a different spacing model.
+
+Desktop geometry:
+- Sidebar width: 224px
+- Utility header: 56px
+- Main horizontal gutter: 24px
+- Main top rhythm: 18px
+- Brand row: 64px
+- Logo footprint: 36px
+- Navigation row: 36px
+- Navigation horizontal inset: 10px
+
+Generated sidebar headings and active-link appearance are CSS-owned. JavaScript
+continues to own grouping/state behavior but no longer injects sidebar spacing,
+geometry or active-link presentation with style.setProperty.
+
+No migration, booking/accounting business logic, database schema, print layout
+or voucher layout is changed.

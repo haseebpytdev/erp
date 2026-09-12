@@ -185,8 +185,8 @@ ok(
 );
 
 ok(
-  version === 'v1.1.33.247-ERP11.3.247',
-  'functional UI checkpoint retains deployed release metadata'
+  version === 'v1.1.33.248-ERP11.3.248',
+  'ERP-11.3.248 release metadata is current'
 );
 
 console.log(`TESTS_PASS=${pass}`);

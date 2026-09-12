@@ -1,4 +1,4 @@
-ERP-11.3.247 DIRECT UPLOAD - DAY-ONE NUMBERING FROM 1000
+ERP-11.3.248 DIRECT UPLOAD - UNIFIED ERP SHELL
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -72,3 +72,19 @@ IMPORTANT:
 - Confirm every live sequence/identity preview resolves to 1000.
 - Execute the one-time action only after the screen reports READY.
 - The completion marker permanently prevents a second sequence reset.
+
+ERP-11.3.248 unified ERP shell:
+
+- Manual cPanel deployment only.
+- No migration is required.
+- Clear Application Cache after deployment.
+- Ctrl+F5 after cache clear.
+- Validate New Booking first at desktop width.
+- Sidebar must remain 224px.
+- Brand/logo row must be compact and vertically aligned.
+- Utility header must be 56px high.
+- Main application content must use equal 24px left/right gutters.
+- No extra nested Bootstrap/native outer gutter should remain.
+- Sidebar generated headings and active-link appearance are CSS-owned.
+- General Progressive Booking and Air focus workspaces use the same shell.
+- Module business UI and print/voucher layouts are unchanged.
