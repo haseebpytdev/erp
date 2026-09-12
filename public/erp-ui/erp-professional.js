@@ -76,10 +76,7 @@
       heading.classList.add('nav-section', 'et-ui-nav-section');
       heading.dataset.etSidebarSection = key;
       heading.textContent = title;
-      heading.style.setProperty('display', 'block', 'important');
-      heading.style.setProperty('height', 'auto', 'important');
-      heading.style.setProperty('min-height', '0', 'important');
-      heading.style.setProperty('max-height', 'none', 'important');
+
       sidebarNav.appendChild(heading);
       rows.forEach(row => sidebarNav.appendChild(row));
     });
@@ -138,12 +135,7 @@
     if (linkPath && linkPath === currentPath) {
       link.classList.add('et-ui-current');
       link.setAttribute('aria-current', 'page');
-      link.style.setProperty('background', 'rgba(16,85,176,.72)', 'important');
-      link.style.setProperty('color', '#fff', 'important');
-      link.style.setProperty('border-left-color', '#60a5fa', 'important');
-      link.style.setProperty('border-radius', '6px', 'important');
-      link.style.setProperty('font-weight', '650', 'important');
-      link.style.setProperty('box-shadow', 'none', 'important');
+
     }
   });
 

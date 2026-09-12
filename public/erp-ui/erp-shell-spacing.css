@@ -1,80 +1,169 @@
-/* ERP-11.3.240 — authoritative ERP shell and spacing geometry.
-   Presentation only. One outer frame, one horizontal gutter, one vertical rhythm. */
+/*
+ * ERP-11.3.248
+ * Unified authenticated ERP shell authority.
+ *
+ * This stylesheet is intentionally loaded LAST after base/module styles.
+ * It owns only outer application geometry:
+ * - sidebar and brand block
+ * - sidebar navigation spacing
+ * - utility header
+ * - application canvas/gutters
+ * - cross-module outer rhythm
+ *
+ * Module-specific cards/forms/tables remain owned by their module stylesheets.
+ * No business logic. No print/voucher redesign.
+ */
 
 :root{
+  --et-shell-sidebar-width:224px;
   --et-shell-gutter-x:24px;
-  --et-shell-gutter-y:20px;
+  --et-shell-gutter-y:18px;
   --et-shell-bottom:28px;
-  --et-sidebar-inner-x:8px;
+
+  --et-shell-topbar-height:56px;
+
+  --et-sidebar-brand-height:64px;
+  --et-sidebar-logo-size:36px;
+  --et-sidebar-nav-x:10px;
+  --et-sidebar-row-height:36px;
+  --et-sidebar-icon-size:20px;
 }
 
-/* --------------------------------------------------------------------------
-   Application frame
-   -------------------------------------------------------------------------- */
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .content-wrapper,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .page-wrapper,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .main-content{
+
+/* ==========================================================================
+   APPLICATION CANVAS
+   Same geometry applies to standard pages AND booking/focus workspaces.
+   ========================================================================== */
+
+body.et-ui-professional .content-wrapper,
+body.et-ui-professional .page-wrapper,
+body.et-ui-professional .main-content{
   min-width:0!important;
+  max-width:none!important;
   padding-left:0!important;
   padding-right:0!important;
   background:var(--et-bg)!important;
 }
 
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .content-wrapper>main,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .page-wrapper>main,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main.content,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main.container,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main.container-fluid,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main[data-et-register-workspace]{
+
+body.et-ui-professional .content-wrapper>main,
+body.et-ui-professional .page-wrapper>main,
+body.et-ui-professional main.content,
+body.et-ui-professional main.container,
+body.et-ui-professional main.container-fluid,
+body.et-ui-professional main[data-et-register-workspace]{
   width:100%!important;
   max-width:none!important;
+  min-width:0!important;
+
   margin:0!important;
-  padding:0 var(--et-shell-gutter-x) var(--et-shell-bottom)!important;
+
+  padding:
+    0
+    var(--et-shell-gutter-x)
+    var(--et-shell-bottom)!important;
 }
 
-/* Native utility topbar remains full-width while page content uses one gutter. */
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.topbar,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.top-bar,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.app-header,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.main-header,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.navbar-horizontal,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.et-ui-utility-topbar{
-  width:calc(100% + (var(--et-shell-gutter-x) * 2))!important;
+
+/*
+ * Utility header remains full-bleed inside the right application canvas,
+ * while the actual working content follows the common 24px page gutter.
+ */
+body.et-ui-professional main>.topbar,
+body.et-ui-professional main>.top-bar,
+body.et-ui-professional main>.app-header,
+body.et-ui-professional main>.main-header,
+body.et-ui-professional main>.navbar-horizontal,
+body.et-ui-professional main>.et-ui-utility-topbar{
+  width:calc(
+    100% + (var(--et-shell-gutter-x) * 2)
+  )!important;
+
   max-width:none!important;
-  min-height:54px!important;
-  height:54px!important;
-  margin-left:calc(var(--et-shell-gutter-x) * -1)!important;
-  margin-right:calc(var(--et-shell-gutter-x) * -1)!important;
+
+  min-height:var(--et-shell-topbar-height)!important;
+  height:var(--et-shell-topbar-height)!important;
+
+  margin-left:calc(
+    var(--et-shell-gutter-x) * -1
+  )!important;
+
+  margin-right:calc(
+    var(--et-shell-gutter-x) * -1
+  )!important;
+
   margin-bottom:0!important;
+
+  padding-left:var(--et-shell-gutter-x)!important;
+  padding-right:var(--et-shell-gutter-x)!important;
+
   border-radius:0!important;
 }
 
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.topbar+*,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.top-bar+*,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.app-header+*,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.main-header+*,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.navbar-horizontal+*,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.et-ui-utility-topbar+*{
+
+body.et-ui-professional main>.topbar+*,
+body.et-ui-professional main>.top-bar+*,
+body.et-ui-professional main>.app-header+*,
+body.et-ui-professional main>.main-header+*,
+body.et-ui-professional main>.navbar-horizontal+*,
+body.et-ui-professional main>.et-ui-utility-topbar+*{
   margin-top:var(--et-shell-gutter-y)!important;
 }
 
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>:first-child:not(.topbar):not(.top-bar):not(.app-header):not(.main-header):not(.navbar-horizontal):not(.et-ui-utility-topbar){
+
+body.et-ui-professional main>
+:first-child:not(.topbar)
+:not(.top-bar)
+:not(.app-header)
+:not(.main-header)
+:not(.navbar-horizontal)
+:not(.et-ui-utility-topbar){
   margin-top:var(--et-shell-gutter-y)!important;
 }
 
-/* Remove the second Bootstrap/native horizontal gutter inside the main frame. */
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.container,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.container-xl,
-body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) main>.container-fluid{
+
+/*
+ * The first real page canvas should use the shell width.
+ * This removes the "container inside another container" appearance
+ * visible in the New Booking recording.
+ */
+body.et-ui-professional main>
+:not(.topbar)
+:not(.top-bar)
+:not(.app-header)
+:not(.main-header)
+:not(.navbar-horizontal)
+:not(.et-ui-utility-topbar)
+:not(script)
+:not(style){
+  max-width:none!important;
+}
+
+
+/* Remove a second Bootstrap/native outer gutter. */
+body.et-ui-professional main>.container,
+body.et-ui-professional main>.container-xl,
+body.et-ui-professional main>.container-fluid,
+
+body.et-ui-professional main>div>.container,
+body.et-ui-professional main>div>.container-xl,
+body.et-ui-professional main>div>.container-fluid,
+
+body.et-ui-professional main>section>.container,
+body.et-ui-professional main>section>.container-xl,
+body.et-ui-professional main>section>.container-fluid{
   width:100%!important;
   max-width:none!important;
+
   margin-left:0!important;
   margin-right:0!important;
+
   padding-left:0!important;
   padding-right:0!important;
 }
 
-/* One width authority for module workspaces. */
+
+/* One outer width authority across major ERP workspaces. */
 body.et-ui-professional .et-shell-content-frame,
 body.et-ui-professional .et-register-server-shell,
 body.et-ui-professional .et-reg-shell,
@@ -87,88 +176,233 @@ body.et-ui-professional .aa-wrap,
 body.et-ui-professional .br-wrap{
   width:100%!important;
   max-width:none!important;
+
   margin-left:0!important;
   margin-right:0!important;
 }
 
+
 body.et-ui-professional .et-shell-content-frame{
-  padding:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
 }
 
-/* --------------------------------------------------------------------------
-   Sidebar: CSS is the single spacing authority. Runtime JS only groups rows.
-   -------------------------------------------------------------------------- */
+
+/* ==========================================================================
+   SIDEBAR FRAME
+   ========================================================================== */
+
+@media(min-width:900px){
+  body.et-ui-professional .sidebar,
+  body.et-ui-professional .navbar-vertical,
+  body.et-ui-professional .side-nav{
+    width:var(--et-shell-sidebar-width)!important;
+    min-width:var(--et-shell-sidebar-width)!important;
+    max-width:var(--et-shell-sidebar-width)!important;
+  }
+}
+
+
+/* Brand row — exact height, rather than competing min-height rules. */
 html body.et-ui-professional .sidebar .sidebar-header,
 html body.et-ui-professional .sidebar .brand,
-html body.et-ui-professional .sidebar .logo,
 html body.et-ui-professional .navbar-vertical .navbar-brand{
-  min-height:64px!important;
-  padding:10px 12px!important;
-  gap:9px!important;
+  height:var(--et-sidebar-brand-height)!important;
+  min-height:var(--et-sidebar-brand-height)!important;
+  max-height:var(--et-sidebar-brand-height)!important;
+
+  margin:0!important;
+  padding:10px 14px!important;
+
+  gap:10px!important;
+
+  display:flex!important;
+  align-items:center!important;
 }
 
+
+/*
+ * Brand links are NOT menu rows.
+ * Reset historical generic ".sidebar a" menu geometry here.
+ */
+html body.et-ui-professional .sidebar .sidebar-header>a,
+html body.et-ui-professional .sidebar .brand>a,
+html body.et-ui-professional .sidebar a.brand,
+html body.et-ui-professional .navbar-vertical a.navbar-brand{
+  min-height:0!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  gap:10px!important;
+
+  border:0!important;
+  border-radius:0!important;
+
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+
+/* Brand/logo footprint. */
 html body.et-ui-professional .sidebar .sidebar-header img,
 html body.et-ui-professional .sidebar .brand img,
 html body.et-ui-professional .navbar-vertical .navbar-brand img{
-  width:40px!important;
-  height:40px!important;
+  width:var(--et-sidebar-logo-size)!important;
+  min-width:var(--et-sidebar-logo-size)!important;
+  max-width:var(--et-sidebar-logo-size)!important;
+
+  height:var(--et-sidebar-logo-size)!important;
+  min-height:var(--et-sidebar-logo-size)!important;
+  max-height:var(--et-sidebar-logo-size)!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  object-fit:contain!important;
+
+  flex:0 0 var(--et-sidebar-logo-size)!important;
 }
+
+
+html body.et-ui-professional .sidebar .sidebar-header .logo,
+html body.et-ui-professional .sidebar .brand .logo,
+html body.et-ui-professional .navbar-vertical .navbar-brand .logo{
+  width:var(--et-sidebar-logo-size)!important;
+  min-width:var(--et-sidebar-logo-size)!important;
+  max-width:var(--et-sidebar-logo-size)!important;
+
+  height:var(--et-sidebar-logo-size)!important;
+  min-height:var(--et-sidebar-logo-size)!important;
+  max-height:var(--et-sidebar-logo-size)!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  flex:0 0 var(--et-sidebar-logo-size)!important;
+}
+
+
+/* ==========================================================================
+   SIDEBAR NAVIGATION
+   ========================================================================== */
 
 html body.et-ui-professional .sidebar .nav,
 html body.et-ui-professional .navbar-vertical .nav,
 html body.et-ui-professional .side-nav .nav{
-  padding:8px var(--et-sidebar-inner-x) 10px!important;
+  padding:
+    8px
+    var(--et-sidebar-nav-x)
+    12px!important;
+
   gap:0!important;
 }
 
-html body.et-ui-professional .sidebar a,
-html body.et-ui-professional .navbar-vertical a,
-html body.et-ui-professional .side-nav a{
+
+/* Only menu links receive menu-row geometry. */
+html body.et-ui-professional .sidebar .nav a,
+html body.et-ui-professional .navbar-vertical .nav a,
+html body.et-ui-professional .side-nav .nav a{
+  min-height:var(--et-sidebar-row-height)!important;
+
   margin:0!important;
+
   padding:6px 8px!important;
+
   gap:8px!important;
+
+  line-height:1.25!important;
 }
 
+
+/* Compact icon footprint. */
+html body.et-ui-professional .sidebar .nav a>span:first-child,
+html body.et-ui-professional .navbar-vertical .nav a>span:first-child,
+html body.et-ui-professional .side-nav .nav a>span:first-child,
+
+html body.et-ui-professional .sidebar .nav a>i:first-child,
+html body.et-ui-professional .navbar-vertical .nav a>i:first-child,
+html body.et-ui-professional .side-nav .nav a>i:first-child,
+
+html body.et-ui-professional .sidebar .nav a>svg:first-child,
+html body.et-ui-professional .navbar-vertical .nav a>svg:first-child,
+html body.et-ui-professional .side-nav .nav a>svg:first-child{
+  width:var(--et-sidebar-icon-size)!important;
+  min-width:var(--et-sidebar-icon-size)!important;
+
+  height:var(--et-sidebar-icon-size)!important;
+  min-height:var(--et-sidebar-icon-size)!important;
+
+  flex:0 0 var(--et-sidebar-icon-size)!important;
+}
+
+
+/* Section rhythm. */
 html body.et-ui-professional .sidebar .nav-section,
 html body.et-ui-professional .sidebar .nav-heading,
 html body.et-ui-professional .sidebar .menu-title,
+
 html body.et-ui-professional .navbar-vertical .nav-section,
 html body.et-ui-professional .navbar-vertical .nav-heading,
+
 html body.et-ui-professional .et-ui-nav-section{
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
-  margin:16px 8px 8px!important;
+
+  margin:14px 8px 5px!important;
   padding:0!important;
+
   line-height:1.15!important;
 }
 
-html body.et-ui-professional .et-ui-nav-section+[data-et-sidebar-group],
-html body.et-ui-professional [data-et-sidebar-section]+[data-et-sidebar-group]{
+
+html body.et-ui-professional
+.et-ui-nav-section+[data-et-sidebar-group],
+
+html body.et-ui-professional
+[data-et-sidebar-section]+[data-et-sidebar-group]{
   margin-top:0!important;
 }
 
-html body.et-ui-professional [data-et-sidebar-group="dashboard"]{
-  margin-bottom:2px!important;
+
+html body.et-ui-professional
+[data-et-sidebar-group="dashboard"]{
+  margin-bottom:3px!important;
 }
 
+
+/* Empty duplicate native navigation roots are class-hidden by JS. */
+html body.et-ui-professional .et-ui-nav-root-empty{
+  display:none!important;
+}
+
+
+/* Sidebar footer aligns to the same visual inset as brand/menu. */
 html body.et-ui-professional .sidebar footer,
-html body.et-ui-professional .sidebar .sidebar-footer{
-  min-height:42px!important;
-  padding:7px 12px!important;
+html body.et-ui-professional .sidebar .sidebar-footer,
+html body.et-ui-professional .sidebar .sidebar-foot{
+  min-height:48px!important;
+
+  padding:9px 14px 11px!important;
 }
 
-/* --------------------------------------------------------------------------
-   Cross-module vertical rhythm
-   -------------------------------------------------------------------------- */
+
+/* ==========================================================================
+   CROSS-MODULE OUTER RHYTHM
+   ========================================================================== */
+
 body.et-ui-professional .et-page-header,
 body.et-ui-professional .et-reg-header,
 body.et-ui-professional .et-fin-head,
+
 body.et-ui-professional .sci-head,
 body.et-ui-professional .scs-head,
 body.et-ui-professional .scb-head,
+
 body.et-ui-professional .cvs27-head,
 body.et-ui-professional .cvf27-head,
+
 body.et-ui-professional .aa-head,
 body.et-ui-professional .mr-head,
 body.et-ui-professional .br-top{
@@ -176,29 +410,63 @@ body.et-ui-professional .br-top{
   margin-bottom:16px!important;
 }
 
-/* Accounting previously accumulated header + tab top margins. Keep one gap. */
-body.et-ui-professional .et-fin-head{margin-bottom:16px!important}
-body.et-ui-professional .et-fin-modes{margin:0 0 12px!important}
-body.et-ui-professional .et-fin-actions{margin:0 0 14px!important}
-body.et-ui-professional .et-fin-filter{margin:0 0 14px!important}
-body.et-ui-professional .et-summary-strip{margin:0 0 14px!important}
 
-/* Register pages use the same outer frame as every other module. */
-html.et-register-workspace-server body.et-ui-professional .et-reg-shell{
+/* Accounting keeps one vertical rhythm, not stacked margin authorities. */
+body.et-ui-professional .et-fin-head{
+  margin-bottom:16px!important;
+}
+
+body.et-ui-professional .et-fin-modes{
+  margin:0 0 12px!important;
+}
+
+body.et-ui-professional .et-fin-actions{
+  margin:0 0 14px!important;
+}
+
+body.et-ui-professional .et-fin-filter{
+  margin:0 0 14px!important;
+}
+
+body.et-ui-professional .et-summary-strip{
+  margin:0 0 14px!important;
+}
+
+
+/* Register workspace uses the same shell frame. */
+html.et-register-workspace-server
+body.et-ui-professional
+.et-reg-shell{
   max-width:none!important;
   margin:0!important;
 }
-html.et-register-workspace-server body.et-ui-professional .et-reg-header{
+
+
+html.et-register-workspace-server
+body.et-ui-professional
+.et-reg-header{
   margin-bottom:16px!important;
 }
+
+
+/* ==========================================================================
+   RESPONSIVE SHELL
+   ========================================================================== */
 
 @media(max-width:899px){
   :root{
     --et-shell-gutter-x:16px;
     --et-shell-gutter-y:16px;
     --et-shell-bottom:22px;
+
+    --et-sidebar-brand-height:60px;
   }
 }
+
+
+/* ==========================================================================
+   PRINT
+   ========================================================================== */
 
 @media print{
   body.et-ui-professional main,
@@ -206,6 +474,7 @@ html.et-register-workspace-server body.et-ui-professional .et-reg-header{
   body.et-ui-professional .page-wrapper>main{
     width:100%!important;
     max-width:none!important;
+
     margin:0!important;
     padding:0!important;
   }

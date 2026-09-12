@@ -126,10 +126,7 @@
         heading.className = 'nav-section et-ui-nav-section';
         heading.dataset.etSidebarSection = key;
         heading.textContent = title;
-        heading.style.setProperty('display', 'block', 'important');
-        heading.style.setProperty('height', 'auto', 'important');
-        heading.style.setProperty('min-height', '0', 'important');
-        heading.style.setProperty('max-height', 'none', 'important');
+
         canonicalNav.appendChild(heading);
 
         sectionRows.forEach(row => {
@@ -145,7 +142,7 @@
       });
 
       rootNavs.forEach(nav => {
-        if (nav !== canonicalNav && !nav.querySelector('a[href]')) nav.style.display = 'none';
+        if (nav !== canonicalNav && !nav.querySelector('a[href]')) nav.classList.add('et-ui-nav-root-empty');
       });
 
       canonicalNav.dataset.etSidebarGrouped = 'reference-v2';
