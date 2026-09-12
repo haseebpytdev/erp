@@ -7,14 +7,118 @@
   const path = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
   const exactLeaf = (root, text) => Array.from(root.querySelectorAll('h1,h2,h3,h4,h5,h6,div,span,p,small,strong,label'))
     .find(node => !node.children.length && node.textContent.trim().toLowerCase() === text.toLowerCase());
+  const normalizePath = value => {
+    try { return new URL(value, location.origin).pathname.replace(/\/+$/g, '') || '/'; }
+    catch (_) { return ''; }
+  };
 
-  // ERP-11.3.241: sidebar row ordering, section insertion and active-state
-  // normalization are intentionally NOT performed here. The sidebar stays
-  // hidden behind the prepaint guard until the single deterministic finalizer
-  // pass completes. This prevents the double regroup/reflow seen in ERP-11.3.240.
-  const sidebar = document.querySelector('.sidebar,.navbar-vertical,.side-nav');
-  if (sidebar) {
-    const footer = sidebar.querySelector('.sidebar-foot,.sidebar-footer,footer');
+  const sidebarNav = document.querySelector('.sidebar .nav,.navbar-vertical .nav,.side-nav .nav');
+  if (sidebarNav) {
+    const links = Array.from(sidebarNav.querySelectorAll('a[href]'));
+    const normalizedText = value => value.replace(/\s+/g, ' ').trim().toLowerCase();
+    const linkMatches = (link, aliases) => {
+      const leafLabels = Array.from(link.querySelectorAll('span,strong,b,small'))
+        .filter(node => !node.children.length)
+        .map(node => normalizedText(node.textContent));
+      const wholeLabel = normalizedText(link.textContent);
+      return aliases.some(alias => leafLabels.includes(alias) || wholeLabel === alias || wholeLabel.endsWith(` ${alias}`));
+    };
+    const topLevelRow = link => {
+      let row = link;
+      while (row.parentElement && row.parentElement !== sidebarNav) row = row.parentElement;
+      return row.parentElement === sidebarNav ? row : null;
+    };
+    const rowLink = row => row.matches('a[href]') ? row : row.querySelector(':scope > a[href],:scope > .nav-item > a[href]');
+    const findRow = aliases => {
+      const link = links.find(candidate => linkMatches(candidate, aliases));
+      return link && topLevelRow(link);
+    };
+    const findDashboardRow = () => {
+      const byLabel = links.find(candidate => linkMatches(candidate, ['dashboard', 'home']));
+      if (byLabel) return topLevelRow(byLabel);
+      const byPath = links.find(candidate => {
+        const candidatePath = normalizePath(candidate.getAttribute('href'));
+        return ['/', '/dashboard', '/home'].includes(candidatePath);
+      });
+      return byPath && topLevelRow(byPath);
+    };
+    const sections = [
+      ['operations', 'OPERATIONS', [['bookings'], ['sales invoices'], ['supplier costing'], ['vouchers'], ['advances']]],
+      ['accounting', 'ACCOUNTING', [['chart of accounts'], ['account mappings'], ['journals'], ['ledgers'], ['reports']]],
+      ['master-data', 'MASTER DATA', [['party master'], ['travel masters'], ['products & services']]],
+      ['administration', 'ADMINISTRATION', [['organization'], ['currency rates'], ['financial years'], ['health & updates', 'system health & updates', 'system settings'], ['administration'], ['foundation']]],
+    ];
+
+    Array.from(sidebarNav.querySelectorAll('.nav-section,.nav-heading,.menu-title,.et-ui-nav-section'))
+      .filter(node => !node.querySelector('a[href]'))
+      .forEach(node => node.remove());
+
+    const groupedRows = new Set();
+    const dashboardRow = findDashboardRow();
+    if (dashboardRow) {
+      groupedRows.add(dashboardRow);
+      dashboardRow.dataset.etSidebarGroup = 'dashboard';
+      sidebarNav.appendChild(dashboardRow);
+    }
+
+    sections.forEach(([key, title, itemAliases]) => {
+      const rows = [];
+      itemAliases.forEach(aliases => {
+        const row = findRow(aliases);
+        if (row && !groupedRows.has(row)) {
+          groupedRows.add(row);
+          row.dataset.etSidebarGroup = key;
+          rows.push(row);
+        }
+      });
+      if (!rows.length) return;
+      const heading = document.createElement('div');
+      heading.classList.add('nav-section', 'et-ui-nav-section');
+      heading.dataset.etSidebarSection = key;
+      heading.textContent = title;
+      heading.style.setProperty('display', 'block', 'important');
+      heading.style.setProperty('height', 'auto', 'important');
+      heading.style.setProperty('min-height', '0', 'important');
+      heading.style.setProperty('max-height', 'none', 'important');
+      sidebarNav.appendChild(heading);
+      rows.forEach(row => sidebarNav.appendChild(row));
+    });
+
+    const remainingRows = Array.from(sidebarNav.children)
+      .filter(row => row.querySelector && row.querySelector('a[href]') && !groupedRows.has(row))
+      .filter(row => !row.matches('a[href]') || row !== dashboardRow);
+    remainingRows.forEach(row => {
+      row.dataset.etSidebarGroup = 'administration-extra';
+      sidebarNav.appendChild(row);
+    });
+
+    Array.from(groupedRows).concat(remainingRows).forEach(row => {
+      const parentLink = rowLink(row);
+      if (!parentLink) return;
+      const icon = Array.from(parentLink.children).find(child => child.matches('span,i,svg'));
+      if (icon) icon.classList.add('et-ui-nav-icon');
+      const controlledId = parentLink.getAttribute('aria-controls');
+      const controlledMenu = controlledId && document.getElementById(controlledId);
+      const hasChildren = row.querySelectorAll('a[href]').length > 1
+        || Boolean(controlledMenu && controlledMenu.querySelector('a[href]'));
+      if (!hasChildren) return;
+      row.dataset.etSidebarChildren = 'true';
+      const existingChevron = parentLink.querySelector('.et-ui-nav-chevron,[class*="chevron"]')
+        || Array.from(parentLink.children).find(child => /^[⌄⌃∨∧›»]$/.test(child.textContent.trim()));
+      if (existingChevron) {
+        existingChevron.classList.add('et-ui-nav-chevron');
+      } else {
+        const chevron = document.createElement('span');
+        chevron.className = 'et-ui-nav-chevron';
+        chevron.setAttribute('aria-hidden', 'true');
+        chevron.textContent = '⌄';
+        parentLink.appendChild(chevron);
+      }
+    });
+    sidebarNav.dataset.etSidebarGrouped = 'reference';
+
+    const sidebar = sidebarNav.closest('.sidebar,.navbar-vertical,.side-nav');
+    const footer = sidebar && sidebar.querySelector('.sidebar-foot,.sidebar-footer,footer');
     if (footer && !footer.querySelector('.et-ui-live-badge')) {
       const releaseLine = Array.from(footer.querySelectorAll('div,p,span,small'))
         .find(node => !node.children.length && /ERP-\d+(?:\.\d+)+/i.test(node.textContent));
@@ -27,6 +131,21 @@
       }
     }
   }
+
+  document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href]').forEach(link => {
+    const linkPath = normalizePath(link.getAttribute('href'));
+    const currentPath = location.pathname.replace(/\/+$/g, '') || '/';
+    if (linkPath && linkPath === currentPath) {
+      link.classList.add('et-ui-current');
+      link.setAttribute('aria-current', 'page');
+      link.style.setProperty('background', 'rgba(16,85,176,.72)', 'important');
+      link.style.setProperty('color', '#fff', 'important');
+      link.style.setProperty('border-left-color', '#60a5fa', 'important');
+      link.style.setProperty('border-radius', '6px', 'important');
+      link.style.setProperty('font-weight', '650', 'important');
+      link.style.setProperty('box-shadow', 'none', 'important');
+    }
+  });
 
   const shell = document.querySelector('.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal');
   if (shell) {

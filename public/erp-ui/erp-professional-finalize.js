@@ -17,163 +17,172 @@
       .join('&');
   };
 
-  // ERP-11.3.241 — one hidden prepaint pass only. Native row order is preserved.
-  // This code annotates the existing navigation and inserts section labels in
-  // place; it never appends/reorders menu rows after first paint.
   const sidebar = document.querySelector('.sidebar,.navbar-vertical,.side-nav');
   if (sidebar) {
     const navCandidates = Array.from(sidebar.querySelectorAll('.nav'));
     const rootNavs = navCandidates.filter(nav => !(nav.parentElement && nav.parentElement.closest('.nav')));
-    const nestedNavs = navCandidates.filter(nav => !rootNavs.includes(nav));
 
-    const labelParts = link => Array.from(link.querySelectorAll('span,strong,b,small'))
-      .filter(node => !node.children.length)
-      .map(node => normalize(node.textContent))
-      .filter(Boolean);
+    if (rootNavs.length) {
+      const allLinks = Array.from(sidebar.querySelectorAll('a[href]'))
+        .filter(link => rootNavs.some(nav => nav.contains(link)));
 
-    const exactMatch = (link, aliases) => {
-      if (!link) return false;
-      const parts = labelParts(link);
-      const whole = normalize(link.textContent);
-      return aliases.some(alias => parts.includes(alias) || whole === alias);
-    };
+      const labelParts = link => Array.from(link.querySelectorAll('span,strong,b,small'))
+        .filter(node => !node.children.length)
+        .map(node => normalize(node.textContent))
+        .filter(Boolean);
 
-    const primaryLink = row => {
-      if (!row) return null;
-      if (row.matches && row.matches('a[href]')) return row;
-      return row.querySelector(':scope > a[href],:scope > .nav-item > a[href],:scope > div > a[href]');
-    };
+      const exactMatch = (link, aliases) => {
+        const parts = labelParts(link);
+        const whole = normalize(link.textContent);
+        return aliases.some(alias => parts.includes(alias) || whole === alias);
+      };
 
-    const sections = [
-      ['operations', 'OPERATIONS', [
-        ['bookings'],
-        ['sales invoices'],
-        ['supplier costing'],
-      ]],
-      ['accounting', 'ACCOUNTING', [
-        ['vouchers'],
-        ['receipts'],
-        ['payments'],
-        ['expense vouchers'],
-        ['contra vouchers'],
-        ['advances'],
-        ['customer advances'],
-        ['supplier advances'],
-        ['advance adjustments', 'advance adjustment'],
-        ['chart of accounts'],
-        ['account mappings'],
-        ['journals'],
-        ['ledgers'],
-        ['reports'],
-      ]],
-      ['master-data', 'MASTER DATA', [
-        ['party master'],
-        ['travel masters'],
-        ['products & services'],
-      ]],
-      ['administration', 'ADMINISTRATION', [
-        ['organization'],
-        ['currency rates'],
-        ['financial years'],
-        ['health & updates', 'system health & updates', 'system settings'],
-        ['administration'],
-        ['foundation'],
-      ]],
-    ];
+      const rootNavFor = link => rootNavs.find(nav => nav.contains(link)) || null;
+      const topLevelRow = link => {
+        const rootNav = rootNavFor(link);
+        if (!rootNav) return null;
+        let row = link;
+        while (row.parentElement && row.parentElement !== rootNav) row = row.parentElement;
+        return row.parentElement === rootNav ? row : null;
+      };
 
-    rootNavs.forEach(nav => {
-      Array.from(nav.querySelectorAll(':scope > .et-ui-nav-section'))
-        .forEach(node => node.remove());
+      const rowForAliases = aliases => {
+        const link = allLinks.find(candidate => exactMatch(candidate, aliases));
+        return link ? topLevelRow(link) : null;
+      };
 
-      const rows = Array.from(nav.children)
-        .filter(row => row.matches?.('a[href]') || Boolean(row.querySelector?.('a[href]')));
+      const dashboardLink = allLinks.find(link => exactMatch(link, ['dashboard', 'home']))
+        || allLinks.find(link => ['/', '/dashboard', '/home'].includes(normalizePath(link.getAttribute('href'))));
+      const dashboardRow = dashboardLink ? topLevelRow(dashboardLink) : null;
+      const canonicalNav = dashboardLink ? rootNavFor(dashboardLink) : rootNavs[0];
 
-      rows.forEach(row => {
-        row.dataset.etSidebarLevel = 'root';
-        const link = primaryLink(row);
-        if (!link) return;
+      const rows = Array.from(new Set(allLinks.map(topLevelRow).filter(Boolean)));
 
-        const icon = Array.from(link.children).find(child => child.matches?.('span,i,svg'));
-        if (icon) icon.classList.add('et-ui-nav-icon');
-
-        const hasChildren = row.querySelectorAll('a[href]').length > 1
-          || Boolean(row.querySelector('.nav,.submenu,[class*="submenu"],[class*="collapse"] a[href]'));
-        if (hasChildren) {
-          row.dataset.etSidebarChildren = 'true';
-          const existingChevron = link.querySelector('.et-ui-nav-chevron,[class*="chevron"]')
-            || Array.from(link.children).find(child => /^[⌄⌃∨∧›»]$/.test(normalize(child.textContent)));
-          if (existingChevron) existingChevron.classList.add('et-ui-nav-chevron');
-        }
+      rootNavs.forEach(nav => {
+        Array.from(nav.querySelectorAll(':scope > .nav-section,:scope > .nav-heading,:scope > .menu-title,:scope > .et-ui-nav-section'))
+          .filter(node => !node.querySelector('a[href]'))
+          .forEach(node => node.remove());
       });
 
-      const dashboardRow = rows.find(row => {
-        const link = primaryLink(row);
-        return exactMatch(link, ['dashboard', 'home'])
-          || ['/', '/dashboard', '/home'].includes(normalizePath(link?.getAttribute('href')));
-      });
-      if (dashboardRow) dashboardRow.dataset.etSidebarGroup = 'dashboard';
+      const grouped = new Set();
+      const appendRow = row => {
+        if (!row || grouped.has(row)) return false;
+        grouped.add(row);
+        canonicalNav.appendChild(row);
+        return true;
+      };
+
+      if (dashboardRow) {
+        dashboardRow.dataset.etSidebarGroup = 'dashboard';
+        appendRow(dashboardRow);
+      }
+
+      const sections = [
+        ['operations', 'OPERATIONS', [
+          ['bookings'],
+          ['sales invoices'],
+          ['supplier costing'],
+        ]],
+        ['accounting', 'ACCOUNTING', [
+          ['vouchers'],
+          ['receipts'],
+          ['payments'],
+          ['expense vouchers'],
+          ['contra vouchers'],
+          ['advances'],
+          ['customer advances'],
+          ['supplier advances'],
+          ['advance adjustments', 'advance adjustment'],
+          ['chart of accounts'],
+          ['account mappings'],
+          ['journals'],
+          ['ledgers'],
+          ['reports'],
+        ]],
+        ['master-data', 'MASTER DATA', [
+          ['party master'],
+          ['travel masters'],
+          ['products & services'],
+        ]],
+        ['administration', 'ADMINISTRATION', [
+          ['organization'],
+          ['currency rates'],
+          ['financial years'],
+          ['health & updates', 'system health & updates', 'system settings'],
+          ['administration'],
+          ['foundation'],
+        ]],
+      ];
 
       sections.forEach(([key, title, itemAliases]) => {
-        const sectionRows = rows.filter(row => {
-          const link = primaryLink(row);
-          return itemAliases.some(aliases => exactMatch(link, aliases));
+        const sectionRows = [];
+        itemAliases.forEach(aliases => {
+          const row = rowForAliases(aliases);
+          if (row && !grouped.has(row)) sectionRows.push(row);
         });
         if (!sectionRows.length) return;
-
-        sectionRows.forEach(row => {
-          row.dataset.etSidebarGroup = key;
-        });
 
         const heading = document.createElement('div');
         heading.className = 'nav-section et-ui-nav-section';
         heading.dataset.etSidebarSection = key;
         heading.textContent = title;
-        nav.insertBefore(heading, sectionRows[0]);
+        heading.style.setProperty('display', 'block', 'important');
+        heading.style.setProperty('height', 'auto', 'important');
+        heading.style.setProperty('min-height', '0', 'important');
+        heading.style.setProperty('max-height', 'none', 'important');
+        canonicalNav.appendChild(heading);
+
+        sectionRows.forEach(row => {
+          row.dataset.etSidebarGroup = key;
+          appendRow(row);
+        });
       });
 
-      nav.dataset.etSidebarStable = 'ERP-11.3.241';
-    });
-
-    nestedNavs.forEach(nav => {
-      nav.dataset.etSidebarLevel = 'nested';
-      Array.from(nav.querySelectorAll(':scope > *')).forEach(row => {
-        if (row.matches?.('a[href]') || row.querySelector?.('a[href]')) {
-          row.dataset.etSidebarLevel = 'nested-row';
-        }
+      rows.forEach(row => {
+        if (grouped.has(row)) return;
+        row.dataset.etSidebarGroup = 'remaining';
+        appendRow(row);
       });
-    });
 
-    const allLinks = Array.from(sidebar.querySelectorAll('a[href]'));
-    let nativeActiveFound = false;
+      rootNavs.forEach(nav => {
+        if (nav !== canonicalNav && !nav.querySelector('a[href]')) nav.style.display = 'none';
+      });
 
-    allLinks.forEach(link => {
-      const row = link.parentElement;
-      const linkActive = link.classList.contains('active') || link.getAttribute('aria-current') === 'page';
-      const rowActive = Boolean(row && row.classList.contains('active'));
-      const activeDescendant = Boolean(row && row.querySelector('.nav a.active,.nav [aria-current="page"],.nav .active > a'));
-      if (linkActive || (rowActive && !activeDescendant)) {
-        link.dataset.etNativeActive = 'true';
-        nativeActiveFound = true;
-      }
-    });
+      canonicalNav.dataset.etSidebarGrouped = 'reference-v2';
 
-    // Exact path+query fallback only when the native server did not identify a
-    // current link. Unlike the old path-only pass, this cannot light up every
-    // Cash Voucher mode at once.
-    if (!nativeActiveFound) {
+      // The base professional script historically marked every link sharing the
+      // current pathname as selected. Cash voucher workspaces share one path and
+      // differ only by ?type= / ?mode=, so Receipts, Payments, Expense and Contra
+      // could all appear active together. Native server-side .active remains
+      // authoritative; otherwise require an exact path + query-string match.
       const currentPath = normalizePath(location.pathname);
       const currentSearch = normalizeSearch(location.search);
-      const exactLocation = allLinks.find(link => {
+      allLinks.forEach(link => {
         let linkUrl;
         try { linkUrl = new URL(link.getAttribute('href'), location.origin); }
-        catch (_) { return false; }
-        return normalizePath(linkUrl.pathname) === currentPath
-          && normalizeSearch(linkUrl.search) === currentSearch;
-      });
-      if (exactLocation) exactLocation.dataset.etNativeActive = 'true';
-    }
+        catch (_) { return; }
 
-    sidebar.dataset.etSidebarStable = 'ERP-11.3.241';
+        const nativeActive = link.classList.contains('active')
+          || Boolean(link.parentElement && link.parentElement.classList.contains('active'));
+        const exactLocation = normalizePath(linkUrl.pathname) === currentPath
+          && normalizeSearch(linkUrl.search) === currentSearch;
+        const shouldBeCurrent = nativeActive || exactLocation;
+        const wasUiCurrent = link.classList.contains('et-ui-current');
+
+        if (shouldBeCurrent) {
+          link.classList.add('et-ui-current');
+          link.setAttribute('aria-current', 'page');
+          return;
+        }
+
+        link.classList.remove('et-ui-current');
+        if (link.getAttribute('aria-current') === 'page') link.removeAttribute('aria-current');
+        if (wasUiCurrent && !nativeActive) {
+          ['background', 'color', 'border-left-color', 'border-radius', 'font-weight', 'box-shadow']
+            .forEach(property => link.style.removeProperty(property));
+        }
+      });
+    }
   }
 
   const path = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
