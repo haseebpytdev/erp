@@ -32,7 +32,7 @@ ok(!service.includes('->delete(') && !service.includes('truncate(') && !service.
 ok(view.includes('No delete can run from this preview build.'), 'UI clearly states preview-only safety boundary');
 ok(view.includes('Day-Zero Reset Locked'), 'UI disables destructive action');
 ok(view.includes("route('system.production-data-reset.backup')"), 'existing authenticated route remains the backup entry point');
-ok(version === 'v1.1.33.244-ERP11.3.244', 'ERP-11.3.244 execution safety preview release metadata is promoted for packaging');
+ok(version === 'v1.1.33.245-ERP11.3.245', 'ERP-11.3.245 FK resolution preview release metadata is promoted for packaging');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.244
-APPLICATION_VERSION=v1.1.33.244-ERP11.3.244
+CURRENT_VERSION=ERP-11.3.245
+APPLICATION_VERSION=v1.1.33.245-ERP11.3.245
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.244
+LAST_PACKAGED_RELEASE=ERP-11.3.245
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -504,3 +504,19 @@ ERP-11.3.244 remains PREVIEW ONLY. EXECUTION_ENABLED is false, the reset control
 remains locked, and the new service contains no delete, truncate or other
 destructive database operation. No migration is required and deployment itself
 performs no business-data mutation.
+ERP-11.3.245 Day-Zero FK-resolution preview addresses the live ERP-11.3.244
+foreign-key safety findings while keeping destructive execution locked.
+service_cost_allocations is corrected from PRESERVE to CLEAR because it is
+transactional allocation data linked to bookings, booking services, ticket
+details, sales invoices, invoice lines and vendor parties.
+
+Preserved airlines and booking_sources remain intact, while their
+default_vendor_party_id links to CLEAR parties are inspected at runtime for
+schema-proven NULL neutralization. Exact cyclic strongly-connected FK edges are
+now exposed with column nullability, and only safely nullable cycle edges are
+excluded from the effective dependency graph when recalculating the proposed
+child-before-parent delete order.
+
+ERP-11.3.245 remains PREVIEW ONLY. EXECUTION_ENABLED is false, the reset control
+remains disabled and no delete, truncate, counter mutation or FK update executes
+from this release. No migration is required.
