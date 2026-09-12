@@ -28,8 +28,8 @@ function assert(name, condition) {
 }
 
 assert(
-  'VERSION_STAYS_246_DURING_247_FUNCTIONAL_CHECKPOINT',
-  version === 'v1.1.33.246-ERP11.3.246'
+  'VERSION_IS_247_DAY_ONE_1000_RELEASE',
+  version === 'v1.1.33.247-ERP11.3.247'
 );
 
 assert('DAY_ZERO_EXECUTION_AUTHORITY_PRESERVED', dayZero.includes('public const EXECUTION_ENABLED = true;'));

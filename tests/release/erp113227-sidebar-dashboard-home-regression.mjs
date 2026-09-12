@@ -20,7 +20,7 @@ ok(!finalizer.includes('canonicalNav.appendChild') && !finalizer.includes('appen
 ok(shellCss.includes('margin:14px 8px 6px!important'), 'authoritative CSS owns compact section spacing');
 ok(shellCss.includes('min-height:52px!important') && shellCss.includes('width:34px!important'), 'brand/logo geometry is compact');
 ok(!baseJs.includes("document.createElement('a')") && !finalizer.includes("document.createElement('a')"), 'sidebar enhancement never fabricates navigation destinations');
-ok(version === 'v1.1.33.246-ERP11.3.246', 'functional .241 checkpoint retains deployed .240 release metadata');
+ok(version === 'v1.1.33.247-ERP11.3.247', 'functional .241 checkpoint retains deployed .240 release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

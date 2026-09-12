@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.246-ERP11.3.246',
-    'release' => 'ERP-11.3.246',
-    'package' => 'ERP-11.3.246 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.246 is the controlled one-time Day-Zero execution release. It requires Super Admin / Owner authorization, a fresh validated full database backup, the exact RESET ERP TO DAY ZERO confirmation phrase, explicit acknowledgement, and a live safety plan with zero REVIEW tables, zero unresolved FK blockers, zero dependency cycles, a complete child-before-parent delete order and a valid counter reset plan. Approved nullable foreign keys are neutralized, reviewed business/UAT tables are cleared transactionally, numbering counters restart, post-reset state is verified and a permanent completion marker prevents a second execution.',
+    'version' => 'v1.1.33.247-ERP11.3.247',
+    'release' => 'ERP-11.3.247',
+    'package' => 'ERP-11.3.247 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.247 is the one-time Day-One production numbering normalization release. It requires the ERP-11.3.246 Day-Zero reset to have completed and refuses execution if any new production business row exists. Empty transactional table identities are normalized so their next IDs begin at 1000, native sequence counters use last-used 999 or next-value 1000 semantics as appropriate, and booking, invoice, voucher, supplier-costing and posting references use plain 1000, 1001, 1002 numbering without leading zero padding. A permanent completion marker prevents a second Day-One sequence reset. No migration or accounting formula change is introduced.',
 ];

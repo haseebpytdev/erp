@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.246
-APPLICATION_VERSION=v1.1.33.246-ERP11.3.246
+CURRENT_VERSION=ERP-11.3.247
+APPLICATION_VERSION=v1.1.33.247-ERP11.3.247
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.246
+LAST_PACKAGED_RELEASE=ERP-11.3.247
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -542,3 +542,22 @@ a second Day-Zero execution.
 
 No migration is required. Normal booking, invoice, voucher, supplier-costing
 and accounting formulas are unchanged.
+ERP-11.3.247 Day-One production numbering finalization follows the completed
+ERP-11.3.246 Day-Zero reset.
+
+The first genuine production transactional IDs and business document sequences
+start at plain 1000, followed by 1001, 1002 and onward. Six-digit business
+number padding is removed from the affected booking, invoice, voucher,
+supplier-costing and posting-reference authorities; 001000 is not used.
+
+The one-time Day-One action requires the Day-Zero completion marker and refuses
+to execute if any CLEAR business table contains newly entered production data.
+Database identity state is normalized per supported database engine and native
+counter tables are set according to last-used 999 / next-value 1000 semantics.
+
+Native Sales Invoice creation includes a narrow number normalizer so a host
+formatter that produces SI-YEAR-001000 is persisted as SI-YEAR-1000 without
+changing invoice amounts, workflow, posting or accounting behavior.
+
+A permanent Day-One sequence completion marker prevents replay. No migration is
+required and the ERP-11.3.240 accepted UI baseline remains unchanged.

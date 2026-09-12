@@ -1,4 +1,4 @@
-ERP-11.3.246 DIRECT UPLOAD - CONTROLLED DAY-ZERO EXECUTION
+ERP-11.3.247 DIRECT UPLOAD - DAY-ONE NUMBERING FROM 1000
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -58,3 +58,17 @@ IMPORTANT:
 - The live safety plan is rebuilt immediately before mutation.
 - Any failed live safety gate prevents execution.
 - The reset is one-time only and a permanent completion marker prevents replay.
+ERP-11.3.247 is the one-time Day-One numbering release.
+
+IMPORTANT:
+- Keep all staff out of transactional data entry until this action completes.
+- Day-Zero must already be permanently completed.
+- The Day-One action refuses to run if any new business row has been entered.
+- The first production business number is 1000, then 1001, 1002 and onward.
+- Business document numbers use plain 1000; 001000 is not used.
+- Do not run Safe Database Upgrade; this release has no migration.
+- Clear Application Cache after deployment.
+- Open the Day-One sequence screen from the completed Day-Zero page.
+- Confirm every live sequence/identity preview resolves to 1000.
+- Execute the one-time action only after the screen reports READY.
+- The completion marker permanently prevents a second sequence reset.
