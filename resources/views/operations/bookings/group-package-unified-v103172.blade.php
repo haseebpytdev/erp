@@ -409,17 +409,7 @@ html,body{
     font-size:9.5px;font-weight:850;line-height:1.1
 }
 #gp-booking.gp-editing-locked .gp-lock-pill{display:inline-flex}
-.gp-focus-overlay{
-    display:none;position:fixed;inset:0;background:rgba(10,22,40,.35);z-index:9997
-}
-.gp-focus-overlay.open{display:block}
 [data-gp-focus-sidebar]{transition:transform .18s ease,box-shadow .18s ease}
-[data-gp-focus-sidebar].gp-focus-sidebar-open{
-    display:block !important;position:fixed !important;left:0 !important;top:0 !important;bottom:0 !important;
-    z-index:9998 !important;overflow:auto !important;box-shadow:0 10px 36px rgba(0,0,0,.22) !important;
-    transform:none !important
-}
-[data-gp-focus-native-header]{display:none !important}
 
 
 @media(max-width:1250px){
@@ -509,7 +499,6 @@ html,body{
 }
 
 
-[data-gp-focus-sidebar]:not(.gp-focus-sidebar-open){display:none!important}
 </style>
 
 <div id="gp-booking">
@@ -1727,14 +1716,6 @@ html,body{
     function enableFocusedWorkspace(){
         document.body.classList.add('gp-focus-mode');
 
-        // Prevent the browser-level horizontal scrollbar. Individual passenger,
-        // flight, hotel and transport rows keep their own local horizontal
-        // scrollers where needed.
-        document.documentElement.style.overflowX = 'hidden';
-        document.body.style.overflowX = 'hidden';
-        document.documentElement.style.maxWidth = '100%';
-        document.body.style.maxWidth = '100%';
-
         const visibleRect = el => {
             try {
                 const style = window.getComputedStyle(el);
@@ -1784,8 +1765,6 @@ html,body{
 
         if (sidebar) {
             sidebar.setAttribute('data-gp-focus-sidebar','1');
-            sidebar.dataset.gpFocusWidth = `${Math.max(200, Math.round(sidebar.getBoundingClientRect().width || 240))}px`;
-            sidebar.style.display = 'none';
 
             overlay = document.createElement('div');
             overlay.className = 'gp-focus-overlay';
@@ -1793,13 +1772,10 @@ html,body{
 
             const closeMenu = () => {
                 sidebar.classList.remove('gp-focus-sidebar-open');
-                sidebar.style.display = 'none';
                 overlay.classList.remove('open');
             };
 
             const openMenu = () => {
-                sidebar.style.width = sidebar.dataset.gpFocusWidth || '240px';
-                sidebar.style.display = 'block';
                 sidebar.classList.add('gp-focus-sidebar-open');
                 overlay.classList.add('open');
             };
@@ -1834,36 +1810,7 @@ html,body{
 
         if (nativeHeader) {
             nativeHeader.setAttribute('data-gp-focus-native-header','1');
-            nativeHeader.style.display = 'none';
         }
-
-        const fitWorkspace = () => {
-            const gutter = window.innerWidth <= 760 ? 8 : 16;
-            const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
-
-            root.style.boxSizing = 'border-box';
-            root.style.maxWidth = `${Math.max(320, viewportWidth - (gutter * 2))}px`;
-            root.style.width = `${Math.max(320, viewportWidth - (gutter * 2))}px`;
-
-            // Reset, measure the native content offset, then visually align the
-            // Group Umrah root to the viewport gutter without increasing its width.
-            root.style.marginLeft = '0';
-            const rect = root.getBoundingClientRect();
-            root.style.marginLeft = `${gutter - rect.left}px`;
-
-            root.style.overflowX = 'visible';
-        };
-
-        requestAnimationFrame(() => {
-            fitWorkspace();
-            requestAnimationFrame(() => {
-                fitWorkspace();
-                document.documentElement.scrollLeft = 0;
-                document.body.scrollLeft = 0;
-            });
-        });
-
-        window.addEventListener('resize', fitWorkspace, {passive:true});
     }
 
     enableFocusedWorkspace();

@@ -16,7 +16,6 @@
   --et-purple:#7155ad;
   --et-teal:#12857d;
   --et-radius:10px;
-  --et-sidebar-width:224px;
   --et-control-height:39px;
   --et-shadow:0 3px 12px rgba(24,45,73,.045);
 }
@@ -35,26 +34,17 @@ body.et-ui-professional a{color:var(--et-primary);text-underline-offset:2px}
 body.et-ui-professional a:hover{color:var(--et-primary-strong)}
 body.et-ui-professional :focus-visible{outline:3px solid rgba(23,105,210,.2)!important;outline-offset:2px}
 
-/* Shell and content canvas */
-body.et-ui-professional .app-shell{min-height:100vh;background:var(--et-bg)}
+/* Shell colors only; outer geometry belongs to erp-shell-spacing.css. */
+body.et-ui-professional .app-shell{background:var(--et-bg)}
 body.et-ui-professional .content-wrapper,
 body.et-ui-professional .page-wrapper,
-body.et-ui-professional .main-content{min-width:0;background:var(--et-bg)}
-body.et-ui-professional .content-wrapper>main,
-body.et-ui-professional .page-wrapper>main,
-body.et-ui-professional main.content,
-body.et-ui-professional main.container,
-body.et-ui-professional main.container-fluid{width:min(100% - 28px,1560px);margin-inline:auto}
-body.et-ui-professional .container,
-body.et-ui-professional .container-xl,
-body.et-ui-professional .container-fluid{max-width:1560px}
+body.et-ui-professional .main-content{background:var(--et-bg)}
 
 body.et-ui-professional .topbar,
 body.et-ui-professional .top-bar,
 body.et-ui-professional .app-header,
 body.et-ui-professional .main-header,
 body.et-ui-professional .navbar-horizontal{
-  min-height:56px!important;
   border-bottom:1px solid var(--et-border)!important;
   background:rgba(255,255,255,.98)!important;
   box-shadow:none!important;
@@ -66,30 +56,19 @@ body.et-ui-professional .top-bar h2{font-size:15px!important;font-weight:750!imp
 body.et-ui-professional .topbar small,
 body.et-ui-professional .top-bar small{font-size:11px!important;color:var(--et-muted)!important}
 
-/* Compact navy sidebar; focused booking presenters remain authoritative. */
-@media(min-width:900px){
-  body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .sidebar,
-  body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .navbar-vertical,
-  body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .side-nav{
-    width:var(--et-sidebar-width)!important;
-    min-width:var(--et-sidebar-width)!important;
-    background:linear-gradient(180deg,#122238 0%,#172b44 100%)!important;
-    border-right:1px solid #263b55!important;
-    color:#d7e2ef!important;
-    box-shadow:none!important;
-  }
+/* Compact navy sidebar colors; geometry belongs to erp-shell-spacing.css. */
+body.et-ui-professional .sidebar,
+body.et-ui-professional .navbar-vertical,
+body.et-ui-professional .side-nav{
+  background:linear-gradient(180deg,#122238 0%,#172b44 100%)!important;
+  border-right:1px solid #263b55!important;
+  color:#d7e2ef!important;
+  box-shadow:none!important;
 }
-body.et-ui-professional .sidebar .nav,
-body.et-ui-professional .navbar-vertical .nav,
-body.et-ui-professional .side-nav .nav{padding:5px 7px 7px!important;gap:0!important}
 body.et-ui-professional .sidebar a,
 body.et-ui-professional .navbar-vertical a,
 body.et-ui-professional .side-nav a{
   --et-nav-accent:#75aef6;
-  min-height:37px!important;
-  margin:0!important;
-  padding:6px 9px!important;
-  gap:9px!important;
   border:0!important;
   border-left:3px solid transparent!important;
   border-radius:6px!important;
@@ -362,55 +341,23 @@ body.et-ui-professional .bad,body.et-ui-professional .loss{color:var(--et-danger
 
 /* Phase 1 visual match: approved ERP shell and Dashboard. */
 html body.et-ui-professional{overflow-x:hidden}
-html body.et-ui-professional .app-shell{min-width:0!important}
 html body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .sidebar,
 html body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .navbar-vertical,
 html body.et-ui-professional:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .side-nav{
-  width:var(--et-sidebar-width)!important;
-  min-width:var(--et-sidebar-width)!important;
   background:linear-gradient(180deg,#0d2947 0%,#09213a 100%)!important;
 }
 html body.et-ui-professional .sidebar .sidebar-header,
 html body.et-ui-professional .sidebar .brand,
 html body.et-ui-professional .sidebar .logo,
 html body.et-ui-professional .navbar-vertical .navbar-brand{
-  min-height:72px!important;
-  padding:14px 18px!important;
-  margin:0!important;
-  gap:10px!important;
   border-bottom:1px solid rgba(255,255,255,.07)!important;
 }
 html body.et-ui-professional .sidebar .sidebar-header img,
 html body.et-ui-professional .sidebar .brand img,
-html body.et-ui-professional .navbar-vertical .navbar-brand img{width:42px!important;height:42px!important;object-fit:contain!important}
-html body.et-ui-professional .sidebar .nav,
-html body.et-ui-professional .navbar-vertical .nav,
-html body.et-ui-professional .side-nav .nav{
-  padding:8px 9px 10px!important;
-  gap:0!important;
-  scrollbar-gutter:auto!important;
-  scrollbar-width:thin;
-  scrollbar-color:transparent transparent;
-}
-html body.et-ui-professional .sidebar .nav::-webkit-scrollbar,
-html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar{width:4px}
-html body.et-ui-professional .sidebar .nav::-webkit-scrollbar-thumb,
-html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar-thumb{background:transparent;border-radius:8px}
-html body.et-ui-professional .sidebar .nav::-webkit-scrollbar-track,
-html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar-track{background:transparent}
-html body.et-ui-professional .sidebar .nav:hover,
-html body.et-ui-professional .navbar-vertical .nav:hover{scrollbar-color:rgba(150,177,207,.3) transparent}
-html body.et-ui-professional .sidebar .nav:hover::-webkit-scrollbar-thumb,
-html body.et-ui-professional .navbar-vertical .nav:hover::-webkit-scrollbar-thumb{background:rgba(150,177,207,.3)}
+html body.et-ui-professional .navbar-vertical .navbar-brand img{object-fit:contain!important}
 html body.et-ui-professional .sidebar a,
 html body.et-ui-professional .navbar-vertical a,
 html body.et-ui-professional .side-nav a{
-  height:37px!important;
-  min-height:37px!important;
-  max-height:37px!important;
-  margin:0!important;
-  padding:6px 9px!important;
-  gap:9px!important;
   border-radius:6px!important;
   font-size:12px!important;
 }
@@ -419,11 +366,6 @@ html body.et-ui-professional .sidebar .nav-heading,
 html body.et-ui-professional .sidebar .menu-title,
 html body.et-ui-professional .navbar-vertical .nav-section,
 html body.et-ui-professional .navbar-vertical .nav-heading{
-  height:auto!important;
-  min-height:0!important;
-  max-height:none!important;
-  margin:14px 9px 3px!important;
-  padding:0!important;
   font-size:9.5px!important;
   color:#a8bfd9!important;
   letter-spacing:.11em!important;
@@ -486,8 +428,6 @@ html body.et-ui-professional .et-ui-nav-chevron{
 html body.et-ui-professional [data-et-sidebar-children="true"] [aria-expanded="true"]>.et-ui-nav-chevron{transform:rotate(180deg)}
 html body.et-ui-professional .sidebar footer,
 html body.et-ui-professional .sidebar .sidebar-footer{
-  min-height:42px!important;
-  padding:6px 13px!important;
   border-top:1px solid rgba(255,255,255,.07)!important;
   font-size:9px!important;
   line-height:1.35!important;
@@ -510,9 +450,6 @@ html body.et-ui-professional .et-ui-live-badge{
 }
 
 html body.et-ui-professional .et-ui-utility-topbar{
-  min-height:54px!important;
-  height:54px!important;
-  padding-block:0!important;
   background:#fff!important;
   border-bottom:1px solid var(--et-border)!important;
 }
@@ -643,15 +580,11 @@ body.et-ui-professional.et-ui-module-system [data-et-health-section]{
 }
 
 @media(max-width:1024px){
-  :root{--et-sidebar-width:220px}
-  body.et-ui-professional .content-wrapper>main,body.et-ui-professional .page-wrapper>main{width:min(100% - 22px,1560px)}
   body.et-ui-professional table:not(.ui-datepicker-calendar) th,body.et-ui-professional table:not(.ui-datepicker-calendar) td{padding:8px}
   body.et-ui-module-dashboard .et-dashboard-kpi-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))!important}
 }
 @media(max-width:768px){
   .et-page-header,body.et-ui-professional .sci-head,body.et-ui-professional .scs-head,body.et-ui-professional .scb-head,body.et-ui-professional .cvs27-head,body.et-ui-professional .cvf27-head,body.et-ui-professional .aa-head,body.et-ui-professional .mr-head,body.et-ui-professional .br-top{flex-direction:column;align-items:stretch}
-  body.et-ui-professional .sidebar,body.et-ui-professional .navbar-vertical,body.et-ui-professional .side-nav{max-width:min(86vw,280px)}
-  body.et-ui-professional .content-wrapper>main,body.et-ui-professional .page-wrapper>main{width:min(100% - 18px,1560px)}
   body.et-ui-professional .table-responsive,body.et-ui-professional .mr-table-wrap,body.et-ui-professional .et-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   body.et-ui-professional .table-responsive table,body.et-ui-professional .mr-table-wrap table,body.et-ui-professional .et-table-wrap table{min-width:680px}
   body.et-ui-module-dashboard .et-dashboard-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}

@@ -7,6 +7,7 @@ const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 
 
 const middleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
 const css = read('public/erp-ui/erp-professional.css');
+const shellCss = read('public/erp-ui/erp-shell-spacing.css');
 const js = read('public/erp-ui/erp-professional.js');
 const supplierShow = read('resources/views/purchase/supplier-costing/show.blade.php');
 const supplierIndex = read('resources/views/purchase/supplier-costing/index.blade.php');
@@ -34,10 +35,10 @@ for (const module of ['dashboard','administration','organization','travel','mast
   ok(middleware.includes(`'${module}'`), `module mapping includes ${module}`);
 }
 
-for (const token of ['--et-primary','--et-bg','--et-surface','--et-border','--et-text','--et-muted','--et-success','--et-warning','--et-danger','--et-radius','--et-sidebar-width']) {
+for (const token of ['--et-primary','--et-bg','--et-surface','--et-border','--et-text','--et-muted','--et-success','--et-warning','--et-danger','--et-radius']) {
   ok(css.includes(token + ':'), `design token ${token} exists`);
 }
-ok(css.includes('--et-sidebar-width:224px'), 'desktop sidebar matches the approved compact width');
+ok(shellCss.includes('--et-shell-sidebar-width:224px'), 'final shell authority owns the approved compact sidebar width');
 ok(css.includes('min-height:36px!important'), 'navigation and buttons use compact operational sizing');
 ok(css.includes('.et-ui-current'), 'active navigation styling exists');
 ok(css.includes('[aria-current="page"]'), 'native active navigation state is preserved');

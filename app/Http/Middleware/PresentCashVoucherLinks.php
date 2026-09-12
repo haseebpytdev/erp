@@ -109,28 +109,6 @@ final class PresentCashVoucherLinks
             }
         }
 
-        // Never force sidebar display mode. Focused booking pages intentionally
-        // hide it with display:none and reopen it as a drawer through Menu.
-        $style = <<<'HTML'
-<style data-et-sidebar-shell="ERP-11.3.30">
-@media (min-width:900px){
-  body:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .app-shell{min-height:100vh!important;align-items:flex-start!important}
-  body:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .sidebar{position:sticky!important;top:0!important;height:100vh!important;max-height:100vh!important;align-self:flex-start!important;overflow:hidden!important}
-  body:not(.gp-focus-mode):not(.et-air-focus-mode-103172) .sidebar .nav{min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain;scrollbar-gutter:stable}
-  [data-gp-focus-sidebar]:not(.gp-focus-sidebar-open){display:none!important}
-  [data-et-air-focus-sidebar]:not(.et-air-focus-sidebar-open-103172){display:none!important}
-  [data-gp-focus-sidebar].gp-focus-sidebar-open{display:block!important;position:fixed!important}
-  [data-et-air-focus-sidebar].et-air-focus-sidebar-open-103172{display:block!important;position:fixed!important}
-}
-</style>
-HTML;
-
-        if (! str_contains($html, 'data-et-sidebar-shell="ERP-11.3.30"')) {
-            $html = str_contains($html, '</head>')
-                ? str_replace('</head>', $style.'</head>', $html)
-                : $style.$html;
-        }
-
         $response->setContent($html);
         return $response;
     }

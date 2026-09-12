@@ -45,6 +45,11 @@ body.et-ui-professional .main-content{
   background:var(--et-bg)!important;
 }
 
+body.et-ui-professional .app-shell{
+  min-width:0!important;
+  min-height:100vh!important;
+}
+
 
 body.et-ui-professional .content-wrapper>main,
 body.et-ui-professional .page-wrapper>main,
@@ -98,6 +103,14 @@ body.et-ui-professional main>.et-ui-utility-topbar{
   padding-right:var(--et-shell-gutter-x)!important;
 
   border-radius:0!important;
+}
+
+/* The utility header contract is independent of minor native nesting changes. */
+html body.et-ui-professional .et-ui-utility-topbar{
+  min-height:var(--et-shell-topbar-height)!important;
+  height:var(--et-shell-topbar-height)!important;
+  padding-top:0!important;
+  padding-bottom:0!important;
 }
 
 
@@ -193,6 +206,11 @@ body.et-ui-professional .et-shell-content-frame{
    ========================================================================== */
 
 @media(min-width:900px){
+  body.et-ui-professional .app-shell{
+    min-height:100vh!important;
+    align-items:flex-start!important;
+  }
+
   body.et-ui-professional .sidebar,
   body.et-ui-professional .navbar-vertical,
   body.et-ui-professional .side-nav{
@@ -200,12 +218,24 @@ body.et-ui-professional .et-shell-content-frame{
     min-width:var(--et-shell-sidebar-width)!important;
     max-width:var(--et-shell-sidebar-width)!important;
   }
+
+  body.et-ui-professional .sidebar,
+  body.et-ui-professional .navbar-vertical,
+  body.et-ui-professional .side-nav{
+    position:sticky!important;
+    top:0!important;
+    height:100vh!important;
+    max-height:100vh!important;
+    align-self:flex-start!important;
+    overflow:hidden!important;
+  }
 }
 
 
 /* Brand row — exact height, rather than competing min-height rules. */
 html body.et-ui-professional .sidebar .sidebar-header,
 html body.et-ui-professional .sidebar .brand,
+html body.et-ui-professional .sidebar>.logo,
 html body.et-ui-professional .navbar-vertical .navbar-brand{
   height:var(--et-sidebar-brand-height)!important;
   min-height:var(--et-sidebar-brand-height)!important;
@@ -227,6 +257,7 @@ html body.et-ui-professional .navbar-vertical .navbar-brand{
  */
 html body.et-ui-professional .sidebar .sidebar-header>a,
 html body.et-ui-professional .sidebar .brand>a,
+html body.et-ui-professional .sidebar>.logo>a,
 html body.et-ui-professional .sidebar a.brand,
 html body.et-ui-professional .navbar-vertical a.navbar-brand{
   min-height:0!important;
@@ -247,6 +278,7 @@ html body.et-ui-professional .navbar-vertical a.navbar-brand{
 /* Brand/logo footprint. */
 html body.et-ui-professional .sidebar .sidebar-header img,
 html body.et-ui-professional .sidebar .brand img,
+html body.et-ui-professional .sidebar>.logo img,
 html body.et-ui-professional .navbar-vertical .navbar-brand img{
   width:var(--et-sidebar-logo-size)!important;
   min-width:var(--et-sidebar-logo-size)!important;
@@ -296,6 +328,39 @@ html body.et-ui-professional .side-nav .nav{
     12px!important;
 
   gap:0!important;
+
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:auto;
+  scrollbar-width:thin;
+  scrollbar-color:transparent transparent;
+}
+
+html body.et-ui-professional .sidebar .nav::-webkit-scrollbar,
+html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar,
+html body.et-ui-professional .side-nav .nav::-webkit-scrollbar{
+  width:4px;
+}
+
+html body.et-ui-professional .sidebar .nav::-webkit-scrollbar-thumb,
+html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar-thumb,
+html body.et-ui-professional .side-nav .nav::-webkit-scrollbar-thumb{
+  background:transparent;
+  border-radius:8px;
+}
+
+html body.et-ui-professional .sidebar .nav:hover,
+html body.et-ui-professional .navbar-vertical .nav:hover,
+html body.et-ui-professional .side-nav .nav:hover{
+  scrollbar-color:rgba(150,177,207,.3) transparent;
+}
+
+html body.et-ui-professional .sidebar .nav:hover::-webkit-scrollbar-thumb,
+html body.et-ui-professional .navbar-vertical .nav:hover::-webkit-scrollbar-thumb,
+html body.et-ui-professional .side-nav .nav:hover::-webkit-scrollbar-thumb{
+  background:rgba(150,177,207,.3);
 }
 
 
@@ -303,7 +368,9 @@ html body.et-ui-professional .side-nav .nav{
 html body.et-ui-professional .sidebar .nav a,
 html body.et-ui-professional .navbar-vertical .nav a,
 html body.et-ui-professional .side-nav .nav a{
+  height:var(--et-sidebar-row-height)!important;
   min-height:var(--et-sidebar-row-height)!important;
+  max-height:var(--et-sidebar-row-height)!important;
 
   margin:0!important;
 
@@ -450,6 +517,130 @@ body.et-ui-professional
 
 
 /* ==========================================================================
+   BOOKING / FOCUS OUTER SHELL
+   Presenters add semantic state only. This file owns their geometry.
+   ========================================================================== */
+
+html.et-booking-focus-prepaint,
+html.et-booking-focus-prepaint body{
+  overflow-x:hidden!important;
+  max-width:100%!important;
+}
+
+html.et-booking-focus-prepaint .app-shell{
+  grid-template-columns:minmax(0,1fr)!important;
+  width:100%!important;
+  max-width:100%!important;
+}
+
+html.et-booking-focus-prepaint .app-shell>.sidebar:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
+html.et-booking-focus-prepaint body>.sidebar:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
+html.et-booking-focus-prepaint .sidebar:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
+html.et-booking-focus-prepaint .navbar-vertical:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
+html.et-booking-focus-prepaint .side-nav:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
+[data-gp-focus-sidebar]:not(.gp-focus-sidebar-open),
+[data-et-air-focus-sidebar]:not(.et-air-focus-sidebar-open-103172),
+[data-et-booking-focus-sidebar]:not(.et-booking-focus-sidebar-open){
+  display:none!important;
+}
+
+html.et-booking-focus-prepaint .app-shell>main,
+html.et-booking-focus-prepaint .app-shell>.main,
+html.et-booking-focus-prepaint .app-shell>.content,
+html.et-booking-focus-prepaint .app-shell>.main-content,
+html.et-booking-focus-prepaint .app-shell>.page-wrapper{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  padding-bottom:0!important;
+}
+
+html.et-booking-focus-prepaint section.content{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  padding:
+    0
+    var(--et-shell-gutter-x)
+    var(--et-shell-bottom)!important;
+  box-sizing:border-box!important;
+}
+
+html.et-booking-focus-prepaint .page-wrapper>.page-header>[class*="container"],
+html.et-booking-focus-prepaint .page-wrapper>.page-body>[class*="container"],
+html.et-booking-focus-prepaint .page-header>[class*="container"],
+html.et-booking-focus-prepaint .page-body>[class*="container"],
+html.et-booking-focus-prepaint main>[class*="container"],
+html.et-booking-focus-prepaint .main-content>[class*="container"],
+html.et-booking-focus-prepaint .page-content>[class*="container"],
+html.et-booking-focus-prepaint [data-booking-workspace],
+html.et-booking-focus-prepaint #gp-booking,
+html.et-booking-focus-prepaint .et-air-workspace-103172{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  box-sizing:border-box!important;
+}
+
+html.et-booking-focus-prepaint [data-et-server-booking-lock]{
+  width:100%!important;
+  max-width:none!important;
+  margin:8px 0!important;
+}
+
+html body.et-ui-professional [data-gp-focus-sidebar].gp-focus-sidebar-open,
+html body.et-ui-professional [data-et-air-focus-sidebar].et-air-focus-sidebar-open-103172,
+html body.et-ui-professional [data-et-booking-focus-sidebar].et-booking-focus-sidebar-open{
+  display:block!important;
+  position:fixed!important;
+  left:0!important;
+  top:0!important;
+  bottom:0!important;
+  width:var(--et-shell-sidebar-width)!important;
+  min-width:var(--et-shell-sidebar-width)!important;
+  max-width:var(--et-shell-sidebar-width)!important;
+  z-index:10020!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  box-shadow:0 12px 40px rgba(0,0,0,.24)!important;
+  transform:none!important;
+}
+
+.gp-focus-overlay,
+.et-booking-focus-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:10010;
+  background:rgba(9,21,38,.38);
+}
+
+.gp-focus-overlay.open,
+.et-booking-focus-overlay.open{
+  display:block;
+}
+
+[data-gp-focus-native-header]{
+  display:none!important;
+}
+
+.et-booking-focus-fallback-standalone{
+  width:100%!important;
+  margin:12px 0 0!important;
+}
+
+
+/* ==========================================================================
    RESPONSIVE SHELL
    ========================================================================== */
 
@@ -460,6 +651,27 @@ body.et-ui-professional
     --et-shell-bottom:22px;
 
     --et-sidebar-brand-height:60px;
+  }
+
+  body.et-ui-professional .sidebar,
+  body.et-ui-professional .navbar-vertical,
+  body.et-ui-professional .side-nav{
+    width:min(86vw,var(--et-shell-sidebar-width))!important;
+    min-width:0!important;
+    max-width:min(86vw,var(--et-shell-sidebar-width))!important;
+  }
+
+  html body.et-ui-professional [data-gp-focus-sidebar].gp-focus-sidebar-open,
+  html body.et-ui-professional [data-et-air-focus-sidebar].et-air-focus-sidebar-open-103172,
+  html body.et-ui-professional [data-et-booking-focus-sidebar].et-booking-focus-sidebar-open{
+    width:min(86vw,var(--et-shell-sidebar-width))!important;
+    min-width:0!important;
+    max-width:min(86vw,var(--et-shell-sidebar-width))!important;
+  }
+
+  .et-booking-focus-fallback-standalone{
+    width:100%!important;
+    margin:8px 0 0!important;
   }
 }
 

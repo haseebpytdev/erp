@@ -163,145 +163,7 @@ final class BookingWorkspaceShellPresenter
  * Existing Air / Group Umrah Menu buttons remain authoritative; generic booking
  * workspaces receive the fallback Menu drawer from the app-routed script.
  */
-html.et-booking-focus-prepaint,
-html.et-booking-focus-prepaint body{
-    overflow-x:hidden!important;
-    max-width:100%!important;
-}
-html.et-booking-focus-prepaint .app-shell{
-    grid-template-columns:minmax(0,1fr)!important;
-    width:100%!important;
-    max-width:100%!important;
-}
-
-/*
- * ERP-11.3.49 — focused booking visual contract.
- *
- * Every page that intentionally hides the permanent ERP sidebar uses the same
- * outer canvas. Native booking pages previously kept their old narrow
- * container-xl max-width while Group Package / Group Umrah expanded almost
- * edge-to-edge, so Step cards and headers visibly changed size between routes.
- */
-html.et-booking-focus-prepaint{
-    --et-booking-canvas-max:1280px;
-    --et-booking-canvas-gutter:24px;
-    --et-booking-section-gap:16px;
-}
-html.et-booking-focus-prepaint .page-wrapper > .page-header > .container,
-html.et-booking-focus-prepaint .page-wrapper > .page-header > .container-xl,
-html.et-booking-focus-prepaint .page-wrapper > .page-body > .container,
-html.et-booking-focus-prepaint .page-wrapper > .page-body > .container-xl,
-html.et-booking-focus-prepaint main > .container,
-html.et-booking-focus-prepaint main > .container-xl,
-html.et-booking-focus-prepaint .main-content > .container,
-html.et-booking-focus-prepaint .main-content > .container-xl,
-html.et-booking-focus-prepaint .page-content > .container,
-html.et-booking-focus-prepaint .page-content > .container-xl,
-html.et-booking-focus-prepaint [data-booking-workspace],
-html.et-booking-focus-prepaint #gp-booking{
-    width:calc(100% - (var(--et-booking-canvas-gutter) * 2))!important;
-    max-width:var(--et-booking-canvas-max)!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-    box-sizing:border-box!important;
-}
-/*
- * ERP-11.3.50 — standard/native Booking Workspace width alignment.
- *
- * The live BK-2026-000043 comparison proved its native shell uses a different
- * outer container shape than Air Booking, so the generic .container-xl rule
- * did not catch the real canvas. Scope a stronger first-paint rule ONLY to the
- * non-Air/non-unified native Booking Workspace. Its direct header/body canvas
- * now uses the same 1280px contract as the already-correct Air workspace.
- */
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .page-wrapper > .page-header > [class*="container"],
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .page-wrapper > .page-body > [class*="container"],
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .page-header > [class*="container"],
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .page-body > [class*="container"],
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    main > [class*="container"],
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .main-content > [class*="container"],
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .page-content > [class*="container"]{
-    width:calc(100% - (var(--et-booking-canvas-gutter) * 2))!important;
-    max-width:var(--et-booking-canvas-max)!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-    box-sizing:border-box!important;
-}
-
-/*
- * Fallback for the native layout variant where the page body itself contains
- * the booking sections directly instead of a Bootstrap/Tabler container.
- */
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .page-wrapper > .page-body > :not(script):not(style),
-html.et-booking-focus-prepaint.et-booking-native-standard-canvas
-    .page-body > :not(script):not(style){
-    max-width:var(--et-booking-canvas-max)!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-    box-sizing:border-box!important;
-}
-
-html.et-booking-focus-prepaint .page-wrapper > .page-header,
-html.et-booking-focus-prepaint .page-header{
-    min-height:68px;
-}
-html.et-booking-focus-prepaint .page-wrapper > .page-header > .container,
-html.et-booking-focus-prepaint .page-wrapper > .page-header > .container-xl{
-    min-height:68px;
-    display:flex;
-    align-items:center;
-}
-html.et-booking-focus-prepaint .page-body,
-html.et-booking-focus-prepaint main,
-html.et-booking-focus-prepaint .main-content,
-html.et-booking-focus-prepaint .page-content{
-    min-width:0!important;
-}
-html.et-booking-focus-prepaint .app-shell > .sidebar:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
-html.et-booking-focus-prepaint body > .sidebar:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
-html.et-booking-focus-prepaint .sidebar:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
-html.et-booking-focus-prepaint .navbar-vertical:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open),
-html.et-booking-focus-prepaint .side-nav:not(.gp-focus-sidebar-open):not(.et-air-focus-sidebar-open-103172):not(.et-booking-focus-sidebar-open){
-    display:none!important;
-}
-html.et-booking-focus-prepaint .app-shell > main,
-html.et-booking-focus-prepaint .app-shell > .main,
-html.et-booking-focus-prepaint .app-shell > .content,
-html.et-booking-focus-prepaint .app-shell > .main-content,
-html.et-booking-focus-prepaint .app-shell > .page-wrapper{
-    margin-left:0!important;
-    width:100%!important;
-    max-width:none!important;
-    min-width:0!important;
-}
-html.et-booking-focus-prepaint [data-et-booking-focus-sidebar].et-booking-focus-sidebar-open{
-    display:block!important;
-    position:fixed!important;
-    left:0!important;
-    top:0!important;
-    bottom:0!important;
-    z-index:10020!important;
-    overflow-y:auto!important;
-    overflow-x:hidden!important;
-    box-shadow:0 12px 40px rgba(0,0,0,.24)!important;
-    transform:none!important;
-}
-.et-booking-focus-overlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    z-index:10010;
-    background:rgba(9,21,38,.38);
-}
-.et-booking-focus-overlay.open{display:block}
+/* Outer booking shell geometry is owned by erp-shell-spacing.css. */
 .et-booking-focus-fallback{
     display:inline-flex;
     align-items:center;
@@ -331,8 +193,6 @@ html.et-booking-focus-prepaint [data-et-booking-focus-sidebar].et-booking-focus-
 }
 .et-booking-focus-fallback-standalone{
     display:flex;
-    width:min(100% - 32px,1220px);
-    margin:12px auto 0;
     justify-content:flex-start;
 }
 .et-booking-focus-btn{
@@ -374,33 +234,10 @@ html.et-booking-focus-prepaint .et-booking-focus-fallback > a,
 html.et-booking-focus-prepaint .et-booking-focus-fallback > button{
     min-height:34px!important;
 }
-html.et-booking-focus-prepaint #gp-booking{
-    padding-left:0!important;
-    padding-right:0!important;
-}
 html.et-booking-focus-prepaint #gp-booking .gp-top{
     min-height:52px;
     align-items:center;
 }
-/*
- * ERP-11.3.51 — Air Booking uses the SAME native content box as the other
- * booking products. The Air workspace is already a child of section.content;
- * therefore it must fill that parent instead of creating another inset canvas.
- *
- * This rule also overrides stale inline width/max-width/negative-margin values
- * written by the pre-11.3.51 Air focus script.
- */
-html.et-booking-focus-prepaint .et-air-workspace-103172{
-    width:100%!important;
-    max-width:none!important;
-    min-width:0!important;
-    margin-left:0!important;
-    margin-right:0!important;
-    padding-left:0!important;
-    padding-right:0!important;
-    box-sizing:border-box!important;
-}
-
 /*
  * ERP-11.3.55 — nested Group Package uses standard Booking Workspace hero.
  */
@@ -547,9 +384,6 @@ html.et-booking-focus-prepaint [data-et-other-services-panel="ERP-11.3.54"]
 }
 
 @media(max-width:760px){
-    html.et-booking-focus-prepaint{
-        --et-booking-canvas-gutter:10px;
-    }
     .et-booking-focus-page-actions{
         justify-content:flex-start;
         gap:7px;
@@ -557,33 +391,15 @@ html.et-booking-focus-prepaint [data-et-other-services-panel="ERP-11.3.54"]
     .et-booking-focus-fallback{
         flex-wrap:wrap;
     }
-    .et-booking-focus-fallback-standalone{
-        width:calc(100% - 20px);
-        margin:8px 10px 0;
-    }
 }
 
 /* ================================================================
  * ERP-11.3.75 — FULL BOOKING PRODUCT UI CONTRACT
  * ================================================================ */
 html.et-booking-focus-prepaint.et-booking-unified-canvas-11375{
-    --et-booking-canvas-max:1280px;
-    --et-booking-canvas-gutter:24px;
     --et-booking-card-radius:12px;
     --et-booking-card-padding:18px;
     --et-booking-border:#dbe4ef;
-}
-html.et-booking-focus-prepaint.et-booking-unified-canvas-11375 section.content,
-html.et-booking-focus-prepaint.et-booking-unified-canvas-11375 main.main > section.content,
-html.et-booking-focus-prepaint.et-booking-unified-canvas-11375 .main > section.content{
-    width:calc(100% - (var(--et-booking-canvas-gutter) * 2))!important;
-    max-width:var(--et-booking-canvas-max)!important;
-    min-width:0!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-    padding-left:0!important;
-    padding-right:0!important;
-    box-sizing:border-box!important;
 }
 html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
     section.content > :not(style):not(script){
@@ -707,61 +523,10 @@ html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
     background:#fff2f2;
     color:#a61b1b;
 }
-@media(max-width:760px){
-    html.et-booking-focus-prepaint.et-booking-unified-canvas-11375{
-        --et-booking-canvas-gutter:10px;
-    }
-}
-
-
 /*
- * ERP-11.3.90 — GENERAL Step-1 no-layout-shift prepaint contract.
- *
- * ERP-11.3.87 final Step-1 canvas used 16px side gutters (32px total), while
- * the shared focused-booking prepaint still started with 24px gutters
- * (48px total). When the Step-1 renderer removed the shared canvas class the
- * page visibly widened by 16px. These rules make the FIRST paint geometry
- * identical to the final Step-1 geometry.
- *
- * This is deliberately inline/server-rendered so it does not wait for the
- * external Step-1 stylesheet to download.
+ * ERP-11.3.90 GENERAL Step-1 semantic prepaint state.
+ * Outer geometry is supplied by erp-shell-spacing.css.
  */
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390{
-    --et-booking-canvas-max:1280px;
-    --et-booking-canvas-gutter:16px;
-}
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    section.content,
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    main.main > section.content,
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    .main > section.content{
-    width:calc(100% - 32px)!important;
-    max-width:1280px!important;
-    min-width:0!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-    padding:10px 0 24px!important;
-    box-sizing:border-box!important;
-    transition:none!important;
-}
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    .page-wrapper > .page-header,
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    .page-header{
-    min-height:50px!important;
-    transition:none!important;
-}
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    .page-wrapper > .page-header > .container,
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    .page-wrapper > .page-header > .container-xl,
-html.et-booking-focus-prepaint.et-general-progressive-step1-11390
-    .page-header > [class*="container"]{
-    min-height:50px!important;
-    transition:none!important;
-}
-
 /*
  * ERP-11.3.90 — prevent native GENERAL workspace flash.
  *
@@ -846,7 +611,7 @@ HTML;
             if($lock['locked']&&!str_contains($html,'data-et-server-booking-lock="1"')){
                 $message=e($lock['reason']);
                 $locked=<<<HTML
-<div data-et-server-booking-lock="1" style="width:min(100% - 48px,1280px);margin:8px auto;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font:700 11px Arial,sans-serif">{$message}</div>
+<div data-et-server-booking-lock="1" style="padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font:700 11px Arial,sans-serif">{$message}</div>
 <script>(function(){function lock(){var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('.page-body');if(!root)return;root.querySelectorAll('input,select,textarea').forEach(function(e){e.disabled=true;e.setAttribute('aria-disabled','true')});root.querySelectorAll('button,[role="button"]').forEach(function(e){if(/\b(add|remove|delete|edit|apply|save|bulk|update|create|toggle)\b/i.test(e.textContent||e.value||'')){e.hidden=true;e.disabled=true}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock);else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true})})();</script>
 HTML;
                 $html=preg_replace('/<\/body>/i',$locked."\n</body>",$html,1)??$html;
