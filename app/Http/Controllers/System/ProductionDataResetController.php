@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\System;
 
 use App\Http\Controllers\Controller;
+use App\Services\System\DayOneSequenceResetService;
 use App\Services\System\DayZeroDataResetService;
 use App\Services\System\DayZeroExecutionService;
 use App\Services\System\ProductionDataResetAuthority;
@@ -18,9 +19,19 @@ class ProductionDataResetController extends Controller
     public function index(
         Request $request,
         ProductionDataResetAuthority $authority,
-        DayZeroDataResetService $service
+        DayZeroDataResetService $service,
+        DayOneSequenceResetService $sequences
     ): View {
         $authority->authorize($request->user());
+
+        if ($service->completedRecord()) {
+            return view(
+                'system.day-one-sequence-reset-v113247',
+                [
+                    'plan' => $sequences->plan(),
+                ]
+            );
+        }
 
         $plan = $service->plan();
         $backupReady = $this->backupReady($request, $service);
@@ -91,9 +102,49 @@ class ProductionDataResetController extends Controller
         Request $request,
         ProductionDataResetAuthority $authority,
         DayZeroDataResetService $planner,
-        DayZeroExecutionService $executor
+        DayZeroExecutionService $executor,
+        DayOneSequenceResetService $sequences
     ): RedirectResponse {
         $authority->authorize($request->user());
+
+        if ($planner->completedRecord()) {
+            $request->validate(
+                [
+                    'confirmation' => [
+                        'required',
+                        'string',
+                        'in:'.DayOneSequenceResetService::CONFIRMATION,
+                    ],
+                    'acknowledge' => ['accepted'],
+                ],
+                [
+                    'confirmation.in' =>
+                        'Type exactly: '.DayOneSequenceResetService::CONFIRMATION,
+                    'acknowledge.accepted' =>
+                        'You must confirm that no new production business data has been entered since Day-Zero.',
+                ]
+            );
+
+            try {
+                $result = $sequences->execute($request->user());
+            } catch (Throwable $e) {
+                return redirect()
+                    ->route('system.production-data-reset.index')
+                    ->withInput($request->only('confirmation'))
+                    ->with('reset_error', $e->getMessage());
+            }
+
+            return redirect()
+                ->route('system.production-data-reset.index')
+                ->with(
+                    'reset_success',
+                    sprintf(
+                        'Day-One numbering finalized. %d empty table identities reset; %d counter rows normalized. New document numbering can start from 1.',
+                        (int) ($result['identity_targets_reset'] ?? 0),
+                        (int) ($result['counter_rows_updated'] ?? 0)
+                    )
+                );
+        }
 
         $request->validate(
             [
