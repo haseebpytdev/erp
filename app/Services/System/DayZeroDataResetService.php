@@ -7,13 +7,13 @@ use RuntimeException;
 use Throwable;
 
 /**
- * ERP-11.3.242
+ * ERP-11.3.243 functional checkpoint
  *
  * Day-Zero / Fresh Production reset planner.
  *
- * IMPORTANT: ERP-11.3.242 ships as PREVIEW + BACKUP ONLY. Destructive
- * execution is intentionally locked until the live production schema plan has
- * been reviewed table-by-table and every REVIEW row has been resolved.
+ * IMPORTANT: this checkpoint resolves the production table classifications
+ * approved after the ERP-11.3.242 live preview. Destructive execution remains
+ * intentionally locked. No row mutation is authorized in this build.
  */
 class DayZeroDataResetService
 {
@@ -35,6 +35,9 @@ class DayZeroDataResetService
         'model_has_roles',
         'model_has_permissions',
         'role_has_permissions',
+        'role_permission',
+        'role_user',
+        'branch_user',
 
         // Company/accounting foundation required for a usable fresh ERP.
         'companies',
@@ -45,19 +48,28 @@ class DayZeroDataResetService
         'branch',
         'offices',
         'office',
+        'departments',
+        'staff',
         'currencies',
         'currency',
         'financial_years',
         'financial_year',
+        'fiscal_years',
+        'accounting_periods',
         'chart_of_accounts',
         'chart_accounts',
         'accounts',
         'account_mappings',
         'account_mapping',
         'accounting_mappings',
+        'service_cost_allocations',
+
+        // Workflow/security policy foundation retained for existing users.
+        'approval_policies',
+        'user_approval_limits',
 
         // Required system/reference lookup data. Business-entered masters are
-        // deliberately NOT included here and therefore fall to REVIEW.
+        // deliberately handled explicitly in clearExact below.
         'settings',
         'system_settings',
         'app_settings',
@@ -94,6 +106,7 @@ class DayZeroDataResetService
         'number_sequence',
         'number_counters',
         'number_counter',
+        'number_sequence_counters',
         'reference_sequences',
         'reference_sequence',
         'reference_counters',
@@ -112,23 +125,45 @@ class DayZeroDataResetService
         'job_batches',
         'cache',
         'cache_locks',
+        'audit_logs',
+        'login_events',
 
         // Operational identities should start from Day 1.
         'customers',
         'customer_masters',
         'customer_master',
+        'customer_profiles',
         'suppliers',
         'supplier_masters',
         'supplier_master',
         'vendors',
         'vendor_masters',
         'vendor_master',
+        'vendor_profiles',
         'agents',
         'agent_masters',
         'agent_master',
+        'agent_profiles',
         'passengers',
         'passenger_masters',
         'passenger_master',
+        'passenger_profiles',
+        'employee_party_profiles',
+        'parties',
+        'party_roles',
+
+        // Business-entered Day-1 masters/commercials are intentionally rebuilt.
+        'exchange_rates',
+        'group_travel_packages',
+        'group_travel_package_passenger_prices',
+        'hotels',
+        'products_services',
+        'transport_rate_cards',
+        'transport_rates',
+        'transport_routes',
+        'transport_vehicle_types',
+        'visa_rate_cards',
+        'visa_service_operators',
     ];
 
     public function plan(): array
@@ -219,7 +254,7 @@ class DayZeroDataResetService
             $this->gzWrite(
                 $handle,
                 '"meta":'.json_encode([
-                    'release' => 'ERP-11.3.242-PREVIEW',
+                    'release' => 'ERP-11.3.243-CLASSIFICATION-PREVIEW',
                     'created_at' => now()->toIso8601String(),
                     'actor_id' => $this->userId($user),
                     'actor_name' => $this->userName($user),
@@ -301,8 +336,8 @@ class DayZeroDataResetService
 
         if (! self::EXECUTION_ENABLED) {
             throw new RuntimeException(
-                'Day-Zero execution is intentionally LOCKED in ERP-11.3.242 preview. '
-                .'Review the live table plan first; no database rows were changed.'
+                'Day-Zero execution is intentionally LOCKED in ERP-11.3.243 classification preview. '
+                .'The approved table plan may be inspected, but no database rows were changed.'
             );
         }
 
@@ -339,21 +374,21 @@ class DayZeroDataResetService
         if (in_array($name, $this->preserveExact, true)) {
             return [
                 'action' => 'preserve',
-                'reason' => 'Required authentication, organization, accounting foundation or seeded system reference data.',
+                'reason' => 'Approved Day-Zero foundation: authentication, authorization, organization, accounting or seeded reference data.',
             ];
         }
 
         if (in_array($name, $this->counterTables, true)) {
             return [
                 'action' => 'reset_counter',
-                'reason' => 'Document/reference numbering should restart from the production Day-Zero baseline.',
+                'reason' => 'Approved Day-Zero document/reference numbering reset.',
             ];
         }
 
         if (in_array($name, $this->clearExact, true)) {
             return [
                 'action' => 'clear',
-                'reason' => 'Runtime/UAT residue or operational identity data should start empty.',
+                'reason' => 'Approved Day-Zero business/UAT/runtime data should start empty.',
             ];
         }
 
@@ -364,8 +399,8 @@ class DayZeroDataResetService
             ];
         }
 
-        // Anything not positively known is intentionally REVIEW, not preserve
-        // and not clear. This is the core fail-closed guarantee for production.
+        // Anything not positively known remains REVIEW. This preserves the
+        // fail-closed guarantee if a future schema adds a new table.
         return [
             'action' => 'review',
             'reason' => 'Unclassified table. Must be reviewed explicitly before Day-Zero execution can ever be enabled.',
