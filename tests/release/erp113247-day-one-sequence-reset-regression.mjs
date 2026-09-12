@@ -38,6 +38,8 @@ assert('DAY_ONE_BLOCKS_NEW_PRODUCTION_ROWS', service.includes('CLEAR table now c
 
 assert('FIRST_NUMBER_IS_1000', service.includes('public const FIRST_NUMBER = 1000;'));
 assert('LAST_USED_BASELINE_IS_999', service.includes('public const LAST_USED_BASELINE = 999;'));
+assert('DISPLAY_PADDING_IS_4', service.includes('public const DISPLAY_PADDING = 4;'));
+assert('RUNTIME_TELEMETRY_EXCLUDED_BEFORE_BUSINESS_GATE', service.indexOf('in_array($table, self::RUNTIME_TELEMETRY_TABLES, true)') < service.indexOf('$businessClearTables[] = $table;'));
 assert('MYSQL_NEXT_ID_1000', service.includes("AUTO_INCREMENT = '.self::FIRST_NUMBER"));
 assert('POSTGRES_NEXT_ID_1000', service.includes("setval(?::regclass, '.self::FIRST_NUMBER"));
 assert('SQLSERVER_BASELINE_999', service.includes("RESEED, '.self::LAST_USED_BASELINE"));
@@ -79,6 +81,8 @@ assert('VIEW_EXPECTS_PAYMENT_1000', view.includes('PV-{{ $year }}-1000'));
 assert('VIEW_EXPECTS_SUPPLIER_COSTING_1000', view.includes('SC-{{ $year }}-1000'));
 assert('VIEW_HAS_NO_000001', !view.includes('000001'));
 assert('VIEW_HAS_NO_001000', !view.includes('001000'));
+assert('VIEW_DAY_ONE_HEADING_STARTS_1000', view.includes('Restart Production Document Numbers From 1000'));
+assert('CONTROLLER_SUCCESS_STARTS_1000', controller.includes('New document numbering can start from 1000.'));
 
 assert('EXACT_DAY_ONE_CONFIRMATION_PRESERVED', service.includes("public const CONFIRMATION = 'RESET DAY ONE SEQUENCES';"));
 assert('DAY_ONE_CONTROLLER_PATH_PRESERVED', controller.includes('DayOneSequenceResetService'));

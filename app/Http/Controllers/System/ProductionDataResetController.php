@@ -139,7 +139,7 @@ class ProductionDataResetController extends Controller
                 ->with(
                     'reset_success',
                     sprintf(
-                        'Day-One numbering finalized. %d empty table identities reset; %d counter rows normalized. New document numbering can start from 1.',
+                        'Day-One numbering finalized. %d empty table identities reset; %d counter rows normalized. New document numbering can start from 1000.',
                         (int) ($result['identity_targets_reset'] ?? 0),
                         (int) ($result['counter_rows_updated'] ?? 0)
                     )

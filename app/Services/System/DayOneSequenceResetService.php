@@ -12,7 +12,9 @@ use Throwable;
  *
  * One-time post-Day-Zero numbering finalization. This service never deletes
  * business rows. It is allowed to run only after the Day-Zero completion
- * marker exists and only while every Day-Zero CLEAR table is still empty.
+ * marker exists and only while every genuine business Day-Zero CLEAR table
+ * is still empty. Runtime/security telemetry may repopulate after Day-Zero
+ * and is explicitly excluded from the business-data and identity-reset gates.
  *
  * It normalizes two numbering authorities:
  *  - native document/reference counter rows already classified by the
@@ -25,6 +27,13 @@ final class DayOneSequenceResetService
     public const CONFIRMATION = 'RESET DAY ONE SEQUENCES';
     public const FIRST_NUMBER = 1000;
     public const LAST_USED_BASELINE = 999;
+    public const DISPLAY_PADDING = 4;
+
+    /** @var array<int,string> */
+    public const RUNTIME_TELEMETRY_TABLES = [
+        'audit_logs',
+        'login_events',
+    ];
 
     public function __construct(
         private readonly DayZeroDataResetService $planner
@@ -49,8 +58,18 @@ final class DayOneSequenceResetService
         }
 
         $dayZeroPlan = $this->planner->plan();
-        $emptyClearTables = 0;
-        $clearTables = [];
+        $emptyBusinessClearTables = 0;
+        $businessClearTables = [];
+        $runtimeTelemetry = array_map(
+            static fn (string $table): array => [
+                'table' => $table,
+                'rows' => null,
+                'present' => false,
+                'excluded_from_business_gate' => true,
+                'identity_reseeded' => false,
+            ],
+            self::RUNTIME_TELEMETRY_TABLES
+        );
 
         foreach ((array) ($dayZeroPlan['items'] ?? []) as $item) {
             if (($item['action'] ?? null) !== 'clear') {
@@ -59,7 +78,20 @@ final class DayOneSequenceResetService
 
             $table = (string) ($item['table'] ?? '');
             $rows = $item['rows'] ?? null;
-            $clearTables[] = $table;
+
+            if (in_array($table, self::RUNTIME_TELEMETRY_TABLES, true)) {
+                foreach ($runtimeTelemetry as &$telemetry) {
+                    if ($telemetry['table'] === $table) {
+                        $telemetry['rows'] = $rows;
+                        $telemetry['present'] = true;
+                        break;
+                    }
+                }
+                unset($telemetry);
+                continue;
+            }
+
+            $businessClearTables[] = $table;
 
             if ($rows === null) {
                 $blockers[] = 'Unable to prove CLEAR table is empty: '.$table.'.';
@@ -71,7 +103,7 @@ final class DayOneSequenceResetService
                 continue;
             }
 
-            $emptyClearTables++;
+            $emptyBusinessClearTables++;
         }
 
         if ((int) ($dayZeroPlan['review_tables'] ?? -1) !== 0) {
@@ -86,26 +118,53 @@ final class DayOneSequenceResetService
             $blockers[] = 'Native counter reset preview is not ready.';
         }
 
-        if ($clearTables !== []) {
+        if ($businessClearTables !== []) {
             try {
-                $identityTargets = $this->identityTargets($clearTables);
+                $identityTargets = $this->identityTargets($businessClearTables);
             } catch (Throwable $e) {
                 $warnings[] = 'Unable to inspect identity/auto-increment targets safely: '.$e->getMessage();
             }
         }
 
-        if ($identityTargets === [] && $clearTables !== []) {
-            $warnings[] = 'No identity/auto-increment targets were discovered for CLEAR tables.';
+        if ($identityTargets === [] && $businessClearTables !== []) {
+            $warnings[] = 'No identity/auto-increment targets were discovered for business CLEAR tables.';
+        }
+
+        $paddingAuthorityReady = false;
+        try {
+            if (! Schema::hasTable('number_sequences')) {
+                $blockers[] = 'Required Day-One padding authority table is missing: number_sequences.';
+            } elseif (! Schema::hasColumn('number_sequences', 'padding')) {
+                $blockers[] = 'Required Day-One padding authority column is missing: number_sequences.padding.';
+            } else {
+                $paddingAuthorityReady = true;
+            }
+        } catch (Throwable $e) {
+            $blockers[] = 'Unable to prove required Day-One padding authority: '.$e->getMessage();
         }
 
         $counterPreview = $this->dayOneCounterPreview(
-            array_values((array) ($dayZeroPlan['counter_reset_preview'] ?? []))
+            array_values((array) ($dayZeroPlan['counter_reset_preview'] ?? [])),
+            $paddingAuthorityReady
         );
 
+        $paddingPreviewReady = false;
         foreach ($counterPreview as $item) {
             if (($item['ready'] ?? false) !== true || empty($item['proposed_updates'])) {
                 $blockers[] = 'Counter reset target is not ready: '.(string) ($item['table'] ?? 'unknown').'.';
             }
+
+            if (
+                ($item['table'] ?? null) === 'number_sequences'
+                && (($item['proposed_updates']['padding'] ?? null) === self::DISPLAY_PADDING)
+                && (($item['ready'] ?? false) === true)
+            ) {
+                $paddingPreviewReady = true;
+            }
+        }
+
+        if (! $paddingPreviewReady) {
+            $blockers[] = 'Required Day-One padding update is not ready: number_sequences.padding=4.';
         }
 
         $ready = (
@@ -113,7 +172,7 @@ final class DayOneSequenceResetService
             && $completed === null
             && $blockers === []
             && $warnings === []
-            && count($clearTables) === $emptyClearTables
+            && count($businessClearTables) === $emptyBusinessClearTables
             && ($dayZeroPlan['counter_reset_ready'] ?? false) === true
         );
 
@@ -121,8 +180,12 @@ final class DayOneSequenceResetService
             'confirmation' => self::CONFIRMATION,
             'day_zero_completed' => $dayZeroCompleted,
             'completed' => $completed,
-            'clear_tables' => count($clearTables),
-            'empty_clear_tables' => $emptyClearTables,
+            'clear_tables' => count($businessClearTables),
+            'empty_clear_tables' => $emptyBusinessClearTables,
+            'business_clear_tables' => count($businessClearTables),
+            'empty_business_clear_tables' => $emptyBusinessClearTables,
+            'runtime_telemetry' => $runtimeTelemetry,
+            'runtime_telemetry_tables' => self::RUNTIME_TELEMETRY_TABLES,
             'identity_targets' => $identityTargets,
             'identity_target_count' => count($identityTargets),
             'counter_preview' => $counterPreview,
@@ -161,6 +224,10 @@ final class DayOneSequenceResetService
             'actor_id' => $this->userId($user),
             'actor_name' => $this->userName($user),
             'clear_tables_verified_empty' => (int) ($plan['empty_clear_tables'] ?? 0),
+            'business_clear_tables_verified_empty' => (int) ($plan['empty_business_clear_tables'] ?? 0),
+            'runtime_telemetry_tables_excluded' => (array) ($plan['runtime_telemetry'] ?? []),
+            'first_number' => self::FIRST_NUMBER,
+            'display_padding' => self::DISPLAY_PADDING,
             'identity_targets_reset' => $identitiesReset,
             'counter_rows_updated' => $counterRowsUpdated,
             'confirmation' => self::CONFIRMATION,
@@ -288,9 +355,10 @@ final class DayOneSequenceResetService
      * @param array<int,array<string,mixed>> $items
      * @return array<int,array<string,mixed>>
      */
-    private function dayOneCounterPreview(array $items): array
+    private function dayOneCounterPreview(array $items, bool $paddingAuthorityReady): array
     {
         foreach ($items as &$item) {
+            $table = (string) ($item['table'] ?? '');
             $source = (array) ($item['proposed_updates'] ?? []);
             $updates = [];
             $ready = (($item['ready'] ?? false) === true);
@@ -310,6 +378,14 @@ final class DayOneSequenceResetService
 
                 $updates[$column] = $value;
                 $ready = false;
+            }
+
+            if ($table === 'number_sequences') {
+                if (! $paddingAuthorityReady) {
+                    $ready = false;
+                } else {
+                    $updates['padding'] = self::DISPLAY_PADDING;
+                }
             }
 
             $item['proposed_updates'] = $updates;
@@ -343,7 +419,13 @@ final class DayOneSequenceResetService
                 if (! Schema::hasColumn($table, (string) $column)) {
                     throw new RuntimeException('Counter column disappeared: '.$table.'.'.$column.'.');
                 }
-                if (! in_array((int) $value, [self::LAST_USED_BASELINE, self::FIRST_NUMBER], true)) {
+                $isDisplayPadding = (
+                    $table === 'number_sequences'
+                    && $column === 'padding'
+                    && (int) $value === self::DISPLAY_PADDING
+                );
+
+                if (! $isDisplayPadding && ! in_array((int) $value, [self::LAST_USED_BASELINE, self::FIRST_NUMBER], true)) {
                     throw new RuntimeException('Unexpected Day-One counter baseline for '.$table.'.'.$column.'.');
                 }
             }
@@ -455,7 +537,7 @@ final class DayOneSequenceResetService
             }
 
             // PostgreSQL setval(..., 1000, false) and SQL Server RESEED 999 are
-            // explicit next-insert=1 operations; the mutation itself is the
+            // explicit next-insert=1000 operations; the mutation itself is the
             // authoritative verification for those drivers.
         }
     }
