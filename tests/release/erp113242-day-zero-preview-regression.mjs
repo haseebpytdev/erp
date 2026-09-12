@@ -32,7 +32,7 @@ ok(!service.includes('->delete(') && !service.includes('truncate(') && !service.
 ok(view.includes('No delete can run from this preview build.'), 'UI clearly states preview-only safety boundary');
 ok(view.includes('Day-Zero Reset Locked'), 'UI disables destructive action');
 ok(view.includes("route('system.production-data-reset.backup')"), 'existing authenticated route remains the backup entry point');
-ok(version === 'v1.1.33.241-ERP11.3.241', 'functional .242 checkpoint intentionally retains current .241 metadata before release prep');
+ok(version === 'v1.1.33.242-ERP11.3.242', 'ERP-11.3.242 preview release metadata is promoted for packaging');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

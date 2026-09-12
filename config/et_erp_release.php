@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.241-ERP11.3.241',
-    'release' => 'ERP-11.3.241',
-    'package' => 'ERP-11.3.241 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.241 stabilizes the professional ERP navigation and global component system by preserving native sidebar row order, removing duplicate browser regrouping and path-only active-state repainting, separating root and nested menu geometry, compacting the brand area, preventing parent/child active overlap, and normalizing shared page-title, control, card and tab spacing.',
+    'version' => 'v1.1.33.242-ERP11.3.242',
+    'release' => 'ERP-11.3.242',
+    'package' => 'ERP-11.3.242 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.242 is a Day-Zero database reset PREVIEW and backup release. It restores the accepted ERP-11.3.240 UI baseline after ERP-11.3.241 visual rejection, inventories the live database table-by-table as CLEAR, RESET COUNTER, PRESERVE or REVIEW, preserves user and authorization foundation, creates a full compressed pre-reset database backup, and deliberately keeps destructive Day-Zero execution disabled until the production table plan is reviewed and approved.',
 ];

@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.241
-APPLICATION_VERSION=v1.1.33.241-ERP11.3.241
+CURRENT_VERSION=ERP-11.3.242
+APPLICATION_VERSION=v1.1.33.242-ERP11.3.242
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.241
+LAST_PACKAGED_RELEASE=ERP-11.3.242
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -460,3 +460,17 @@ frame and ERP-11.3.239 server-rendered register architecture. Booking,
 Sales Invoice, Supplier Costing, voucher, accounting, journal, ledger,
 permission, persistence and database behavior are unchanged. No migration is
 required.
+ERP-11.3.242 Day-Zero reset preview restores the accepted ERP-11.3.240 UI
+implementation after ERP-11.3.241 failed visual UAT. The release introduces a
+Super Admin / Owner-only fresh-production database inspection workflow at the
+existing Production Data Reset route. The live schema is classified table by
+table as CLEAR, RESET COUNTER, PRESERVE or REVIEW with row counts shown before
+any reset is considered. Unknown tables fail closed to REVIEW. User accounts,
+roles and permission infrastructure remain preserved. A separate full compressed
+database backup can be downloaded before any future Day-Zero reset.
+
+ERP-11.3.242 is PREVIEW + BACKUP ONLY. Destructive execution is hard-disabled in
+the service and the reset button is disabled. No table deletion, truncation,
+counter reset or other business-data mutation can execute from this release.
+A later explicitly reviewed release will be required before Day-Zero execution
+can be enabled. No migration is required.

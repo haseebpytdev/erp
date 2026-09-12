@@ -1,4 +1,4 @@
-ERP-11.3.241 DIRECT UPLOAD - SIDEBAR AND GLOBAL UI STABILIZATION
+ERP-11.3.242 DIRECT UPLOAD - DAY-ZERO RESET PREVIEW
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -8,19 +8,21 @@ Deployment without SSH:
 3. Do not run Safe Database Upgrade; this release has no migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
+ERP-11.3.242 is a Day-Zero / Fresh Production database PREVIEW release. It
+restores the accepted ERP-11.3.240 UI implementation after ERP-11.3.241 failed
+visual UAT. The existing Super Admin / Owner-only Production Data Reset page now
+inspects the live database and classifies every table as CLEAR, RESET COUNTER,
+PRESERVE or REVIEW with current row counts. Unknown tables always fail closed to
+REVIEW. User accounts, roles, permissions and required ERP/system foundation are
+preserved by the plan. A separate full compressed database backup can be
+downloaded before any future reset.
 
-ERP-11.3.241 stabilizes the sidebar and shared ERP component system. Native
-permission-rendered sidebar row order is preserved and the previous duplicate
-browser regrouping/reordering passes are removed. One hidden prepaint finalizer
-adds presentation section headings in place, separates root and nested menu
-levels, preserves native active-state authority and uses an exact path/query
-fallback only when necessary. Root rows, nested rows and section headings now
-have independent geometry, the brand/logo area is more compact, and active
-nested children no longer make their parent appear as a second selected page.
-Shared page-title, form-control, card and tab tokens are also normalized across
-modules. ERP-11.3.240 shell geometry, ERP-11.3.239 server-rendered registers and
-all booking/accounting/business authorities remain unchanged. No migration is
-required.
+IMPORTANT: destructive execution is intentionally disabled in ERP-11.3.242.
+The Day-Zero reset button is locked and the service contains no table deletion,
+truncate, counter reset or destructive database statement. This deployment is
+only for production-schema inspection and backup. Do not attempt a Day-Zero
+reset until the table plan has been reviewed and a later execution-enabled
+release has been explicitly approved. No migration is required.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,
