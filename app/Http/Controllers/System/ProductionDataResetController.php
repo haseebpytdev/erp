@@ -4,6 +4,7 @@ namespace App\Http\Controllers\System;
 
 use App\Http\Controllers\Controller;
 use App\Services\System\DayZeroDataResetService;
+use App\Services\System\DayZeroExecutionService;
 use App\Services\System\ProductionDataResetAuthority;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,17 +22,28 @@ class ProductionDataResetController extends Controller
     ): View {
         $authority->authorize($request->user());
 
+        $plan = $service->plan();
+        $backupReady = $this->backupReady($request, $service);
+        $executionReady = (
+            DayZeroExecutionService::EXECUTION_ENABLED
+            && $backupReady
+            && ($plan['safety_preview_ready'] ?? false) === true
+            && empty($plan['completed'])
+        );
+
         return view(
-            'system.day-zero-data-reset-v113242',
+            'system.day-zero-data-reset-v113246',
             [
-                'plan' => $service->plan(),
-                'backupReady' => $this->backupReady($request, $service),
+                'plan' => $plan,
+                'backupReady' => $backupReady,
                 'backupFilename' => basename(
                     (string) $request->session()->get(
                         'day_zero_reset_backup_path',
                         ''
                     )
                 ),
+                'executionEnabled' => DayZeroExecutionService::EXECUTION_ENABLED,
+                'executionReady' => $executionReady,
             ]
         );
     }
@@ -78,7 +90,8 @@ class ProductionDataResetController extends Controller
     public function execute(
         Request $request,
         ProductionDataResetAuthority $authority,
-        DayZeroDataResetService $service
+        DayZeroDataResetService $planner,
+        DayZeroExecutionService $executor
     ): RedirectResponse {
         $authority->authorize($request->user());
 
@@ -108,8 +121,12 @@ class ProductionDataResetController extends Controller
         );
 
         try {
-            $service->validateBackup($backupPath, $backupAt);
-            $result = $service->execute($request->user(), $backupPath);
+            $planner->validateBackup($backupPath, $backupAt);
+            $result = $executor->execute(
+                $request->user(),
+                $backupPath,
+                $backupAt
+            );
         } catch (Throwable $e) {
             return redirect()
                 ->route('system.production-data-reset.index')
@@ -128,9 +145,11 @@ class ProductionDataResetController extends Controller
             ->with(
                 'reset_success',
                 sprintf(
-                    'Day-Zero reset completed. %d rows cleared across %d tables.',
+                    'Day-Zero reset completed permanently. %d rows cleared across %d tables; %d preserved FK rows neutralized; %d counter rows reset.',
                     (int) ($result['rows_deleted'] ?? 0),
-                    (int) ($result['tables_cleared'] ?? 0)
+                    (int) ($result['tables_cleared'] ?? 0),
+                    (int) ($result['preserved_fk_rows_neutralized'] ?? 0),
+                    (int) ($result['counter_rows_updated'] ?? 0)
                 )
             );
     }
