@@ -13,6 +13,7 @@ use App\Http\Controllers\Operations\GeneralBookingHotelProductController;
 use App\Http\Controllers\Operations\GeneralBookingTransportProductController;
 use App\Http\Controllers\Operations\GeneralBookingVisaProductController;
 use App\Services\Sales\AirTicketInvoiceCommercialSyncService;
+use App\Services\Sales\NativeSalesInvoiceNumberNormalizer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ final class StableBookingSalesInvoiceController extends Controller
         private readonly NativeSalesInvoiceInspector $invoices,
         private readonly NativeSalesInvoiceRuntimeBridge $runtimeBridge,
         private readonly AirTicketInvoiceCommercialSyncService $airSync,
+        private readonly NativeSalesInvoiceNumberNormalizer $invoiceNumbers,
         private readonly BookingInvoiceEligibilityResolver $eligibility,
         private readonly BookingCommercialCompletenessResolver $commercialCompleteness,
         private readonly NativeSalesInvoiceCreateCapability $createCapability,
@@ -126,6 +128,8 @@ final class StableBookingSalesInvoiceController extends Controller
                 'The native Sales Invoice operation returned without creating a linked invoice.'
             );
         }
+
+        $this->invoiceNumbers->normalize($invoiceId);
 
         $this->syncAirNonBlocking(
             $invoiceId,

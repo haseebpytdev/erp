@@ -37,25 +37,25 @@
     @if(!empty($plan['warnings']))<div class="notice danger"><strong>Sequence reset warnings:</strong>@foreach($plan['warnings'] as $item)<div>{{ $item }}</div>@endforeach</div>@endif
 
     <div class="card">
-        <div class="card-head"><div class="card-title">Expected Day-One document numbering</div><div class="card-note">The first new production document should use sequence 000001. Prefix/year rules remain unchanged.</div></div>
+        <div class="card-head"><div class="card-title">Expected Day-One document numbering</div><div class="card-note">The first new production document should use sequence 1000. Prefix/year rules remain unchanged.</div></div>
         <div class="card-body">
             <div class="sequence-grid">
-                <div class="sequence"><strong>Booking</strong><code>BK-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Native Sales Invoice</strong><code>SI-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Group Umrah Sales Invoice</strong><code>ET-SI-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Client / Group Voucher</strong><code>ET-UV-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Receipt Voucher</strong><code>RV-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Payment Voucher</strong><code>PV-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Expense Voucher</strong><code>EV-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Contra Voucher</strong><code>CV-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Customer Advance Receipt</strong><code>CAR-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Supplier Advance Payment</strong><code>SAP-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Advance Adjustment</strong><code>AA-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Supplier Costing</strong><code>SC-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Native Journal</strong><code>JV-{{ $year }}-000001</code></div>
-                <div class="sequence"><strong>Voucher Posting Reference</strong><code>CVPOST-{{ now()->format('Ymd') }}-000001</code></div>
-                <div class="sequence"><strong>Adjustment Posting Reference</strong><code>AAPOST-{{ now()->format('Ymd') }}-000001</code></div>
-                <div class="sequence"><strong>Supplier Cost Posting Reference</strong><code>SCPOST-{{ now()->format('Ymd') }}-000001</code></div>
+                <div class="sequence"><strong>Booking</strong><code>BK-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Native Sales Invoice</strong><code>SI-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Group Umrah Sales Invoice</strong><code>ET-SI-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Client / Group Voucher</strong><code>ET-UV-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Receipt Voucher</strong><code>RV-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Payment Voucher</strong><code>PV-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Expense Voucher</strong><code>EV-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Contra Voucher</strong><code>CV-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Customer Advance Receipt</strong><code>CAR-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Supplier Advance Payment</strong><code>SAP-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Advance Adjustment</strong><code>AA-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Supplier Costing</strong><code>SC-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Native Journal</strong><code>JV-{{ $year }}-1000</code></div>
+                <div class="sequence"><strong>Voucher Posting Reference</strong><code>CVPOST-{{ now()->format('Ymd') }}-1000</code></div>
+                <div class="sequence"><strong>Adjustment Posting Reference</strong><code>AAPOST-{{ now()->format('Ymd') }}-1000</code></div>
+                <div class="sequence"><strong>Supplier Cost Posting Reference</strong><code>SCPOST-{{ now()->format('Ymd') }}-1000</code></div>
             </div>
         </div>
     </div>
@@ -89,7 +89,7 @@
                 <div class="notice success" style="margin:0"><strong>Day-One numbering is permanently finalized.</strong> Completed {{ $plan['completed']['completed_at'] ?? 'unknown' }} by {{ $plan['completed']['actor_name'] ?? 'unknown' }}.</div>
             @elseif($plan['ready'])
                 <div class="formbox">
-                    <form method="POST" action="{{ route('system.production-data-reset.execute') }}" onsubmit="return confirm('FINAL CHECK: Reset approved Day-One document identities and counters so new numbering starts from 1?');">
+                    <form method="POST" action="{{ route('system.production-data-reset.execute') }}" onsubmit="return confirm('FINAL CHECK: Reset approved Day-One document identities and counters so new numbering starts from 1000?');">
                         @csrf
                         <label for="confirmation">Type exactly: {{ $plan['confirmation'] }}</label>
                         <input id="confirmation" type="text" name="confirmation" value="{{ old('confirmation') }}" autocomplete="off">

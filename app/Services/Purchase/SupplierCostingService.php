@@ -19,7 +19,7 @@ final class SupplierCostingService
 
     public function nextNumber(): string
     {
-        $year=now()->format('Y');$prefix='SC-'.$year.'-';$last=DB::table('supplier_costings')->where('costing_no','like',$prefix.'%')->orderByDesc('id')->value('costing_no');$seq=$last&&preg_match('/(\d+)$/',(string)$last,$m)?((int)$m[1]+1):1;return $prefix.str_pad((string)$seq,6,'0',STR_PAD_LEFT);
+        $year=now()->format('Y');$prefix='SC-'.$year.'-';$last=DB::table('supplier_costings')->where('costing_no','like',$prefix.'%')->orderByDesc('id')->value('costing_no');$seq=$last&&preg_match('/(\d+)$/',(string)$last,$m)?((int)$m[1]+1):1000;return $prefix.(string)$seq;
     }
 
     public function recalculate(int $id): void
@@ -31,7 +31,7 @@ final class SupplierCostingService
     {
         DB::transaction(function()use($id,$action,$user):void{
             $row=DB::table('supplier_costings')->where('id',$id)->lockForUpdate()->first();if(!$row)throw new RuntimeException('Supplier costing document not found.');$map=['submit'=>['draft','pending_approval'],'approve'=>['pending_approval','approved'],'post'=>['approved','posted']];if(!isset($map[$action]))throw new RuntimeException('Unsupported workflow action.');[$from,$to]=$map[$action];if($row->status!==$from)throw new RuntimeException('Workflow action is not valid for the current status.');if($action!=='submit'&&!$this->canApprove($user))throw new RuntimeException('You are not authorized to approve/post supplier costing.');$this->validateBookingSourceIntegrity($row);if((float)$row->total_cost<=0)throw new RuntimeException('Supplier costing total must be greater than zero.');
-            $update=['status'=>$to,'updated_at'=>now()];if($action==='submit'){$update['submitted_by']=$user?->id;$update['submitted_at']=now();}if($action==='approve'){$update['approved_by']=$user?->id;$update['approved_at']=now();}if($action==='post'){$reference='SCPOST-'.now()->format('Ymd').'-'.str_pad((string)$id,6,'0',STR_PAD_LEFT);$this->createPosting($row,$reference);$this->nativeJournal->postSupplierCosting($id,$user,$reference);$update['posted_by']=$user?->id;$update['posted_at']=now();$update['posting_reference']=$reference;}
+            $update=['status'=>$to,'updated_at'=>now()];if($action==='submit'){$update['submitted_by']=$user?->id;$update['submitted_at']=now();}if($action==='approve'){$update['approved_by']=$user?->id;$update['approved_at']=now();}if($action==='post'){$reference='SCPOST-'.now()->format('Ymd').'-'.(string)$id;$this->createPosting($row,$reference);$this->nativeJournal->postSupplierCosting($id,$user,$reference);$update['posted_by']=$user?->id;$update['posted_at']=now();$update['posting_reference']=$reference;}
             DB::table('supplier_costings')->where('id',$id)->update($update);$this->activity($id,$action,$from,$to,$user,$action==='post'?'Balanced supplier payable posting and native journal created.':null);
         });
     }

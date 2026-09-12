@@ -1213,7 +1213,7 @@ class UnifiedGroupPackageBookingController extends Controller
             $year = now()->format('Y');
         }
 
-        return 'ET-PKG-' . $year . '-' . str_pad((string) $bookingId, 6, '0', STR_PAD_LEFT);
+        return 'ET-PKG-' . $year . '-' . (string) $bookingId;
     }
 
     private function existingPackageCode(int $bookingId): ?string
@@ -1243,7 +1243,7 @@ class UnifiedGroupPackageBookingController extends Controller
             }
         }
 
-        return 'BK-' . str_pad((string) $bookingId, 6, '0', STR_PAD_LEFT);
+        return 'BK-' . (string) $bookingId;
     }
 
     private function operationalHash(array $data): string

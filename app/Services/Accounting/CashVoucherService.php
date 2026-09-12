@@ -36,9 +36,9 @@ class CashVoucherService
             ->value('voucher_no');
         $seq = $last && preg_match('/(\d+)$/', (string) $last, $m)
             ? ((int) $m[1] + 1)
-            : 1;
+            : 1000;
 
-        return $stem.str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
+        return $stem.(string) $seq;
     }
 
     public function nextAdjustmentNumber(): string
@@ -51,9 +51,9 @@ class CashVoucherService
             ->value('adjustment_no');
         $seq = $last && preg_match('/(\d+)$/', (string) $last, $m)
             ? ((int) $m[1] + 1)
-            : 1;
+            : 1000;
 
-        return $stem.str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
+        return $stem.(string) $seq;
     }
 
     public function voucherDefinition(string $type): array
@@ -748,7 +748,7 @@ class CashVoucherService
                 $update['approved_at'] = now();
             }
             if ($action === 'post') {
-                $reference = 'CVPOST-'.now()->format('Ymd').'-'.str_pad((string) $voucherId, 6, '0', STR_PAD_LEFT);
+                $reference = 'CVPOST-'.now()->format('Ymd').'-'.(string) $voucherId;
                 $this->createVoucherPosting($voucherId, $reference);
 
                 // ERP-11.3.19: mirror the controlled posting into the native
@@ -789,7 +789,7 @@ class CashVoucherService
                 throw new RuntimeException('This cash voucher is already reversed.');
             }
 
-            $reference = 'CVREV-'.now()->format('Ymd').'-'.str_pad((string) $voucherId, 6, '0', STR_PAD_LEFT);
+            $reference = 'CVREV-'.now()->format('Ymd').'-'.(string) $voucherId;
             $original = DB::table('cash_voucher_posting_lines')
                 ->where('cash_voucher_id', $voucherId)
                 ->where('entry_type', 'original')
@@ -883,7 +883,7 @@ class CashVoucherService
                 $update['approved_at'] = now();
             }
             if ($action === 'post') {
-                $reference = 'AAPOST-'.now()->format('Ymd').'-'.str_pad((string) $adjustmentId, 6, '0', STR_PAD_LEFT);
+                $reference = 'AAPOST-'.now()->format('Ymd').'-'.(string) $adjustmentId;
                 $this->createAdjustmentPosting($adjustmentId, $reference);
                 $this->nativeJournal->postAdvanceAdjustment($adjustmentId, $user, $reference);
                 $update['posted_by'] = $user?->id;
@@ -913,7 +913,7 @@ class CashVoucherService
                 throw new RuntimeException('This advance adjustment is already reversed.');
             }
 
-            $reference = 'AAREV-'.now()->format('Ymd').'-'.str_pad((string) $adjustmentId, 6, '0', STR_PAD_LEFT);
+            $reference = 'AAREV-'.now()->format('Ymd').'-'.(string) $adjustmentId;
             $original = DB::table('advance_adjustment_posting_lines')
                 ->where('advance_adjustment_id', $adjustmentId)
                 ->where('entry_type', 'original')

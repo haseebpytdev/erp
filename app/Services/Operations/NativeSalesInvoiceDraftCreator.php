@@ -4472,25 +4472,13 @@ class NativeSalesInvoiceDraftCreator
             $year = now()->format('Y');
         }
 
-        $number = 'ET-SI-'.$year.'-'
-            .str_pad(
-                (string) $bookingId,
-                6,
-                '0',
-                STR_PAD_LEFT
-            );
+        $number = 'ET-SI-'.$year.'-'.(string) $bookingId;
 
         if (
             $mode === 'supplementary'
             && $amendmentId
         ) {
-            $number .= '-A'
-                .str_pad(
-                    (string) $amendmentId,
-                    2,
-                    '0',
-                    STR_PAD_LEFT
-                );
+            $number .= '-A'.(string) $amendmentId;
         }
 
         return $number;

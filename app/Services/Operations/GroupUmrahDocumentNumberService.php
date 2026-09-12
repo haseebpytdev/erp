@@ -11,7 +11,7 @@ class GroupUmrahDocumentNumberService
     {
         $year = $this->bookingYear($bookingId);
 
-        return sprintf('ET-UV-%04d-%06d', $year, $bookingId);
+        return sprintf('ET-UV-%04d-%d', $year, $bookingId);
     }
 
     public function bookingReference(int $bookingId): string
@@ -37,7 +37,7 @@ class GroupUmrahDocumentNumberService
         } catch (\Throwable) {
         }
 
-        return sprintf('BK-%04d-%06d', $this->bookingYear($bookingId), $bookingId);
+        return sprintf('BK-%04d-%d', $this->bookingYear($bookingId), $bookingId);
     }
 
     private function bookingYear(int $bookingId): int

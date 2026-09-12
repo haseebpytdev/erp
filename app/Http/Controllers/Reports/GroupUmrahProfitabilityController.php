@@ -430,12 +430,7 @@ class GroupUmrahProfitabilityController extends Controller
             }
         }
 
-        return 'BK-'.str_pad(
-            (string) $bookingId,
-            6,
-            '0',
-            STR_PAD_LEFT
-        );
+        return 'BK-'.(string) $bookingId;
     }
 
     private function customerName(

@@ -96,7 +96,7 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ]);
         if ($bookingReference === '') {
             $year = (string) ($this->bookingDate($bookingData)?->format('Y') ?? now()->format('Y'));
-            $bookingReference = 'BK-'.$year.'-'.str_pad((string) $booking, 6, '0', STR_PAD_LEFT);
+            $bookingReference = 'BK-'.$year.'-'.(string) $booking;
         }
 
         $hasHotelData = count((array) ($hotel['stays'] ?? [])) > 0;
@@ -110,7 +110,7 @@ final class GeneralBookingVoucherPreviewController extends Controller
         if ($voucherNumber === '') {
             $year = (string) ($this->bookingDate($bookingData)?->format('Y') ?? now()->format('Y'));
             $prefix = $hasHotelData && ! $hasAirData && ! $hasTransportData && ! $hasVisaData ? 'ET-AV-' : 'ET-CV-';
-            $voucherNumber = $prefix.$year.'-'.str_pad((string) $booking, 6, '0', STR_PAD_LEFT);
+            $voucherNumber = $prefix.$year.'-'.(string) $booking;
         }
 
         $currency = strtoupper($this->firstString($bookingData, ['currency_code', 'currency', 'booking_currency']));

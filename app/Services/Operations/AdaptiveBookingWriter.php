@@ -66,7 +66,11 @@ class AdaptiveBookingWriter
         $this->put($row, $columns, ['booked_pax', 'pax_count', 'passengers_count', 'quantity'], $data['booked_pax'] ?? null);
         $this->put($row, $columns, ['created_by', 'created_by_id', 'user_id'], Auth::id());
 
-        $reference = 'BK-' . now()->format('Y') . '-' . str_pad((string) ((int) DB::table('bookings')->max('id') + 1), 6, '0', STR_PAD_LEFT);
+        $nextBookingId = max(
+            1000,
+            ((int) DB::table('bookings')->max('id')) + 1
+        );
+        $reference = 'BK-' . now()->format('Y') . '-' . (string) $nextBookingId;
         $this->put($row, $columns, ['booking_no', 'booking_number', 'booking_reference', 'reference', 'code'], $reference);
 
         if (in_array('created_at', $columns, true)) {

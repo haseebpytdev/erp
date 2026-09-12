@@ -18,11 +18,13 @@ use Throwable;
  *  - native document/reference counter rows already classified by the
  *    Day-Zero planner; and
  *  - database identity / auto-increment state on emptied CLEAR tables so
- *    ID-derived booking, voucher, invoice and posting references restart at 1.
+ *    ID-derived booking, voucher, invoice and posting references restart at 1000.
  */
 final class DayOneSequenceResetService
 {
     public const CONFIRMATION = 'RESET DAY ONE SEQUENCES';
+    public const FIRST_NUMBER = 1000;
+    public const LAST_USED_BASELINE = 999;
 
     public function __construct(
         private readonly DayZeroDataResetService $planner
@@ -96,7 +98,9 @@ final class DayOneSequenceResetService
             $warnings[] = 'No identity/auto-increment targets were discovered for CLEAR tables.';
         }
 
-        $counterPreview = array_values((array) ($dayZeroPlan['counter_reset_preview'] ?? []));
+        $counterPreview = $this->dayOneCounterPreview(
+            array_values((array) ($dayZeroPlan['counter_reset_preview'] ?? []))
+        );
 
         foreach ($counterPreview as $item) {
             if (($item['ready'] ?? false) !== true || empty($item['proposed_updates'])) {
@@ -272,6 +276,50 @@ final class DayOneSequenceResetService
         throw new RuntimeException('Unsupported database driver for Day-One identity reset: '.$driver.'.');
     }
 
+    /**
+     * Day-Zero expresses restart semantics as:
+     * - last/current value = 0
+     * - next value = 1
+     *
+     * Production Day-One starts at plain 1000 instead:
+     * - last/current value = 999
+     * - next value = 1000
+     *
+     * @param array<int,array<string,mixed>> $items
+     * @return array<int,array<string,mixed>>
+     */
+    private function dayOneCounterPreview(array $items): array
+    {
+        foreach ($items as &$item) {
+            $source = (array) ($item['proposed_updates'] ?? []);
+            $updates = [];
+            $ready = (($item['ready'] ?? false) === true);
+
+            foreach ($source as $column => $value) {
+                $value = (int) $value;
+
+                if ($value === 0) {
+                    $updates[$column] = self::LAST_USED_BASELINE;
+                    continue;
+                }
+
+                if ($value === 1) {
+                    $updates[$column] = self::FIRST_NUMBER;
+                    continue;
+                }
+
+                $updates[$column] = $value;
+                $ready = false;
+            }
+
+            $item['proposed_updates'] = $updates;
+            $item['ready'] = $ready && $updates !== [];
+        }
+        unset($item);
+
+        return $items;
+    }
+
     /** @param array<int,array<string,mixed>> $items */
     private function resetCounters(array $items): int
     {
@@ -295,7 +343,7 @@ final class DayOneSequenceResetService
                 if (! Schema::hasColumn($table, (string) $column)) {
                     throw new RuntimeException('Counter column disappeared: '.$table.'.'.$column.'.');
                 }
-                if (! in_array((int) $value, [0, 1], true)) {
+                if (! in_array((int) $value, [self::LAST_USED_BASELINE, self::FIRST_NUMBER], true)) {
                     throw new RuntimeException('Unexpected Day-One counter baseline for '.$table.'.'.$column.'.');
                 }
             }
@@ -322,7 +370,7 @@ final class DayOneSequenceResetService
 
             if (in_array($driver, ['mysql', 'mariadb'], true)) {
                 $quoted = '`'.str_replace('`', '``', $table).'`';
-                DB::statement('ALTER TABLE '.$quoted.' AUTO_INCREMENT = 1');
+                DB::statement('ALTER TABLE '.$quoted.' AUTO_INCREMENT = '.self::FIRST_NUMBER);
                 $count++;
                 continue;
             }
@@ -332,20 +380,20 @@ final class DayOneSequenceResetService
                 if ($sequence === '') {
                     throw new RuntimeException('PostgreSQL sequence target is missing for '.$table.'.');
                 }
-                DB::statement('SELECT setval(?::regclass, 1, false)', [$sequence]);
+                DB::statement('SELECT setval(?::regclass, '.self::FIRST_NUMBER.', false)', [$sequence]);
                 $count++;
                 continue;
             }
 
             if ($driver === 'sqlsrv') {
                 $quoted = '['.str_replace(']', ']]', $table).']';
-                DB::statement('DBCC CHECKIDENT ('.$quoted.', RESEED, 0)');
+                DB::statement('DBCC CHECKIDENT ('.$quoted.', RESEED, '.self::LAST_USED_BASELINE.')');
                 $count++;
                 continue;
             }
 
             if ($driver === 'sqlite') {
-                DB::table('sqlite_sequence')->where('name', $table)->update(['seq' => 0]);
+                DB::table('sqlite_sequence')->where('name', $table)->update(['seq' => self::LAST_USED_BASELINE]);
                 $count++;
                 continue;
             }
@@ -391,8 +439,8 @@ final class DayOneSequenceResetService
                     [$table]
                 );
                 $next = (int) (((array) ($row ?? []))['next_value'] ?? ((array) ($row ?? []))['AUTO_INCREMENT'] ?? 0);
-                if ($next !== 1) {
-                    throw new RuntimeException('MySQL AUTO_INCREMENT verification failed for '.$table.'; expected next value 1, got '.$next.'.');
+                if ($next !== self::FIRST_NUMBER) {
+                    throw new RuntimeException('MySQL AUTO_INCREMENT verification failed for '.$table.'; expected next value '.self::FIRST_NUMBER.', got '.$next.'.');
                 }
                 continue;
             }
@@ -400,13 +448,13 @@ final class DayOneSequenceResetService
             if ($driver === 'sqlite') {
                 $row = DB::selectOne('SELECT seq FROM sqlite_sequence WHERE name = ?', [$table]);
                 $seq = $row === null ? 0 : (int) (((array) $row)['seq'] ?? -1);
-                if ($seq !== 0) {
+                if ($seq !== self::LAST_USED_BASELINE) {
                     throw new RuntimeException('SQLite sequence verification failed for '.$table.'.');
                 }
                 continue;
             }
 
-            // PostgreSQL setval(..., 1, false) and SQL Server RESEED 0 are
+            // PostgreSQL setval(..., 1000, false) and SQL Server RESEED 999 are
             // explicit next-insert=1 operations; the mutation itself is the
             // authoritative verification for those drivers.
         }
