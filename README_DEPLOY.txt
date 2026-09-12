@@ -1,4 +1,4 @@
-ERP-11.3.245 DIRECT UPLOAD - DAY-ZERO FK RESOLUTION PREVIEW
+ERP-11.3.246 DIRECT UPLOAD - CONTROLLED DAY-ZERO EXECUTION
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -46,3 +46,15 @@ Then use Print / Save PDF and verify the same logo/footer and A4 flow. Visa No.
 must remain mapped only by stable passenger ID; no standalone Visa table or
 Vendor Account, cost, exchange-rate, margin, or supplier accounting data may
 appear.
+ERP-11.3.246 is the controlled one-time Day-Zero execution release.
+
+IMPORTANT:
+- This release can permanently delete the approved business/UAT data.
+- Stop staff activity before execution.
+- Do not run Safe Database Upgrade; there is no migration.
+- Download a fresh full Day-Zero database backup after deployment.
+- Execution requires the exact phrase RESET ERP TO DAY ZERO.
+- Super Admin / Owner authorization and acknowledgement are mandatory.
+- The live safety plan is rebuilt immediately before mutation.
+- Any failed live safety gate prevents execution.
+- The reset is one-time only and a permanent completion marker prevents replay.

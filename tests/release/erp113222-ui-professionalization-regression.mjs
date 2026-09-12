@@ -90,7 +90,7 @@ ok(pnlController.includes('profitAndLossPresentation(array $report, array $accou
 for (const key of ['revenue','direct_cost','gross_profit','operating_expenses','operating_profit','other_income','other_expense','net_profit']) {
   ok(managementService.includes(`'${key}' =>`), `management calculation ${key} remains present`);
 }
-ok(version === 'v1.1.33.245-ERP11.3.245', 'packaged release version is current');
+ok(version === 'v1.1.33.246-ERP11.3.246', 'packaged release version is current');
 
 const staleVisibleLabels = {
   'resources/views/system/sales-invoice-workflow-compare-v11379.blade.php': 'System Diagnostic · ERP-11.3.79',

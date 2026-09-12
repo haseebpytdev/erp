@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.245
-APPLICATION_VERSION=v1.1.33.245-ERP11.3.245
+CURRENT_VERSION=ERP-11.3.246
+APPLICATION_VERSION=v1.1.33.246-ERP11.3.246
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.245
+LAST_PACKAGED_RELEASE=ERP-11.3.246
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -520,3 +520,25 @@ child-before-parent delete order.
 ERP-11.3.245 remains PREVIEW ONLY. EXECUTION_ENABLED is false, the reset control
 remains disabled and no delete, truncate, counter mutation or FK update executes
 from this release. No migration is required.
+ERP-11.3.246 controlled Day-Zero execution is the approved one-time production
+fresh-start release following the successful ERP-11.3.245 live FK-resolution
+audit.
+
+Execution remains protected by Super Admin / Owner authorization, exact
+confirmation phrase, explicit acknowledgement and a fresh validated full backup.
+Immediately before mutation the live Day-Zero planner is rebuilt and every
+safety gate is checked again.
+
+Approved preserved-master FK references are neutralized only where the live
+schema proved them nullable. Any required nullable cycle edges are neutralized
+before deletion. CLEAR tables are deleted in the verified child-before-parent
+order inside a transaction. Numbering counters are then restarted from the
+approved preview values.
+
+Before commit, every CLEAR table is verified empty and all counter values are
+verified. A concurrent execution lock prevents duplicate attempts and a
+permanent completion marker records the backup SHA256 and permanently prevents
+a second Day-Zero execution.
+
+No migration is required. Normal booking, invoice, voucher, supplier-costing
+and accounting formulas are unchanged.
