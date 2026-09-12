@@ -1,189 +1,193 @@
-@php
-    $fmt = static fn ($value) => number_format((int) $value);
-    $actionClass = static fn ($action) => match ($action) {
-        'clear' => 'danger',
-        'reset_counter' => 'warning',
-        'preserve' => 'success',
-        default => 'secondary',
-    };
-@endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Day-Zero Database Reset</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Day-Zero Database Reset · Easy Ticket ERP</title>
     <style>
-        :root{color-scheme:light;--ink:#15233a;--muted:#607491;--line:#d7e1ed;--panel:#fff;--bg:#f5f8fc;--danger:#bf3443;--danger-bg:#fff0f1;--success:#16804f;--success-bg:#edf9f3;--warning:#9a6700;--warning-bg:#fff8e6;--secondary:#5c6678;--secondary-bg:#f1f3f6;--blue:#185fb6;--blue-bg:#edf5ff}
-        *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Arial,Helvetica,sans-serif}.wrap{max-width:1800px;margin:0 auto;padding:20px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(25,48,78,.06);margin-bottom:18px;overflow:hidden}.head{padding:24px}.head h1{margin:0 0 8px;font-size:30px}.head p{margin:0;color:var(--muted)}.banner{margin-top:18px;padding:14px 16px;border:1px solid #fac2c8;border-radius:12px;background:var(--danger-bg);color:#7f1f2a;font-weight:700}.metrics{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:14px;margin-top:20px}.metric{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff}.metric strong{display:block;font-size:29px;margin-bottom:6px}.metric span{color:var(--muted)}.section-title{padding:20px 22px 0}.section-title h2{margin:0 0 5px;font-size:21px}.section-title p{margin:0;color:var(--muted)}.audit-grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:14px;padding:20px 22px}.audit-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fbfcfe}.audit-card b{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;margin-bottom:10px}.audit-card strong{font-size:24px}.ok{color:var(--success)}.bad{color:var(--danger)}.warn{color:var(--warning)}.notice{margin:0 22px 16px;padding:16px 18px;border-radius:12px;border:1px solid var(--line);background:#fbfcfe}.notice.danger{border-color:#fac2c8;background:var(--danger-bg)}.notice.success{border-color:#b8e6cf;background:var(--success-bg)}.notice.warning{border-color:#f0d38b;background:var(--warning-bg)}.notice.info{border-color:#bfd8f7;background:var(--blue-bg)}.notice h3{margin:0 0 7px;font-size:18px}.notice p{margin:3px 0;color:var(--muted)}.mono{font-family:Consolas,Monaco,monospace;font-size:13px}.table-wrap{overflow:auto;padding:16px 22px 22px}table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f7f9fc;font-size:12px;text-transform:uppercase;color:var(--muted);position:sticky;top:0}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;text-transform:uppercase}.badge-danger{background:var(--danger-bg);color:var(--danger)}.badge-success{background:var(--success-bg);color:var(--success)}.badge-warning{background:var(--warning-bg);color:var(--warning)}.badge-secondary{background:var(--secondary-bg);color:var(--secondary)}.actions{display:flex;gap:12px;flex-wrap:wrap;padding:20px 22px 24px}.btn{display:inline-block;border:0;border-radius:10px;padding:11px 15px;font-weight:700;text-decoration:none;cursor:pointer}.btn-primary{background:#1558a6;color:#fff}.btn-danger{background:#ad2635;color:#fff}.btn[disabled]{opacity:.45;cursor:not-allowed}.input{width:100%;max-width:440px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:#f7f9fc}.small{font-size:13px;color:var(--muted)}ul.compact{margin:8px 0 0;padding-left:18px}ul.compact li{margin:4px 0}@media(max-width:1100px){.metrics{grid-template-columns:repeat(2,1fr)}.audit-grid{grid-template-columns:repeat(2,1fr)}}
+        :root{--bg:#f3f6fa;--card:#fff;--text:#17243a;--muted:#6b7a90;--line:#dfe7f0;--blue:#1769d2;--green:#158754;--red:#bb2d3b;--amber:#8a5a00}
+        *{box-sizing:border-box}
+        body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+        .page{width:min(1500px,calc(100% - 28px));margin:18px auto 40px}
+        .topbar,.card{background:var(--card);border:1px solid var(--line);border-radius:12px}
+        .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;margin-bottom:14px}
+        .kicker{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+        h1{margin:4px 0 0;font-size:25px;line-height:1.15}.sub{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.45}
+        .btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 13px;border:1px solid #d3deea;border-radius:7px;background:#fff;color:#26364d;text-decoration:none;font-size:12px;font-weight:800;cursor:pointer}
+        .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{background:var(--red);border-color:var(--red);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed}
+        .notice{margin-bottom:14px;padding:13px 15px;border:1px solid #efc3c8;border-radius:10px;background:#fff0f1;color:#7e1d28;font-size:13px;line-height:1.5}.notice.success{border-color:#bfe3cf;background:#edf9f2;color:#17623c}.notice.info{border-color:#cfe0f7;background:#eff6ff;color:#285a97}.notice.warn{border-color:#ead59e;background:#fff9e8;color:#745100}
+        .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.metric{padding:14px;background:#fff;border:1px solid var(--line);border-radius:10px}.metric-label{color:#66778f;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}.metric-value{margin-top:7px;font-size:22px;font-weight:800}.metric-sub{margin-top:4px;color:var(--muted);font-size:10.5px}
+        .audit-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px}.audit{padding:12px;border:1px solid var(--line);border-radius:9px;background:#fbfcfe}.audit-label{font-size:9.5px;font-weight:800;text-transform:uppercase;color:#66778f}.audit-value{margin-top:5px;font-size:17px;font-weight:800}.audit-value.good{color:var(--green)}.audit-value.bad{color:var(--red)}
+        .card{margin-bottom:14px;overflow:hidden}.card-head{padding:14px 16px;border-bottom:1px solid #e8edf3}.card-title{font-size:16px;font-weight:800}.card-note{margin-top:3px;color:var(--muted);font-size:11px;line-height:1.45}.card-body{padding:14px 16px}.table-wrap{overflow:auto}
+        table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:9px 10px;border-bottom:1px solid #e9eef4;text-align:left;vertical-align:top}th{background:#f5f8fc;color:#596b84;font-size:9.5px;text-transform:uppercase;letter-spacing:.035em}td.num{text-align:right;font-variant-numeric:tabular-nums}.tag{display:inline-flex;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800}.tag.clear{background:#fff0f1;color:#a32532}.tag.preserve{background:#edf9f2;color:#17623c}.tag.review{background:#fff7e7;color:#855b00}.tag.reset_counter{background:#eef5ff;color:#285f9f}
+        .order{padding:11px;border:1px solid #d9e4ef;border-radius:8px;background:#f7faff;font-size:10px;line-height:1.65;word-break:break-word}.steps{display:grid;grid-template-columns:1fr 1fr;gap:12px}.step{padding:13px;border:1px solid var(--line);border-radius:9px;background:#fbfcfe}.step-title{font-size:13px;font-weight:800}.step-text{margin:4px 0 12px;color:var(--muted);font-size:11px;line-height:1.5}label{display:block;margin:8px 0 5px;font-size:10px;font-weight:800}input[type="text"]{width:100%;min-height:40px;padding:8px 10px;border:1px solid #cfdbe8;border-radius:6px;background:#fff;color:#17243a;font-size:12px}.check{display:flex;align-items:flex-start;gap:8px;margin:10px 0 12px;color:#4c5d74;font-size:10.5px;line-height:1.45}.check input{margin-top:2px}.small{color:var(--muted);font-size:10px;line-height:1.45}.locked{padding:12px;border:1px solid #ead59e;border-radius:8px;background:#fff9e8;color:#745100;font-size:11px;line-height:1.5}
+        @media(max-width:1280px){.audit-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}@media(max-width:1050px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.steps{grid-template-columns:1fr}}@media(max-width:650px){.grid,.audit-grid{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}}
     </style>
 </head>
 <body>
-<div class="wrap">
-    <section class="panel">
-        <div class="head">
+<div class="page">
+    <div class="topbar">
+        <div>
+            <div class="kicker">Fresh Production Start · {{ config('et_erp_release.release', 'ERP') }} FK Resolution Preview</div>
             <h1>Day-Zero Database Reset</h1>
-            <p>ERP-11.3.245 FK Resolution Preview. Runtime inspection only; destructive execution remains locked.</p>
-            <div class="banner">No delete, update, truncate, counter reset or FK neutralization can run from this preview build.</div>
-
-            <div class="metrics">
-                <div class="metric"><strong>{{ $fmt($plan['rows_to_clear'] ?? 0) }}</strong><span>Known UAT/business/runtime rows</span></div>
-                <div class="metric"><strong>{{ $fmt($plan['clear_tables'] ?? 0) }}</strong><span>Would be emptied after approval</span></div>
-                <div class="metric"><strong>{{ $fmt($plan['counter_tables'] ?? 0) }}</strong><span>Would restart numbering</span></div>
-                <div class="metric"><strong>{{ $fmt($plan['preserved_tables'] ?? 0) }}</strong><span>Security/system foundation</span></div>
-                <div class="metric"><strong>{{ $fmt($plan['review_tables'] ?? 0) }}</strong><span>Must remain zero</span></div>
-            </div>
+            <div class="sub">Live-schema safety audit for the approved fresh-production plan. Foreign-key blockers, nullable neutralization candidates, exact cycle edges, child-before-parent delete order and counter restart columns are inspected while destructive execution remains locked.</div>
         </div>
-    </section>
+        <a class="btn" href="{{ url('/system/health') }}" onclick="if(history.length>1){event.preventDefault();history.back();}">← Back</a>
+    </div>
 
-    <section class="panel">
-        <div class="section-title">
-            <h2>Execution safety audit</h2>
-            <p>Read-only runtime inspection. This section does not delete, update, truncate, neutralize or reset any table.</p>
+    @if(session('reset_success'))<div class="notice success">{{ session('reset_success') }}</div>@endif
+    @if(session('reset_error'))<div class="notice">{{ session('reset_error') }}</div>@endif
+    @if($errors->any())
+        <div class="notice"><strong>Please correct the following:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+    @endif
+
+    <div class="notice warn">
+        <strong>No delete or FK neutralization can run from this safety-preview build.</strong> Zero REVIEW tables is necessary but not sufficient. Unresolved foreign-key blockers, dependency cycles and unrecognized counter restart columns also block any future execution release.
+    </div>
+
+    <div class="grid">
+        <div class="metric"><div class="metric-label">Rows marked clear</div><div class="metric-value">{{ number_format((int)$plan['rows_to_clear']) }}</div><div class="metric-sub">Known UAT/business/runtime rows</div></div>
+        <div class="metric"><div class="metric-label">Clear tables</div><div class="metric-value">{{ number_format((int)$plan['clear_tables']) }}</div><div class="metric-sub">Would be emptied after approval</div></div>
+        <div class="metric"><div class="metric-label">Counter tables</div><div class="metric-value">{{ number_format((int)$plan['counter_tables']) }}</div><div class="metric-sub">Would restart numbering</div></div>
+        <div class="metric"><div class="metric-label">Preserved tables</div><div class="metric-value">{{ number_format((int)$plan['preserved_tables']) }}</div><div class="metric-sub">Security/system foundation</div></div>
+        <div class="metric"><div class="metric-label">Needs review</div><div class="metric-value">{{ number_format((int)$plan['review_tables']) }}</div><div class="metric-sub">Must remain zero</div></div>
+    </div>
+
+    @if(!empty($plan['warnings']))
+        <div class="notice"><strong>Schema/count warnings detected.</strong> Execution remains blocked. @foreach($plan['warnings'] as $warning)<div class="small"><strong>{{ $warning['table'] }}</strong> — {{ $warning['reason'] }}</div>@endforeach</div>
+    @endif
+
+    <div class="card">
+        <div class="card-head"><div class="card-title">Execution safety audit</div><div class="card-note">Read-only runtime inspection. This section does not delete, update, truncate, neutralize or reset any table.</div></div>
+        <div class="card-body">
+            <div class="audit-grid">
+                <div class="audit"><div class="audit-label">FK relationships</div><div class="audit-value">{{ number_format((int)$plan['fk_relationships']) }}</div></div>
+                <div class="audit"><div class="audit-label">Raw FK blockers</div><div class="audit-value {{ (int)$plan['raw_fk_blockers'] === 0 ? 'good' : 'bad' }}">{{ number_format((int)$plan['raw_fk_blockers']) }}</div></div>
+                <div class="audit"><div class="audit-label">Unresolved blockers</div><div class="audit-value {{ (int)$plan['fk_blockers'] === 0 ? 'good' : 'bad' }}">{{ number_format((int)$plan['fk_blockers']) }}</div></div>
+                <div class="audit"><div class="audit-label">Dependency cycles</div><div class="audit-value {{ (int)$plan['dependency_cycles'] === 0 ? 'good' : 'bad' }}">{{ number_format((int)$plan['dependency_cycles']) }}</div></div>
+                <div class="audit"><div class="audit-label">Dependency plan</div><div class="audit-value {{ $plan['dependency_plan_ready'] ? 'good' : 'bad' }}">{{ $plan['dependency_plan_ready'] ? 'PASS' : 'BLOCKED' }}</div></div>
+                <div class="audit"><div class="audit-label">Counter reset plan</div><div class="audit-value {{ $plan['counter_reset_ready'] ? 'good' : 'bad' }}">{{ $plan['counter_reset_ready'] ? 'PASS' : 'BLOCKED' }}</div></div>
+                <div class="audit"><div class="audit-label">Fresh backup validation</div><div class="audit-value {{ $backupReady ? 'good' : 'bad' }}">{{ $backupReady ? 'PASS' : 'REQUIRED' }}</div></div>
+            </div>
+
+            @if(!empty($plan['dependency_warnings']))
+                <div class="notice" style="margin:12px 0 0"><strong>Dependency audit warning.</strong> @foreach($plan['dependency_warnings'] as $warning)<div class="small">{{ $warning }}</div>@endforeach</div>
+            @endif
+
+            @if(!empty($plan['raw_fk_blocker_items']))
+                <div class="notice info" style="margin:12px 0 0"><strong>Raw preserved-to-clear FK relationships.</strong> @foreach($plan['raw_fk_blocker_items'] as $blocker)<div class="small"><strong>{{ $blocker['child_table'] }}.{{ $blocker['child_column'] }}</strong> → {{ $blocker['parent_table'] }}.{{ $blocker['parent_column'] }} · {{ $blocker['reason'] }}</div>@endforeach</div>
+            @endif
+
+            @if(!empty($plan['neutralization_preview']))
+                <div class="notice {{ empty($plan['neutralization_warnings']) ? 'success' : 'warn' }}" style="margin:12px 0 0"><strong>Nullable FK neutralization preview.</strong> @foreach($plan['neutralization_preview'] as $item)<div class="small"><strong>{{ $item['child_table'] }}.{{ $item['child_column'] }}</strong> → {{ $item['parent_table'] }}.{{ $item['parent_column'] }} · nullable={{ ($item['nullable'] ?? null) === true ? 'YES' : (($item['nullable'] ?? null) === false ? 'NO' : 'UNKNOWN') }} · {{ strtoupper($item['status'] ?? 'UNKNOWN') }} · {{ $item['operation'] }}</div>@endforeach</div>
+            @endif
+
+            @if(!empty($plan['neutralization_warnings']))
+                <div class="notice" style="margin:12px 0 0"><strong>FK neutralization warning.</strong> @foreach($plan['neutralization_warnings'] as $warning)<div class="small"><strong>{{ $warning['table'] }}.{{ $warning['column'] }}</strong> · {{ $warning['reason'] }}</div>@endforeach</div>
+            @endif
+
+            @if(!empty($plan['fk_blocker_items']))
+                <div class="notice" style="margin:12px 0 0"><strong>Unresolved foreign-key blockers found.</strong> @foreach($plan['fk_blocker_items'] as $blocker)<div class="small"><strong>{{ $blocker['child_table'] }}.{{ $blocker['child_column'] }}</strong> → {{ $blocker['parent_table'] }}.{{ $blocker['parent_column'] }} · {{ $blocker['reason'] }}</div>@endforeach</div>
+            @endif
+
+            @if(!empty($plan['dependency_cycle_edges']))
+                <div class="notice {{ (int)$plan['dependency_cycles'] === 0 ? 'success' : '' }}" style="margin:12px 0 0"><strong>Dependency cycle edge audit.</strong> @foreach($plan['dependency_cycle_edges'] as $edge)<div class="small"><strong>{{ $edge['child_table'] }}.{{ $edge['child_column'] }}</strong> → {{ $edge['parent_table'] }}.{{ $edge['parent_column'] }} · nullable={{ ($edge['nullable'] ?? null) === true ? 'YES' : (($edge['nullable'] ?? null) === false ? 'NO' : 'UNKNOWN') }} · breakable={{ !empty($edge['can_break_with_null']) ? 'YES' : 'NO' }} · {{ $edge['operation'] }}</div>@endforeach</div>
+            @endif
+
+            @if(!empty($plan['dependency_cycle_tables']))
+                <div class="notice" style="margin:12px 0 0"><strong>Dependency cycle remains.</strong> <span class="small">{{ implode(', ', $plan['dependency_cycle_tables']) }}</span></div>
+            @elseif(!empty($plan['dependency_cycle_edges']))
+                <div class="notice success" style="margin:12px 0 0"><strong>Dependency cycles resolved in preview.</strong> <span class="small">Only schema-proven nullable cycle edges were removed from the effective ordering graph. No live data was changed.</span></div>
+            @endif
+
+            <div class="step-title" style="margin-top:14px">Safe child-before-parent delete order preview</div>
+            <div class="step-text">Every table currently classified CLEAR must appear exactly once here before a destructive release can be considered.</div>
+            <div class="order">{{ $plan['delete_order'] ? implode(' → ', $plan['delete_order']) : 'No safe delete order is currently available.' }}</div>
         </div>
+    </div>
 
-        <div class="audit-grid">
-            <div class="audit-card"><b>FK relationships</b><strong>{{ $fmt($plan['fk_relationships'] ?? 0) }}</strong></div>
-            <div class="audit-card"><b>Raw FK blockers</b><strong class="{{ ($plan['raw_fk_blockers'] ?? 0) > 0 ? 'warn' : 'ok' }}">{{ $fmt($plan['raw_fk_blockers'] ?? 0) }}</strong></div>
-            <div class="audit-card"><b>Unresolved blockers</b><strong class="{{ ($plan['fk_blockers'] ?? 0) > 0 ? 'bad' : 'ok' }}">{{ $fmt($plan['fk_blockers'] ?? 0) }}</strong></div>
-            <div class="audit-card"><b>Dependency cycles</b><strong class="{{ ($plan['dependency_cycles'] ?? 0) > 0 ? 'bad' : 'ok' }}">{{ $fmt($plan['dependency_cycles'] ?? 0) }}</strong></div>
-            <div class="audit-card"><b>Dependency plan</b><strong class="{{ !empty($plan['dependency_plan_ready']) ? 'ok' : 'bad' }}">{{ !empty($plan['dependency_plan_ready']) ? 'READY' : 'BLOCKED' }}</strong></div>
-            <div class="audit-card"><b>Counter reset plan</b><strong class="{{ !empty($plan['counter_reset_ready']) ? 'ok' : 'bad' }}">{{ !empty($plan['counter_reset_ready']) ? 'PASS' : 'BLOCKED' }}</strong></div>
-        </div>
-
-        @if(!empty($plan['raw_fk_blocker_items']))
-            <div class="notice info">
-                <h3>Raw preserved-to-clear FK relationships</h3>
-                @foreach($plan['raw_fk_blocker_items'] as $item)
-                    <p><strong>{{ $item['child_table'] }}.{{ $item['child_column'] }}</strong> → {{ $item['parent_table'] }}.{{ $item['parent_column'] }}</p>
-                @endforeach
-            </div>
-        @endif
-
-        @if(!empty($plan['neutralization_preview']))
-            <div class="notice {{ empty($plan['neutralization_warnings']) ? 'success' : 'warning' }}">
-                <h3>Nullable FK neutralization preview</h3>
-                @foreach($plan['neutralization_preview'] as $item)
-                    <p>
-                        <strong>{{ $item['child_table'] }}.{{ $item['child_column'] }}</strong> → {{ $item['parent_table'] }}.{{ $item['parent_column'] }}
-                        · nullable={{ ($item['nullable'] ?? null) === true ? 'YES' : (($item['nullable'] ?? null) === false ? 'NO' : 'UNKNOWN') }}
-                        · status={{ strtoupper($item['status'] ?? 'UNKNOWN') }}
-                        · {{ $item['operation'] ?? '' }}
-                    </p>
-                @endforeach
-            </div>
-        @endif
-
-        @if(!empty($plan['fk_blocker_items']))
-            <div class="notice danger">
-                <h3>Unresolved foreign-key blockers remain.</h3>
-                @foreach($plan['fk_blocker_items'] as $item)
-                    <p><strong>{{ $item['child_table'] }}.{{ $item['child_column'] }}</strong> → {{ $item['parent_table'] }}.{{ $item['parent_column'] }} · preserved/non-clear table still references a CLEAR parent.</p>
-                @endforeach
-            </div>
-        @endif
-
-        @if(!empty($plan['neutralization_warnings']))
-            <div class="notice danger">
-                <h3>FK neutralization warnings</h3>
-                @foreach($plan['neutralization_warnings'] as $item)
-                    <p><strong>{{ $item['table'] }}.{{ $item['column'] }}</strong> · {{ $item['reason'] }}</p>
-                @endforeach
-            </div>
-        @endif
-
-        @if(!empty($plan['dependency_cycle_edges']))
-            <div class="notice {{ ($plan['dependency_cycles'] ?? 0) > 0 ? 'danger' : 'success' }}">
-                <h3>Dependency cycle edge audit</h3>
-                @foreach($plan['dependency_cycle_edges'] as $edge)
-                    <p>
-                        <strong>{{ $edge['child_table'] }}.{{ $edge['child_column'] }}</strong> → {{ $edge['parent_table'] }}.{{ $edge['parent_column'] }}
-                        · nullable={{ ($edge['nullable'] ?? null) === true ? 'YES' : (($edge['nullable'] ?? null) === false ? 'NO' : 'UNKNOWN') }}
-                        · breakable={{ !empty($edge['can_break_with_null']) ? 'YES' : 'NO' }}
-                        · {{ $edge['operation'] ?? '' }}
-                    </p>
-                @endforeach
-            </div>
-        @endif
-
-        @if(!empty($plan['dependency_cycle_tables']))
-            <div class="notice danger"><h3>Dependency cycle remains.</h3><p>{{ implode(', ', $plan['dependency_cycle_tables']) }}</p></div>
-        @elseif(!empty($plan['dependency_cycle_edges']))
-            <div class="notice success"><h3>Dependency cycles resolved in preview.</h3><p>Only schema-proven nullable cycle edges were removed from the effective ordering graph. No live data was changed.</p></div>
-        @endif
-
-        <div class="section-title">
-            <h2>Safe child-before-parent delete order preview</h2>
-            <p>Every table currently classified CLEAR must appear exactly once here before a destructive release can be considered.</p>
-        </div>
+    <div class="card">
+        <div class="card-head"><div class="card-title">Counter reset preview</div><div class="card-note">Shows the exact live counter columns recognized for a future restart. No counter value is changed in this release.</div></div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>#</th><th>Table</th></tr></thead>
+                <thead><tr><th>Table</th><th style="text-align:right">Rows</th><th>Detected Columns</th><th>Proposed Restart Values</th><th>Status</th></tr></thead>
                 <tbody>
-                @forelse(($plan['delete_order'] ?? []) as $index => $table)
-                    <tr><td>{{ $index + 1 }}</td><td class="mono">{{ $table }}</td></tr>
+                @forelse($plan['counter_reset_preview'] as $counter)
+                    <tr>
+                        <td><strong>{{ $counter['table'] }}</strong></td>
+                        <td class="num">{{ $counter['rows'] === null ? '—' : number_format((int)$counter['rows']) }}</td>
+                        <td>{{ implode(', ', $counter['columns']) }}</td>
+                        <td>
+                            @if(!empty($counter['proposed_updates']))
+                                @foreach($counter['proposed_updates'] as $column => $value)<span class="tag reset_counter">{{ $column }}={{ $value }}</span> @endforeach
+                            @else
+                                <span class="tag review">No recognized restart column</span>
+                            @endif
+                        </td>
+                        <td><span class="tag {{ $counter['ready'] ? 'preserve' : 'review' }}">{{ $counter['ready'] ? 'READY' : 'BLOCKED' }}</span></td>
+                    </tr>
                 @empty
-                    <tr><td colspan="2">No safe delete order is currently available.</td></tr>
+                    <tr><td colspan="5">No counter tables detected.</td></tr>
                 @endforelse
                 </tbody>
             </table>
         </div>
-    </section>
+        @if(!empty($plan['counter_reset_warnings']))
+            <div class="card-body"><div class="notice" style="margin:0"><strong>Counter reset warning.</strong> @foreach($plan['counter_reset_warnings'] as $warning)<div class="small">{{ $warning }}</div>@endforeach</div></div>
+        @endif
+    </div>
 
-    <section class="panel">
-        <div class="section-title"><h2>Live table classification</h2><p>Every connected table is classified at runtime. Anything unknown fails closed to REVIEW.</p></div>
+    <div class="card">
+        <div class="card-head"><div class="card-title">Live Day-Zero plan</div><div class="card-note">Generated from the actual connected database at page load. CLEAR and RESET COUNTER remain candidates only; no mutation occurs in this release.</div></div>
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Table</th><th>Action</th><th>Rows</th><th>Reason</th></tr></thead>
+                <thead><tr><th>Action</th><th>Table</th><th style="text-align:right">Rows</th><th>Reason</th></tr></thead>
                 <tbody>
-                @foreach(($plan['items'] ?? []) as $item)
+                @forelse($plan['items'] as $item)
                     <tr>
-                        <td class="mono">{{ $item['table'] }}</td>
-                        <td><span class="badge badge-{{ $actionClass($item['action']) }}">{{ $item['action_label'] }}</span></td>
-                        <td>{{ $item['rows'] === null ? 'UNKNOWN' : $fmt($item['rows']) }}</td>
+                        <td><span class="tag {{ $item['action'] }}">{{ $item['action_label'] }}</span></td>
+                        <td><strong>{{ $item['table'] }}</strong></td>
+                        <td class="num">{{ $item['rows'] === null ? '—' : number_format((int)$item['rows']) }}</td>
                         <td>{{ $item['reason'] }}</td>
                     </tr>
-                @endforeach
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <section class="panel">
-        <div class="section-title"><h2>Counter reset preview</h2><p>Only recognized numbering columns may be reset in a future authorized destructive release.</p></div>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Table</th><th>Recognized columns</th><th>Preview</th></tr></thead>
-                <tbody>
-                @forelse(($plan['counter_reset_preview'] ?? []) as $item)
-                    <tr><td class="mono">{{ $item['table'] }}</td><td>{{ implode(', ', $item['columns']) }}</td><td>{{ $item['preview'] }}</td></tr>
                 @empty
-                    <tr><td colspan="3">No counter-reset table is currently classified.</td></tr>
+                    <tr><td colspan="4">No tables detected.</td></tr>
                 @endforelse
                 </tbody>
             </table>
         </div>
-    </section>
+    </div>
 
-    <section class="panel">
-        <div class="section-title"><h2>Backup and destructive gate</h2><p>A fresh full database backup is required, but this release cannot execute Day-Zero deletion.</p></div>
-        <div class="actions">
-            <form method="post" action="{{ route('system.production-data-reset.backup') }}">@csrf<button class="btn btn-primary" type="submit">Download Fresh Full Backup</button></form>
+    <div class="card">
+        <div class="card-head"><div class="card-title">Safety boundary</div><div class="card-note">The existing Production Transaction Reset completion lock is not reopened. This Day-Zero tool uses a separate backup area and separate completion marker.</div></div>
+        <div class="card-body">
+            <div class="steps">
+                <div class="step">
+                    <div class="step-title">1. Download full pre-Day-Zero backup</div>
+                    <div class="step-text">Creates a compressed JSON backup of every live table, including preserved tables. A fresh validated backup remains mandatory before any future destructive release.</div>
+                    <form method="POST" action="{{ route('system.production-data-reset.backup') }}">@csrf<button class="btn primary" type="submit">Download Full Database Backup</button></form>
+                    @if($backupReady)<div class="notice info" style="margin:10px 0 0">Fresh backup validated in this session: <strong>{{ $backupFilename }}</strong></div>@endif
+                </div>
+
+                <div class="step">
+                    <div class="step-title">2. Destructive reset — LOCKED</div>
+                    <div class="step-text">A later authorization release may enable execution only after zero REVIEW tables, zero unresolved FK blockers, no dependency cycles, a complete delete order, a valid counter reset plan and a fresh full backup.</div>
+                    <div class="locked"><strong>Execution enabled:</strong> NO<br><strong>Safety preview:</strong> {{ $plan['safety_preview_ready'] ? 'PASS' : 'BLOCKED' }}<br><strong>Required phrase:</strong> {{ $plan['confirmation'] }}<br><strong>Current REVIEW tables:</strong> {{ number_format((int)$plan['review_tables']) }}<br><strong>Raw FK blockers:</strong> {{ number_format((int)$plan['raw_fk_blockers']) }}<br><strong>Unresolved FK blockers:</strong> {{ number_format((int)$plan['fk_blockers']) }}<br><strong>Dependency cycles:</strong> {{ number_format((int)$plan['dependency_cycles']) }}</div>
+                    <form method="POST" action="{{ route('system.production-data-reset.execute') }}" style="margin-top:10px">@csrf
+                        <label for="confirmation">Confirmation phrase</label>
+                        <input id="confirmation" type="text" name="confirmation" value="{{ old('confirmation') }}" disabled>
+                        <label class="check"><input type="checkbox" name="acknowledge" value="1" disabled><span>I understand the approved Day-Zero reset will permanently clear the reviewed business/UAT data.</span></label>
+                        <button class="btn danger" type="submit" disabled>Day-Zero Reset Locked</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div style="padding:0 22px 24px">
-            <p><strong>Execution enabled:</strong> NO</p>
-            <p><strong>Confirmation phrase:</strong> <span class="mono">{{ $plan['confirmation'] ?? 'RESET ERP TO DAY ZERO' }}</span></p>
-            <p><strong>Unresolved FK blockers:</strong> {{ $fmt($plan['fk_blockers'] ?? 0) }}</p>
-            <p><strong>Dependency cycles:</strong> {{ $fmt($plan['dependency_cycles'] ?? 0) }}</p>
-            <p><strong>Needs review:</strong> {{ $fmt($plan['review_tables'] ?? 0) }}</p>
-            <form method="post" action="{{ route('system.production-data-reset.execute') }}">
-                @csrf
-                <input class="input" type="text" name="confirmation" value="{{ old('confirmation') }}" disabled>
-                <button class="btn btn-danger" type="submit" disabled>Day-Zero Reset Locked</button>
-            </form>
-            <p class="small">The historical ProductionDataResetService completion lock is not reopened. ERP-11.3.245 remains preview-only.</p>
-        </div>
-    </section>
+    </div>
+
+    @if($plan['completed'])
+        <div class="notice success">A Day-Zero completion marker already exists. Completed: {{ $plan['completed']['completed_at'] ?? 'Unknown' }} · By: {{ $plan['completed']['actor_name'] ?? 'Unknown' }}</div>
+    @endif
 </div>
 </body>
 </html>
