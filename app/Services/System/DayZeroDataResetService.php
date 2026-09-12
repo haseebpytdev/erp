@@ -3,17 +3,18 @@
 namespace App\Services\System;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use Throwable;
 
 /**
- * ERP-11.3.243 functional checkpoint
+ * ERP-11.3.244 functional checkpoint
  *
- * Day-Zero / Fresh Production reset planner.
+ * Day-Zero / Fresh Production execution-safety planner.
  *
- * IMPORTANT: this checkpoint resolves the production table classifications
- * approved after the ERP-11.3.242 live preview. Destructive execution remains
- * intentionally locked. No row mutation is authorized in this build.
+ * IMPORTANT: this checkpoint audits the approved production classifications,
+ * live foreign-key dependencies, safe child-before-parent delete order and
+ * counter reset columns. Destructive execution remains intentionally locked.
  */
 class DayZeroDataResetService
 {
@@ -169,6 +170,7 @@ class DayZeroDataResetService
     public function plan(): array
     {
         $items = [];
+        $actions = [];
         $rowsToClear = 0;
         $clearTables = 0;
         $counterTables = 0;
@@ -178,6 +180,7 @@ class DayZeroDataResetService
 
         foreach ($this->tableNames() as $table) {
             $classification = $this->classify($table);
+            $actions[$table] = $classification['action'];
             $rows = null;
 
             try {
@@ -214,6 +217,16 @@ class DayZeroDataResetService
             static fn (array $a, array $b): int => strcmp($a['table'], $b['table'])
         );
 
+        $dependency = $this->dependencyAudit($actions);
+        $counterPreview = $this->counterResetPreview($actions);
+
+        $safetyPreviewReady = (
+            $reviewTables === 0
+            && empty($warnings)
+            && $dependency['ready']
+            && $counterPreview['ready']
+        );
+
         return [
             'items' => $items,
             'rows_to_clear' => $rowsToClear,
@@ -224,7 +237,22 @@ class DayZeroDataResetService
             'warnings' => $warnings,
             'confirmation' => self::CONFIRMATION,
             'execution_enabled' => self::EXECUTION_ENABLED,
-            'ready_to_execute' => self::EXECUTION_ENABLED && $reviewTables === 0 && empty($warnings),
+
+            // ERP-11.3.244 execution-safety preview.
+            'fk_relationships' => count($dependency['relationships']),
+            'fk_blockers' => count($dependency['blockers']),
+            'fk_blocker_items' => $dependency['blockers'],
+            'dependency_cycles' => count($dependency['cycle_tables']),
+            'dependency_cycle_tables' => $dependency['cycle_tables'],
+            'dependency_warnings' => $dependency['warnings'],
+            'delete_order' => $dependency['delete_order'],
+            'dependency_plan_ready' => $dependency['ready'],
+            'counter_reset_preview' => $counterPreview['items'],
+            'counter_reset_warnings' => $counterPreview['warnings'],
+            'counter_reset_ready' => $counterPreview['ready'],
+            'safety_preview_ready' => $safetyPreviewReady,
+
+            'ready_to_execute' => self::EXECUTION_ENABLED && $safetyPreviewReady,
             'completed' => $this->completedRecord(),
         ];
     }
@@ -254,7 +282,7 @@ class DayZeroDataResetService
             $this->gzWrite(
                 $handle,
                 '"meta":'.json_encode([
-                    'release' => 'ERP-11.3.243-CLASSIFICATION-PREVIEW',
+                    'release' => 'ERP-11.3.244-EXECUTION-SAFETY-PREVIEW',
                     'created_at' => now()->toIso8601String(),
                     'actor_id' => $this->userId($user),
                     'actor_name' => $this->userName($user),
@@ -336,8 +364,8 @@ class DayZeroDataResetService
 
         if (! self::EXECUTION_ENABLED) {
             throw new RuntimeException(
-                'Day-Zero execution is intentionally LOCKED in ERP-11.3.243 classification preview. '
-                .'The approved table plan may be inspected, but no database rows were changed.'
+                'Day-Zero execution is intentionally LOCKED in ERP-11.3.244 execution safety preview. '
+                .'Foreign-key dependencies, delete order and counter resets may be inspected, but no database rows were changed.'
             );
         }
 
@@ -463,6 +491,369 @@ class DayZeroDataResetService
         }
 
         return false;
+    }
+
+    /**
+     * @param array<string,string> $actions
+     * @return array<string,mixed>
+     */
+    private function dependencyAudit(array $actions): array
+    {
+        try {
+            $relationships = $this->foreignKeyRelationships();
+        } catch (Throwable $e) {
+            return [
+                'relationships' => [],
+                'blockers' => [],
+                'cycle_tables' => [],
+                'warnings' => [
+                    'Unable to inspect foreign-key dependencies safely: '.$e->getMessage(),
+                ],
+                'delete_order' => [],
+                'ready' => false,
+            ];
+        }
+
+        $blockers = [];
+        $clearTables = [];
+        $edges = [];
+
+        foreach ($actions as $table => $action) {
+            if ($action === 'clear') {
+                $clearTables[] = $table;
+            }
+        }
+
+        sort($clearTables);
+
+        foreach ($relationships as $relationship) {
+            $child = $relationship['child_table'];
+            $parent = $relationship['parent_table'];
+            $childAction = $actions[$child] ?? 'review';
+            $parentAction = $actions[$parent] ?? 'review';
+
+            if ($parentAction === 'clear' && $childAction !== 'clear') {
+                $blockers[] = $relationship + [
+                    'child_action' => $childAction,
+                    'parent_action' => $parentAction,
+                    'reason' => strtoupper($childAction).' table references a CLEAR parent table.',
+                ];
+            }
+
+            if ($childAction === 'clear' && $parentAction === 'clear') {
+                $edges[] = [$child, $parent];
+            }
+        }
+
+        $deleteOrder = $this->topologicalDeleteOrder($clearTables, $edges);
+        $cycleTables = array_values(array_diff($clearTables, $deleteOrder));
+        sort($cycleTables);
+
+        return [
+            'relationships' => $relationships,
+            'blockers' => $blockers,
+            'cycle_tables' => $cycleTables,
+            'warnings' => [],
+            'delete_order' => $deleteOrder,
+            'ready' => (
+                empty($blockers)
+                && empty($cycleTables)
+                && count($deleteOrder) === count($clearTables)
+            ),
+        ];
+    }
+
+    /**
+     * @param array<int,string> $clearTables
+     * @param array<int,array{0:string,1:string}> $edges
+     * @return array<int,string>
+     */
+    private function topologicalDeleteOrder(array $clearTables, array $edges): array
+    {
+        $adjacency = [];
+        $indegree = [];
+
+        foreach ($clearTables as $table) {
+            $adjacency[$table] = [];
+            $indegree[$table] = 0;
+        }
+
+        $seen = [];
+
+        foreach ($edges as [$child, $parent]) {
+            if (! isset($adjacency[$child], $adjacency[$parent])) {
+                continue;
+            }
+
+            $key = $child."\0".$parent;
+
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $adjacency[$child][$parent] = true;
+            $indegree[$parent]++;
+        }
+
+        $queue = [];
+
+        foreach ($indegree as $table => $count) {
+            if ($count === 0) {
+                $queue[] = $table;
+            }
+        }
+
+        sort($queue);
+        $order = [];
+
+        while ($queue !== []) {
+            $table = array_shift($queue);
+            $order[] = $table;
+
+            $parents = array_keys($adjacency[$table]);
+            sort($parents);
+
+            foreach ($parents as $parent) {
+                $indegree[$parent]--;
+
+                if ($indegree[$parent] === 0) {
+                    $queue[] = $parent;
+                    sort($queue);
+                }
+            }
+        }
+
+        return $order;
+    }
+
+    /**
+     * @param array<string,string> $actions
+     * @return array<string,mixed>
+     */
+    private function counterResetPreview(array $actions): array
+    {
+        $items = [];
+        $warnings = [];
+
+        foreach ($actions as $table => $action) {
+            if ($action !== 'reset_counter') {
+                continue;
+            }
+
+            try {
+                $columns = Schema::getColumnListing($table);
+                $updates = [];
+
+                foreach ([
+                    'current_value',
+                    'last_number',
+                    'last_value',
+                    'counter',
+                    'sequence_value',
+                    'current_number',
+                    'last_number_used',
+                ] as $column) {
+                    if (in_array($column, $columns, true)) {
+                        $updates[$column] = 0;
+                    }
+                }
+
+                foreach ([
+                    'next_number',
+                    'next_value',
+                    'next_sequence',
+                    'next_no',
+                ] as $column) {
+                    if (in_array($column, $columns, true)) {
+                        $updates[$column] = 1;
+                    }
+                }
+
+                $rowCount = (int) DB::table($table)->count();
+
+                if ($updates === []) {
+                    $warnings[] = 'Counter table '.$table.' has no recognized restart column.';
+                }
+
+                $items[] = [
+                    'table' => $table,
+                    'rows' => $rowCount,
+                    'columns' => $columns,
+                    'proposed_updates' => $updates,
+                    'ready' => $updates !== [],
+                ];
+            } catch (Throwable $e) {
+                $warnings[] = 'Unable to preview counter reset for '.$table.': '.$e->getMessage();
+
+                $items[] = [
+                    'table' => $table,
+                    'rows' => null,
+                    'columns' => [],
+                    'proposed_updates' => [],
+                    'ready' => false,
+                ];
+            }
+        }
+
+        usort(
+            $items,
+            static fn (array $a, array $b): int => strcmp($a['table'], $b['table'])
+        );
+
+        return [
+            'items' => $items,
+            'warnings' => $warnings,
+            'ready' => empty($warnings),
+        ];
+    }
+
+    /** @return array<int,array<string,string>> */
+    private function foreignKeyRelationships(): array
+    {
+        $connection = DB::connection();
+        $driver = strtolower((string) $connection->getDriverName());
+        $relationships = [];
+
+        if ($driver === 'mysql' || $driver === 'mariadb') {
+            $rows = DB::select(
+                "SELECT CONSTRAINT_NAME AS constraint_name,
+                        TABLE_NAME AS child_table,
+                        COLUMN_NAME AS child_column,
+                        REFERENCED_TABLE_NAME AS parent_table,
+                        REFERENCED_COLUMN_NAME AS parent_column
+                   FROM information_schema.KEY_COLUMN_USAGE
+                  WHERE TABLE_SCHEMA = DATABASE()
+                    AND REFERENCED_TABLE_NAME IS NOT NULL
+               ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION"
+            );
+
+            foreach ($rows as $row) {
+                $relationships[] = $this->normalizeForeignKeyRow((array) $row);
+            }
+        } elseif ($driver === 'pgsql') {
+            $rows = DB::select(
+                "SELECT tc.constraint_name AS constraint_name,
+                        kcu.table_name AS child_table,
+                        kcu.column_name AS child_column,
+                        ccu.table_name AS parent_table,
+                        ccu.column_name AS parent_column
+                   FROM information_schema.table_constraints tc
+                   JOIN information_schema.key_column_usage kcu
+                     ON tc.constraint_name = kcu.constraint_name
+                    AND tc.table_schema = kcu.table_schema
+                   JOIN information_schema.constraint_column_usage ccu
+                     ON ccu.constraint_name = tc.constraint_name
+                    AND ccu.table_schema = tc.table_schema
+                  WHERE tc.constraint_type = 'FOREIGN KEY'
+                    AND tc.table_schema = current_schema()
+               ORDER BY kcu.table_name, tc.constraint_name, kcu.ordinal_position"
+            );
+
+            foreach ($rows as $row) {
+                $relationships[] = $this->normalizeForeignKeyRow((array) $row);
+            }
+        } elseif ($driver === 'sqlsrv') {
+            $rows = DB::select(
+                "SELECT fk.name AS constraint_name,
+                        OBJECT_NAME(fkc.parent_object_id) AS child_table,
+                        COL_NAME(fkc.parent_object_id, fkc.parent_column_id) AS child_column,
+                        OBJECT_NAME(fkc.referenced_object_id) AS parent_table,
+                        COL_NAME(fkc.referenced_object_id, fkc.referenced_column_id) AS parent_column
+                   FROM sys.foreign_key_columns fkc
+                   JOIN sys.foreign_keys fk
+                     ON fk.object_id = fkc.constraint_object_id
+               ORDER BY child_table, constraint_name, fkc.constraint_column_id"
+            );
+
+            foreach ($rows as $row) {
+                $relationships[] = $this->normalizeForeignKeyRow((array) $row);
+            }
+        } elseif ($driver === 'sqlite') {
+            foreach ($this->tableNames() as $table) {
+                $quoted = '"'.str_replace('"', '""', $table).'"';
+                $rows = DB::select('PRAGMA foreign_key_list('.$quoted.')');
+
+                foreach ($rows as $row) {
+                    $array = (array) $row;
+
+                    $relationships[] = [
+                        'constraint' => 'sqlite_fk_'.(string) ($array['id'] ?? ''),
+                        'child_table' => $table,
+                        'child_column' => (string) ($array['from'] ?? ''),
+                        'parent_table' => (string) ($array['table'] ?? ''),
+                        'parent_column' => (string) ($array['to'] ?? ''),
+                    ];
+                }
+            }
+        } else {
+            throw new RuntimeException('Unsupported database driver for Day-Zero dependency audit: '.$driver);
+        }
+
+        $relationships = array_values(
+            array_filter(
+                $relationships,
+                static fn (array $relationship): bool =>
+                    $relationship['child_table'] !== ''
+                    && $relationship['parent_table'] !== ''
+            )
+        );
+
+        usort(
+            $relationships,
+            static function (array $a, array $b): int {
+                return strcmp(
+                    implode("\0", [
+                        $a['child_table'],
+                        $a['constraint'],
+                        $a['child_column'],
+                        $a['parent_table'],
+                        $a['parent_column'],
+                    ]),
+                    implode("\0", [
+                        $b['child_table'],
+                        $b['constraint'],
+                        $b['child_column'],
+                        $b['parent_table'],
+                        $b['parent_column'],
+                    ])
+                );
+            }
+        );
+
+        return $relationships;
+    }
+
+    /** @param array<string,mixed> $row */
+    private function normalizeForeignKeyRow(array $row): array
+    {
+        return [
+            'constraint' => trim((string) (
+                $row['constraint_name']
+                ?? $row['CONSTRAINT_NAME']
+                ?? ''
+            )),
+            'child_table' => trim((string) (
+                $row['child_table']
+                ?? $row['CHILD_TABLE']
+                ?? ''
+            )),
+            'child_column' => trim((string) (
+                $row['child_column']
+                ?? $row['CHILD_COLUMN']
+                ?? ''
+            )),
+            'parent_table' => trim((string) (
+                $row['parent_table']
+                ?? $row['PARENT_TABLE']
+                ?? ''
+            )),
+            'parent_column' => trim((string) (
+                $row['parent_column']
+                ?? $row['PARENT_COLUMN']
+                ?? ''
+            )),
+        ];
     }
 
     /** @return array<int,string> */

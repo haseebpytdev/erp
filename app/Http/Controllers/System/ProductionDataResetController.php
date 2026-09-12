@@ -25,7 +25,7 @@ class ProductionDataResetController extends Controller
             'system.day-zero-data-reset-v113242',
             [
                 'plan' => $service->plan(),
-                'backupReady' => $this->backupReady($request),
+                'backupReady' => $this->backupReady($request, $service),
                 'backupFilename' => basename(
                     (string) $request->session()->get(
                         'day_zero_reset_backup_path',
@@ -135,23 +135,23 @@ class ProductionDataResetController extends Controller
             );
     }
 
-    private function backupReady(Request $request): bool
-    {
+    private function backupReady(
+        Request $request,
+        DayZeroDataResetService $service
+    ): bool {
         $path = (string) $request->session()->get(
             'day_zero_reset_backup_path',
             ''
         );
-        $at = (int) $request->session()->get(
-            'day_zero_reset_backup_at',
-            0
+        $at = $request->session()->get(
+            'day_zero_reset_backup_at'
         );
 
-        return (
-            $path !== ''
-            && is_file($path)
-            && filesize($path) > 0
-            && $at > 0
-            && (time() - $at) <= 7200
-        );
+        try {
+            $service->validateBackup($path, $at);
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
     }
 }
