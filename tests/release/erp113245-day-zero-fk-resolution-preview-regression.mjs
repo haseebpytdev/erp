@@ -13,16 +13,31 @@ function assert(name, condition) {
   }
 }
 
+const preserveBlock = service.slice(service.indexOf('private array $preserveExact'), service.indexOf('private array $counterTables'));
+const clearBlock = service.slice(service.indexOf('private array $clearExact'), service.indexOf('private array $nullableNeutralizationCandidates'));
+const destructiveTokens = [
+  '->delete(',
+  '->truncate(',
+  'DB::statement(\'DELETE',
+  'DB::statement("DELETE',
+  'DB::unprepared(\'DELETE',
+  'DB::unprepared("DELETE',
+  'DROP TABLE',
+  'TRUNCATE TABLE',
+];
+
 assert('VERSION_STAYS_244_DURING_FUNCTIONAL_CHECKPOINT', version === 'v1.1.33.244-ERP11.3.244');
 assert('EXECUTION_REMAINS_DISABLED', service.includes("public const EXECUTION_ENABLED = false;"));
-assert('SERVICE_COST_ALLOCATIONS_IS_CLEAR', service.includes("'service_cost_allocations',") && service.indexOf("'service_cost_allocations',") > service.indexOf('private array $clearExact'));
-assert('SERVICE_COST_ALLOCATIONS_NOT_PRESERVED', !service.slice(service.indexOf('private array $preserveExact'), service.indexOf('private array $counterTables')).includes("'service_cost_allocations'"));
+assert('NO_DESTRUCTIVE_DB_OPERATION_ADDED', destructiveTokens.every((token) => !service.includes(token)));
+assert('SERVICE_COST_ALLOCATIONS_IS_CLEAR', clearBlock.includes("'service_cost_allocations',"));
+assert('SERVICE_COST_ALLOCATIONS_NOT_PRESERVED', !preserveBlock.includes("'service_cost_allocations',"));
 assert('AIRLINES_VENDOR_NEUTRALIZATION_CANDIDATE', service.includes("'table' => 'airlines'") && service.includes("'column' => 'default_vendor_party_id'"));
 assert('BOOKING_SOURCES_VENDOR_NEUTRALIZATION_CANDIDATE', service.includes("'table' => 'booking_sources'") && service.includes("'parent_table' => 'parties'"));
 assert('NULLABILITY_IS_RUNTIME_INSPECTED', service.includes('private function isColumnNullable('));
 assert('RAW_AND_UNRESOLVED_BLOCKERS_ARE_DISTINCT', service.includes("'raw_fk_blockers'") && service.includes("'fk_blockers'"));
+assert('CYCLE_EDGES_USE_STRONGLY_CONNECTED_COMPONENTS', service.includes('private function cycleEdgeAudit(') && service.includes('$strongConnect'));
 assert('CYCLE_EDGES_ARE_EXPOSED', service.includes("'dependency_cycle_edges'") && service.includes("'can_break_with_null'"));
-assert('DELETE_ORDER_IS_RECALCULATED', service.includes('private function topologicalDeleteOrder('));
+assert('DELETE_ORDER_IS_RECALCULATED', service.includes('private function topologicalDeleteOrder(') && service.includes('$breakableCycleKeys'));
 assert('UNKNOWN_TABLES_STILL_FAIL_CLOSED', service.includes("'action' => 'review'") && service.includes('Unclassified table. Must be reviewed explicitly'));
 assert('BACKUP_STILL_FULL_DATABASE', service.includes("'purpose' => 'Full pre-Day-Zero database backup'") && service.includes('foreach ($this->tableNames() as $table)'));
 assert('EXECUTE_METHOD_STILL_LOCKED', service.includes('Day-Zero execution is intentionally LOCKED in ERP-11.3.245 FK resolution preview'));
