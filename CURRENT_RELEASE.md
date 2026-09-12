@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.242
-APPLICATION_VERSION=v1.1.33.242-ERP11.3.242
+CURRENT_VERSION=ERP-11.3.243
+APPLICATION_VERSION=v1.1.33.243-ERP11.3.243
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.242
+LAST_PACKAGED_RELEASE=ERP-11.3.243
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -474,3 +474,17 @@ the service and the reset button is disabled. No table deletion, truncation,
 counter reset or other business-data mutation can execute from this release.
 A later explicitly reviewed release will be required before Day-Zero execution
 can be enabled. No migration is required.
+ERP-11.3.243 Day-Zero classification preview resolves the complete live
+ERP-11.3.242 production REVIEW set. All 31 previously unclassified tables now
+have explicit approved actions: 20 CLEAR, 10 PRESERVE and 1 RESET COUNTER.
+Existing user accounts, user-role/branch links, roles, permissions, staff,
+organization and required accounting/security foundations remain preserved.
+Business/UAT identities, business-entered Day-1 masters and historical runtime
+residue are explicitly classified for clearing. Number-sequence counters are
+classified for restart.
+
+This remains a classification PREVIEW ONLY. EXECUTION_ENABLED remains false,
+the service contains no destructive database operation, and future unknown
+tables continue to fail closed to REVIEW. ERP-11.3.240 UI behavior remains the
+accepted UI baseline. No migration is required and deployment itself performs
+no business-data mutation.

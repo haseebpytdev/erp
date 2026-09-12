@@ -73,7 +73,7 @@ ok(service.includes("'parties'") && service.includes("'party_roles'"), 'approved
 ok(service.includes("'number_sequence_counters'"), 'production number sequence counters will restart');
 ok(service.includes("'release' => 'ERP-11.3.243-CLASSIFICATION-PREVIEW'"), 'backup metadata identifies classification preview');
 ok(service.includes('Day-Zero execution is intentionally LOCKED in ERP-11.3.243 classification preview'), 'execute path remains locked after classification');
-ok(version === 'v1.1.33.242-ERP11.3.242', 'functional .243 checkpoint intentionally retains deployed .242 release metadata');
+ok(version === 'v1.1.33.243-ERP11.3.243', 'ERP-11.3.243 classification preview release metadata is promoted for packaging');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
