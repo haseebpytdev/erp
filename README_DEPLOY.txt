@@ -1,4 +1,4 @@
-ERP-11.3.243 DIRECT UPLOAD - DAY-ZERO CLASSIFICATION PREVIEW
+ERP-11.3.244 DIRECT UPLOAD - DAY-ZERO EXECUTION SAFETY PREVIEW
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -8,21 +8,20 @@ Deployment without SSH:
 3. Do not run Safe Database Upgrade; this release has no migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
-ERP-11.3.243 is the locked Day-Zero CLASSIFICATION PREVIEW release. The live
-ERP-11.3.242 production inspection identified 31 REVIEW tables; all 31 are now
-resolved explicitly into 20 CLEAR, 10 PRESERVE and 1 RESET COUNTER actions.
-Existing users, roles, permissions, user-role/branch links, staff and required
-organization/accounting/security foundation remain preserved. Approved Day-1
-business/UAT data and business-entered operational masters are classified for
-clearing, while numbering counters are classified for restart. Future unknown
-tables still fail closed to REVIEW.
+ERP-11.3.244 is the locked Day-Zero EXECUTION SAFETY PREVIEW release. It retains
+the production-confirmed zero-REVIEW classification plan and performs the final
+runtime dependency inspection required before execution can ever be authorized.
+The live database is inspected for foreign keys, preserved-child/CLEAR-parent
+blockers, CLEAR-table dependency cycles and a safe child-before-parent deletion
+order. The exact number-sequence counter columns and proposed reset values are
+also previewed. Fresh-backup status is validated by the same Day-Zero service
+authority that protects the execute path.
 
-IMPORTANT: destructive execution remains intentionally disabled in ERP-11.3.243.
-The reset button remains locked and the service contains no table deletion,
+IMPORTANT: destructive execution remains intentionally disabled in ERP-11.3.244.
+The reset button remains locked and this release contains no table deletion,
 truncate, counter mutation or destructive database statement. Deploy this
-release only to verify that the production plan has zero REVIEW tables before
-authorizing any later execution-enabled Day-Zero release. No migration is
-required.
+release only to inspect the production FK/dependency/counter plan. No migration
+is required.
 
 Public /voucher/*, print and PDF routes remain excluded from the shared UI
 injection. No accounting formula, posted-journal authority, booking workflow,

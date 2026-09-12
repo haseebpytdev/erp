@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.243
-APPLICATION_VERSION=v1.1.33.243-ERP11.3.243
+CURRENT_VERSION=ERP-11.3.244
+APPLICATION_VERSION=v1.1.33.244-ERP11.3.244
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.243
+LAST_PACKAGED_RELEASE=ERP-11.3.244
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -488,3 +488,19 @@ the service contains no destructive database operation, and future unknown
 tables continue to fail closed to REVIEW. ERP-11.3.240 UI behavior remains the
 accepted UI baseline. No migration is required and deployment itself performs
 no business-data mutation.
+ERP-11.3.244 Day-Zero execution-safety preview retains the production-confirmed
+zero-REVIEW classification plan from ERP-11.3.243 and adds the final runtime
+safety inspection required before destructive execution can be considered. The
+planner discovers live foreign keys, blocks any preserved/counter/review child
+that references a CLEAR parent, computes child-before-parent deletion order for
+CLEAR tables, detects dependency cycles and inspects the exact live numbering
+columns that would be reset.
+
+The Day-Zero page also reports fresh-backup validation using the same service
+authority used by the future execute path, and its header now derives the current
+release dynamically instead of displaying the stale ERP-11.3.242 label.
+
+ERP-11.3.244 remains PREVIEW ONLY. EXECUTION_ENABLED is false, the reset control
+remains locked, and the new service contains no delete, truncate or other
+destructive database operation. No migration is required and deployment itself
+performs no business-data mutation.

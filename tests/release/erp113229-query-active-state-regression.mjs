@@ -19,7 +19,7 @@ ok(!finalizer.includes("link.classList.remove('et-ui-current')") && !finalizer.i
 ok(shellCss.includes('a[data-et-native-active="true"]'), 'CSS renders the annotated native current destination');
 ok(shellCss.includes(':has(.nav [data-et-native-active="true"])'), 'parent row is prevented from looking like a second active destination');
 ok(cashLinks.includes("$receiptActive") && cashLinks.includes("$paymentActive") && cashLinks.includes("$expenseActive") && cashLinks.includes("$contraActive"), 'cash voucher middleware remains query-aware native authority');
-ok(version === 'v1.1.33.243-ERP11.3.243', 'functional .241 checkpoint does not bump deployed release metadata');
+ok(version === 'v1.1.33.244-ERP11.3.244', 'functional .241 checkpoint does not bump deployed release metadata');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
