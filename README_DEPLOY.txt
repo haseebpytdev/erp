@@ -1,4 +1,4 @@
-ERP-11.3.248 DIRECT UPLOAD - UNIFIED ERP SHELL
+ERP-11.3.249 DIRECT UPLOAD - FINAL DAY-ONE PRODUCTION NUMBERING
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -7,7 +7,13 @@ Deployment without SSH:
 2. Open System Health & Updates.
 3. Do not run Safe Database Upgrade; this release has no migration.
 4. Click Clear Application Cache.
-5. Ctrl+F5.
+5. Open the completed Day-Zero / Day-One screen and inspect the live preview.
+6. Require READY=PASS before entering RESET DAY ONE SEQUENCES.
+7. Confirm business identities/next numbers are 1000, last-used counters are
+   999 and number_sequences.padding is 4.
+8. audit_logs/login_events are retained runtime telemetry; they are not deleted
+   or identity-reseeded. Every genuine business CLEAR table remains fail-closed.
+9. Ctrl+F5 after the one-time action completes.
 ERP-11.3.245 is the locked Day-Zero FK RESOLUTION PREVIEW release. It resolves
 the structural issues discovered by the ERP-11.3.244 production safety audit.
 service_cost_allocations is classified CLEAR rather than PRESERVE. Preserved

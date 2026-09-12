@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.248
-APPLICATION_VERSION=v1.1.33.248-ERP11.3.248
+CURRENT_VERSION=ERP-11.3.249
+APPLICATION_VERSION=v1.1.33.249-ERP11.3.249
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.248
+LAST_PACKAGED_RELEASE=ERP-11.3.249
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -586,3 +586,19 @@ geometry or active-link presentation with style.setProperty.
 
 No migration, booking/accounting business logic, database schema, print layout
 or voucher layout is changed.
+
+ERP-11.3.249 final Day-One production numbering authority follows the completed
+Day-Zero reset. The first production number and business identity is plain
+1000; last-used counter authorities are normalized to 999 and next-number
+authorities to 1000. `number_sequences.padding` is explicitly enforced and
+verified as 4, so neither 000001 nor 001000 is used.
+
+`audit_logs` and `login_events` are recognized only by Day-One as post-reset
+runtime/security telemetry. Their rows are not deleted, their identities are
+not reseeded, and they do not weaken the fail-closed emptiness gate for every
+genuine business CLEAR table. Day-Zero classification remains unchanged.
+
+Execution still requires the exact `RESET DAY ONE SEQUENCES` confirmation,
+the completed Day-Zero marker, all counter and identity verification, and the
+permanent one-time Day-One completion lock. No migration, booking/accounting
+logic, shell UI, print or voucher layout changes are included.
