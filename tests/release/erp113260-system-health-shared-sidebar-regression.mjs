@@ -23,6 +23,11 @@ ok(css.includes('.sidebar-menu a.active') && css.includes('.sidebar-menu a[aria-
 ok(css.includes('.sidebar-menu a>span:first-child') && css.includes('flex:0 0 18px'), 'alternate nav icon footprint is 18px');
 ok(shell.includes('.sidebar-menu>.et-ui-nav-group') && shell.includes('.sidebar-menu>a.et-ui-nav-row[data-et-sidebar-group="dashboard"]'), 'alternate nav geometry matches canonical groups/dashboard');
 ok(!shell.includes('.sidebar-menu{width:208px') && !shell.includes('.sidebar-menu{height:100vh'), 'alternate nav is not promoted to frame');
+ok(shell.includes('.sidebar-menu>.et-ui-nav-group>a') && shell.includes('margin:0!important'), 'canonical standalone group rows reset margin');
+ok(shell.includes('.sidebar-menu>.et-ui-nav-group') && shell.includes('gap:3px!important'), 'canonical standalone group gap remains 3px');
+ok(shell.includes('.sidebar-menu>a.et-ui-nav-row[data-et-sidebar-group="dashboard"]') && shell.includes('margin:0 0 6px!important'), 'standalone Dashboard keeps six pixel gap');
+ok(css.includes('.sidebar-menu a.active>.et-ui-nav-icon') && css.includes('background:#1769d2!important') && css.includes('color:#fff!important'), 'standalone active icon parity');
+ok(css.includes('.sidebar-menu a>span:first-child') && css.includes('flex:0 0 18px!important'), 'standalone icon footprint remains 18px');
 ok(!route.includes("Route::get('/system/update'"), 'no duplicate Health route/menu authority introduced');
 ok(js.includes('failed-empty-plan') && js.includes("body.dataset.etSidebarNormalization = 'failed'"), 'failure remains fail-closed');
 console.log(`erp113260-system-health-shared-sidebar-regression: ${pass} assertions passed`);

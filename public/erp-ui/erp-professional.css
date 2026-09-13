@@ -677,6 +677,12 @@ html body.et-ui-professional .sidebar-menu a[aria-current="page"]:hover{backgrou
 html body.et-ui-professional .sidebar-menu a.active *,
 html body.et-ui-professional .sidebar-menu a.et-ui-current *,
 html body.et-ui-professional .sidebar-menu a[aria-current="page"] *{color:inherit!important;}
+html body.et-ui-professional .sidebar-menu a.active>.et-ui-nav-icon,
+html body.et-ui-professional .sidebar-menu a.et-ui-current>.et-ui-nav-icon,
+html body.et-ui-professional .sidebar-menu a[aria-current="page"]>.et-ui-nav-icon{
+  background:#1769d2!important;
+  color:#fff!important;
+}
 html body.et-ui-professional .sidebar-menu a>span:first-child,
 html body.et-ui-professional .sidebar-menu a>i:first-child,
 html body.et-ui-professional .sidebar-menu a>svg:first-child{
