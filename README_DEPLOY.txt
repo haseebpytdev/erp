@@ -1,4 +1,4 @@
-ERP-11.3.254 DIRECT UPLOAD - UI CONSISTENCY PASS
+ERP-11.3.255 DIRECT UPLOAD - LIVE UI CONTAINMENT
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -11,7 +11,7 @@ Deployment without SSH:
 6. Verify the Dashboard and representative register, accounting and booking
    pages at desktop, laptop, tablet and mobile widths.
 
-ERP-11.3.254 preserves one final external authenticated shell geometry authority:
+ERP-11.3.255 preserves one final external authenticated shell geometry authority:
 public/erp-ui/erp-shell-spacing.css.
 
 - Desktop/laptop sidebar: 208px
@@ -29,6 +29,9 @@ public/erp-ui/erp-shell-spacing.css.
 - Sidebar root/brand/menu spacing and icon treatment are normalized
 - Booking Register action popover remains a compact fixed body portal
 - System Health page-level wrapper is removed without altering inner cards
+- Dashboard KPI accents are contained inside their cards
+- System Health inner panels resolve safely without tagging shell hosts
+- Sidebar rows use 32px height with 2px vertical margins
 - Shell top rhythm remains 18px desktop / 16px responsive
 - Booking focus remains one-column
 

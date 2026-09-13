@@ -185,8 +185,8 @@ ok(
 );
 
 ok(
-  version === 'v1.1.33.254-ERP11.3.254',
-  'ERP-11.3.254 release metadata is current'
+  version === 'v1.1.33.255-ERP11.3.255',
+  'ERP-11.3.255 release metadata is current'
 );
 
 console.log(`TESTS_PASS=${pass}`);
