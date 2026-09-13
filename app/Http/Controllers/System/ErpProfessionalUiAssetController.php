@@ -7,6 +7,16 @@ use Illuminate\Http\Response;
 
 final class ErpProfessionalUiAssetController extends Controller
 {
+    public function tesseract(string $type, string $asset): Response
+    {
+        $roots = ['dist' => 'dist', 'core' => 'core', 'lang-data' => 'lang-data'];
+        abort_unless(isset($roots[$type]) && preg_match('/^[A-Za-z0-9._-]+$/', $asset), 404);
+        $path = base_path('public/erp-ui/vendor/tesseract/'.$roots[$type].'/'.$asset);
+        abort_unless(is_file($path), 404);
+        $mime = str_ends_with($asset, '.wasm') ? 'application/wasm' : (str_ends_with($asset, '.gz') ? 'application/gzip' : (str_ends_with($asset, '.js') ? 'application/javascript; charset=UTF-8' : 'application/octet-stream'));
+        return response()->file($path, ['Content-Type' => $mime, 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, max-age=31536000, immutable']);
+    }
+
     public function css(): Response
     {
         $prepaint = base_path('public/erp-ui/erp-sidebar-prepaint.css');

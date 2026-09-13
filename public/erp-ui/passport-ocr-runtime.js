@@ -1,14 +1,20 @@
 (function (root) {
   'use strict';
-  // Browser-local OCR authority. Deploys with the ERP and never sends image bytes
-  // over the network. Native TextDetector is used when available; callers may
-  // inject a local WASM recognizer through this same adapter contract.
+  // Browser-local OCR authority. All runtime paths are same-origin Laravel
+  // asset routes; image bytes never leave the browser.
+  let workerPromise = null;
+  const base = root.ETTesseractAssetBase || '/system/erp-assets/tesseract';
+  const workerPath = `${base}/dist/worker.min.js`;
+  const corePath = `${base}/core`;
+  const langPath = `${base}/lang-data`;
   root.ETLocalOCR = {
     async recognize(source, options = {}) {
-      if (typeof root.TextDetector !== 'function') throw new Error('Local OCR runtime is unavailable.');
-      const detector = new root.TextDetector();
-      const blocks = await detector.detect(source);
-      return blocks.map(block => block.rawValue || '').join('\n');
+      if (!root.Tesseract || typeof root.Tesseract.createWorker !== 'function') throw new Error('Passport OCR could not start. Paste the MRZ or enter the passenger manually.');
+      if (!workerPromise) workerPromise = root.Tesseract.createWorker('eng', 1, { workerPath, corePath, langPath });
+      const worker = await workerPromise;
+      await worker.setParameters({ tessedit_char_whitelist: options.whitelist || 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<' });
+      const result = await worker.recognize(source);
+      return result?.data?.text || '';
     }
   };
 })(window);

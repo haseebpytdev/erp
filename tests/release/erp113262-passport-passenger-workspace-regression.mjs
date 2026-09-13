@@ -13,6 +13,11 @@ const mrz = fs.readFileSync(new URL('../../public/erp-ui/passport-mrz.js', impor
 const view = fs.readFileSync(new URL('../../resources/views/operations/passengers/index.blade.php', import.meta.url), 'utf8');
 const scanner = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
 const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
+const ocrEngine = fs.readFileSync(new URL('../../public/erp-ui/vendor/tesseract/dist/tesseract.min.js', import.meta.url), 'utf8');
+const ocrWorkerPath = new URL('../../public/erp-ui/vendor/tesseract/dist/worker.min.js', import.meta.url);
+const ocrCorePath = new URL('../../public/erp-ui/vendor/tesseract/core/tesseract-core.wasm.js', import.meta.url);
+const ocrWasmPath = new URL('../../public/erp-ui/vendor/tesseract/core/tesseract-core.wasm', import.meta.url);
+const ocrLangPath = new URL('../../public/erp-ui/vendor/tesseract/lang-data/eng.traineddata', import.meta.url);
 let pass = 0;
 const ok = (v, m) => { assert.ok(v, m); pass++; };
 ok(routes.includes("Route::get('/passengers'") && routes.includes("Route::post('/passengers'"), 'Passenger routes exist');
@@ -34,7 +39,10 @@ ok(!view.includes('passport_image') && !view.includes('fetch('), 'passport image
 ok(scanner.includes('getUserMedia') && scanner.includes('track.stop'), 'camera lifecycle stops tracks');
 ok(scanner.includes('pm262-scan') && scanner.includes('pm262-capture') && scanner.includes('drawImage'), 'camera capture workflow is wired');
 ok(scanner.includes('createImageBitmap') && scanner.includes('ETLocalOCR') && scanner.includes('process'), 'uploaded images enter local OCR flow');
-ok(ocr.includes('ETLocalOCR') && ocr.includes('TextDetector') && !ocr.includes('http'), 'bundled local OCR adapter has no CDN/API');
+ok(ocr.includes('ETLocalOCR') && ocr.includes('createWorker') && !ocr.includes('http'), 'bundled local OCR adapter has no CDN/API');
+ok(fs.existsSync(ocrWorkerPath) && fs.existsSync(ocrCorePath) && fs.existsSync(ocrWasmPath) && fs.existsSync(ocrLangPath), 'vendored OCR worker/core/WASM/traineddata assets exist');
+ok(ocr.includes('createWorker') && ocr.includes('workerPath') && ocr.includes('corePath') && ocr.includes('langPath'), 'adapter configures local Tesseract paths');
+ok(ocrEngine.length > 50000, 'vendored Tesseract browser runtime is tracked');
 ok(scanner.includes('preprocessImage') && scanner.includes('getImageData') && scanner.includes('drawImage'), 'image preprocessing targets the lower MRZ region');
 ok(scanner.includes('extractTD3') && scanner.includes('candidate || text'), 'noisy OCR output is reduced to a TD3 candidate before parsing');
 ok(scanner.includes('mapResult') && scanner.includes('Save Passenger') === false, 'scanner maps into review form without auto-save');
@@ -61,4 +69,5 @@ ok(context.window.ETPassportMRZ.resolveDate('950101', 'dob') === '1995-01-01', '
 ok(context.window.ETPassportMRZ.resolveDate('400101', 'dob') === '1940-01-01', 'elderly DOB century resolves to 1940');
 ok(context.window.ETPassportMRZ.resolveDate('261332', 'dob') === null, 'invalid/future DOB is rejected');
 ok(view.includes('CarbonCarbon') === false && view.includes('passport_status'), 'passport status is controller-prepared without Carbon view bug');
+ok(controller.includes("['name','passenger_name','full_name']") && controller.includes('$fullName'), 'edit supports literal full-name column aliases');
 console.log(`erp113262-passport-passenger-workspace-regression: ${pass} assertions passed`);
