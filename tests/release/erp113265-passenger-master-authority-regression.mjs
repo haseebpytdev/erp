@@ -21,6 +21,8 @@ ok(!controller.includes("booking_passengers'],true"), 'arbitrary booking snapsho
 ok(source.includes("$candidateTables[] = 'booking_passengers'"), 'booking_passengers remains read-only fallback');
 ok(!fs.existsSync(new URL('../../database/migrations/2026_09_14_passenger_master.php', import.meta.url)), 'no Passenger Master migration added');
 ok(view.includes('pm262-grid') && view.includes('Passport Scanner') && view.includes('Passenger Master'), 'two-column scanner/data workspace and table exist');
+ok(view.includes('pm262-modebar') && view.includes('Scan Passport') && view.includes('Upload Passport') && view.includes('Paste / Read MRZ'), 'professional action mode strip uses real functions');
+ok(view.includes('grid-template-columns:45fr 55fr') && view.includes('Total Passengers:'), 'balanced workspace ratio and master count are visible');
 ok(view.includes('Upload Passport') && view.includes('Use Camera') && view.includes('id="pm262-capture" hidden'), 'scanner controls and initial hidden capture exist');
 ok(view.includes('.pm262-btn[hidden],.pm262 [hidden]{display:none!important}'), 'scoped hidden CSS protection preserved');
 ok(view.includes('Save Passenger') && view.includes('data-pm-field="title"') && view.includes('data-pm-field="sex"'), 'explicit save and separate title/sex fields remain');

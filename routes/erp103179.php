@@ -145,10 +145,10 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::get('/passengers/search', [PassengerWorkspaceController::class, 'index'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.search');
     Route::get('/passengers/{source}/{passenger}/edit', [PassengerWorkspaceController::class, 'edit'])
-        ->whereIn('source', ['passengers', 'travellers', 'travelers'])->whereNumber('passenger')
+        ->where('source', '[A-Za-z0-9_]+')->whereNumber('passenger')
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.edit');
     Route::patch('/passengers/{source}/{passenger}', [PassengerWorkspaceController::class, 'update'])
-        ->whereIn('source', ['passengers', 'travellers', 'travelers'])->whereNumber('passenger')
+        ->where('source', '[A-Za-z0-9_]+')->whereNumber('passenger')
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.update');
 
     Route::get(
