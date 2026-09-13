@@ -36,6 +36,12 @@ ok(popover.includes('overflow-x:auto'), 'booking table horizontal overflow remai
 for (const marker of ['document.body.appendChild', 'Escape', 'resize', 'scroll']) ok(registerJs.toLowerCase().includes(marker.toLowerCase()), `booking popover lifecycle preserves ${marker}`);
 ok(registerJs.includes('document.addEventListener') && registerJs.includes('closeMenus'), 'booking popover outside-click close remains');
 ok(!registerJs.includes('location.href') && !registerJs.includes('window.location'), 'booking action URLs are not reconstructed');
+ok(professionalJs.includes("exactLeaf(document, 'System Health & Updates')"), 'System Health module detector remains authoritative');
+ok(professionalJs.includes("exactLeaf(document, 'System Health')"), 'System Health inner heading is the root detector');
+ok(professionalJs.includes('!healthPageHeading.closest(excludedHealthChrome)'), 'utility header and sidebar are excluded from root detection');
+ok(professionalJs.includes('healthRoot.parentElement === main && healthRoot !== main'), 'health root must be a direct child of main');
+ok(professionalJs.includes('healthCards.some(card => healthRoot.contains(card))'), 'health root must contain identified health cards');
+ok(!professionalJs.includes('let healthRoot = healthTitle'), 'page root is not derived from the module detector');
 ok(professionalJs.includes("healthRoot.classList.add('et-health-page-root')"), 'System Health page root is identified deterministically');
 ok(professional.includes('.et-health-page-root') && professional.includes('background:transparent!important'), 'System Health outer background is removed');
 ok(professional.includes('.et-health-page-root{') && professional.includes('border:0!important'), 'System Health outer border is removed');

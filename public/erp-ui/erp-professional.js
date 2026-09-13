@@ -224,14 +224,6 @@
   const healthTitle = exactLeaf(document, 'System Health & Updates');
   if (healthTitle && path.startsWith('system')) {
     body.dataset.etSystemHealthPhase1 = 'true';
-    let healthRoot = healthTitle;
-    const main = document.querySelector('main');
-    while (healthRoot.parentElement && healthRoot.parentElement !== main) {
-      healthRoot = healthRoot.parentElement;
-    }
-    if (healthRoot !== body && healthRoot.tagName !== 'MAIN') {
-      healthRoot.classList.add('et-health-page-root');
-    }
     const obsoleteHealthCopy = [
       'no-ssh maintenance',
       'this page exists because the hosting has no ssh or terminal',
@@ -275,6 +267,21 @@
     healthCards.forEach(card => healthParents.set(card.parentElement, (healthParents.get(card.parentElement) || 0) + 1));
     const healthGrid = Array.from(healthParents.entries()).sort((a, b) => b[1] - a[1])[0];
     if (healthGrid && healthGrid[0] && healthGrid[1] >= 3) healthGrid[0].classList.add('et-health-status-grid');
+
+    const healthPageHeading = exactLeaf(document, 'System Health');
+    const excludedHealthChrome = '.sidebar,.navbar-vertical,.side-nav,.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal';
+    if (healthPageHeading && !healthPageHeading.closest(excludedHealthChrome)) {
+      let healthRoot = healthPageHeading;
+      const main = healthPageHeading.closest('main');
+      while (healthRoot.parentElement && main && healthRoot.parentElement !== main) {
+        healthRoot = healthRoot.parentElement;
+      }
+      const containsHealthContent = healthCards.some(card => healthRoot.contains(card))
+        || !!healthRoot.querySelector('[data-et-health-section]');
+      if (main && healthRoot.parentElement === main && healthRoot !== main && containsHealthContent) {
+        healthRoot.classList.add('et-health-page-root');
+      }
+    }
 
     ['Database Maintenance','Application Cache'].forEach(label => {
       const labelNode = exactLeaf(document, label);
