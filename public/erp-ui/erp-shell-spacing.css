@@ -477,9 +477,9 @@ html body.et-ui-professional
 }
 
 /* Professional JS marks only root direct wrappers with this attribute. */
-html body.et-ui-professional .sidebar .nav>[data-et-sidebar-group],
-html body.et-ui-professional .navbar-vertical .nav>[data-et-sidebar-group],
-html body.et-ui-professional .side-nav .nav>[data-et-sidebar-group]{
+html body.et-ui-professional .sidebar .nav>[data-et-sidebar-group]:not(a),
+html body.et-ui-professional .navbar-vertical .nav>[data-et-sidebar-group]:not(a),
+html body.et-ui-professional .side-nav .nav>[data-et-sidebar-group]:not(a){
   position:relative!important;
   display:block!important;
   float:none!important;
@@ -491,6 +491,24 @@ html body.et-ui-professional .side-nav .nav>[data-et-sidebar-group]{
   min-height:0!important;
   margin:0!important;
   padding:0!important;
+  box-sizing:border-box!important;
+}
+
+/* Root Dashboard is itself a canonical anchor, not a wrapper container. */
+html body.et-ui-professional .sidebar .nav>a.et-ui-nav-row[data-et-sidebar-group="dashboard"],
+html body.et-ui-professional .navbar-vertical .nav>a.et-ui-nav-row[data-et-sidebar-group="dashboard"],
+html body.et-ui-professional .side-nav .nav>a.et-ui-nav-row[data-et-sidebar-group="dashboard"]{
+  display:flex!important;
+  align-items:center!important;
+  width:100%!important;
+  height:var(--et-sidebar-row-height)!important;
+  min-height:var(--et-sidebar-row-height)!important;
+  max-height:var(--et-sidebar-row-height)!important;
+  flex:0 0 var(--et-sidebar-row-height)!important;
+  flex-shrink:0!important;
+  margin:0 0 6px!important;
+  padding:6px 7px!important;
+  gap:8px!important;
   box-sizing:border-box!important;
 }
 

@@ -35,6 +35,9 @@ for (const marker of ['flex:1 1 auto!important','min-height:0!important','overfl
 for (const marker of ['flex:0 0 auto!important','flex-shrink:0!important']) ok(shell.includes(marker), `non-shrink contract ${marker}`);
 ok(shell.includes('gap:3px!important') && shell.includes('margin:0!important'), 'group gap and child margin are explicit');
 ok(shell.includes('.et-ui-nav-group>.et-ui-nav-row'), 'row shrink protection is wrapper-independent');
+ok(shell.includes('[data-et-sidebar-group]:not(a)'), 'root wrapper geometry excludes anchors');
+ok(shell.includes('a.et-ui-nav-row[data-et-sidebar-group="dashboard"]') && shell.includes('display:flex!important'), 'Dashboard direct anchor remains flex');
+ok(shell.includes('align-items:center!important') && shell.includes('margin:0 0 6px!important'), 'Dashboard alignment and bottom gap are explicit');
 ok(shell.includes('--et-shell-sidebar-width:208px') && shell.includes('--et-sidebar-brand-height:64px') && shell.includes('--et-sidebar-logo-size:36px'), 'accepted shell geometry preserved');
 ok(css.includes('rgba(255,255,255,.07)') && css.includes('120ms ease'), 'restrained hover contract');
 ok(css.includes('et-ui-nav-group>a.et-ui-current:hover') && css.includes('rgba(16,85,176,.72)'), 'active hover dominates generic hover');
