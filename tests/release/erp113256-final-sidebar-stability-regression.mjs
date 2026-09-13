@@ -21,9 +21,12 @@ ok(js.includes('seen.set(key, row)') && js.includes('if (index >= 0)'), 'dedup w
 ok(js.includes('remaining') && js.includes('originalOrder'), 'unknown authorized links are preserved');
 ok(js.includes('uniqueRows.find') && !js.includes('const link = allLinks.find'), 'classification uses deduped rows');
 ok(js.includes('const committedLinks = canonicalNav'), 'active state re-queries committed links');
-ok(js.includes('linkForRow') && js.includes("row.querySelector('a[href]')"), 'direct-anchor and wrapper rows are supported');
+ok(js.includes("row.matches('a[href]')") && js.includes('return row;'), 'self-anchor rows return their own link');
+ok(js.includes("row.querySelector('a[href]')") && js.includes('typeof row.querySelector'), 'wrapper rows resolve descendant links');
 ok(js.includes("closest('.sidebar-nav,.navigation,.menu,.sidebar-menu')"), 'alternate native navigation wrapper discovery exists');
 ok(js.includes("sort((a, b) => b.querySelectorAll('a[href]').length"), 'canonical root selects largest valid authorized set');
+ok(js.includes('uniqueRows.length > 0') && js.includes('plannedRows.length > 0'), 'empty plans cannot commit');
+ok(js.includes('finalLinkCount !== uniqueRows.length') && js.includes("failed-empty-plan"), 'fragment link count is guarded');
 ok(js.includes("clone.classList.add('et-ui-nav-row')"), 'final rows have robust marker class');
 ok(js.includes("['operations', 'OPERATIONS'") && js.includes("['administration', 'ADMINISTRATION'"), 'canonical sections remain defined');
 ok(!js.includes('system health-specific') && !js.includes('Health-page-specific'), 'no health-specific reorder authority');

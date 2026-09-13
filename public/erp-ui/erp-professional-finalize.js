@@ -53,6 +53,11 @@
         while (row.parentElement && row.parentElement !== rootNav) row = row.parentElement;
         return row.parentElement === rootNav ? row : null;
       };
+      const linkForRow = row => {
+        if (!row) return null;
+        if (typeof row.matches === 'function' && row.matches('a[href]')) return row;
+        return typeof row.querySelector === 'function' ? row.querySelector('a[href]') : null;
+      };
 
       const rows = Array.from(new Set(allLinks.map(topLevelRow).filter(Boolean)));
       const originalOrder = new Map(rows.map((row, index) => [row, index]));
@@ -65,12 +70,12 @@
       const uniqueRows = [];
       const seen = new Map();
       rows.forEach(row => {
-        const link = row.querySelector('a[href]');
+        const link = linkForRow(row);
         if (!link) return;
         const key = identity(link);
         if (seen.has(key)) {
           const priorRow = seen.get(key);
-          const prior = priorRow.querySelector('a[href]');
+          const prior = linkForRow(priorRow);
           if (preferred(link, prior) === link) {
             const index = uniqueRows.indexOf(priorRow);
             if (index >= 0) {
@@ -85,14 +90,12 @@
       });
 
       const dashboardRow = uniqueRows.find(row => {
-        const link = row.querySelector('a[href]');
+        const link = linkForRow(row);
         return link && (exactMatch(link, ['dashboard', 'home']) || ['/', '/dashboard', '/home'].includes(normalizePath(link.getAttribute('href'))));
       }) || null;
-      const dashboardLink = dashboardRow && dashboardRow.querySelector('a[href]');
+      const dashboardLink = linkForRow(dashboardRow);
       const canonicalNav = dashboardLink ? rootNavFor(dashboardLink)
         : rootNavs.slice().sort((a, b) => b.querySelectorAll('a[href]').length - a.querySelectorAll('a[href]').length)[0];
-      const linkForRow = row => row && row.querySelector('a[href]');
-
       const plan = [];
 
       const sections = [
@@ -148,7 +151,14 @@
       if (dashboardRow) claimed.add(dashboardRow);
       const remaining = uniqueRows.filter(row => !claimed.has(row)).sort((a,b) => originalOrder.get(a)-originalOrder.get(b));
       if (remaining.length) plan.push({ key: 'remaining', title: '', rows: remaining });
-      const validPlan = plan.every(item => item.rows.every(row => row && row.querySelector('a[href]')));
+      const plannedRows = [...(dashboardRow ? [dashboardRow] : []), ...plan.flatMap(item => item.rows)];
+      const plannedUniqueRows = new Set(plannedRows);
+      const validPlan = Boolean(canonicalNav)
+        && uniqueRows.length > 0
+        && plannedRows.length > 0
+        && plannedUniqueRows.size === plannedRows.length
+        && plannedRows.length === uniqueRows.length
+        && uniqueRows.every(row => Boolean(linkForRow(row)));
       if (validPlan && canonicalNav) {
         const fragment = document.createDocumentFragment();
         const cloneRowForFinalNav = (row, key) => {
@@ -175,12 +185,17 @@
           });
           fragment.appendChild(group);
         });
+        const finalLinkCount = fragment.querySelectorAll('a[href]').length;
+        if (finalLinkCount === 0 || finalLinkCount !== uniqueRows.length) {
+          body.dataset.etSidebarNormalization = 'failed-empty-plan';
+        } else {
         canonicalNav.replaceChildren(fragment);
         canonicalNav.dataset.etSidebarGrouped = 'final-v1';
         body.dataset.etSidebarNormalization = 'committed';
         rootNavs.forEach(nav => {
           if (nav !== canonicalNav) nav.classList.add('et-ui-nav-root-empty');
         });
+        }
       } else {
         body.dataset.etSidebarNormalization = 'failed';
       }
