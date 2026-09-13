@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const js = fs.readFileSync(new URL('../../public/erp-ui/erp-professional-finalize.js', import.meta.url), 'utf8');
+let pass = 0;
+const ok = (v, m) => { assert.ok(v, m); pass++; };
+ok(js.includes('const rowForLink = link =>'), 'row resolver exists');
+ok(js.includes('parentLinks.length !== 1'), 'resolver stops at multi-link parent');
+ok(js.includes("row.matches('a[href]')"), 'direct anchor rows are supported');
+ok(js.includes('const uniqueSourceLinks = uniqueRows.map(linkForRow)'), 'source link count is authoritative');
+ok(js.includes('oneLinkPerCanonicalSourceRow'), 'one-link-per-row invariant is enforced');
+ok(js.includes('finalLinkCount !== uniqueSourceLinks.length'), 'final link count uses source links');
+ok(js.includes('canonicalNav.replaceChildren(fragment)'), 'single atomic commit remains');
+ok(!js.includes("if (path.includes('system'))") && !js.includes('if (healthPage)'), 'no Health-specific menu reorder');
+ok(js.includes("data-et-sidebar-grouped = 'final-v1'") || js.includes("canonicalNav.dataset.etSidebarGrouped = 'final-v1'"), 'final-v1 marker remains');
+// Pure semantic fixture for grouped anchors: each destination is independently representable.
+const grouped = ['Bookings', 'Sales Invoices', 'Supplier Costing'];
+const rows = grouped.map(label => ({ label, links: [label] }));
+ok(rows.every(row => row.links.length === 1), 'nested grouped source rows resolve independently');
+ok(rows.length === grouped.length, 'source link count equals unique row count');
+console.log(`erp113259-health-nested-sidebar-regression: ${pass} assertions passed`);

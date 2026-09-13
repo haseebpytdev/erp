@@ -46,12 +46,18 @@
       };
 
       const rootNavFor = link => rootNavs.find(nav => nav.contains(link)) || null;
-      const topLevelRow = link => {
+      const rowForLink = link => {
         const rootNav = rootNavFor(link);
         if (!rootNav) return null;
         let row = link;
-        while (row.parentElement && row.parentElement !== rootNav) row = row.parentElement;
-        return row.parentElement === rootNav ? row : null;
+        while (row.parentElement && row.parentElement !== rootNav) {
+          const parent = row.parentElement;
+          const parentLinks = Array.from(parent.querySelectorAll('a[href]'))
+            .filter(candidate => rootNav.contains(candidate));
+          if (parentLinks.length !== 1) break;
+          row = parent;
+        }
+        return row;
       };
       const linkForRow = row => {
         if (!row) return null;
@@ -59,7 +65,7 @@
         return typeof row.querySelector === 'function' ? row.querySelector('a[href]') : null;
       };
 
-      const rows = Array.from(new Set(allLinks.map(topLevelRow).filter(Boolean)));
+      const rows = Array.from(new Set(allLinks.map(rowForLink).filter(Boolean)));
       const originalOrder = new Map(rows.map((row, index) => [row, index]));
       const identity = link => `${normalize(link.textContent)}|${normalizePath(link.getAttribute('href'))}?${normalizeSearch(new URL(link.href, location.origin).search)}`;
       const preferred = (a, b) => {
@@ -153,8 +159,15 @@
       if (remaining.length) plan.push({ key: 'remaining', title: '', rows: remaining });
       const plannedRows = [...(dashboardRow ? [dashboardRow] : []), ...plan.flatMap(item => item.rows)];
       const plannedUniqueRows = new Set(plannedRows);
+      const uniqueSourceLinks = uniqueRows.map(linkForRow).filter(Boolean);
+      const oneLinkPerCanonicalSourceRow = uniqueRows.every(row => {
+        const links = row.matches?.('a[href]') ? [row] : Array.from(row.querySelectorAll('a[href]'));
+        return links.length === 1;
+      });
       const validPlan = Boolean(canonicalNav)
         && uniqueRows.length > 0
+        && uniqueSourceLinks.length > 0
+        && oneLinkPerCanonicalSourceRow
         && plannedRows.length > 0
         && plannedUniqueRows.size === plannedRows.length
         && plannedRows.length === uniqueRows.length
@@ -186,7 +199,7 @@
           fragment.appendChild(group);
         });
         const finalLinkCount = fragment.querySelectorAll('a[href]').length;
-        if (finalLinkCount === 0 || finalLinkCount !== uniqueRows.length) {
+        if (finalLinkCount === 0 || finalLinkCount !== uniqueSourceLinks.length) {
           body.dataset.etSidebarNormalization = 'failed-empty-plan';
         } else {
         canonicalNav.replaceChildren(fragment);
