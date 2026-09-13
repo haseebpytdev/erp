@@ -30,10 +30,16 @@
     : 'Passport could not be read clearly. Try another image or enter the details manually.';
   const process = async source => { const crop = preprocessImage(source); let text = await recognizeImage(crop); let candidate = root.ETPassportMRZ.extractTD3(text); if (!candidate && crop !== source) { text = await recognizeImage(source); candidate = root.ETPassportMRZ.extractTD3(text); } const result = root.ETPassportMRZ.parse(candidate || text); mapResult(result); return result; };
   root.ETPassengerScanner = { mapResult, process, preprocessImage, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
-  if (root.ETPassengerEdit) {
+  const populateEditPassenger = edit => {
     const form = document.getElementById('pm262-passenger-form');
-    if (form) { form.action = `/passengers/${encodeURIComponent(root.ETPassengerEdit.source_table)}/${root.ETPassengerEdit.id}`; const method = document.createElement('input'); method.type = 'hidden'; method.name = '_method'; method.value = 'PATCH'; form.appendChild(method); mapResult({ givenNames: root.ETPassengerEdit.first_name, surname: root.ETPassengerEdit.last_name, passportNumber: root.ETPassengerEdit.passport_no, nationality: root.ETPassengerEdit.nationality, dateOfBirth: root.ETPassengerEdit.date_of_birth, passportExpiry: root.ETPassengerEdit.passport_expiry, issuingCountry: root.ETPassengerEdit.issuing_country, sex: root.ETPassengerEdit.sex }); set('title', root.ETPassengerEdit.title || ''); }
-  }
+    if (!form || !edit) return;
+    form.action = `/passengers/${encodeURIComponent(edit.source_table)}/${edit.id}`;
+    const method = document.createElement('input'); method.type = 'hidden'; method.name = '_method'; method.value = 'PATCH'; form.appendChild(method);
+    const sex = String(edit.sex || '').trim().toLowerCase();
+    const normalizedSex = sex === 'm' || sex === 'male' ? 'Male' : sex === 'f' || sex === 'female' ? 'Female' : sex === 'x' ? 'X' : '';
+    set('title', edit.title || ''); set('sex', normalizedSex); set('firstName', edit.first_name || ''); set('lastName', edit.last_name || ''); set('passportNumber', edit.passport_no || ''); set('nationality', edit.nationality || ''); set('dateOfBirth', edit.date_of_birth || ''); set('passportExpiry', edit.passport_expiry || ''); set('issuingCountry', edit.issuing_country || '');
+  };
+  if (root.ETPassengerEdit) populateEditPassenger(root.ETPassengerEdit);
   const state = document.getElementById('pm262-state'), video = document.getElementById('pm262-video'), canvas = document.getElementById('pm262-canvas');
   let stream = null;
   const stop = () => { root.ETPassengerScanner.stopStream(stream); stream = null; if (video) { video.pause(); video.srcObject = null; video.style.display = 'none'; } const capture = document.getElementById('pm262-capture'); if (capture) capture.hidden = true; };
