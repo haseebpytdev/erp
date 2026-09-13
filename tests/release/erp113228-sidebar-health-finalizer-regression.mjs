@@ -38,7 +38,7 @@ ok(assetController.includes("base_path('public/erp-ui/erp-professional-finalize.
 ok(assetController.includes("base_path('public/erp-ui/erp-sidebar-ready.js')"), 'Laravel JS response includes post-finalizer ready marker');
 ok(assetController.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned authenticated UI assets remain browser-cacheable');
 ok(!assetController.includes('no-store'), 'professional assets do not force refetch on every navigation');
-ok(version === 'v1.1.33.250-ERP11.3.250', 'packaged release version is current');
+ok(version === 'v1.1.33.251-ERP11.3.251', 'packaged release version is current');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

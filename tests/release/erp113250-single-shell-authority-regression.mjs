@@ -23,7 +23,7 @@ const ok = (condition, label) => {
   pass++;
 };
 
-ok(version === 'v1.1.33.250-ERP11.3.250', 'ERP-11.3.250 packaged release metadata is current');
+ok(version === 'v1.1.33.251-ERP11.3.251', 'ERP-11.3.251 packaged release metadata is current');
 
 for (const token of [
   '--et-shell-sidebar-width:208px',

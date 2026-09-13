@@ -1,4 +1,4 @@
-ERP-11.3.250 DIRECT UPLOAD - SINGLE AUTHENTICATED ERP SHELL
+ERP-11.3.251 DIRECT UPLOAD - LIVE UI GEOMETRY CORRECTIONS
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -11,19 +11,20 @@ Deployment without SSH:
 6. Verify the Dashboard and representative register, accounting and booking
    pages at desktop, laptop, tablet and mobile widths.
 
-ERP-11.3.250 uses one final external authenticated shell geometry authority:
+ERP-11.3.251 preserves one final external authenticated shell geometry authority:
 public/erp-ui/erp-shell-spacing.css.
 
-- Desktop/laptop sidebar: 224px
+- Desktop/laptop sidebar: 208px
 - Desktop brand region: 64px
 - Logo footprint and navigation rows: 36px
 - Utility header: 56px
 - Desktop main gutter: 24px
 - Responsive main gutter: 16px
-- Booking, General and Air focus outer geometry is consolidated
-- Booking Register outer cap is removed
-- Group Package runtime workspace sizing is removed
-- Cash Voucher middleware no longer owns sidebar geometry
+- Root sidebar headings/rows use normal document flow without overlap
+- Standard native page hosts contribute no second horizontal shell gutter
+- Booking focus utility header content is gutter-aligned without negative bleed
+- Booking Register action menus portal outside the table scrolling viewport
+- Cash Voucher Quick Workflow and Allocation Insight align at their top edge
 
 Module cards, forms and tables, Sales Invoice focus, Day-One/reset logic,
 booking/accounting business behavior and print/voucher layouts are unchanged.
