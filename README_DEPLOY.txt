@@ -1,4 +1,4 @@
-ERP-11.3.253 DIRECT UPLOAD - STANDARD MAIN GUTTER AUTHORITY
+ERP-11.3.254 DIRECT UPLOAD - UI CONSISTENCY PASS
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -11,7 +11,7 @@ Deployment without SSH:
 6. Verify the Dashboard and representative register, accounting and booking
    pages at desktop, laptop, tablet and mobile widths.
 
-ERP-11.3.253 preserves one final external authenticated shell geometry authority:
+ERP-11.3.254 preserves one final external authenticated shell geometry authority:
 public/erp-ui/erp-shell-spacing.css.
 
 - Desktop/laptop sidebar: 208px
@@ -25,6 +25,10 @@ public/erp-ui/erp-shell-spacing.css.
 - Native authenticated `.app-shell > main.main` participates in the shared main gutter authority
 - Standard main gutter: 24px desktop / 16px responsive
 - Standard native page host duplicate top padding removed
+- Accounting bottom rows use 18px outer separation
+- Sidebar root/brand/menu spacing and icon treatment are normalized
+- Booking Register action popover remains a compact fixed body portal
+- System Health page-level wrapper is removed without altering inner cards
 - Shell top rhythm remains 18px desktop / 16px responsive
 - Booking focus remains one-column
 

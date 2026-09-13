@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.253
-APPLICATION_VERSION=v1.1.33.253-ERP11.3.253
+CURRENT_VERSION=ERP-11.3.254
+APPLICATION_VERSION=v1.1.33.254-ERP11.3.254
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.253
+LAST_PACKAGED_RELEASE=ERP-11.3.254
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -623,6 +623,15 @@ forms and tables otherwise remain unchanged.
 Sales Invoice focused workspace, Day-One/reset logic, booking and accounting
 business behavior, public vouchers and print/PDF layouts remain unchanged.
 No migration is required.
+
+ERP-11.3.254 UI consistency release adds the approved cross-module
+presentation corrections: Accounting bottom insight rows receive an 18px
+outer rhythm; sidebar root, brand and menu spacing are normalized; Booking
+Register action popovers remain fixed body portals but use compact dimensions;
+and System Health removes only its extra page-level wrapper by targeting the
+inner System Health content root beneath main. The .251-.253 shell geometry,
+booking/accounting workflows, Day-One/Day-Zero, print/voucher behavior and
+database schema remain unchanged. No migration is required.
 
 ERP-11.3.253 adds the native authenticated `.app-shell > main.main` selector
 to the one shared shell geometry authority. Standard main now owns the 24px
