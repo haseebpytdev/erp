@@ -18,8 +18,13 @@ ok(migration.includes("$table->string('passport_no', 50)->nullable()") && migrat
 ok(migration.includes("'title', 'salutation'") && migration.includes("'sex', 'gender'") && migration.includes("'passport_expiry', 'passport_expiry_date'") && migration.includes("'nationality', 'nationality_name', 'country'") && migration.includes("'issuing_country', 'passport_issuing_country', 'document_issuing_country'"), 'existing table completion supports canonical aliases');
 ok(migration.includes("$table->timestamp('created_at')") && migration.includes("$table->timestamp('updated_at')"), 'existing table timestamp completion is safe');
 ok(migration.includes("DB::table('booking_passengers')") && migration.includes('passport') && migration.includes('dob'), 'backfill reads booking passenger authority');
-ok(migration.includes('$duplicate = false') && migration.includes("if ($passport !== '') $duplicate") && migration.includes('if (! $duplicate && $first !=='), 'backfill passport-first then name+DOB fallback is not passport-gated');
-ok(migration.includes('if ($passport !==') && migration.includes('continue;'), 'backfill is idempotent and inserts only missing rows');
+ok(migration.includes('$duplicate = false') && migration.includes("if ($hasPassport) $duplicate") && migration.includes('if (! $duplicate && $hasNameDob'), 'backfill passport-first then name+DOB fallback is not passport-gated');
+ok(migration.includes('if (! $hasPassport && ! $hasNameDob) continue;'), 'incomplete historical identities are explicitly skipped');
+ok(migration.includes('$normalizedName') && migration.includes('LOWER(TRIM(`'), 'backfill uses normalized full-name identity matching');
+ok(migration.includes('$lastNameColumns') && migration.includes('$fullNameColumns'), 'backfill supports split and full-name target schemas');
+ok((migration.match(/if \(\$hasPassport\) \$duplicate/g) || []).length === 1, 'passport duplicate resolution uses one query');
+ok(migration.includes("if (! in_array('id', $columns, true))") && migration.includes('id column is required'), 'incompatible existing passengers table fails before alteration');
+ok(migration.includes('continue;') && migration.includes('if (! $hasPassport'), 'backfill is idempotent and inserts only meaningful identities');
 ok(!migration.includes('UNKNOWN') && !migration.includes("'N/A'") && !migration.includes('000000'), 'backfill never invents passport placeholders');
 ok(source.includes("'passengers', 'travellers', 'travelers'") && source.includes("candidateTables([], 'traveller')") && source.includes("candidateTables([], 'traveler')"), 'passengers remains preferred with dynamic legacy discovery');
 ok(writer.includes('$this->source->passengerMasterTables()') && !writer.includes("'booking_passengers'", writer.indexOf('private function safeSource')), 'writer uses shared authority and rejects booking snapshots');

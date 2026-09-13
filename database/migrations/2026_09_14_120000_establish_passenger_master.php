@@ -28,6 +28,9 @@ return new class extends Migration
             });
         } else {
             $columns = Schema::getColumnListing('passengers');
+            if (! in_array('id', $columns, true)) {
+                throw new RuntimeException('Existing passengers table is incompatible with Passenger Master: id column is required.');
+            }
             Schema::table('passengers', function (Blueprint $table) use ($columns): void {
                 if (! in_array('title', $columns, true) && ! in_array('salutation', $columns, true)) $table->string('title', 20)->nullable();
                 if (! in_array('sex', $columns, true) && ! in_array('gender', $columns, true)) $table->string('sex', 20)->nullable();
@@ -57,10 +60,27 @@ return new class extends Migration
             $first = trim((string) $value($booking, $source, ['first_name', 'given_name', 'name', 'passenger_name']));
             $last = trim((string) $value($booking, $source, ['last_name', 'surname', 'family_name']));
             $dob = $value($booking, $source, ['date_of_birth', 'dob', 'birth_date']);
-            if ($passport !== '' && DB::table('passengers')->where(function ($query) use ($target, $passport): void { foreach (['passport_no', 'passport_number'] as $column) if (in_array($column, $target, true)) $query->orWhereRaw('LOWER(`'.$column.'`) = ?', [strtolower($passport)]); })->exists()) continue;
+            $normalizeName = static function (?string $value): string {
+                return strtolower(trim((string) preg_replace('/\s+/', ' ', (string) $value)));
+            };
+            $normalizedName = $normalizeName(trim($first.' '.$last));
+            $hasPassport = $passport !== '';
+            $hasNameDob = $normalizedName !== '' && (bool) $dob;
+            if (! $hasPassport && ! $hasNameDob) continue;
             $duplicate = false;
-            if ($passport !== '') $duplicate = DB::table('passengers')->where(function ($query) use ($target, $passport): void { foreach (['passport_no', 'passport_number'] as $column) if (in_array($column, $target, true)) $query->orWhereRaw('LOWER(`'.$column.'`) = ?', [strtolower($passport)]); })->exists();
-            if (! $duplicate && $first !== '' && $dob && DB::table('passengers')->where(function ($query) use ($target, $first): void { foreach (['first_name', 'given_name', 'name', 'passenger_name'] as $column) if (in_array($column, $target, true)) $query->orWhereRaw('LOWER(`'.$column.'`) = ?', [strtolower($first)]); })->where(function ($query) use ($target, $dob): void { foreach (['date_of_birth', 'dob', 'birth_date'] as $column) if (in_array($column, $target, true)) $query->orWhereDate($column, $dob); })->exists()) $duplicate = true;
+            if ($hasPassport) $duplicate = DB::table('passengers')->where(function ($query) use ($target, $passport): void { foreach (['passport_no', 'passport_number'] as $column) if (in_array($column, $target, true)) $query->orWhereRaw('LOWER(`'.$column.'`) = ?', [strtolower($passport)]); })->exists();
+            if (! $duplicate && $hasNameDob) {
+                $fullNameColumns = array_values(array_intersect(['name', 'passenger_name'], $target));
+                $firstNameColumns = array_values(array_intersect(['first_name', 'given_name'], $target));
+                $lastNameColumns = array_values(array_intersect(['last_name', 'surname', 'family_name'], $target));
+                $duplicate = DB::table('passengers')->where(function ($query) use ($fullNameColumns, $firstNameColumns, $lastNameColumns, $normalizedName, $first, $last, $normalizeName): void {
+                    foreach ($fullNameColumns as $column) $query->orWhereRaw('LOWER(TRIM(`'.$column.'`)) = ?', [$normalizedName]);
+                    foreach ($firstNameColumns as $column) {
+                        if ($last !== '' && $lastNameColumns) foreach ($lastNameColumns as $lastColumn) $query->orWhere(function ($nested) use ($column, $lastColumn, $first, $last, $normalizeName): void { $nested->whereRaw('LOWER(TRIM(`'.$column.'`)) = ?', [$normalizeName($first)])->whereRaw('LOWER(TRIM(`'.$lastColumn.'`)) = ?', [$normalizeName($last)]); });
+                        else $query->orWhereRaw('LOWER(TRIM(`'.$column.'`)) = ?', [$normalizeName($first)]);
+                    }
+                })->where(function ($query) use ($target, $dob): void { foreach (['date_of_birth', 'dob', 'birth_date'] as $column) if (in_array($column, $target, true)) $query->orWhereDate($column, $dob); })->exists();
+            }
             if ($duplicate) continue;
             $row = [];
             $put = static function (array &$out, array $columns, array $names, mixed $value): void { if ($value === null || $value === '') return; foreach ($names as $name) if (in_array($name, $columns, true)) { $out[$name] = $value; return; } };
