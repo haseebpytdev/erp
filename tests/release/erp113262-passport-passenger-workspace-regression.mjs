@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import zlib from 'node:zlib';
 import vm from 'node:vm';
 
 const routes = fs.readFileSync(new URL('../../routes/erp103179.php', import.meta.url), 'utf8');
+const assetController = fs.readFileSync(new URL('../../app/Http/Controllers/System/ErpProfessionalUiAssetController.php', import.meta.url), 'utf8');
 const controller = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/PassengerWorkspaceController.php', import.meta.url), 'utf8');
 const writer = fs.readFileSync(new URL('../../app/Services/Operations/AdaptivePassengerMasterWriter.php', import.meta.url), 'utf8');
 const source = fs.readFileSync(new URL('../../app/Services/Operations/UnifiedGroupPackageDataSource.php', import.meta.url), 'utf8');
@@ -17,7 +19,7 @@ const ocrEngine = fs.readFileSync(new URL('../../public/erp-ui/vendor/tesseract/
 const ocrWorkerPath = new URL('../../public/erp-ui/vendor/tesseract/dist/worker.min.js', import.meta.url);
 const ocrCorePath = new URL('../../public/erp-ui/vendor/tesseract/core/tesseract-core.wasm.js', import.meta.url);
 const ocrWasmPath = new URL('../../public/erp-ui/vendor/tesseract/core/tesseract-core.wasm', import.meta.url);
-const ocrLangPath = new URL('../../public/erp-ui/vendor/tesseract/lang-data/eng.traineddata', import.meta.url);
+const ocrLangPath = new URL('../../public/erp-ui/vendor/tesseract/lang-data/eng.traineddata.gz', import.meta.url);
 let pass = 0;
 const ok = (v, m) => { assert.ok(v, m); pass++; };
 ok(routes.includes("Route::get('/passengers'") && routes.includes("Route::post('/passengers'"), 'Passenger routes exist');
@@ -40,8 +42,14 @@ ok(scanner.includes('getUserMedia') && scanner.includes('track.stop'), 'camera l
 ok(scanner.includes('pm262-scan') && scanner.includes('pm262-capture') && scanner.includes('drawImage'), 'camera capture workflow is wired');
 ok(scanner.includes('createImageBitmap') && scanner.includes('ETLocalOCR') && scanner.includes('process'), 'uploaded images enter local OCR flow');
 ok(ocr.includes('ETLocalOCR') && ocr.includes('createWorker') && !ocr.includes('http'), 'bundled local OCR adapter has no CDN/API');
-ok(fs.existsSync(ocrWorkerPath) && fs.existsSync(ocrCorePath) && fs.existsSync(ocrWasmPath) && fs.existsSync(ocrLangPath), 'vendored OCR worker/core/WASM/traineddata assets exist');
+const ocrLangBytes = fs.existsSync(ocrLangPath) ? fs.readFileSync(ocrLangPath) : Buffer.alloc(0);
+ok(fs.existsSync(ocrWorkerPath) && fs.existsSync(ocrCorePath) && fs.existsSync(ocrWasmPath) && ocrLangBytes.length > 0, 'vendored OCR worker/core/WASM/traineddata.gz assets exist');
+ok(ocrLangBytes[0] === 0x1f && ocrLangBytes[1] === 0x8b, 'language asset uses gzip magic bytes');
+ok(zlib.gunzipSync(ocrLangBytes).length > 0, 'language asset decompresses successfully');
 ok(ocr.includes('createWorker') && ocr.includes('workerPath') && ocr.includes('corePath') && ocr.includes('langPath'), 'adapter configures local Tesseract paths');
+ok(ocr.includes('lang-data') && ocr.includes('createWorker') && !ocr.includes('gzip: false'), 'Tesseract uses default gzip language contract');
+ok(ocrLangPath.pathname.endsWith('/lang-data/eng.traineddata.gz'), 'expected gzip language request contract is explicit');
+ok(assetController.includes("str_ends_with($asset, '.gz')") && routes.includes("[A-Za-z0-9._-]+"), 'asset controller and route accept gzip language assets');
 ok(ocrEngine.length > 50000, 'vendored Tesseract browser runtime is tracked');
 ok(scanner.includes('preprocessImage') && scanner.includes('getImageData') && scanner.includes('drawImage'), 'image preprocessing targets the lower MRZ region');
 ok(scanner.includes('extractTD3') && scanner.includes('candidate || text'), 'noisy OCR output is reduced to a TD3 candidate before parsing');
