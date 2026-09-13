@@ -18,7 +18,7 @@ ok(version === 'v1.1.33.253-ERP11.3.253', 'functional checkpoint leaves release 
 for (const token of [
   '--et-shell-sidebar-width:208px',
   '--et-sidebar-nav-x:8px',
-  '--et-sidebar-row-height:36px',
+  '--et-sidebar-row-height:34px',
   '--et-shell-gutter-x:24px',
   '--et-shell-gutter-x:16px',
   'width:min(86vw,var(--et-shell-sidebar-width))'
@@ -52,7 +52,7 @@ for (const token of [
 ]) ok(registerJs.includes(token), `row popover behavior includes ${token}`);
 ok(!registerJs.includes("href = '/bookings"), 'row popover does not construct or rewrite booking URLs');
 
-ok(cashVoucherIndex.includes('.et-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}'), 'bottom row remains two columns on desktop');
+ok(cashVoucherIndex.includes('.et-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;margin-top:18px}'), 'bottom row remains two columns on desktop');
 ok(cashVoucherIndex.includes('@media(max-width:980px){') && cashVoucherIndex.includes('.et-bottom-row{grid-template-columns:1fr}'), 'bottom row remains one column responsively');
 ok(cashVoucherIndex.includes('.et-bottom-row>.et-card{margin-top:0}'), 'grid siblings cannot inherit generic vertical card spacing');
 

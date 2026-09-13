@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+const shell = read('public/erp-ui/erp-shell-spacing.css');
+const professional = read('public/erp-ui/erp-professional.css');
+const professionalJs = read('public/erp-ui/erp-professional.js');
+const accounting = read('resources/views/accounting/cash-vouchers/index.blade.php');
+const popover = read('public/erp-ui/erp-booking-register-reference.css');
+const registerJs = read('public/erp-ui/erp-register-workspace.js');
+const version = read('VERSION.txt').trim();
+
+let pass = 0;
+const ok = (condition, label) => { assert.ok(condition, label); pass++; };
+
+ok(accounting.includes('align-items:stretch;margin-top:18px'), 'accounting bottom row has outer rhythm');
+ok(accounting.includes('.et-bottom-row>.et-card{margin-top:0}'), 'accounting bottom child reset remains');
+ok(accounting.includes('.et-bottom-row{grid-template-columns:1fr}'), 'accounting bottom row remains responsive');
+ok(shell.includes('html body.et-ui-professional .sidebar,') && shell.includes('margin:0!important;'), 'sidebar root margin normalized');
+ok(shell.includes('padding:0!important;') && shell.includes('box-sizing:border-box!important;'), 'sidebar root padding and box sizing normalized');
+ok(shell.includes('--et-shell-sidebar-width:208px'), 'sidebar width remains 208px');
+ok(shell.includes('--et-sidebar-brand-height:64px'), 'brand height remains 64px');
+ok(shell.includes('--et-sidebar-logo-size:36px'), 'logo remains 36px');
+ok(shell.includes('padding:10px 14px!important;\n  box-sizing:border-box!important;'), 'brand row is border-box');
+ok(shell.includes('--et-sidebar-nav-x:8px'), 'navigation inset remains 8px');
+ok(shell.includes('--et-sidebar-row-height:34px'), 'menu row height is 34px');
+ok(shell.includes('margin:1px 0!important'), 'menu rows have 2px total vertical separation');
+ok(shell.includes('--et-sidebar-icon-size:18px'), 'menu icon size is 18px');
+ok(professional.includes('color-mix(in srgb,var(--et-nav-accent) 12%,transparent)'), 'normal icon treatment is softened');
+ok(professional.includes('background:rgba(255,255,255,.14)!important'), 'active icon uses restrained white treatment');
+ok(shell.includes('position:static!important') && shell.includes('transform:none!important'), 'section headings remain normal-flow');
+ok(popover.includes('position:fixed!important') && popover.includes('z-index:10050!important'), 'booking popover portal/fixed mode remains');
+ok(popover.includes('width:132px'), 'booking popover width is compact');
+ok(popover.includes('min-height:32px') && popover.includes('padding:5px 9px'), 'booking popover action is compact');
+ok(popover.includes('overflow-x:auto'), 'booking table horizontal overflow remains');
+for (const marker of ['document.body.appendChild', 'Escape', 'resize', 'scroll']) ok(registerJs.toLowerCase().includes(marker.toLowerCase()), `booking popover lifecycle preserves ${marker}`);
+ok(registerJs.includes('document.addEventListener') && registerJs.includes('closeMenus'), 'booking popover outside-click close remains');
+ok(!registerJs.includes('location.href') && !registerJs.includes('window.location'), 'booking action URLs are not reconstructed');
+ok(professionalJs.includes("healthRoot.classList.add('et-health-page-root')"), 'System Health page root is identified deterministically');
+ok(professional.includes('.et-health-page-root') && professional.includes('background:transparent!important'), 'System Health outer background is removed');
+ok(professional.includes('.et-health-page-root{') && professional.includes('border:0!important'), 'System Health outer border is removed');
+ok(professional.includes('border-radius:0!important') && professional.includes('box-shadow:none!important'), 'System Health outer radius and shadow are removed');
+ok(professional.includes('.et-health-status{') && professional.includes('background:#fff!important'), 'inner health cards remain styled');
+ok(professional.includes('[data-et-dangerous-actions="true"]'), 'Dangerous Actions styling remains');
+for (const marker of ['Database Maintenance', 'Application Cache', 'data-et-dangerous-actions']) ok(professionalJs.includes(marker) || professional.includes(marker), `System Health functionality marker remains: ${marker}`);
+ok(shell.includes('body.et-ui-professional .app-shell>main.main'), '.253 standard main selector remains');
+ok(shell.includes('grid-template-columns:\n      var(--et-shell-sidebar-width)'), '.252 grid-track authority remains');
+ok(shell.includes('--et-shell-gutter-x:24px') && shell.includes('--et-shell-gutter-x:16px'), 'desktop and responsive gutters remain');
+ok(shell.includes('padding-left:0!important') && shell.includes('padding-right:0!important'), 'booking focus zero-gutter override remains');
+ok(!professionalJs.includes('style.gridTemplateColumns') && !registerJs.includes('style.gridTemplateColumns'), 'no JavaScript shell sizing');
+ok(!fs.existsSync(new URL('../../public/erp-ui/erp-ui-consistency.css', import.meta.url)), 'no new global stylesheet');
+ok(!fs.existsSync(new URL('../../database/migrations/2026_09_13_erp113254.php', import.meta.url)), 'no migration');
+ok(shell.includes('@media print{'), 'print authority remains');
+ok(version === 'v1.1.33.253-ERP11.3.253', 'functional checkpoint version remains .253');
+
+console.log(`TESTS_PASS=${pass}`);
+console.log('TESTS_FAIL=0');

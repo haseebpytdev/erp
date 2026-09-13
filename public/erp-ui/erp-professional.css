@@ -124,10 +124,20 @@ body.et-ui-professional .side-nav a>svg:first-child{
   justify-content:center!important;
   border-radius:5px!important;
   background:rgba(255,255,255,.08)!important;
-  background:color-mix(in srgb,var(--et-nav-accent) 22%,transparent)!important;
+  background:color-mix(in srgb,var(--et-nav-accent) 12%,transparent)!important;
   color:var(--et-nav-accent)!important;
   text-align:center;
   font-size:13px!important;
+}
+body.et-ui-professional .sidebar a.nav-item.active>span:first-child,
+body.et-ui-professional .sidebar .nav-item.active>a>span:first-child,
+body.et-ui-professional .sidebar a.active>span:first-child,
+body.et-ui-professional .sidebar a.et-ui-current>span:first-child,
+body.et-ui-professional .sidebar a[aria-current="page"]>span:first-child,
+body.et-ui-professional .navbar-vertical a.active>span:first-child,
+body.et-ui-professional .side-nav a.active>span:first-child{
+  color:#fff!important;
+  background:rgba(255,255,255,.14)!important;
 }
 body.et-ui-professional .sidebar .nav-section,
 body.et-ui-professional .sidebar .nav-heading,
@@ -577,6 +587,13 @@ body.et-ui-professional.et-ui-module-system [data-et-health-section]{
   border-radius:10px!important;
   background:#fff!important;
   box-shadow:none!important;
+}
+body.et-ui-professional.et-ui-module-system .et-health-page-root{
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  padding:0!important;
 }
 
 @media(max-width:1024px){

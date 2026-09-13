@@ -25,8 +25,8 @@
   --et-sidebar-brand-height:64px;
   --et-sidebar-logo-size:36px;
   --et-sidebar-nav-x:8px;
-  --et-sidebar-row-height:36px;
-  --et-sidebar-icon-size:20px;
+  --et-sidebar-row-height:34px;
+  --et-sidebar-icon-size:18px;
 }
 
 
@@ -266,6 +266,7 @@ html body.et-ui-professional .navbar-vertical .navbar-brand{
 
   margin:0!important;
   padding:10px 14px!important;
+  box-sizing:border-box!important;
 
   gap:10px!important;
 
@@ -342,6 +343,14 @@ html body.et-ui-professional .navbar-vertical .navbar-brand .logo{
    SIDEBAR NAVIGATION
    ========================================================================== */
 
+html body.et-ui-professional .sidebar,
+html body.et-ui-professional .navbar-vertical,
+html body.et-ui-professional .side-nav{
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+
 html body.et-ui-professional .sidebar .nav,
 html body.et-ui-professional .navbar-vertical .nav,
 html body.et-ui-professional .side-nav .nav{
@@ -398,7 +407,7 @@ html body.et-ui-professional .side-nav .nav a{
   min-height:var(--et-sidebar-row-height)!important;
   max-height:var(--et-sidebar-row-height)!important;
 
-  margin:0!important;
+  margin:1px 0!important;
 
   padding:6px 7px!important;
 

@@ -73,7 +73,7 @@ ok(
 );
 
 ok(
-  shellCss.includes('--et-sidebar-row-height:36px'),
+  shellCss.includes('--et-sidebar-row-height:34px'),
   'sidebar row density is controlled centrally'
 );
 

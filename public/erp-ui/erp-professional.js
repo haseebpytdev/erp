@@ -224,6 +224,14 @@
   const healthTitle = exactLeaf(document, 'System Health & Updates');
   if (healthTitle && path.startsWith('system')) {
     body.dataset.etSystemHealthPhase1 = 'true';
+    let healthRoot = healthTitle;
+    const main = document.querySelector('main');
+    while (healthRoot.parentElement && healthRoot.parentElement !== main) {
+      healthRoot = healthRoot.parentElement;
+    }
+    if (healthRoot !== body && healthRoot.tagName !== 'MAIN') {
+      healthRoot.classList.add('et-health-page-root');
+    }
     const obsoleteHealthCopy = [
       'no-ssh maintenance',
       'this page exists because the hosting has no ssh or terminal',
