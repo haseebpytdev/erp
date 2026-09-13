@@ -35,11 +35,11 @@ ok(controller.includes("$data['title'] = 'Mr'") && controller.includes("$data['t
 ok(!controller.includes("$data['title'] = 'Mrs'"), 'Mrs is never inferred');
 ok(mrz.includes('[7, 3, 1]') && mrz.includes('checkDigits: checks'), 'MRZ checksum and review gate exist');
 ok(mrz.includes('lines.length !== 2') && mrz.includes('line.length !== 44'), 'TD3 two-line length validation exists');
-ok(view.includes('Use Camera') && view.includes('Upload Passport') && view.includes('Paste / Read MRZ'), 'camera upload and reader inputs exist');
+ok(view.includes('id="pm262-upload"') && view.includes('id="pm262-mrz-input"') && !view.includes('id="pm262-camera"') && !view.includes('id="pm262-mrz"'), 'camera upload and reader inputs use single visible action authority');
 ok(view.includes('Save Passenger') && view.includes('required'), 'manual review/save remains available');
 ok(!view.includes('passport_image') && !view.includes('fetch('), 'passport image is not uploaded or persisted');
 ok(scanner.includes('getUserMedia') && scanner.includes('track.stop'), 'camera lifecycle stops tracks');
-ok(scanner.includes('pm262-scan') && scanner.includes('pm262-capture') && scanner.includes('drawImage'), 'camera capture workflow is wired');
+ok(scanner.includes('startCamera') && scanner.includes('pm262-capture') && scanner.includes('drawImage'), 'camera capture workflow is wired');
 ok(scanner.includes('createImageBitmap') && scanner.includes('ETLocalOCR') && scanner.includes('process'), 'uploaded images enter local OCR flow');
 ok(ocr.includes('ETLocalOCR') && ocr.includes('createWorker') && !ocr.includes('http'), 'bundled local OCR adapter has no CDN/API');
 const ocrLangBytes = fs.existsSync(ocrLangPath) ? fs.readFileSync(ocrLangPath) : Buffer.alloc(0);

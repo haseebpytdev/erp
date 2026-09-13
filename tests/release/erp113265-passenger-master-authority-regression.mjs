@@ -27,7 +27,7 @@ const styleBlock = view.match(/<style>([\s\S]*?)<\/style>/)?.[1] || '';
 ok(view.match(/<style>/g)?.length === 1 && (styleBlock.match(/\.pm262\{/g) || []).length === 1 && view.includes('data-passenger-workspace="ERP-11.3.265"'), 'single scoped CSS authority and .265 workspace marker exist');
 ok(view.includes('pm262-modebar') && view.includes('Scan Passport') && view.includes('Upload Passport') && view.includes('Paste / Read MRZ'), 'professional action mode strip uses real functions');
 ok(view.includes('grid-template-columns:45fr 55fr') && view.includes('Total Passengers:'), 'balanced workspace ratio and master count are visible');
-ok(view.includes('Upload Passport') && view.includes('Use Camera') && view.includes('id="pm262-capture" hidden'), 'scanner controls and initial hidden capture exist');
+ok(view.includes('id="pm262-upload"') && !view.includes('id="pm262-camera"') && !view.includes('id="pm262-mrz"') && view.includes('id="pm262-capture" hidden'), 'scanner controls and initial hidden capture exist');
 ok(view.includes('.pm262-btn[hidden],.pm262 [hidden]{display:none!important}'), 'scoped hidden CSS protection preserved');
 ok(view.includes('Save Passenger') && view.includes('data-pm-field="title"') && view.includes('data-pm-field="sex"'), 'explicit save and separate title/sex fields remain');
 ok(view.includes('>Edit</a>') && !view.includes('Delete') && !view.includes('Bulk Import') && !view.includes('Save passport image'), 'safe visible Edit action without fake or delete controls');
