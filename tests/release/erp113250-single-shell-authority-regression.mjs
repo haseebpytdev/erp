@@ -34,7 +34,7 @@ for (const token of [
   '--et-sidebar-brand-height:64px',
   '--et-sidebar-logo-size:36px',
   '--et-sidebar-nav-x:8px',
-  '--et-sidebar-row-height:34px',
+  '--et-sidebar-row-height:32px',
 ]) {
   ok(shell.includes(token), `final shell owns ${token}`);
 }

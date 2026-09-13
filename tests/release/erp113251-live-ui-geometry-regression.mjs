@@ -18,7 +18,7 @@ ok(version === 'v1.1.33.254-ERP11.3.254', 'functional checkpoint leaves release 
 for (const token of [
   '--et-shell-sidebar-width:208px',
   '--et-sidebar-nav-x:8px',
-  '--et-sidebar-row-height:34px',
+  '--et-sidebar-row-height:32px',
   '--et-shell-gutter-x:24px',
   '--et-shell-gutter-x:16px',
   'width:min(86vw,var(--et-shell-sidebar-width))'

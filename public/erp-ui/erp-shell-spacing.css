@@ -25,7 +25,7 @@
   --et-sidebar-brand-height:64px;
   --et-sidebar-logo-size:36px;
   --et-sidebar-nav-x:8px;
-  --et-sidebar-row-height:34px;
+  --et-sidebar-row-height:32px;
   --et-sidebar-icon-size:18px;
 }
 
@@ -407,7 +407,7 @@ html body.et-ui-professional .side-nav .nav a{
   min-height:var(--et-sidebar-row-height)!important;
   max-height:var(--et-sidebar-row-height)!important;
 
-  margin:1px 0!important;
+  margin:2px 0!important;
 
   padding:6px 7px!important;
 
@@ -459,7 +459,7 @@ html body.et-ui-professional .et-ui-nav-section{
   min-height:0!important;
   max-height:none!important;
 
-  margin:12px 6px 6px!important;
+  margin:14px 6px 7px!important;
   padding:0!important;
 
   box-sizing:border-box!important;
@@ -497,7 +497,7 @@ html body.et-ui-professional .side-nav .nav>[data-et-sidebar-group]{
 
 html body.et-ui-professional
 [data-et-sidebar-group="dashboard"]{
-  margin-bottom:3px!important;
+  margin-bottom:4px!important;
 }
 
 

@@ -283,10 +283,32 @@
       }
     }
 
-    ['Database Maintenance','Application Cache'].forEach(label => {
-      const labelNode = exactLeaf(document, label);
-      const section = labelNode && (labelNode.closest('.card,[class*="card"],article,section') || labelNode.parentElement);
-      if (section && section !== body) section.dataset.etHealthSection = label.toLowerCase().replace(/\s+/g, '-');
+    const healthShellHosts = 'main,section.content,.content,.page-content,.page-body,.app-shell,.content-wrapper,.page-wrapper,.main-content,.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal,.sidebar,.navbar-vertical,.side-nav';
+    document.querySelectorAll('[data-et-health-section]').forEach(node => {
+      if (node.matches(healthShellHosts)) node.removeAttribute('data-et-health-section');
     });
+    const findHealthAction = text => Array.from(document.querySelectorAll('a,button,input[type="submit"],input[type="button"]'))
+      .find(node => normalize(node.textContent || node.value || '').includes(normalize(text)));
+    const findHealthPanel = (titleNode, actionText, forbiddenTexts) => {
+      if (!titleNode || titleNode.closest(healthShellHosts)) return null;
+      const actionNode = findHealthAction(actionText);
+      if (!actionNode) return null;
+      let candidate = titleNode.parentElement;
+      while (candidate && candidate !== document.body) {
+        if (!candidate.matches(healthShellHosts)
+          && candidate.contains(actionNode)
+          && !forbiddenTexts.some(text => normalize(candidate.textContent).includes(normalize(text)))) {
+          return candidate;
+        }
+        candidate = candidate.parentElement;
+      }
+      return null;
+    };
+    const databaseHeading = exactLeaf(document, 'Database Upgrade') || exactLeaf(document, 'Database Maintenance');
+    const databasePanel = findHealthPanel(databaseHeading, 'Run Safe Database Upgrade', ['Application Cache', 'Dangerous Actions']);
+    if (databasePanel) databasePanel.dataset.etHealthSection = 'database-maintenance';
+    const cacheHeading = exactLeaf(document, 'Application Cache');
+    const cachePanel = findHealthPanel(cacheHeading, 'Clear Application Cache', ['Database Upgrade', 'Database Maintenance', 'Dangerous Actions']);
+    if (cachePanel) cachePanel.dataset.etHealthSection = 'application-cache';
   }
 })();

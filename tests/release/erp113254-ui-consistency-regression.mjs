@@ -23,8 +23,8 @@ ok(shell.includes('--et-sidebar-brand-height:64px'), 'brand height remains 64px'
 ok(shell.includes('--et-sidebar-logo-size:36px'), 'logo remains 36px');
 ok(shell.includes('padding:10px 14px!important;\n  box-sizing:border-box!important;'), 'brand row is border-box');
 ok(shell.includes('--et-sidebar-nav-x:8px'), 'navigation inset remains 8px');
-ok(shell.includes('--et-sidebar-row-height:34px'), 'menu row height is 34px');
-ok(shell.includes('margin:1px 0!important'), 'menu rows have 2px total vertical separation');
+ok(shell.includes('--et-sidebar-row-height:32px'), 'menu row height is 32px');
+ok(shell.includes('margin:2px 0!important'), 'menu rows have 4px total vertical separation');
 ok(shell.includes('--et-sidebar-icon-size:18px'), 'menu icon size is 18px');
 ok(professional.includes('color-mix(in srgb,var(--et-nav-accent) 12%,transparent)'), 'normal icon treatment is softened');
 ok(professional.includes('background:rgba(255,255,255,.14)!important'), 'active icon uses restrained white treatment');

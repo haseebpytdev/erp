@@ -509,15 +509,20 @@ body.et-ui-module-dashboard .et-dashboard-kpi{
   border-radius:10px!important;
   background:#fff!important;
   box-shadow:none!important;
-  overflow:visible!important;
+  position:relative!important;
+  overflow:hidden!important;
 }
 body.et-ui-module-dashboard .et-dashboard-kpi::before{
   content:"";
-  display:block;
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
   height:3px;
-  margin:-13px -13px 10px;
+  margin:0!important;
   border-radius:10px 10px 0 0;
   background:var(--et-kpi-accent,#2f6df3);
+  pointer-events:none;
 }
 body.et-ui-module-dashboard [data-et-dashboard-kpi="month-sales"]{--et-kpi-accent:#7657e8}
 body.et-ui-module-dashboard [data-et-dashboard-kpi="receivables"]{--et-kpi-accent:#e49a16}
