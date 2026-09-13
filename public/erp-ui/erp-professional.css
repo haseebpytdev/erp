@@ -633,9 +633,17 @@ body.et-ui-professional.et-ui-module-system .et-health-page-root{
 
 /* Final sidebar hover is presentation-only and geometry-neutral. */
 html body.et-ui-professional .et-ui-nav-group>a,
-html body.et-ui-professional .et-ui-nav-group>.nav-item>a{transition:background-color 120ms ease,color 120ms ease,border-color 120ms ease!important;}
+html body.et-ui-professional .et-ui-nav-group>a,
+html body.et-ui-professional .et-ui-nav-group>.nav-item>a,
+html body.et-ui-professional .et-ui-nav-group>.et-ui-nav-row>a{transition:background-color 120ms ease,color 120ms ease,border-color 120ms ease!important;}
 html body.et-ui-professional .et-ui-nav-group>a:hover,
 html body.et-ui-professional .et-ui-nav-group>.nav-item>a:hover{background:rgba(255,255,255,.07)!important;transform:none!important;}
+html body.et-ui-professional .et-ui-nav-group>a.et-ui-nav-row:hover,
+html body.et-ui-professional .et-ui-nav-group>.et-ui-nav-row>a:hover{background:rgba(255,255,255,.07)!important;color:#fff!important;transform:none!important;}
 html body.et-ui-professional .et-ui-nav-group>a.et-ui-current:hover,
 html body.et-ui-professional .et-ui-nav-group>a.active:hover,
 html body.et-ui-professional .et-ui-nav-group>.nav-item.active>a:hover{background:rgba(16,85,176,.72)!important;color:#fff!important;}
+html body.et-ui-professional .et-ui-nav-group>.et-ui-nav-row>a.et-ui-current:hover,
+html body.et-ui-professional .et-ui-nav-group>.et-ui-nav-row>a.active:hover,
+html body.et-ui-professional .et-ui-nav-group>a.et-ui-nav-row.et-ui-current:hover,
+html body.et-ui-professional .et-ui-nav-group>a.et-ui-nav-row.active:hover{background:rgba(16,85,176,.72)!important;color:#fff!important;}
