@@ -70,6 +70,12 @@ Route::get('/voucher/{token}', [GeneralBookingVoucherPreviewController::class, '
     ->where('token', '[a-f0-9]{48}')
     ->name('public.voucher.show');
 
+// Tesseract worker/core/language assets are static browser runtime resources.
+// They must be independently readable by a Blob Worker without an ERP session.
+Route::get('/system/erp-assets/tesseract/{type}/{asset}', [ErpProfessionalUiAssetController::class, 'tesseract'])
+    ->whereIn('type', ['dist', 'core', 'lang-data'])->where('asset', '[A-Za-z0-9._-]+')
+    ->name('system.erp-assets.tesseract');
+
 /*
 |--------------------------------------------------------------------------
 | ERP-10.31.79 Unified Group Package Routes
@@ -134,9 +140,6 @@ try {
 Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
     Route::get('/passengers', [PassengerWorkspaceController::class, 'index'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.index');
-    Route::get('/system/erp-assets/tesseract/{type}/{asset}', [ErpProfessionalUiAssetController::class, 'tesseract'])
-        ->whereIn('type', ['dist', 'core', 'lang-data'])->where('asset', '[A-Za-z0-9._-]+')
-        ->middleware(EnforceErpRoleScopedAccess::class)->name('system.erp-assets.tesseract');
     Route::post('/passengers', [PassengerWorkspaceController::class, 'store'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.store');
     Route::get('/passengers/search', [PassengerWorkspaceController::class, 'index'])

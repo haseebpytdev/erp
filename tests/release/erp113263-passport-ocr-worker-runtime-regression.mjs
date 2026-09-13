@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const routes = fs.readFileSync(new URL('../../routes/erp103179.php', import.meta.url), 'utf8');
+const controller = fs.readFileSync(new URL('../../app/Http/Controllers/System/ErpProfessionalUiAssetController.php', import.meta.url), 'utf8');
+const scanner = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
+const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
+const passengerRoutes = routes.slice(routes.indexOf("Route::get('/passengers'"));
+const assetRoute = "Route::get('/system/erp-assets/tesseract/{type}/{asset}'";
+const beforeAuthGroup = routes.slice(0, routes.indexOf("Route::middleware(['auth'])->group"));
+let pass = 0;
+const ok = (value, message) => { assert.ok(value, message); pass++; };
+ok(beforeAuthGroup.includes(assetRoute), 'Tesseract route is registered outside auth middleware');
+ok(!routes.slice(routes.indexOf(assetRoute), routes.indexOf(assetRoute) + 260).includes('EnforceErpRoleScopedAccess'), 'Tesseract route has no ERP role middleware');
+ok(passengerRoutes.includes("Route::get('/passengers'") && passengerRoutes.includes("Route::post('/passengers'"), 'Passenger read/write routes remain authenticated');
+ok(routes.includes("whereIn('type', ['dist', 'core', 'lang-data'])"), 'asset type allowlist remains restricted');
+ok(routes.includes("where('asset', '[A-Za-z0-9._-]+')"), 'asset filename traversal protection remains restrictive');
+ok(controller.includes("base_path('public/erp-ui/vendor/tesseract/'"), 'controller resolves only the vendored Tesseract root');
+ok(controller.includes("str_ends_with($asset, '.wasm')") && controller.includes("'application/wasm'"), 'WASM MIME contract preserved');
+ok(controller.includes("str_ends_with($asset, '.gz')") && controller.includes("'application/gzip'"), 'gzip MIME contract preserved');
+ok(controller.includes("'X-Content-Type-Options' => 'nosniff'"), 'nosniff header preserved');
+ok(ocr.includes("${base}/dist/worker.min.js") && ocr.includes("${base}/core") && ocr.includes("${base}/lang-data"), 'local worker/core/lang paths unchanged');
+ok(!ocr.includes('http') && !scanner.includes('fetch('), 'no CDN or external OCR upload introduced');
+ok(scanner.includes('runtimeFailure') && scanner.includes('networkerror') && scanner.includes('Passport OCR could not start'), 'scanner classifies runtime startup failures');
+ok(scanner.includes('Passport could not be read clearly. Try another image'), 'scanner preserves unreadable MRZ message');
+ok(fs.existsSync(new URL('../../public/erp-ui/vendor/tesseract/lang-data/eng.traineddata.gz', import.meta.url)), '.262 compressed language asset remains present');
+console.log(`erp113263-passport-ocr-worker-runtime-regression: ${pass} assertions passed`);
