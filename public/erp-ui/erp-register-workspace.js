@@ -175,7 +175,63 @@
     checkbox.addEventListener('change', updateSelectAll);
   });
 
+  var activeRowPopover = null;
+
+  var restoreRowPopover = function () {
+    if (!activeRowPopover) return;
+    var state = activeRowPopover;
+    state.panel.classList.remove('et-booking-row-menu-panel-portal');
+    state.panel.style.left = '';
+    state.panel.style.top = '';
+    state.placeholder.parentNode.replaceChild(state.panel, state.placeholder);
+    state.menu.classList.remove('open');
+    state.trigger.setAttribute('aria-expanded', 'false');
+    activeRowPopover = null;
+  };
+
+  var positionRowPopover = function (state) {
+    var triggerRect = state.trigger.getBoundingClientRect();
+    var panel = state.panel;
+    var margin = 8;
+    panel.style.visibility = 'hidden';
+    panel.style.display = 'block';
+    var panelRect = panel.getBoundingClientRect();
+    var left = triggerRect.right - panelRect.width;
+    var top = triggerRect.bottom + 4;
+
+    if (top + panelRect.height > window.innerHeight - margin && triggerRect.top - panelRect.height - 4 >= margin) {
+      top = triggerRect.top - panelRect.height - 4;
+    }
+    left = Math.max(margin, Math.min(left, window.innerWidth - panelRect.width - margin));
+    top = Math.max(margin, Math.min(top, window.innerHeight - panelRect.height - margin));
+
+    panel.style.left = Math.round(left) + 'px';
+    panel.style.top = Math.round(top) + 'px';
+    panel.style.visibility = '';
+  };
+
+  var openRowPopover = function (trigger) {
+    var menu = trigger.closest('.et-booking-row-menu');
+    var panel = menu && menu.querySelector('.et-booking-row-menu-panel');
+    if (!menu || !panel) return;
+    if (activeRowPopover && activeRowPopover.menu === menu) {
+      restoreRowPopover();
+      return;
+    }
+
+    restoreRowPopover();
+    var placeholder = document.createComment('et-booking-row-menu-panel');
+    panel.parentNode.replaceChild(placeholder, panel);
+    document.body.appendChild(panel);
+    panel.classList.add('et-booking-row-menu-panel-portal');
+    menu.classList.add('open');
+    trigger.setAttribute('aria-expanded', 'true');
+    activeRowPopover = { menu: menu, panel: panel, placeholder: placeholder, trigger: trigger };
+    positionRowPopover(activeRowPopover);
+  };
+
   var closeMenus = function (except) {
+    if (!except || !activeRowPopover || activeRowPopover.menu !== except) restoreRowPopover();
     root.querySelectorAll('.et-booking-row-menu.open,.et-booking-export.open').forEach(function (menu) {
       if (menu !== except) menu.classList.remove('open');
     });
@@ -184,11 +240,7 @@
   root.querySelectorAll('[data-register-row-menu]').forEach(function (trigger) {
     trigger.addEventListener('click', function (event) {
       event.stopPropagation();
-      var menu = trigger.closest('.et-booking-row-menu');
-      if (!menu) return;
-      var opening = !menu.classList.contains('open');
-      closeMenus(menu);
-      menu.classList.toggle('open', opening);
+      openRowPopover(trigger);
     });
   });
 
@@ -203,7 +255,15 @@
     });
   }
 
-  document.addEventListener('click', function () { closeMenus(null); });
+  document.addEventListener('click', function (event) {
+    if (activeRowPopover && (activeRowPopover.panel.contains(event.target) || activeRowPopover.menu.contains(event.target))) return;
+    closeMenus(null);
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeMenus(null);
+  });
+  window.addEventListener('resize', function () { closeMenus(null); });
+  window.addEventListener('scroll', function () { closeMenus(null); }, true);
 
   var csvCell = function (value) {
     return '"' + clean(value).replace(/"/g, '""') + '"';

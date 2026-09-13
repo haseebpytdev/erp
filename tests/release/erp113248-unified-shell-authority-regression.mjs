@@ -35,13 +35,13 @@ ok(
 );
 
 for (const token of [
-  '--et-shell-sidebar-width:224px',
+  '--et-shell-sidebar-width:208px',
   '--et-shell-gutter-x:24px',
   '--et-shell-gutter-y:18px',
   '--et-shell-topbar-height:56px',
   '--et-sidebar-brand-height:64px',
   '--et-sidebar-logo-size:36px',
-  '--et-sidebar-nav-x:10px',
+  '--et-sidebar-nav-x:8px',
   '--et-sidebar-row-height:36px',
   '--et-sidebar-icon-size:20px',
 ]) {

@@ -15,7 +15,7 @@
  */
 
 :root{
-  --et-shell-sidebar-width:224px;
+  --et-shell-sidebar-width:208px;
   --et-shell-gutter-x:24px;
   --et-shell-gutter-y:18px;
   --et-shell-bottom:28px;
@@ -24,7 +24,7 @@
 
   --et-sidebar-brand-height:64px;
   --et-sidebar-logo-size:36px;
-  --et-sidebar-nav-x:10px;
+  --et-sidebar-nav-x:8px;
   --et-sidebar-row-height:36px;
   --et-sidebar-icon-size:20px;
 }
@@ -173,6 +173,24 @@ body.et-ui-professional main>section>.container-fluid{
 
   padding-left:0!important;
   padding-right:0!important;
+}
+
+/*
+ * Standard authenticated pages have one horizontal shell gutter: main owns it.
+ * These are only immediate native page hosts, never cards, forms, tables, or
+ * module grids nested inside a page.
+ */
+html:not(.et-booking-focus-prepaint) body.et-ui-professional main>section.content,
+html:not(.et-booking-focus-prepaint) body.et-ui-professional main>.page-content,
+html:not(.et-booking-focus-prepaint) body.et-ui-professional main>.page-body{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  box-sizing:border-box!important;
 }
 
 
@@ -327,6 +345,9 @@ html body.et-ui-professional .side-nav .nav{
     var(--et-sidebar-nav-x)
     12px!important;
 
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
   gap:0!important;
 
   min-height:0!important;
@@ -374,7 +395,7 @@ html body.et-ui-professional .side-nav .nav a{
 
   margin:0!important;
 
-  padding:6px 8px!important;
+  padding:6px 7px!important;
 
   gap:8px!important;
 
@@ -413,12 +434,21 @@ html body.et-ui-professional .navbar-vertical .nav-section,
 html body.et-ui-professional .navbar-vertical .nav-heading,
 
 html body.et-ui-professional .et-ui-nav-section{
+  position:static!important;
+  display:block!important;
+  float:none!important;
+  clear:both!important;
+  transform:none!important;
+  flex:none!important;
+  width:auto!important;
   height:auto!important;
   min-height:0!important;
   max-height:none!important;
 
-  margin:14px 8px 5px!important;
+  margin:12px 6px 6px!important;
   padding:0!important;
+
+  box-sizing:border-box!important;
 
   line-height:1.15!important;
 }
@@ -430,6 +460,24 @@ html body.et-ui-professional
 html body.et-ui-professional
 [data-et-sidebar-section]+[data-et-sidebar-group]{
   margin-top:0!important;
+}
+
+/* Professional JS marks only root direct wrappers with this attribute. */
+html body.et-ui-professional .sidebar .nav>[data-et-sidebar-group],
+html body.et-ui-professional .navbar-vertical .nav>[data-et-sidebar-group],
+html body.et-ui-professional .side-nav .nav>[data-et-sidebar-group]{
+  position:relative!important;
+  display:block!important;
+  float:none!important;
+  clear:both!important;
+  transform:none!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
 }
 
 
@@ -569,6 +617,25 @@ html.et-booking-focus-prepaint section.content{
     0
     var(--et-shell-gutter-x)
     var(--et-shell-bottom)!important;
+  box-sizing:border-box!important;
+}
+
+/*
+ * Focus mode deliberately removes main's outer padding. Its utility header
+ * therefore must not inherit the normal full-bleed negative-margin contract.
+ */
+html.et-booking-focus-prepaint body.et-ui-professional main>.topbar,
+html.et-booking-focus-prepaint body.et-ui-professional main>.top-bar,
+html.et-booking-focus-prepaint body.et-ui-professional main>.app-header,
+html.et-booking-focus-prepaint body.et-ui-professional main>.main-header,
+html.et-booking-focus-prepaint body.et-ui-professional main>.navbar-horizontal,
+html.et-booking-focus-prepaint body.et-ui-professional main>.et-ui-utility-topbar{
+  width:100%!important;
+  max-width:100%!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  padding-left:var(--et-shell-gutter-x)!important;
+  padding-right:var(--et-shell-gutter-x)!important;
   box-sizing:border-box!important;
 }
 

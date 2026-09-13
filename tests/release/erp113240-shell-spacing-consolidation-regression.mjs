@@ -58,8 +58,8 @@ ok(
 );
 
 ok(
-  shellCss.includes('--et-shell-sidebar-width:224px'),
-  'desktop sidebar width remains 224px'
+  shellCss.includes('--et-shell-sidebar-width:208px'),
+  'desktop sidebar width remains 208px'
 );
 
 ok(

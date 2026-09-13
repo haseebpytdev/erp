@@ -26,14 +26,14 @@ const ok = (condition, label) => {
 ok(version === 'v1.1.33.250-ERP11.3.250', 'ERP-11.3.250 packaged release metadata is current');
 
 for (const token of [
-  '--et-shell-sidebar-width:224px',
+  '--et-shell-sidebar-width:208px',
   '--et-shell-gutter-x:24px',
   '--et-shell-gutter-y:18px',
   '--et-shell-bottom:28px',
   '--et-shell-topbar-height:56px',
   '--et-sidebar-brand-height:64px',
   '--et-sidebar-logo-size:36px',
-  '--et-sidebar-nav-x:10px',
+  '--et-sidebar-nav-x:8px',
   '--et-sidebar-row-height:36px',
 ]) {
   ok(shell.includes(token), `final shell owns ${token}`);

@@ -38,7 +38,7 @@ for (const module of ['dashboard','administration','organization','travel','mast
 for (const token of ['--et-primary','--et-bg','--et-surface','--et-border','--et-text','--et-muted','--et-success','--et-warning','--et-danger','--et-radius']) {
   ok(css.includes(token + ':'), `design token ${token} exists`);
 }
-ok(shellCss.includes('--et-shell-sidebar-width:224px'), 'final shell authority owns the approved compact sidebar width');
+ok(shellCss.includes('--et-shell-sidebar-width:208px'), 'final shell authority owns the approved compact sidebar width');
 ok(css.includes('min-height:36px!important'), 'navigation and buttons use compact operational sizing');
 ok(css.includes('.et-ui-current'), 'active navigation styling exists');
 ok(css.includes('[aria-current="page"]'), 'native active navigation state is preserved');

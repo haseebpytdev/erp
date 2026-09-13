@@ -76,6 +76,7 @@
 .et-pages .active{background:#0b63d8;border-color:#0b63d8;color:#fff;font-weight:900}
 .et-empty{text-align:center!important;padding:34px 12px!important;color:#7a899d!important}
 .et-bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+.et-bottom-row>.et-card{margin-top:0}
 .et-workflow{padding:17px 13px 15px}
 .et-flow-line{display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
 .et-flow-line:before{content:"";position:absolute;top:14px;left:12%;right:12%;height:2px;background:#d7e3f3}
