@@ -20,7 +20,7 @@ ok(middleware.includes('if (! $request->user())'), 'guest pages skip professiona
 ok(middleware.includes('Never inject those authenticated asset URLs into guest/login pages'), 'guest/login redirect rationale is documented');
 ok(routes.includes("Route::middleware(['auth'])->group"), 'professional asset route remains authenticated for ERP pages');
 ok(routes.includes("'/system/erp-assets/erp-professional.js'"), 'professional JS route remains present');
-ok(version === 'v1.1.33.258-ERP11.3.258', 'packaged release version is current');
+ok(version === 'v1.1.33.259-ERP11.3.259', 'packaged release version is current');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.258
-APPLICATION_VERSION=v1.1.33.258-ERP11.3.258
+CURRENT_VERSION=ERP-11.3.259
+APPLICATION_VERSION=v1.1.33.259-ERP11.3.259
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.258
+LAST_PACKAGED_RELEASE=ERP-11.3.259
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -624,7 +624,7 @@ Sales Invoice focused workspace, Day-One/reset logic, booking and accounting
 business behavior, public vouchers and print/PDF layouts remain unchanged.
 No migration is required.
 
-ERP-11.3.258 contains Dashboard KPI accent containment, safe System Health
+ERP-11.3.259 contains Dashboard KPI accent containment, safe System Health
 inner-panel resolution that treats shell hosts as traversal boundaries, and
 refined sidebar row/section rhythm. Accounting bottom-row separation and the
 Booking Register fixed body-portal popover remain preserved. No booking,
