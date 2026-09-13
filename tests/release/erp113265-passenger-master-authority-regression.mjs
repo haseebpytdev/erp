@@ -23,7 +23,8 @@ ok(source.includes("$candidateTables[] = 'booking_passengers'"), 'booking_passen
 ok(!fs.existsSync(new URL('../../database/migrations/2026_09_14_passenger_master.php', import.meta.url)), 'no Passenger Master migration added');
 ok(view.includes('pm262-grid') && view.includes('Passport Scanner') && view.includes('Passenger Master'), 'two-column scanner/data workspace and table exist');
 ok(view.includes('id="pm262-mode-scan"') && view.includes('id="pm262-mode-upload"') && view.includes('id="pm262-mode-mrz"') && view.includes('Passenger Data'), 'workspace mode controls and passenger data panel exist');
-ok(view.match(/<style>/g)?.length === 1 && view.includes('data-passenger-workspace="ERP-11.3.265"'), 'single scoped CSS authority and .265 workspace marker exist');
+const styleBlock = view.match(/<style>([\s\S]*?)<\/style>/)?.[1] || '';
+ok(view.match(/<style>/g)?.length === 1 && (styleBlock.match(/\.pm262\{/g) || []).length === 1 && view.includes('data-passenger-workspace="ERP-11.3.265"'), 'single scoped CSS authority and .265 workspace marker exist');
 ok(view.includes('pm262-modebar') && view.includes('Scan Passport') && view.includes('Upload Passport') && view.includes('Paste / Read MRZ'), 'professional action mode strip uses real functions');
 ok(view.includes('grid-template-columns:45fr 55fr') && view.includes('Total Passengers:'), 'balanced workspace ratio and master count are visible');
 ok(view.includes('Upload Passport') && view.includes('Use Camera') && view.includes('id="pm262-capture" hidden'), 'scanner controls and initial hidden capture exist');
