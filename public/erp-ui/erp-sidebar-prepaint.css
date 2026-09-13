@@ -9,10 +9,18 @@ body.et-ui-professional:not([data-et-sidebar-ready]) .side-nav .nav {
   visibility: hidden;
   animation: et-sidebar-prepaint-failsafe 0s linear 2s forwards;
 }
+body.et-ui-professional:not([data-et-sidebar-ready]) .sidebar-menu {
+  visibility:hidden;
+  animation:et-sidebar-prepaint-failsafe 0s linear 2s forwards;
+}
 
 body.et-ui-professional[data-et-sidebar-ready] .sidebar .nav,
 body.et-ui-professional[data-et-sidebar-ready] .navbar-vertical .nav,
 body.et-ui-professional[data-et-sidebar-ready] .side-nav .nav {
   visibility: visible;
   animation: none;
+}
+body.et-ui-professional[data-et-sidebar-ready] .sidebar-menu {
+  visibility:visible;
+  animation:none;
 }

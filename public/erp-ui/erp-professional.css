@@ -647,3 +647,11 @@ html body.et-ui-professional .et-ui-nav-group>.et-ui-nav-row>a.et-ui-current:hov
 html body.et-ui-professional .et-ui-nav-group>.et-ui-nav-row>a.active:hover,
 html body.et-ui-professional .et-ui-nav-group>a.et-ui-nav-row.et-ui-current:hover,
 html body.et-ui-professional .et-ui-nav-group>a.et-ui-nav-row.active:hover{background:rgba(16,85,176,.72)!important;color:#fff!important;}
+
+/* Alternate System Health nav surface; frame geometry remains owned by the
+   real sidebar container. */
+html body.et-ui-professional .sidebar-menu a[href]{
+  color:#cbd8e8!important;
+  text-decoration:none!important;
+}
+html body.et-ui-professional .sidebar-menu a[href]:hover{background:rgba(255,255,255,.07)!important;color:#fff!important;}

@@ -12,11 +12,11 @@
     catch (_) { return ''; }
   };
 
-  const sidebarNav = document.querySelector('.sidebar .nav,.navbar-vertical .nav,.side-nav .nav');
+  const sidebarNav = document.querySelector('.sidebar .nav,.navbar-vertical .nav,.side-nav .nav,.sidebar-menu');
   if (sidebarNav) {
     // Presentation-only preparation. Grouping and ordering belong exclusively
     // to erp-professional-finalize.js; leave server-rendered DOM untouched.
-    const sidebar = sidebarNav.closest('.sidebar,.navbar-vertical,.side-nav');
+    const sidebar = sidebarNav.closest('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu');
     const rowLink = row => row.matches('a[href]') ? row : row.querySelector(':scope > a[href],:scope > .nav-item > a[href]');
     Array.from(sidebarNav.querySelectorAll('a[href]')).forEach(link => {
       const icon = Array.from(link.children).find(child => child.matches('span,i,svg'));
@@ -44,7 +44,7 @@
     }
   }
 
-  document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href]').forEach(link => {
+  document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href],.sidebar-menu a[href],.sidebar-menu[href]').forEach(link => {
     const linkPath = normalizePath(link.getAttribute('href'));
     const currentPath = location.pathname.replace(/\/+$/g, '') || '/';
     if (linkPath && linkPath === currentPath) {
@@ -76,7 +76,7 @@
     body.dataset.etDashboardPhase1 = 'approved-reference';
 
     const overview = exactLeaf(document, 'Management Overview');
-    if (overview && !overview.closest('.sidebar,.navbar-vertical,.side-nav,.et-ui-utility-topbar')) {
+    if (overview && !overview.closest('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu,.et-ui-utility-topbar')) {
       let header = overview.parentElement;
       for (let depth = 0; header && depth < 4; depth++, header = header.parentElement) {
         const companyTitle = exactLeaf(header, 'Easy Group Of Travels');
@@ -96,7 +96,7 @@
     const kpiCards = [];
     kpiLabels.forEach(label => {
       const labelNode = exactLeaf(document, label);
-      if (!labelNode || labelNode.closest('.sidebar,.navbar-vertical,.side-nav,.et-ui-utility-topbar')) return;
+      if (!labelNode || labelNode.closest('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu,.et-ui-utility-topbar')) return;
       let card = labelNode.parentElement;
       for (let depth = 0; card && depth < 5; depth++, card = card.parentElement) {
         const content = card.textContent.replace(/\s+/g, ' ').trim();
@@ -132,7 +132,7 @@
     ].forEach(([title, key]) => {
       const titleNode = exactLeaf(document, title);
       const card = titleNode && titleNode.closest('.card,[class*="card"],section,article');
-      if (card && !card.closest('.sidebar,.navbar-vertical,.side-nav')) card.dataset.etDashboardSection = key;
+      if (card && !card.closest('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu')) card.dataset.etDashboardSection = key;
     });
   }
 
@@ -172,7 +172,7 @@
     const healthCards = [];
     ['Application','Database','Report Header','Runtime'].forEach(label => {
       const labelNode = exactLeaf(document, label);
-      if (!labelNode || labelNode.closest('.sidebar,.navbar-vertical,.side-nav,.et-ui-utility-topbar')) return;
+      if (!labelNode || labelNode.closest('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu,.et-ui-utility-topbar')) return;
       const card = labelNode.closest('.card,[class*="card"],article,section') || labelNode.parentElement;
       if (!card || card === body || card.querySelector('form')) return;
       card.classList.add('et-health-status');
@@ -184,7 +184,7 @@
     if (healthGrid && healthGrid[0] && healthGrid[1] >= 3) healthGrid[0].classList.add('et-health-status-grid');
 
     const healthPageHeading = exactLeaf(document, 'System Health');
-    const excludedHealthChrome = '.sidebar,.navbar-vertical,.side-nav,.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal';
+    const excludedHealthChrome = '.sidebar,.navbar-vertical,.side-nav,.sidebar-menu,.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal';
     if (healthPageHeading && !healthPageHeading.closest(excludedHealthChrome)) {
       let healthRoot = healthPageHeading;
       const main = healthPageHeading.closest('main');
@@ -198,8 +198,8 @@
       }
     }
 
-    const healthShellHosts = 'main,section.content,.content,.page-content,.page-body,.app-shell,.content-wrapper,.page-wrapper,.main-content,.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal,.sidebar,.navbar-vertical,.side-nav';
-    const healthChrome = '.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal,.sidebar,.navbar-vertical,.side-nav';
+    const healthShellHosts = 'main,section.content,.content,.page-content,.page-body,.app-shell,.content-wrapper,.page-wrapper,.main-content,.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal,.sidebar,.navbar-vertical,.side-nav,.sidebar-menu';
+    const healthChrome = '.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal,.sidebar,.navbar-vertical,.side-nav,.sidebar-menu';
     document.querySelectorAll('[data-et-health-section]').forEach(node => {
       if (node.matches(healthShellHosts)) node.removeAttribute('data-et-health-section');
     });

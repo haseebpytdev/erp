@@ -248,7 +248,9 @@
         }
       });
     }
-    if (sidebar.querySelector('[data-et-sidebar-grouped="final-v1"]')) body.dataset.etSidebarReady = 'true';
+    const canonicalReady = sidebar.matches('[data-et-sidebar-grouped="final-v1"]')
+      || Boolean(sidebar.querySelector('[data-et-sidebar-grouped="final-v1"]'));
+    if (canonicalReady && body.dataset.etSidebarNormalization === 'committed') body.dataset.etSidebarReady = 'true';
   }
 
   const path = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
