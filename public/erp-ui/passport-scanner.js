@@ -18,6 +18,10 @@
   };
   const process = async source => { const text = await recognizeImage(source); const result = root.ETPassportMRZ.parse(text); mapResult(result); return result; };
   root.ETPassengerScanner = { mapResult, process, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
+  if (root.ETPassengerEdit) {
+    const form = document.getElementById('pm262-passenger-form');
+    if (form) { form.action = `/passengers/${encodeURIComponent(root.ETPassengerEdit.source_table)}/${root.ETPassengerEdit.id}`; const method = document.createElement('input'); method.type = 'hidden'; method.name = '_method'; method.value = 'PATCH'; form.appendChild(method); mapResult({ givenNames: root.ETPassengerEdit.first_name, surname: root.ETPassengerEdit.last_name, passportNumber: root.ETPassengerEdit.passport_no, nationality: root.ETPassengerEdit.nationality, dateOfBirth: root.ETPassengerEdit.date_of_birth, passportExpiry: root.ETPassengerEdit.passport_expiry, issuingCountry: root.ETPassengerEdit.issuing_country, sex: root.ETPassengerEdit.sex }); set('title', root.ETPassengerEdit.title || ''); }
+  }
   const state = document.getElementById('pm262-state'), video = document.getElementById('pm262-video'), canvas = document.getElementById('pm262-canvas');
   let stream = null;
   const stop = () => { root.ETPassengerScanner.stopStream(stream); stream = null; if (video) { video.pause(); video.srcObject = null; video.style.display = 'none'; } const capture = document.getElementById('pm262-capture'); if (capture) capture.hidden = true; };

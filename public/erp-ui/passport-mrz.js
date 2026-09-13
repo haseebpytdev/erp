@@ -3,11 +3,17 @@
   const value = c => c === '<' ? 0 : /[0-9]/.test(c) ? Number(c) : c.charCodeAt(0) - 55;
   const check = (text, digit) => { let total = 0; for (let i = 0; i < text.length; i++) total += value(text[i]) * [7, 3, 1][i % 3]; return total % 10 === Number(digit); };
   const dateValue = (raw, kind) => {
-    const yy = Number(raw.slice(0, 2)), mm = raw.slice(2, 4), dd = raw.slice(4, 6);
-    const now = new Date(), year = kind === 'dob'
-      ? (yy + 2000 <= now.getFullYear() - 16 ? yy + 2000 : yy + 1900)
-      : (yy + 2000 >= now.getFullYear() - 20 ? yy + 2000 : yy + 2100);
-    return `${year}-${mm}-${dd}`;
+    if (!/^\d{6}$/.test(raw)) return null;
+    const yy = Number(raw.slice(0, 2)), mm = Number(raw.slice(2, 4)), dd = Number(raw.slice(4, 6));
+    const now = new Date();
+    const candidates = [1900 + yy, 2000 + yy, 2100 + yy].map(year => new Date(Date.UTC(year, mm - 1, dd)))
+      .filter(date => date.getUTCFullYear() % 100 === yy && date.getUTCMonth() === mm - 1 && date.getUTCDate() === dd);
+    const plausible = candidates.filter(date => kind === 'dob'
+      ? date <= now && (now.getUTCFullYear() - date.getUTCFullYear()) <= 120
+      : date >= new Date(Date.UTC(now.getUTCFullYear() - 25, now.getUTCMonth(), now.getUTCDate()))
+        && date <= new Date(Date.UTC(now.getUTCFullYear() + 20, now.getUTCMonth(), now.getUTCDate())));
+    const chosen = plausible.sort((a, b) => Math.abs(a - now) - Math.abs(b - now))[0];
+    return chosen ? chosen.toISOString().slice(0, 10) : null;
   };
   window.ETPassportMRZ = {
     parse(input) {
@@ -19,15 +25,9 @@
       const checks = { passportNumber: check(passport, b[9]), dateOfBirth: check(dob, b[19]), expiry: check(expiry, b[27]), optional: check(b.slice(28, 42), b[42]), composite: check(composite, b[43]) };
       checks.overall = checks.passportNumber && checks.dateOfBirth && checks.expiry && checks.composite;
       const names = a.slice(5).split('<<');
-      return { valid: checks.overall, review: !checks.overall, documentCode: a.slice(0, 2), issuingCountry: a.slice(2, 5), surname: names[0].replace(/</g, ' ').trim(), givenNames: (names[1] || '').replace(/</g, ' ').trim(), passportNumber: passport.replace(/</g, ''), nationality: b.slice(10, 13), dateOfBirth: dateValue(dob, 'dob'), sex: b[20], passportExpiry: dateValue(expiry, 'expiry'), checkDigits: checks };
+      const dateOfBirth = dateValue(dob, 'dob'), passportExpiry = dateValue(expiry, 'expiry');
+      return { valid: checks.overall && !!dateOfBirth && !!passportExpiry, review: !(checks.overall && dateOfBirth && passportExpiry), documentCode: a.slice(0, 2), issuingCountry: a.slice(2, 5), surname: names[0].replace(/</g, ' ').trim(), givenNames: (names[1] || '').replace(/</g, ' ').trim(), passportNumber: passport.replace(/</g, ''), nationality: b.slice(10, 13), dateOfBirth, sex: b[20], passportExpiry, checkDigits: checks };
     }
   };
   window.ETPassportMRZ.resolveDate = dateValue;
-  if (typeof document === 'undefined') return;
-  const byId = id => document.getElementById(id);
-  const state = byId('pm262-state'), input = byId('pm262-mrz-input');
-  byId('pm262-mrz')?.addEventListener('click', () => { input.style.display = 'block'; input.focus(); state.textContent = 'Paste two TD3 MRZ lines, then review the fields.'; });
-  input?.addEventListener('input', () => { const parsed = window.ETPassportMRZ.parse(input.value); state.textContent = parsed.valid ? 'Ready for review' : parsed.error || 'Passport scan needs review.'; });
-  byId('pm262-camera')?.addEventListener('click', async () => { state.textContent = 'Opening camera…'; try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } }); stream.getTracks().forEach(track => track.stop()); state.textContent = 'Camera ready. Capture or upload an image, then review.'; } catch (_) { state.textContent = 'Camera is not available on this device. Upload an image or enter the passenger manually.'; } });
-  byId('pm262-upload')?.addEventListener('change', () => { state.textContent = 'Reading passport… Review the extracted fields before saving.'; });
 })();
