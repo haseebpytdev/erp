@@ -115,6 +115,8 @@ final class GeneralBookingPassengerQuickController extends Controller
         $this->putAllowEmpty($updates, $columns, ['passport_no', 'passport_number'], trim((string) ($data['passport_number'] ?? '')));
         $this->putAllowEmpty($updates, $columns, ['passport_expiry', 'passport_expiry_date'], $data['passport_expiry'] ?? null);
         $this->putAllowEmptyFitted($updates, $table, $columns, ['nationality', 'nationality_name', 'country'], trim((string) ($data['nationality'] ?? '')));
+        $this->putAllowEmpty($updates, $columns, ['title', 'salutation'], trim((string) ($data['title'] ?? '')));
+        $this->putAllowEmpty($updates, $columns, ['sex', 'gender'], trim((string) ($data['sex'] ?? '')));
         $this->putAllowEmpty($updates, $columns, ['fare_as', 'age_type', 'passenger_type', 'pax_type'], $this->normalizeFareType((string) $data['fare_type']));
 
         if (in_array('updated_at', $columns, true)) {

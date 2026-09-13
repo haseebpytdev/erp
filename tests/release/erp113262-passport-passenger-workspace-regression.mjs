@@ -11,6 +11,7 @@ const sidebar = fs.readFileSync(new URL('../../public/erp-ui/erp-professional-fi
 const ready = fs.readFileSync(new URL('../../public/erp-ui/erp-sidebar-ready.js', import.meta.url), 'utf8');
 const mrz = fs.readFileSync(new URL('../../public/erp-ui/passport-mrz.js', import.meta.url), 'utf8');
 const view = fs.readFileSync(new URL('../../resources/views/operations/passengers/index.blade.php', import.meta.url), 'utf8');
+const scanner = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
 let pass = 0;
 const ok = (v, m) => { assert.ok(v, m); pass++; };
 ok(routes.includes("Route::get('/passengers'") && routes.includes("Route::post('/passengers'"), 'Passenger routes exist');
@@ -24,12 +25,17 @@ ok(writer.includes('name') && writer.includes('date_of_birth'), 'name plus DOB f
 ok(writer.includes("['title', 'salutation']") && writer.includes("['sex', 'gender']"), 'title and sex are schema adaptive');
 ok(controller.includes("$data['title'] = 'Mr'") && controller.includes("$data['title'] = 'Ms'"), 'sex defaults are Mr/Ms');
 ok(!controller.includes("$data['title'] = 'Mrs'"), 'Mrs is never inferred');
-ok(mrz.includes('[7, 3, 1]') && mrz.includes('review: !valid'), 'MRZ checksum and review gate exist');
+ok(mrz.includes('[7, 3, 1]') && mrz.includes('review: !checks.overall'), 'MRZ checksum and review gate exist');
 ok(mrz.includes('lines.length !== 2') && mrz.includes('line.length !== 44'), 'TD3 two-line length validation exists');
 ok(view.includes('Use Camera') && view.includes('Upload Passport') && view.includes('Paste / Read MRZ'), 'camera upload and reader inputs exist');
 ok(view.includes('Save Passenger') && view.includes('required'), 'manual review/save remains available');
 ok(!view.includes('passport_image') && !view.includes('fetch('), 'passport image is not uploaded or persisted');
 ok(mrz.includes('getUserMedia') && mrz.includes('track.stop'), 'camera lifecycle stops tracks');
+ok(scanner.includes('pm262-scan') && scanner.includes('pm262-capture') && scanner.includes('drawImage'), 'camera capture workflow is wired');
+ok(scanner.includes('createImageBitmap') && scanner.includes('ETLocalOCR') && scanner.includes('process'), 'uploaded images enter local OCR flow');
+ok(scanner.includes('mapResult') && scanner.includes('Save Passenger') === false, 'scanner maps into review form without auto-save');
+ok(view.includes('data-pm-field="dateOfBirth"') && view.includes('data-pm-field="passportExpiry"'), 'MRZ date fields are reviewable');
+ok(view.includes('Actions') && view.includes('data-passenger-edit'), 'master table has safe edit action');
 ok(quick.includes("'title'") && quick.includes("['sex', 'gender']"), 'booking reuse metadata remains backward compatible');
 ok(sidebar.includes("['passengers']") && sidebar.includes("['bookings']") && sidebar.indexOf("['passengers']") < sidebar.indexOf("['sales invoices']"), 'Operations order includes Passengers');
 ok(sidebar.includes("['bookings']") && sidebar.includes("['sales invoices']") && sidebar.includes("['supplier costing']"), 'existing Operations links preserved');
