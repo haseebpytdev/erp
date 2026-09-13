@@ -65,7 +65,7 @@ ok(registerCss.includes('.et-booking-ref-kpis') && registerCss.includes('.et-boo
 ok(shellCss.includes('--et-shell-gutter-x:24px') && shellCss.includes('--et-shell-gutter-y:20px'), 'one desktop shell gutter system is authoritative');
 ok(!finalizer.includes("heading.style.setProperty('margin'"), 'sidebar finalizer no longer competes with CSS spacing');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned immutable browser caching remains intact');
-ok(version === 'v1.1.33.251-ERP11.3.251', 'packaged release version is current');
+ok(version === 'v1.1.33.252-ERP11.3.252', 'packaged release version is current');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');

@@ -1,4 +1,4 @@
-ERP-11.3.251 DIRECT UPLOAD - LIVE UI GEOMETRY CORRECTIONS
+ERP-11.3.252 DIRECT UPLOAD - SHELL GRID TRACK AND PAGE RHYTHM
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -11,7 +11,7 @@ Deployment without SSH:
 6. Verify the Dashboard and representative register, accounting and booking
    pages at desktop, laptop, tablet and mobile widths.
 
-ERP-11.3.251 preserves one final external authenticated shell geometry authority:
+ERP-11.3.252 preserves one final external authenticated shell geometry authority:
 public/erp-ui/erp-shell-spacing.css.
 
 - Desktop/laptop sidebar: 208px
@@ -20,11 +20,11 @@ public/erp-ui/erp-shell-spacing.css.
 - Utility header: 56px
 - Desktop main gutter: 24px
 - Responsive main gutter: 16px
-- Root sidebar headings/rows use normal document flow without overlap
-- Standard native page hosts contribute no second horizontal shell gutter
-- Booking focus utility header content is gutter-aligned without negative bleed
-- Booking Register action menus portal outside the table scrolling viewport
-- Cash Voucher Quick Workflow and Allocation Insight align at their top edge
+- Desktop/laptop app-shell first grid track: shared 208px sidebar authority
+- Stale 250px native grid track and 42px dead space removed
+- Standard native page host duplicate top padding removed
+- Shell top rhythm remains 18px desktop / 16px responsive
+- Booking focus remains one-column
 
 Module cards, forms and tables, Sales Invoice focus, Day-One/reset logic,
 booking/accounting business behavior and print/voucher layouts are unchanged.

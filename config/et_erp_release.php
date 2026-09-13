@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.251-ERP11.3.251',
-    'release' => 'ERP-11.3.251',
-    'package' => 'ERP-11.3.251 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.251 promotes the approved live UI geometry corrections in public/erp-ui/erp-shell-spacing.css: the 208px desktop/laptop sidebar, 8px navigation inset, normal-flow sidebar headings and normalized root row wrappers, single 24px desktop/16px responsive content gutter, and booking-focus header alignment. Booking Register row actions now use a fixed popover outside the table scroll viewport, and Cash Voucher bottom cards align in their shared grid. No booking/accounting behavior, Day-One/reset logic, Sales Invoice focus, print/voucher layout or migration is changed.',
+    'version' => 'v1.1.33.252-ERP11.3.252',
+    'release' => 'ERP-11.3.252',
+    'package' => 'ERP-11.3.252 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.252 corrects the standard authenticated shell geometry in public/erp-ui/erp-shell-spacing.css. The desktop/laptop app-shell first grid track follows the shared 208px sidebar authority instead of the stale 250px native track, and standard page hosts remove duplicate native top padding while retaining the 18px desktop/16px responsive shell rhythm. The shell retains 24px desktop/16px responsive horizontal gutters and booking focus remains one-column. Dashboard internals, booking/accounting behavior, Day-One/Day-Zero, print/voucher layout and schema remain unchanged.',
 ];

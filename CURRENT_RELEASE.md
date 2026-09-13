@@ -1,13 +1,13 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.251
-APPLICATION_VERSION=v1.1.33.251-ERP11.3.251
+CURRENT_VERSION=ERP-11.3.252
+APPLICATION_VERSION=v1.1.33.252-ERP11.3.252
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.251
+LAST_PACKAGED_RELEASE=ERP-11.3.252
 ```
 
 `CURRENT` is now the sole editable development authority. Future changes are
@@ -603,16 +603,18 @@ the completed Day-Zero marker, all counter and identity verification, and the
 permanent one-time Day-One completion lock. No migration, booking/accounting
 logic, shell UI, print or voucher layout changes are included.
 
-ERP-11.3.251 promotes the approved live UI geometry corrections under the
-same final authenticated ERP shell authority:
-`public/erp-ui/erp-shell-spacing.css`. It owns the 208px desktop/laptop
-sidebar, 8px navigation inset, 64px brand region, 36px logo footprint and
-navigation rows, 56px utility header, 24px desktop gutter and 16px responsive
-gutter.
+ERP-11.3.252 promotes the approved standard shell grid-track and page-entry
+rhythm correction under the same final authenticated ERP shell authority:
+`public/erp-ui/erp-shell-spacing.css`. The desktop/laptop app shell now uses
+the shared 208px sidebar variable as its first grid track, removing the stale
+250px native track and its 42px dead space. The 24px desktop gutter and 16px
+responsive gutter remain unchanged.
 
 Booking, General Progressive Booking, Air and Group Package outer canvases now
 use that shared responsive authority without a 1280px shell cap, independent
-calculated gutter or runtime workspace-width adjustment. Sidebar headings and
+calculated gutter or runtime workspace-width adjustment. Standard immediate
+page hosts now remove duplicate native top padding while retaining the 18px
+desktop shell rhythm; focus workspaces remain one-column. Sidebar headings and
 root row wrappers remain in normal flow; the focus utility header has no
 negative bleed; Booking Register row menus portal outside the table scroll
 viewport; and Cash Voucher bottom grid cards align. Module-internal cards,
