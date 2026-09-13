@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const js = fs.readFileSync(new URL('../../public/erp-ui/erp-professional-finalize.js', import.meta.url), 'utf8');
+const route = fs.readFileSync(new URL('../../routes/erp103179.php', import.meta.url), 'utf8');
+let pass = 0;
+const ok = (v, m) => { assert.ok(v, m); pass++; };
+ok(js.includes(".sidebar,.navbar-vertical,.side-nav,.sidebar-menu"), 'shared finalizer recognizes Health shell variants');
+ok(js.includes("sidebar.matches('.sidebar-menu')") && js.includes("rootNavs.push(sidebar)"), 'sidebar-menu direct source is supported');
+ok(js.includes("const rowForLink = link =>") && js.includes('uniqueSourceLinks'), 'shared row/source authority is present');
+ok(js.includes("canonicalNav.replaceChildren(fragment)"), 'Health uses atomic shared finalizer');
+ok(!js.includes("if (path.includes('system'))"), 'no System Health-specific menu reorder');
+ok(route.includes('ApplyErpReleaseMetadata'), 'authenticated native routes use shared presentation middleware');
+ok(!route.includes("Route::get('/system/update'"), 'no duplicate Health route/menu authority introduced');
+ok(js.includes('failed-empty-plan') && js.includes("body.dataset.etSidebarNormalization = 'failed'"), 'failure remains fail-closed');
+console.log(`erp113260-system-health-shared-sidebar-regression: ${pass} assertions passed`);

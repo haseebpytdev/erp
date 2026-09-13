@@ -17,10 +17,11 @@
       .join('&');
   };
 
-  const sidebar = document.querySelector('.sidebar,.navbar-vertical,.side-nav');
+  const sidebar = document.querySelector('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu');
   if (sidebar) {
     const navCandidates = Array.from(sidebar.querySelectorAll('.nav'));
     const rootNavs = navCandidates.filter(nav => !(nav.parentElement && nav.parentElement.closest('.nav')));
+    if (!rootNavs.length && sidebar.matches('.sidebar-menu') && sidebar.querySelector('a[href]')) rootNavs.push(sidebar);
     // Some native pages render the menu as direct anchors inside a named
     // navigation wrapper rather than a `.nav` element. Discover that wrapper
     // without ever treating the sidebar frame itself as a replacement target.
