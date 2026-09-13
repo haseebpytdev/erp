@@ -17,6 +17,9 @@ ok(scanner.includes('const startCamera = async') && scanner.includes(`getElement
 ok(!scanner.includes("getElementById('pm262-scan')?.click()") && !view.includes('id="pm262-scan"'), 'obsolete scan intermediary is not used');
 ok(scanner.includes(`getElementById('pm262-mode-upload')?.addEventListener('click', () => document.getElementById('pm262-upload')?.click())`), 'top Upload opens hidden input');
 ok(scanner.includes(`getElementById('pm262-mode-mrz')?.addEventListener('click', revealMrz)`), 'top MRZ reveals input');
+ok((scanner.match(/getElementById\('pm262-mode-mrz'\)\?\.addEventListener\('click', revealMrz\)/g) || []).length === 1, 'MRZ mode handler count is one');
+ok((scanner.match(/getElementById\('pm262-mode-scan'\)\?\.addEventListener\('click', startCamera\)/g) || []).length === 1, 'scan mode handler count is one');
+ok((scanner.match(/getElementById\('pm262-mode-upload'\)\?\.addEventListener\('click'/g) || []).length === 1, 'upload mode handler count is one');
 ok(scanner.includes('navigator.mediaDevices.getUserMedia') && scanner.includes('process(canvas || image)'), 'camera and upload OCR processing remain');
 ok(scanner.includes("getElementById('pm262-capture')?.addEventListener('click'"), 'capture processing remains wired');
 ok(scanner.includes('video.srcObject = stream') && scanner.includes('stop()'), 'camera stream lifecycle remains safe');

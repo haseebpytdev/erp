@@ -44,7 +44,6 @@
   document.getElementById('pm262-upload')?.addEventListener('change', async event => { const file = event.target.files?.[0]; if (!file) return; state.textContent = 'Reading passport…'; try { const image = await createImageBitmap(file); if (canvas) { canvas.width = image.width; canvas.height = image.height; canvas.getContext('2d').drawImage(image, 0, 0); } await process(canvas || image); image.close?.(); } catch (error) { console.error('[ET Passport OCR]', error); state.textContent = failureMessage(error); } finally { event.target.value = ''; } });
   const revealMrz = () => { const input = document.getElementById('pm262-mrz-input'); if (input) { input.style.display = 'block'; input.focus(); } };
   document.getElementById('pm262-mode-mrz')?.addEventListener('click', revealMrz);
-  document.getElementById('pm262-mode-mrz')?.addEventListener('click', revealMrz);
   document.getElementById('pm262-mrz-input')?.addEventListener('input', event => { try { mapResult(root.ETPassportMRZ.parse(event.target.value)); } catch (_) {} });
   window.addEventListener('pagehide', stop); window.addEventListener('beforeunload', stop);
 })(window);
