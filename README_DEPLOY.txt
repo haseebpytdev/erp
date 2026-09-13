@@ -1,4 +1,4 @@
-ERP-11.3.252 DIRECT UPLOAD - SHELL GRID TRACK AND PAGE RHYTHM
+ERP-11.3.253 DIRECT UPLOAD - STANDARD MAIN GUTTER AUTHORITY
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -11,7 +11,7 @@ Deployment without SSH:
 6. Verify the Dashboard and representative register, accounting and booking
    pages at desktop, laptop, tablet and mobile widths.
 
-ERP-11.3.252 preserves one final external authenticated shell geometry authority:
+ERP-11.3.253 preserves one final external authenticated shell geometry authority:
 public/erp-ui/erp-shell-spacing.css.
 
 - Desktop/laptop sidebar: 208px
@@ -22,6 +22,8 @@ public/erp-ui/erp-shell-spacing.css.
 - Responsive main gutter: 16px
 - Desktop/laptop app-shell first grid track: shared 208px sidebar authority
 - Stale 250px native grid track and 42px dead space removed
+- Native authenticated `.app-shell > main.main` participates in the shared main gutter authority
+- Standard main gutter: 24px desktop / 16px responsive
 - Standard native page host duplicate top padding removed
 - Shell top rhythm remains 18px desktop / 16px responsive
 - Booking focus remains one-column
