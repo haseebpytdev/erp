@@ -168,7 +168,7 @@ class AdaptivePassengerMasterWriter
 
     private function safeSource(string $source): bool
     {
-        return in_array($source, ['passengers', 'travellers', 'travelers', 'booking_passengers'], true);
+        return in_array($source, $this->source->passengerMasterTables(), true);
     }
 
     private function putFitted(array &$row, string $table, array $columns, array $candidates, mixed $value): void
