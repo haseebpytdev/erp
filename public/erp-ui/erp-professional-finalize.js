@@ -46,16 +46,6 @@
         return row.parentElement === rootNav ? row : null;
       };
 
-      const rowForAliases = aliases => {
-        const link = allLinks.find(candidate => exactMatch(candidate, aliases));
-        return link ? topLevelRow(link) : null;
-      };
-
-      const dashboardLink = allLinks.find(link => exactMatch(link, ['dashboard', 'home']))
-        || allLinks.find(link => ['/', '/dashboard', '/home'].includes(normalizePath(link.getAttribute('href'))));
-      const dashboardRow = dashboardLink ? topLevelRow(dashboardLink) : null;
-      const canonicalNav = dashboardLink ? rootNavFor(dashboardLink) : rootNavs[0];
-
       const rows = Array.from(new Set(allLinks.map(topLevelRow).filter(Boolean)));
       const originalOrder = new Map(rows.map((row, index) => [row, index]));
       const identity = link => `${normalize(link.textContent)}|${normalizePath(link.getAttribute('href'))}?${normalizeSearch(new URL(link.href, location.origin).search)}`;
@@ -73,12 +63,26 @@
         if (seen.has(key)) {
           const priorRow = seen.get(key);
           const prior = priorRow.querySelector('a[href]');
-          if (preferred(link, prior) === link) uniqueRows[uniqueRows.indexOf(priorRow)] = row;
+          if (preferred(link, prior) === link) {
+            const index = uniqueRows.indexOf(priorRow);
+            if (index >= 0) {
+              uniqueRows[index] = row;
+              seen.set(key, row);
+            }
+          }
           return;
         }
         seen.set(key, row);
         uniqueRows.push(row);
       });
+
+      const dashboardRow = uniqueRows.find(row => {
+        const link = row.querySelector('a[href]');
+        return link && (exactMatch(link, ['dashboard', 'home']) || ['/', '/dashboard', '/home'].includes(normalizePath(link.getAttribute('href'))));
+      }) || null;
+      const dashboardLink = dashboardRow && dashboardRow.querySelector('a[href]');
+      const canonicalNav = dashboardLink ? rootNavFor(dashboardLink) : rootNavs[0];
+      const linkForRow = row => row && row.querySelector('a[href]');
 
       const plan = [];
 
@@ -122,7 +126,10 @@
       sections.forEach(([key, title, itemAliases]) => {
         const sectionRows = [];
         itemAliases.forEach(aliases => {
-          const row = rowForAliases(aliases);
+          const row = uniqueRows.find(candidate => {
+            const link = linkForRow(candidate);
+            return link && exactMatch(link, aliases);
+          }) || null;
           if (row && !plan.some(item => item.rows?.includes(row)) && !sectionRows.includes(row)) sectionRows.push(row);
         });
         if (sectionRows.length) plan.push({ key, title, rows: sectionRows });
@@ -135,9 +142,14 @@
       const validPlan = plan.every(item => item.rows.every(row => row && row.querySelector('a[href]')));
       if (validPlan && canonicalNav) {
         const fragment = document.createDocumentFragment();
+        const cloneRowForFinalNav = (row, key) => {
+          const clone = row.cloneNode(true);
+          clone.dataset.etSidebarGroup = key;
+          clone.classList.add('et-ui-nav-row');
+          return clone;
+        };
         if (dashboardRow) {
-          dashboardRow.dataset.etSidebarGroup = 'dashboard';
-          fragment.appendChild(dashboardRow);
+          fragment.appendChild(cloneRowForFinalNav(dashboardRow, 'dashboard'));
         }
         plan.forEach(({ key, title, rows: sectionRows }) => {
           const heading = document.createElement('div');
@@ -150,8 +162,7 @@
           group.dataset.etSidebarSectionGroup = key;
           group.dataset.etSidebarGroup = key;
           sectionRows.forEach(row => {
-            row.dataset.etSidebarGroup = key;
-            group.appendChild(row);
+            group.appendChild(cloneRowForFinalNav(row, key));
           });
           fragment.appendChild(group);
         });
@@ -172,7 +183,8 @@
       // authoritative; otherwise require an exact path + query-string match.
       const currentPath = normalizePath(location.pathname);
       const currentSearch = normalizeSearch(location.search);
-      allLinks.forEach(link => {
+      const committedLinks = canonicalNav ? Array.from(canonicalNav.querySelectorAll('a[href]')) : [];
+      committedLinks.forEach(link => {
         let linkUrl;
         try { linkUrl = new URL(link.getAttribute('href'), location.origin); }
         catch (_) { return; }
