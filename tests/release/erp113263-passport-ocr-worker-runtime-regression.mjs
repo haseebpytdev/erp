@@ -5,6 +5,7 @@ const routes = fs.readFileSync(new URL('../../routes/erp103179.php', import.meta
 const controller = fs.readFileSync(new URL('../../app/Http/Controllers/System/ErpProfessionalUiAssetController.php', import.meta.url), 'utf8');
 const scanner = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
 const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
+const view = fs.readFileSync(new URL('../../resources/views/operations/passengers/index.blade.php', import.meta.url), 'utf8');
 const passengerRoutes = routes.slice(routes.indexOf("Route::get('/passengers'"));
 const assetRoute = "Route::get('/system/erp-assets/tesseract/{type}/{asset}'";
 const beforeAuthGroup = routes.slice(0, routes.indexOf("Route::middleware(['auth'])->group"));
@@ -23,5 +24,11 @@ ok(ocr.includes("${base}/dist/worker.min.js") && ocr.includes("${base}/core") &&
 ok(!ocr.includes('http') && !scanner.includes('fetch('), 'no CDN or external OCR upload introduced');
 ok(scanner.includes('runtimeFailure') && scanner.includes('networkerror') && scanner.includes('Passport OCR could not start'), 'scanner classifies runtime startup failures');
 ok(scanner.includes('Passport could not be read clearly. Try another image'), 'scanner preserves unreadable MRZ message');
+ok(view.includes('id="pm262-capture" hidden'), 'capture button is hidden initially');
+ok(view.includes('.pm262-btn[hidden],.pm262 [hidden]{display:none!important}'), 'scoped CSS preserves hidden capture state');
+ok(scanner.includes('capture.hidden = true'), 'camera stop hides capture button');
+ok(scanner.includes("document.getElementById('pm262-capture').hidden = false"), 'camera success reveals capture button');
+ok(view.includes('>Edit</a>') && !view.includes('icon-only'), 'editable rows retain visible Edit text action');
+ok(!view.includes('Delete'), 'passenger rows do not add delete action');
 ok(fs.existsSync(new URL('../../public/erp-ui/vendor/tesseract/lang-data/eng.traineddata.gz', import.meta.url)), '.262 compressed language asset remains present');
 console.log(`erp113263-passport-ocr-worker-runtime-regression: ${pass} assertions passed`);
