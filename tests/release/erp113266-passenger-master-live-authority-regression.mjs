@@ -24,11 +24,12 @@ ok(controller.includes('$this->source->passengerMasterTables()'), 'controller sa
 ok(routes.includes("->where('source', '[A-Za-z0-9_]+')") && !routes.includes("whereIn('source', ['passengers'"), 'edit/update routes accept conservative dynamic tokens');
 ok(view.includes('pm262-grid') && view.includes('pm262-modebar') && view.includes('pm265') || view.includes('data-passenger-workspace="ERP-11.3.265"'), 'professional workspace layout remains present');
 ok(view.includes('pm262-grid{display:grid;grid-template-columns:45fr 55fr') || view.includes('grid-template-columns:45fr 55fr'), 'desktop workspace uses 45/55 layout');
-ok((view.match(/class="pm262-grid"/g) || []).length === 1 && view.includes('Passenger Data'), 'workspace has one two-pane grid and data panel');
+ok((view.match(/class="pm262-grid"/g) || []).length === 1 && (view.match(/class="pm265-(?:scanner|data)-pane"/g) || []).length === 2 && view.includes('Passenger Data'), 'workspace has exactly two principal panes and data panel');
 ok(view.includes('id="pm262-table"') && view.includes('Total Passengers:'), 'Passenger Master table and count remain');
-ok(!view.includes('id="pm262-scan"') || view.includes('pm262-modebar'), 'top actions use the mode strip');
+ok(view.includes('pm262-modebar') && !view.match(/pm262-top[\s\S]*id="pm262-scan"/), 'top duplicate actions are removed');
 ok(view.includes('Save Passenger') && view.includes('>Edit</a>') && !view.includes('Delete'), 'save and visible Edit remain without delete');
 ok(!view.includes('Passenger image') && !view.includes('Bulk Import') && !view.includes('booking number'), 'no image persistence, fake bulk action or booking context');
+ok(!view.includes('$errors->any()') && view.includes("session('passenger_success')"), 'Passenger page has one error rendering authority');
 ok(view.includes('pm262-btn[hidden]') && view.includes('@media(max-width:760px)'), 'capture hidden protection and mobile stack remain');
 ok(asset.includes('BinaryFileResponse') && routes.includes('/system/erp-assets/tesseract/{type}/{asset}'), 'binary response and public OCR route preserved');
 ok(scanner.includes('pm262-mode-scan') && scanner.includes('pm262-mode-upload') && scanner.includes('revealMrz'), 'mode scanner wiring preserved');
