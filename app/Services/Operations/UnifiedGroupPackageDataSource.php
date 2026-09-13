@@ -164,7 +164,12 @@ class UnifiedGroupPackageDataSource
     public function passengerMasterTables(): array
     {
         $preferred = ['passengers', 'travellers', 'travelers', 'passenger_master', 'passenger_masters', 'passenger_profiles', 'traveller_master', 'traveler_master'];
-        $tables = $this->candidateTables($preferred, 'passenger');
+        $tables = array_merge(
+            $this->candidateTables($preferred, 'passenger'),
+            $this->candidateTables([], 'traveller'),
+            $this->candidateTables([], 'traveler'),
+        );
+        $tables = array_values(array_unique($tables));
         $allowed = [];
         foreach ($tables as $table) {
             $table = (string) $table;

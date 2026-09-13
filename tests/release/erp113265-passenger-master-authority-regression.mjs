@@ -5,12 +5,13 @@ const source = fs.readFileSync(new URL('../../app/Services/Operations/UnifiedGro
 const writer = fs.readFileSync(new URL('../../app/Services/Operations/AdaptivePassengerMasterWriter.php', import.meta.url), 'utf8');
 const controller = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/PassengerWorkspaceController.php', import.meta.url), 'utf8');
 const view = fs.readFileSync(new URL('../../resources/views/operations/passengers/index.blade.php', import.meta.url), 'utf8');
+const scanner = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
 const asset = fs.readFileSync(new URL('../../app/Http/Controllers/System/ErpProfessionalUiAssetController.php', import.meta.url), 'utf8');
 const routes = fs.readFileSync(new URL('../../routes/erp103179.php', import.meta.url), 'utf8');
 let pass = 0;
 const ok = (v, m) => { assert.ok(v, m); pass++; };
 ok(source.includes('function passengerMasterTables(): array'), 'shared Passenger Master authority exists');
-ok(source.includes("'passengers', 'travellers', 'travelers'") && source.includes('passenger_master') && source.includes('passenger_profiles'), 'preferred and dynamic master discovery supported');
+ok(source.includes("'passengers', 'travellers', 'travelers'") && source.includes('passenger_master') && source.includes('passenger_profiles') && source.includes("candidateTables([], 'traveller')") && source.includes("candidateTables([], 'traveler')"), 'preferred and all naming-family discovery supported');
 ok(source.includes("str_starts_with($lower, 'booking_')") && source.includes('fare|price|service|ticket|visa|document|log|history|pivot'), 'booking and non-master tables excluded');
 ok(source.includes("in_array('id', $columns, true)") && source.includes("passport_no', 'passport_number") && source.includes("first_name', 'given_name"), 'schema qualification requires id passport and identity');
 ok(source.includes('$candidateTables = $this->passengerMasterTables()'), 'reader uses shared authority');
@@ -21,6 +22,8 @@ ok(!controller.includes("booking_passengers'],true"), 'arbitrary booking snapsho
 ok(source.includes("$candidateTables[] = 'booking_passengers'"), 'booking_passengers remains read-only fallback');
 ok(!fs.existsSync(new URL('../../database/migrations/2026_09_14_passenger_master.php', import.meta.url)), 'no Passenger Master migration added');
 ok(view.includes('pm262-grid') && view.includes('Passport Scanner') && view.includes('Passenger Master'), 'two-column scanner/data workspace and table exist');
+ok(view.includes('id="pm262-mode-scan"') && view.includes('id="pm262-mode-upload"') && view.includes('id="pm262-mode-mrz"') && view.includes('Passenger Data'), 'workspace mode controls and passenger data panel exist');
+ok(view.match(/<style>/g)?.length === 1 && view.includes('data-passenger-workspace="ERP-11.3.265"'), 'single scoped CSS authority and .265 workspace marker exist');
 ok(view.includes('pm262-modebar') && view.includes('Scan Passport') && view.includes('Upload Passport') && view.includes('Paste / Read MRZ'), 'professional action mode strip uses real functions');
 ok(view.includes('grid-template-columns:45fr 55fr') && view.includes('Total Passengers:'), 'balanced workspace ratio and master count are visible');
 ok(view.includes('Upload Passport') && view.includes('Use Camera') && view.includes('id="pm262-capture" hidden'), 'scanner controls and initial hidden capture exist');
@@ -29,6 +32,8 @@ ok(view.includes('Save Passenger') && view.includes('data-pm-field="title"') && 
 ok(view.includes('>Edit</a>') && !view.includes('Delete') && !view.includes('Bulk Import') && !view.includes('Save passport image'), 'safe visible Edit action without fake or delete controls');
 ok(view.includes('Reusable saved passengers available to booking search and reuse'), 'global reusable master wording preserved');
 ok(view.includes('@media(max-width:760px)') && view.includes('.pm262-grid{grid-template-columns:1fr}'), 'mobile responsive stack exists');
+ok(scanner.includes("pm262-mode-scan") && scanner.includes("pm262-mode-upload") && scanner.includes("pm262-mode-mrz") && scanner.includes('revealMrz'), 'mode strip controls have real scanner handlers');
+ok(scanner.includes("document.getElementById('pm262-upload')?.click()"), 'upload mode triggers the native file input');
 ok(asset.includes('BinaryFileResponse') && routes.includes("/system/erp-assets/tesseract/{type}/{asset}"), '.264 response fix and public OCR route preserved');
 ok(fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8').includes('${base}/dist/worker.min.js'), 'OCR local paths remain unchanged');
 console.log(`erp113265-passenger-master-authority-regression: ${pass} assertions passed`);
