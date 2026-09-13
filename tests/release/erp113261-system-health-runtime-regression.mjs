@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const base = fs.readFileSync(new URL('../../public/erp-ui/erp-professional.js', import.meta.url), 'utf8');
+const finalizer = fs.readFileSync(new URL('../../public/erp-ui/erp-professional-finalize.js', import.meta.url), 'utf8');
+const ready = fs.readFileSync(new URL('../../public/erp-ui/erp-sidebar-ready.js', import.meta.url), 'utf8');
+const controller = fs.readFileSync(new URL('../../app/Http/Controllers/System/ErpProfessionalUiAssetController.php', import.meta.url), 'utf8');
+const css = fs.readFileSync(new URL('../../public/erp-ui/erp-professional.css', import.meta.url), 'utf8');
+let pass = 0;
+const ok = (value, message) => { assert.ok(value, message); pass++; };
+
+const helper = 'const normalize = value => String(value == null ? \'\' : value)';
+const helperAt = base.indexOf(helper);
+const firstHealthUse = base.indexOf('normalize(node.textContent');
+ok(helperAt >= 0, 'System Health text normalization helper is local');
+ok(helperAt < firstHealthUse, 'normalization helper is defined before Health use');
+ok(base.includes('const findHealthAction') && base.includes('const findHealthPanel'), 'Health action and panel resolvers remain');
+ok(base.includes("path.startsWith('system')"), 'System Health branch remains');
+ok(base.includes('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu'), 'sidebar-menu chrome exclusion remains');
+ok(!base.includes('normalize =') || helperAt >= 0, 'all bare normalize calls resolve locally');
+ok(!base.includes("if (path.includes('system'))"), 'no Health-specific sidebar reorder introduced');
+ok(finalizer.includes('final-v1') || finalizer.includes('et-sidebar-grouped'), 'shared finalizer remains separate authority');
+ok(ready.includes('etSidebarReady') && ready.includes('data-et-sidebar-grouped'), 'shared ready helper remains present');
+const registerOrder = controller.indexOf('erp-register-workspace.js');
+const baseOrder = controller.indexOf('erp-professional.js');
+const finalizerOrder = controller.indexOf('erp-professional-finalize.js');
+const readyOrder = controller.indexOf('erp-sidebar-ready.js');
+ok(registerOrder < baseOrder && baseOrder < finalizerOrder && finalizerOrder < readyOrder, 'JS asset execution order is preserved');
+ok(finalizer.includes('failed-empty-plan') && finalizer.includes('final-v1'), '.260 sidebar finalizer support remains');
+ok(css.length > 0 && !css.includes('erp113261'), 'no CSS change is required for the runtime fix');
+ok(!fs.existsSync(new URL('../../database/migrations/2026_09_13_erp113261.php', import.meta.url)), 'no migration introduced');
+console.log(`erp113261-system-health-runtime-regression: ${pass} assertions passed`);

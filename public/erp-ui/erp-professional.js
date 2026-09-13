@@ -11,6 +11,10 @@
     try { return new URL(value, location.origin).pathname.replace(/\/+$/g, '') || '/'; }
     catch (_) { return ''; }
   };
+  const normalize = value => String(value == null ? '' : value)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 
   const sidebarNav = document.querySelector('.sidebar .nav,.navbar-vertical .nav,.side-nav .nav,.sidebar-menu');
   if (sidebarNav) {
