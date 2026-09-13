@@ -21,6 +21,14 @@
   if (sidebar) {
     const navCandidates = Array.from(sidebar.querySelectorAll('.nav'));
     const rootNavs = navCandidates.filter(nav => !(nav.parentElement && nav.parentElement.closest('.nav')));
+    // Some native pages render the menu as direct anchors inside a named
+    // navigation wrapper rather than a `.nav` element. Discover that wrapper
+    // without ever treating the sidebar frame itself as a replacement target.
+    if (!rootNavs.some(nav => nav.querySelector('a[href]'))) {
+      const directLink = sidebar.querySelector('a[href]');
+      const directNav = directLink && directLink.closest('.sidebar-nav,.navigation,.menu,.sidebar-menu');
+      if (directNav && directNav !== sidebar && !rootNavs.includes(directNav)) rootNavs.push(directNav);
+    }
 
     if (rootNavs.length) {
       const allLinks = Array.from(sidebar.querySelectorAll('a[href]'))
@@ -81,7 +89,8 @@
         return link && (exactMatch(link, ['dashboard', 'home']) || ['/', '/dashboard', '/home'].includes(normalizePath(link.getAttribute('href'))));
       }) || null;
       const dashboardLink = dashboardRow && dashboardRow.querySelector('a[href]');
-      const canonicalNav = dashboardLink ? rootNavFor(dashboardLink) : rootNavs[0];
+      const canonicalNav = dashboardLink ? rootNavFor(dashboardLink)
+        : rootNavs.slice().sort((a, b) => b.querySelectorAll('a[href]').length - a.querySelectorAll('a[href]').length)[0];
       const linkForRow = row => row && row.querySelector('a[href]');
 
       const plan = [];
