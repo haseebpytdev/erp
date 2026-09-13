@@ -11,13 +11,21 @@
     set('dateOfBirth', result.dateOfBirth); set('passportExpiry', result.passportExpiry); set('issuingCountry', result.issuingCountry);
     const state = document.getElementById('pm262-state'); if (state) state.textContent = result.valid ? 'Ready for review' : 'Passport scan needs review. Please verify the highlighted fields.';
   };
+  const preprocessImage = source => {
+    if (!source || !source.getContext) return source;
+    const width = Math.min(1800, Math.max(800, source.width || 1200)), height = Math.round(width * 0.7);
+    const crop = document.createElement('canvas'); crop.width = width; crop.height = height;
+    const ctx = crop.getContext('2d'); const sy = Math.round((source.height || height) * 0.58); const sh = Math.max(1, (source.height || height) - sy);
+    ctx.drawImage(source, 0, sy, source.width || width, sh, 0, 0, width, height);
+    const image = ctx.getImageData(0, 0, width, height); for (let i = 0; i < image.data.length; i += 4) { const gray = Math.max(0, Math.min(255, ((image.data[i] * 0.299 + image.data[i + 1] * 0.587 + image.data[i + 2] * 0.114) - 128) * 1.35 + 128)); image.data[i] = image.data[i + 1] = image.data[i + 2] = gray; } ctx.putImageData(image, 0, 0); return crop;
+  };
   const recognizeImage = async source => {
     if (root.ETLocalOCR && typeof root.ETLocalOCR.recognize === 'function') return root.ETLocalOCR.recognize(source, { whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<', localOnly: true });
     if (typeof root.TextDetector === 'function') { const detector = new root.TextDetector(); return (await detector.detect(source)).map(item => item.rawValue || '').join('\n'); }
     throw new Error('Local OCR runtime is unavailable. Paste MRZ text or enter the details manually.');
   };
-  const process = async source => { const text = await recognizeImage(source); const result = root.ETPassportMRZ.parse(text); mapResult(result); return result; };
-  root.ETPassengerScanner = { mapResult, process, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
+  const process = async source => { const crop = preprocessImage(source); let text = await recognizeImage(crop); let candidate = root.ETPassportMRZ.extractTD3(text); if (!candidate && crop !== source) { text = await recognizeImage(source); candidate = root.ETPassportMRZ.extractTD3(text); } const result = root.ETPassportMRZ.parse(candidate || text); mapResult(result); return result; };
+  root.ETPassengerScanner = { mapResult, process, preprocessImage, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
   if (root.ETPassengerEdit) {
     const form = document.getElementById('pm262-passenger-form');
     if (form) { form.action = `/passengers/${encodeURIComponent(root.ETPassengerEdit.source_table)}/${root.ETPassengerEdit.id}`; const method = document.createElement('input'); method.type = 'hidden'; method.name = '_method'; method.value = 'PATCH'; form.appendChild(method); mapResult({ givenNames: root.ETPassengerEdit.first_name, surname: root.ETPassengerEdit.last_name, passportNumber: root.ETPassengerEdit.passport_no, nationality: root.ETPassengerEdit.nationality, dateOfBirth: root.ETPassengerEdit.date_of_birth, passportExpiry: root.ETPassengerEdit.passport_expiry, issuingCountry: root.ETPassengerEdit.issuing_country, sex: root.ETPassengerEdit.sex }); set('title', root.ETPassengerEdit.title || ''); }

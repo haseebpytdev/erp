@@ -15,7 +15,21 @@
     const chosen = plausible.sort((a, b) => Math.abs(a - now) - Math.abs(b - now))[0];
     return chosen ? chosen.toISOString().slice(0, 10) : null;
   };
+  const normalizeOcr = text => String(text || '').toUpperCase().replace(/[^A-Z0-9<\r\n]/g, '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const extractTD3 = text => {
+    const lines = normalizeOcr(text);
+    for (let i = 0; i < lines.length - 1; i++) {
+      const first = lines[i], second = lines[i + 1];
+      if (first[0] !== 'P' || first.length < 40 || second.length < 40) continue;
+      const a = first.length === 44 ? first : first.slice(0, 44);
+      const b = second.length === 44 ? second : second.slice(0, 44);
+      if (a.length === 44 && b.length === 44) return `${a}\n${b}`;
+    }
+    return null;
+  };
   window.ETPassportMRZ = {
+    normalizeOcr,
+    extractTD3,
     parse(input) {
       const lines = String(input || '').toUpperCase().replace(/\r/g, '').split(/\n+/).map(s => s.replace(/\s+/g, '')) .filter(Boolean);
       if (lines.length !== 2 || lines.some(line => line.length !== 44)) return { valid: false, review: true, error: 'Passport scan needs review. Please verify the highlighted fields.' };

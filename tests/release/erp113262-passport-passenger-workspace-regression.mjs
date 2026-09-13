@@ -35,6 +35,8 @@ ok(scanner.includes('getUserMedia') && scanner.includes('track.stop'), 'camera l
 ok(scanner.includes('pm262-scan') && scanner.includes('pm262-capture') && scanner.includes('drawImage'), 'camera capture workflow is wired');
 ok(scanner.includes('createImageBitmap') && scanner.includes('ETLocalOCR') && scanner.includes('process'), 'uploaded images enter local OCR flow');
 ok(ocr.includes('ETLocalOCR') && ocr.includes('TextDetector') && !ocr.includes('http'), 'bundled local OCR adapter has no CDN/API');
+ok(scanner.includes('preprocessImage') && scanner.includes('getImageData') && scanner.includes('drawImage'), 'image preprocessing targets the lower MRZ region');
+ok(scanner.includes('extractTD3') && scanner.includes('candidate || text'), 'noisy OCR output is reduced to a TD3 candidate before parsing');
 ok(scanner.includes('mapResult') && scanner.includes('Save Passenger') === false, 'scanner maps into review form without auto-save');
 ok(view.includes('data-pm-field="dateOfBirth"') && view.includes('data-pm-field="passportExpiry"'), 'MRZ date fields are reviewable');
 ok(view.includes('Actions') && view.includes("route('passengers.edit'"), 'master table has safe edit action');
@@ -51,6 +53,8 @@ const parsed = context.window.ETPassportMRZ.parse(fixture);
 ok(parsed.valid && parsed.surname === 'ERIKSSON' && parsed.givenNames === 'ANNA MARIA', 'synthetic TD3 MRZ parses and extracts names');
 const corrupted = fixture.replace('L898902C36', 'L898902C37');
 ok(context.window.ETPassportMRZ.parse(corrupted).review, 'corrupted MRZ is held for review');
+const noisy = `passport header\n${fixture}\nfooter text`;
+ok(context.window.ETPassportMRZ.extractTD3(noisy) === fixture, 'noisy OCR yields the exact TD3 pair');
 ok(context.window.ETPassportMRZ.resolveDate('200101', 'dob') === '2020-01-01', 'infant DOB century resolves to 2020');
 ok(context.window.ETPassportMRZ.resolveDate('180101', 'dob') === '2018-01-01', 'child DOB century resolves to 2018');
 ok(context.window.ETPassportMRZ.resolveDate('950101', 'dob') === '1995-01-01', 'adult DOB century resolves to 1995');
