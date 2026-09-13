@@ -1,4 +1,4 @@
-ERP-11.3.255 DIRECT UPLOAD - LIVE UI CONTAINMENT
+ERP-11.3.256 DIRECT UPLOAD - LIVE UI CONTAINMENT
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
@@ -11,7 +11,7 @@ Deployment without SSH:
 6. Verify the Dashboard and representative register, accounting and booking
    pages at desktop, laptop, tablet and mobile widths.
 
-ERP-11.3.255 preserves one final external authenticated shell geometry authority:
+ERP-11.3.256 preserves one final external authenticated shell geometry authority:
 public/erp-ui/erp-shell-spacing.css.
 
 - Desktop/laptop sidebar: 208px
