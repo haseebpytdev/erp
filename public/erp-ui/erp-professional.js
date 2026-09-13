@@ -284,19 +284,22 @@
     }
 
     const healthShellHosts = 'main,section.content,.content,.page-content,.page-body,.app-shell,.content-wrapper,.page-wrapper,.main-content,.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal,.sidebar,.navbar-vertical,.side-nav';
+    const healthChrome = '.et-ui-utility-topbar,.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal,.sidebar,.navbar-vertical,.side-nav';
     document.querySelectorAll('[data-et-health-section]').forEach(node => {
       if (node.matches(healthShellHosts)) node.removeAttribute('data-et-health-section');
     });
-    const findHealthAction = text => Array.from(document.querySelectorAll('a,button,input[type="submit"],input[type="button"]'))
+    const findHealthAction = (scope, text) => Array.from(scope.querySelectorAll('a,button,input[type="submit"],input[type="button"]'))
       .find(node => normalize(node.textContent || node.value || '').includes(normalize(text)));
     const findHealthPanel = (titleNode, actionText, forbiddenTexts) => {
-      if (!titleNode || titleNode.closest(healthShellHosts)) return null;
-      const actionNode = findHealthAction(actionText);
+      if (!titleNode || titleNode.closest(healthChrome)) return null;
+      const main = titleNode.closest('main');
+      if (!main) return null;
+      const actionNode = findHealthAction(main, actionText);
       if (!actionNode) return null;
       let candidate = titleNode.parentElement;
       while (candidate && candidate !== document.body) {
-        if (!candidate.matches(healthShellHosts)
-          && candidate.contains(actionNode)
+        if (candidate.matches(healthShellHosts)) break;
+        if (candidate.contains(actionNode)
           && !forbiddenTexts.some(text => normalize(candidate.textContent).includes(normalize(text)))) {
           return candidate;
         }

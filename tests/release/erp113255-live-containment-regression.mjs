@@ -20,6 +20,12 @@ ok(!accent.includes('margin:-'), 'negative KPI accent margin is removed');
 ok(css.includes('[data-et-dashboard-kpi="gross-profit"]') && css.includes('--et-kpi-accent:#1a9a63'), 'KPI accent variants remain');
 
 ok(js.includes("const healthShellHosts = 'main,section.content,.content,.page-content,.page-body,.app-shell"), 'health shell exclusion list is explicit');
+ok(js.includes('const healthChrome ='), 'health chrome rejection is separate from shell traversal boundaries');
+ok(!js.includes('if (!titleNode || titleNode.closest(healthShellHosts))'), 'title nodes inside the page shell are not rejected');
+ok(js.includes("const main = titleNode.closest('main')"), 'health panel resolution is scoped to the local main');
+ok(js.includes('findHealthAction = (scope, text)') && js.includes('findHealthAction(main, actionText)'), 'health action search is scoped within main');
+ok(js.includes('if (candidate.matches(healthShellHosts)) break;'), 'shell hosts stop ancestor traversal');
+ok(!js.includes('candidate.matches(healthShellHosts)\n          &&'), 'shell hosts cannot be returned as candidates');
 ok(js.includes("exactLeaf(document, 'Application Cache')") && js.includes("Clear Application Cache"), 'Application Cache requires heading and action');
 ok(js.includes("exactLeaf(document, 'Database Upgrade')") && js.includes("Run Safe Database Upgrade"), 'Database Upgrade requires heading and action');
 ok(js.includes('candidate.contains(actionNode)'), 'health panel contains its own action');
