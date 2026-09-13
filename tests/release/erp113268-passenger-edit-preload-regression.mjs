@@ -18,6 +18,11 @@ ok(scanner.includes("sex === 'm' || sex === 'male' ? 'Male'"),'Male never become
 ok(scanner.includes("sex === 'f' || sex === 'female' ? 'Female'"),'Female never becomes X');
 ok(!scanner.includes('infer')&&!scanner.includes('mapResult({ givenNames: edit'),'edit does not use OCR mapping');
 ok(view.includes("'Update Passenger'")&&view.includes("route('passengers.index')"),'edit label and cancel exit');
+ok(view.includes('@if(!empty($editPassenger))<a class="pm262-btn" href="{{ route(\'passengers.index\') }}">Cancel</a>@else'),'edit Cancel uses real Blade anchor markup');
+ok(view.includes('href="{{ route(\'passengers.index\') }}"'),'edit Cancel links to Passenger Master route');
+ok(view.includes('<button class="pm262-btn" type="reset">Cancel</button>'),'create Cancel remains a reset button');
+ok(!view.includes("? '<a class=\"pm262-btn\"") && !view.includes("? '<button class=\"pm262-btn\""),'no escaped HTML control string is emitted');
+ok(view.includes("'Update Passenger' : 'Save Passenger'"),'edit and create submit labels remain distinct');
 ok(!scanner.includes('process(') || scanner.indexOf('populateEditPassenger') < scanner.indexOf('process('),'edit preload is separate from OCR processing');
 ok(scanner.includes('if (root.ETPassengerEdit) populateEditPassenger'),'edit path does not invoke OCR');
 ok(!scanner.includes('startCamera()') || scanner.indexOf('populateEditPassenger') < scanner.indexOf('startCamera()'),'edit does not auto-start camera');
