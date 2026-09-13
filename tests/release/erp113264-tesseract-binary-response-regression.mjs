@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const routes = fs.readFileSync(new URL('../../routes/erp103179.php', import.meta.url), 'utf8');
+const asset = fs.readFileSync(new URL('../../app/Http/Controllers/System/ErpProfessionalUiAssetController.php', import.meta.url), 'utf8');
+const passenger = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
+const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
+const view = fs.readFileSync(new URL('../../resources/views/operations/passengers/index.blade.php', import.meta.url), 'utf8');
+let pass = 0;
+const ok = (value, message) => { assert.ok(value, message); pass++; };
+ok(asset.includes('use Symfony\\Component\\HttpFoundation\\BinaryFileResponse;'), 'controller imports BinaryFileResponse');
+ok(asset.includes('public function tesseract(string $type, string $asset): BinaryFileResponse'), 'tesseract returns BinaryFileResponse');
+ok(asset.includes('response()->file($path'), 'tesseract uses binary file response');
+ok(asset.includes('use Illuminate\\Http\\Response;') && asset.includes('function css(): Response') && asset.includes('function js(): Response'), 'text assets retain Illuminate Response types');
+ok(asset.includes("'dist' => 'dist'") && asset.includes("'core' => 'core'") && asset.includes("'lang-data' => 'lang-data'"), 'asset type allowlist remains restricted');
+ok(asset.includes("preg_match('/^[A-Za-z0-9._-]+$/', $asset)"), 'filename traversal protection remains');
+ok(asset.includes("'application/javascript; charset=UTF-8'") && asset.includes("'application/wasm'") && asset.includes("'application/gzip'"), 'runtime MIME contracts remain');
+ok(asset.includes("'X-Content-Type-Options' => 'nosniff'"), 'nosniff remains enabled');
+const routePos = routes.indexOf("Route::get('/system/erp-assets/tesseract/{type}/{asset}'");
+ok(routePos >= 0 && routePos < routes.indexOf("Route::middleware(['auth'])->group"), 'Tesseract route remains outside auth');
+ok(routes.includes("Route::get('/passengers'") && routes.includes("Route::post('/passengers'"), 'Passenger page and writes remain routed');
+ok(ocr.includes("${base}/dist/worker.min.js") && ocr.includes("${base}/core") && ocr.includes("${base}/lang-data"), 'OCR paths remain unchanged');
+ok(view.includes('.pm262-btn[hidden],.pm262 [hidden]{display:none!important}') && view.includes('>Edit</a>'), 'capture hidden and Edit UI fixes remain');
+console.log(`erp113264-tesseract-binary-response-regression: ${pass} assertions passed`);

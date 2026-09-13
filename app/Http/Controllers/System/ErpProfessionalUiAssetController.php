@@ -4,10 +4,11 @@ namespace App\Http\Controllers\System;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ErpProfessionalUiAssetController extends Controller
 {
-    public function tesseract(string $type, string $asset): Response
+    public function tesseract(string $type, string $asset): BinaryFileResponse
     {
         $roots = ['dist' => 'dist', 'core' => 'core', 'lang-data' => 'lang-data'];
         abort_unless(isset($roots[$type]) && preg_match('/^[A-Za-z0-9._-]+$/', $asset), 404);
