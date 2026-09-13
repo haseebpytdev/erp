@@ -14,7 +14,7 @@ const ok = (condition, label) => {
   pass++;
 };
 
-ok(version === 'v1.1.33.257-ERP11.3.257', 'functional checkpoint leaves release metadata at ERP-11.3.250');
+ok(version === 'v1.1.33.258-ERP11.3.258', 'functional checkpoint leaves release metadata at ERP-11.3.250');
 for (const token of [
   '--et-shell-sidebar-width:208px',
   '--et-sidebar-nav-x:8px',
