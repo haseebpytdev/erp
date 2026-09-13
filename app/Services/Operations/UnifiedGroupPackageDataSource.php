@@ -126,6 +126,8 @@ class UnifiedGroupPackageDataSource
                     'id' => (int) $a['id'],
                     'source_table' => $table,
                     'title' => (string) $this->value($a, $columns, ['title', 'salutation'], ''),
+                    'sex' => (string) $this->value($a, $columns, ['sex', 'gender'], ''),
+                    'issuing_country' => (string) $this->value($a, $columns, ['issuing_country', 'passport_issuing_country', 'document_issuing_country'], ''),
                     'first_name' => $first,
                     'last_name' => $last,
                     'name' => $full ?: ('Passenger #' . $a['id']),

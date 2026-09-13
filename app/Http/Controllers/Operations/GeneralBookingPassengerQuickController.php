@@ -55,6 +55,8 @@ final class GeneralBookingPassengerQuickController extends Controller
                     'id' => (int) ($row['id'] ?? 0),
                     'source' => (string) ($row['source_table'] ?? ''),
                     'name' => trim((string) ($row['name'] ?? '')),
+                    'title' => trim((string) ($row['title'] ?? '')),
+                    'sex' => trim((string) ($row['sex'] ?? '')),
                     'fare_type' => $this->normalizeFareType((string) ($row['fare_as'] ?? '')),
                     'passport_number' => trim((string) ($row['passport_no'] ?? '')),
                     'dob' => $this->dateValue($row['date_of_birth'] ?? null),
@@ -86,6 +88,8 @@ final class GeneralBookingPassengerQuickController extends Controller
             'dob' => ['nullable', 'date'],
             'passport_expiry' => ['nullable', 'date'],
             'nationality' => ['nullable', 'string', 'max:100'],
+            'title' => ['nullable', 'string', 'max:20'],
+            'sex' => ['nullable', 'string', 'max:20'],
         ]);
 
         $table = (string) $data['master_source'];
@@ -235,6 +239,8 @@ final class GeneralBookingPassengerQuickController extends Controller
             'dob' => ['nullable', 'date'],
             'passport_expiry' => ['nullable', 'date'],
             'nationality' => ['nullable', 'string', 'max:100'],
+            'title' => ['nullable', 'string', 'max:20'],
+            'sex' => ['nullable', 'string', 'max:20'],
             'master_id' => ['nullable', 'integer', 'min:1'],
             'master_source' => ['nullable', 'string', 'max:80'],
         ]);
@@ -252,6 +258,8 @@ final class GeneralBookingPassengerQuickController extends Controller
             'passport_expiry' => $data['passport_expiry'] ?? null,
             'nationality' => trim((string) ($data['nationality'] ?? '')),
             'fare_as' => $fareType,
+            'title' => trim((string) ($data['title'] ?? '')),
+            'sex' => trim((string) ($data['sex'] ?? '')),
         ];
 
         $resolved = $this->passengerWriter->resolve($masterPayload, $booking);
@@ -431,6 +439,8 @@ final class GeneralBookingPassengerQuickController extends Controller
         $this->put($insert, $columns, ['first_name', 'given_name'], $data['first_name'] ?? null);
         $this->put($insert, $columns, ['last_name', 'surname', 'family_name'], $data['last_name'] ?? null);
         $this->put($insert, $columns, ['name', 'passenger_name', 'full_name'], $fullName);
+        $this->put($insert, $columns, ['title', 'salutation'], $data['title'] ?? null);
+        $this->put($insert, $columns, ['sex', 'gender'], $data['sex'] ?? null);
         $this->put($insert, $columns, ['date_of_birth', 'dob', 'birth_date'], $data['date_of_birth'] ?? null);
         $this->put($insert, $columns, ['passport_no', 'passport_number'], $data['passport_no'] ?? null);
         $this->put($insert, $columns, ['passport_expiry', 'passport_expiry_date'], $data['passport_expiry'] ?? null);

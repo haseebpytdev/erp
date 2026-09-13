@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Operations\UnifiedGroupPackageBookingController;
 use App\Http\Controllers\Operations\GeneralBookingPassengerQuickController;
+use App\Http\Controllers\Operations\PassengerWorkspaceController;
 use App\Http\Controllers\Operations\GeneralBookingAirProductController;
 use App\Http\Controllers\Operations\GeneralBookingHotelProductController;
 use App\Http\Controllers\Operations\GeneralBookingTransportProductController;
@@ -52,6 +53,7 @@ use App\Http\Controllers\Accounting\ChartOfAccountsWorkspaceController;
 use App\Http\Controllers\Accounting\ManagementAccountingReportController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
+use App\Http\Middleware\PresentPassengerOperationsLink;
 use App\Http\Middleware\PresentChartOfAccountsWorkspace;
 use App\Http\Middleware\PresentAccountingReportsWorkspace;
 use App\Http\Middleware\PresentVisaManagementTravelMasterLink;
@@ -130,6 +132,12 @@ try {
 }
 
 Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
+    Route::get('/passengers', [PassengerWorkspaceController::class, 'index'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.index');
+    Route::post('/passengers', [PassengerWorkspaceController::class, 'store'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.store');
+    Route::get('/passengers/search', [PassengerWorkspaceController::class, 'index'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.search');
 
     Route::get(
         '/system/erp-assets/erp-professional.css',
@@ -682,6 +690,7 @@ foreach (Route::getRoutes()->getRoutes() as $registeredRoute) {
         continue;
     }
     $registeredRoute->middleware(PresentCashVoucherLinks::class);
+    $registeredRoute->middleware(PresentPassengerOperationsLink::class);
 }
 
 

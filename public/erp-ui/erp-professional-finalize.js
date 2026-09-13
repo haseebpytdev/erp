@@ -108,6 +108,7 @@
       const sections = [
         ['operations', 'OPERATIONS', [
           ['bookings'],
+          ['passengers'],
           ['sales invoices'],
           ['supplier costing'],
         ]],

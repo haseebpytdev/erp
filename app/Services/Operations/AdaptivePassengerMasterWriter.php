@@ -63,6 +63,25 @@ class AdaptivePassengerMasterWriter
         ];
     }
 
+    /** Resolve or create a reusable Passenger Master row without inventing a booking. */
+    public function resolveStandalone(array $row): array
+    {
+        $row['passport_no'] = strtoupper(preg_replace('/\s+/', '', trim((string) ($row['passport_no'] ?? ''))) ?? '');
+        foreach ($this->masterCandidates() as $table) {
+            if (Schema::hasTable($table) && ($existing = $this->findDuplicate($table, $row))) {
+                return ['id' => $existing, 'source' => $table, 'warning' => null, 'duplicate' => true];
+            }
+        }
+        foreach ($this->masterCandidates() as $table) {
+            if (! Schema::hasTable($table)) continue;
+            try {
+                $newId = $this->insertInto($table, $row, null);
+                if ($newId) return ['id' => $newId, 'source' => $table, 'warning' => null, 'duplicate' => false];
+            } catch (\Throwable $e) { report($e); }
+        }
+        return ['id' => null, 'source' => null, 'warning' => 'Passenger master is unavailable on this installation.', 'duplicate' => false];
+    }
+
     private function masterCandidates(): array
     {
         return ['passengers', 'travellers', 'travelers'];
@@ -101,7 +120,7 @@ class AdaptivePassengerMasterWriter
         return null;
     }
 
-    private function insertInto(string $table, array $data, int $bookingId): ?int
+    private function insertInto(string $table, array $data, ?int $bookingId): ?int
     {
         $columns = Schema::getColumnListing($table);
         if (! in_array('id', $columns, true)) {
@@ -117,7 +136,9 @@ class AdaptivePassengerMasterWriter
         $this->put($row, $columns, ['passport_no', 'passport_number'], $data['passport_no'] ?? null);
         $this->put($row, $columns, ['passport_expiry', 'passport_expiry_date'], $data['passport_expiry'] ?? null);
         $this->putFitted($row, $table, $columns, ['nationality', 'nationality_name', 'country'], $data['nationality'] ?? null);
-        $this->put($row, $columns, ['booking_id'], $bookingId);
+        if ($bookingId !== null) $this->put($row, $columns, ['booking_id'], $bookingId);
+        $this->put($row, $columns, ['sex', 'gender'], $data['sex'] ?? $data['gender'] ?? null);
+        $this->put($row, $columns, ['issuing_country', 'passport_issuing_country', 'document_issuing_country'], $data['issuing_country'] ?? null);
         $this->put($row, $columns, ['created_by', 'created_by_id', 'user_id'], Auth::id());
 
         foreach ([
