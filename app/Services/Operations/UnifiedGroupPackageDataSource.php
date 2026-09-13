@@ -83,7 +83,7 @@ class UnifiedGroupPackageDataSource
         // passenger_master; Schema discovery finds those dynamically. Keeping
         // booking_* sources last prevents an old booking snapshot from masking the
         // authoritative saved-passenger row during name/passport autocomplete.
-        $candidateTables = $this->candidateTables(['passengers', 'travellers', 'travelers'], 'passenger');
+        $candidateTables = $this->passengerMasterTables();
         if (Schema::hasTable('booking_passengers')) {
             $candidateTables[] = 'booking_passengers';
         }
@@ -158,6 +158,29 @@ class UnifiedGroupPackageDataSource
             $seen[$key] = true;
             return true;
         })->values();
+    }
+
+    /** Canonical reusable Passenger Master authority shared by reads and writes. */
+    public function passengerMasterTables(): array
+    {
+        $preferred = ['passengers', 'travellers', 'travelers', 'passenger_master', 'passenger_masters', 'passenger_profiles', 'traveller_master', 'traveler_master'];
+        $tables = $this->candidateTables($preferred, 'passenger');
+        $allowed = [];
+        foreach ($tables as $table) {
+            $table = (string) $table;
+            $lower = strtolower($table);
+            if (str_starts_with($lower, 'booking_') || preg_match('/(?:fare|price|service|ticket|visa|document|log|history|pivot)/', $lower)) continue;
+            if (! Schema::hasTable($table)) continue;
+            $columns = Schema::getColumnListing($table);
+            $hasIdentity = ($this->firstColumn($columns, ['first_name', 'given_name']) !== null)
+                || ($this->firstColumn($columns, ['name', 'passenger_name']) !== null);
+            if (in_array('id', $columns, true)
+                && $this->firstColumn($columns, ['passport_no', 'passport_number'])
+                && $hasIdentity) {
+                $allowed[] = $table;
+            }
+        }
+        return array_values(array_unique($allowed));
     }
 
     public function hotels(): Collection

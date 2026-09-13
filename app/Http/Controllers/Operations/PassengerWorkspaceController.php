@@ -68,7 +68,7 @@ final class PassengerWorkspaceController extends Controller
         return redirect()->route('passengers.index')->with('passenger_success','Passenger updated.');
     }
 
-    private function safeSource(string $source): ?string { return in_array($source,['passengers','travellers','travelers'],true) ? $source : null; }
+    private function safeSource(string $source): ?string { return in_array($source, $this->source->passengerMasterTables(), true) ? $source : null; }
     private function fitNationality(string $table, string $column, string $value): string { $value=trim($value); try { $col=DB::selectOne('SHOW COLUMNS FROM `'.$table.'` LIKE ?',[$column]); if(preg_match('/(?:var)?char\((\d+)\)/i',(string)($col->Type??''),$m) && (int)$m[1]<=3){ $map=['PAKISTAN'=>'PK','PAKISTANI'=>'PK','SAUDI ARABIA'=>'SA','UNITED STATES'=>'US','UNITED KINGDOM'=>'GB']; return substr($map[strtoupper($value)]??strtoupper($value),0,(int)$m[1]); } } catch(\Throwable) {} return $value; }
 
     public function store(Request $request)

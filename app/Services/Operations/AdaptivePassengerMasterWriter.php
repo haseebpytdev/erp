@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 class AdaptivePassengerMasterWriter
 {
+    public function __construct(private readonly UnifiedGroupPackageDataSource $source) {}
     /**
      * Resolve an existing saved passenger or create the new passenger in the
      * ERP's existing passenger data store where possible.
@@ -84,7 +85,7 @@ class AdaptivePassengerMasterWriter
 
     private function masterCandidates(): array
     {
-        return ['passengers', 'travellers', 'travelers'];
+        return $this->source->passengerMasterTables();
     }
 
     private function findDuplicate(string $table, array $row): ?int
