@@ -772,3 +772,27 @@ html body.et-ui-professional [data-et-booking-focus-sidebar].et-booking-focus-si
     padding:0!important;
   }
 }
+
+/* ERP-11.3.256 final sidebar stability contract. */
+html body.et-ui-professional .sidebar,
+html body.et-ui-professional .navbar-vertical,
+html body.et-ui-professional .side-nav{display:flex!important;flex-direction:column!important;flex-shrink:0!important;}
+html body.et-ui-professional .sidebar .sidebar-header,
+html body.et-ui-professional .sidebar .brand,
+html body.et-ui-professional .sidebar>.logo,
+html body.et-ui-professional .navbar-vertical .navbar-brand{flex:0 0 var(--et-sidebar-brand-height)!important;flex-shrink:0!important;}
+html body.et-ui-professional .sidebar .nav,
+html body.et-ui-professional .navbar-vertical .nav,
+html body.et-ui-professional .side-nav .nav{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;}
+html body.et-ui-professional .sidebar footer,
+html body.et-ui-professional .sidebar .sidebar-footer,
+html body.et-ui-professional .sidebar .sidebar-foot{flex:0 0 auto!important;flex-shrink:0!important;}
+html body.et-ui-professional .sidebar .nav>.et-ui-nav-section,
+html body.et-ui-professional .navbar-vertical .nav>.et-ui-nav-section,
+html body.et-ui-professional .side-nav .nav>.et-ui-nav-section{flex:0 0 auto!important;flex-shrink:0!important;}
+html body.et-ui-professional .et-ui-nav-group{display:flex!important;flex-direction:column!important;gap:3px!important;margin:0!important;padding:0!important;flex:0 0 auto!important;flex-shrink:0!important;}
+html body.et-ui-professional .et-ui-nav-group>a,
+html body.et-ui-professional .et-ui-nav-group>.nav-item>a,
+html body.et-ui-professional .et-ui-nav-group>.nav-item{flex:0 0 var(--et-sidebar-row-height)!important;flex-shrink:0!important;margin:0!important;}
+html body.et-ui-professional .et-ui-nav-group>a,
+html body.et-ui-professional .et-ui-nav-group>.nav-item>a{height:var(--et-sidebar-row-height)!important;min-height:var(--et-sidebar-row-height)!important;max-height:var(--et-sidebar-row-height)!important;}

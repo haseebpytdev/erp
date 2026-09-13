@@ -57,25 +57,30 @@
       const canonicalNav = dashboardLink ? rootNavFor(dashboardLink) : rootNavs[0];
 
       const rows = Array.from(new Set(allLinks.map(topLevelRow).filter(Boolean)));
-
-      rootNavs.forEach(nav => {
-        Array.from(nav.querySelectorAll(':scope > .nav-section,:scope > .nav-heading,:scope > .menu-title,:scope > .et-ui-nav-section'))
-          .filter(node => !node.querySelector('a[href]'))
-          .forEach(node => node.remove());
+      const originalOrder = new Map(rows.map((row, index) => [row, index]));
+      const identity = link => `${normalize(link.textContent)}|${normalizePath(link.getAttribute('href'))}?${normalizeSearch(new URL(link.href, location.origin).search)}`;
+      const preferred = (a, b) => {
+        const score = link => (link.classList.contains('active') || link.parentElement?.classList.contains('active') ? 3 : 0)
+          + (link.closest('[data-et-live-accounting-nav]') ? 2 : 0);
+        return score(a) > score(b) ? a : b;
+      };
+      const uniqueRows = [];
+      const seen = new Map();
+      rows.forEach(row => {
+        const link = row.querySelector('a[href]');
+        if (!link) return;
+        const key = identity(link);
+        if (seen.has(key)) {
+          const priorRow = seen.get(key);
+          const prior = priorRow.querySelector('a[href]');
+          if (preferred(link, prior) === link) uniqueRows[uniqueRows.indexOf(priorRow)] = row;
+          return;
+        }
+        seen.set(key, row);
+        uniqueRows.push(row);
       });
 
-      const grouped = new Set();
-      const appendRow = row => {
-        if (!row || grouped.has(row)) return false;
-        grouped.add(row);
-        canonicalNav.appendChild(row);
-        return true;
-      };
-
-      if (dashboardRow) {
-        dashboardRow.dataset.etSidebarGroup = 'dashboard';
-        appendRow(dashboardRow);
-      }
+      const plan = [];
 
       const sections = [
         ['operations', 'OPERATIONS', [
@@ -118,34 +123,47 @@
         const sectionRows = [];
         itemAliases.forEach(aliases => {
           const row = rowForAliases(aliases);
-          if (row && !grouped.has(row)) sectionRows.push(row);
+          if (row && !plan.some(item => item.rows?.includes(row)) && !sectionRows.includes(row)) sectionRows.push(row);
         });
-        if (!sectionRows.length) return;
+        if (sectionRows.length) plan.push({ key, title, rows: sectionRows });
+      });
 
-        const heading = document.createElement('div');
-        heading.className = 'nav-section et-ui-nav-section';
-        heading.dataset.etSidebarSection = key;
-        heading.textContent = title;
-
-        canonicalNav.appendChild(heading);
-
-        sectionRows.forEach(row => {
-          row.dataset.etSidebarGroup = key;
-          appendRow(row);
+      const claimed = new Set(plan.flatMap(item => item.rows));
+      if (dashboardRow) claimed.add(dashboardRow);
+      const remaining = uniqueRows.filter(row => !claimed.has(row)).sort((a,b) => originalOrder.get(a)-originalOrder.get(b));
+      if (remaining.length) plan.push({ key: 'remaining', title: '', rows: remaining });
+      const validPlan = plan.every(item => item.rows.every(row => row && row.querySelector('a[href]')));
+      if (validPlan && canonicalNav) {
+        const fragment = document.createDocumentFragment();
+        if (dashboardRow) {
+          dashboardRow.dataset.etSidebarGroup = 'dashboard';
+          fragment.appendChild(dashboardRow);
+        }
+        plan.forEach(({ key, title, rows: sectionRows }) => {
+          const heading = document.createElement('div');
+          heading.className = 'nav-section et-ui-nav-section';
+          heading.dataset.etSidebarSection = key;
+          if (title) heading.textContent = title;
+          if (title) fragment.appendChild(heading);
+          const group = document.createElement('div');
+          group.className = 'et-ui-nav-group';
+          group.dataset.etSidebarSectionGroup = key;
+          group.dataset.etSidebarGroup = key;
+          sectionRows.forEach(row => {
+            row.dataset.etSidebarGroup = key;
+            group.appendChild(row);
+          });
+          fragment.appendChild(group);
         });
-      });
-
-      rows.forEach(row => {
-        if (grouped.has(row)) return;
-        row.dataset.etSidebarGroup = 'remaining';
-        appendRow(row);
-      });
-
-      rootNavs.forEach(nav => {
-        if (nav !== canonicalNav && !nav.querySelector('a[href]')) nav.classList.add('et-ui-nav-root-empty');
-      });
-
-      canonicalNav.dataset.etSidebarGrouped = 'reference-v2';
+        canonicalNav.replaceChildren(fragment);
+        canonicalNav.dataset.etSidebarGrouped = 'final-v1';
+        body.dataset.etSidebarNormalization = 'committed';
+        rootNavs.forEach(nav => {
+          if (nav !== canonicalNav) nav.classList.add('et-ui-nav-root-empty');
+        });
+      } else {
+        body.dataset.etSidebarNormalization = 'failed';
+      }
 
       // The base professional script historically marked every link sharing the
       // current pathname as selected. Cash voucher workspaces share one path and
@@ -180,6 +198,7 @@
         }
       });
     }
+    if (sidebar.querySelector('[data-et-sidebar-grouped="final-v1"]')) body.dataset.etSidebarReady = 'true';
   }
 
   const path = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();

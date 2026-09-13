@@ -630,3 +630,12 @@ body.et-ui-professional.et-ui-module-system .et-health-page-root{
   .et-card,body.et-ui-professional .card,body.et-ui-professional .mr-card,body.et-ui-professional .scs-card,body.et-ui-professional .cvs27-card{box-shadow:none!important;border-color:#cbd1d8!important;break-inside:avoid}
   body.et-ui-professional a{color:inherit!important;text-decoration:none!important}
 }
+
+/* Final sidebar hover is presentation-only and geometry-neutral. */
+html body.et-ui-professional .et-ui-nav-group>a,
+html body.et-ui-professional .et-ui-nav-group>.nav-item>a{transition:background-color 120ms ease,color 120ms ease,border-color 120ms ease!important;}
+html body.et-ui-professional .et-ui-nav-group>a:hover,
+html body.et-ui-professional .et-ui-nav-group>.nav-item>a:hover{background:rgba(255,255,255,.07)!important;transform:none!important;}
+html body.et-ui-professional .et-ui-nav-group>a.et-ui-current:hover,
+html body.et-ui-professional .et-ui-nav-group>a.active:hover,
+html body.et-ui-professional .et-ui-nav-group>.nav-item.active>a:hover{background:rgba(16,85,176,.72)!important;color:#fff!important;}
