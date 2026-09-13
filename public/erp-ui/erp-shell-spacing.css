@@ -188,6 +188,7 @@ html:not(.et-booking-focus-prepaint) body.et-ui-professional main>.page-body{
   min-width:0!important;
   margin-left:0!important;
   margin-right:0!important;
+  padding-top:0!important;
   padding-left:0!important;
   padding-right:0!important;
   box-sizing:border-box!important;
@@ -227,6 +228,9 @@ body.et-ui-professional .et-shell-content-frame{
   body.et-ui-professional .app-shell{
     min-height:100vh!important;
     align-items:flex-start!important;
+    grid-template-columns:
+      var(--et-shell-sidebar-width)
+      minmax(0,1fr)!important;
   }
 
   body.et-ui-professional .sidebar,
