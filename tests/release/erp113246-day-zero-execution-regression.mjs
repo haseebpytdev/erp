@@ -15,7 +15,7 @@ function assert(name, condition) {
   }
 }
 
-assert('VERSION_IS_246_EXECUTION_RELEASE', version === 'v1.1.33.272-ERP11.3.272');
+assert('VERSION_IS_246_EXECUTION_RELEASE', version === 'v1.1.33.273-ERP11.3.273');
 assert('PLANNER_REMAINS_FAIL_CLOSED', planner.includes("'action' => 'review'") && planner.includes('Unclassified table. Must be reviewed explicitly'));
 assert('EXECUTION_AUTHORITY_EXPLICITLY_ENABLED', executor.includes('public const EXECUTION_ENABLED = true;'));
 assert('FRESH_BACKUP_REVALIDATED', executor.includes('$this->planner->validateBackup($backupPath, $backupCreatedAt)'));

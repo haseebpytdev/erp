@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.272-ERP11.3.272',
-    'release' => 'ERP-11.3.272',
-    'package' => 'ERP-11.3.272 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.272 adds Travel Masters Hotel CSV bulk import with preview/import, native runtime Hotel Master discovery, storage-mode-aware duplicate identity, fail-closed required-column validation, deterministic Saudi city IATA/country/timestamp writes, and no database migration.',
+    'version' => 'v1.1.33.273-ERP11.3.273',
+    'release' => 'ERP-11.3.273',
+    'package' => 'ERP-11.3.273 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.273 fixes the Travel Masters Hotel Bulk Import live presentation so the native + Add Hotel control reliably exposes Bulk Import CSV and Download Template, while preserving the validated ERP-11.3.272 Hotel import, duplicate, alias and fail-closed storage contracts with no database migration.',
 ];
