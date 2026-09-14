@@ -485,6 +485,12 @@ ok(
     'metadata failure fail closed'
 );
 
+ok(
+    middleware.includes("replace(/[^a-z0-9]+/gi,' ')")
+    && middleware.includes("n(x.textContent)==='add hotel'"),
+    'native + Add Hotel anchor normalization'
+);
+
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
 );
