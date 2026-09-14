@@ -17,11 +17,37 @@ const view = read('resources/views/operations/bookings/visa-masters-v113147.blad
 const workspace = read('public/erp11390/general-progressive-step1.js');
 const workspaceCss = read('public/erp11390/general-progressive-step1.css');
 const voucher = read('resources/views/operations/bookings/general-client-voucher-v113142.blade.php');
+const hierarchy = read('app/Http/Middleware/PresentTravelMasterHierarchy.php');
+const flightRoutes = read('app/Http/Controllers/Operations/TravelMasterFlightRoutesController.php');
+const flightView = read('resources/views/operations/travel-masters/flight-routes.blade.php');
 
 assert.match(read('VERSION.txt').trim(), /^v1\.1\.33\.(?:15[2-9]|1[6-9]\d|[2-9]\d\d)-ERP11\.3\.(?:15[2-9]|1[6-9]\d|[2-9]\d\d)$/); checks += 1;
 contains(routes, "Route::get('/master-data/travel-masters/visa-management'", 'canonical Visa Management GET route');
 contains(routes, "->name('travel-masters.visa-management')", 'canonical Visa Management route is named');
 contains(routes, "return redirect()->route('travel-masters.visa-management'", 'obsolete GET path only redirects to the canonical route');
+contains(routes, "travel-masters.flight-routes", 'read-only Flight Routes route');
+excludes(routes, "Route::post('/master-data/travel-masters/flight-routes'", 'Flight Routes has no write route');
+contains(routes, 'PresentTravelMasterHierarchy::class', 'single Travel Masters hierarchy middleware');
+contains(hierarchy, 'Overview', 'Travel Masters overview top-level label');
+contains(hierarchy, 'Transport Companies', 'Transport parent label');
+contains(hierarchy, 'Visa Management', 'Visa parent label');
+contains(hierarchy, 'Products & Services', 'Products parent label');
+contains(hierarchy, "['Transport Companies','Vehicle Types','Transport Routes','Transport Vendor Rates']", 'Transport child order');
+contains(hierarchy, "['Saudi Visa Companies','Pakistan Visa / IATA','Visa Rates']", 'Visa child order');
+contains(hierarchy, "['Airlines','Flight Routes']", 'Airlines child order');
+contains(hierarchy, 'Airline Codes', 'Airline Codes hidden from primary navigation');
+contains(flightRoutes, "booking_itinerary_segments", 'Flight Routes itinerary source');
+contains(flightRoutes, "['from_code', 'origin_code', 'from', 'origin']", 'adaptive FROM aliases');
+contains(flightRoutes, "['to_code', 'destination_code', 'to', 'destination']", 'adaptive TO aliases');
+contains(flightRoutes, "strtoupper(trim", 'direction endpoint normalization');
+contains(flightRoutes, "$fromValue.'-'.$toValue", 'directional route key');
+contains(flightRoutes, "$b['used'] <=> $a['used']", 'usage descending sort');
+excludes(flightRoutes, '->insert(', 'Flight Routes has no insert');
+excludes(flightRoutes, '->update(', 'Flight Routes has no update');
+excludes(flightRoutes, '->delete(', 'Flight Routes has no delete');
+contains(flightView, 'Airlines Used', 'Flight Routes airlines column');
+contains(flightView, 'Flight Nos', 'Flight Routes flight column');
+contains(flightView, 'No flight routes recorded yet.', 'Flight Routes empty state');
 
 contains(repository, "str_starts_with($table, 'visa_')", 'parallel Visa master tables are excluded');
 contains(repository, "preg_match('/^PKI[-_]/'", 'Pakistani IATA fallback requires explicit identity');

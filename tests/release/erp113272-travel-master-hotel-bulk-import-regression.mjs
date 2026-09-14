@@ -60,6 +60,7 @@ const middleware = read(
 const controller = read(
     'app/Http/Controllers/Operations/HotelMasterBulkImportController.php'
 );
+const hierarchy = read('app/Http/Middleware/PresentTravelMasterHierarchy.php');
 
 const previewMethod = method(
     authority,
@@ -539,6 +540,18 @@ ok(middleware.includes('ib.disabled=false'), 'error restores button enabled');
 ok(middleware.includes("ib.textContent='Import New Hotels'"), 'error restores import label');
 ok(!middleware.includes("catch(e=>{window.location.reload()"), 'error path does not reload');
 ok(middleware.includes('esc(r.rows_submitted)') && middleware.includes('esc(r.rows_invalid)'), 'success values escaped');
+
+/* Hotel compact presentation and hierarchy preservation. */
+ok(hierarchy.includes('et-tm-hotel-address-113277'), 'compact Address page-scoped authority');
+ok(hierarchy.includes('et-tm-hotel-address-113277'), 'Address hook remains page scoped');
+ok(!hierarchy.includes('removeAttribute("name")'), 'Address field is not removed');
+ok(hierarchy.includes("includes('address')"), 'Address form field selector unchanged');
+ok(hierarchy.includes('et-tm-child-nav-113277'), 'child navigation presentation exists');
+ok(hierarchy.includes('et-tm-hotel-actions-113277'), 'Hotel action row presentation hook exists');
+ok(middleware.includes('Bulk Import CSV'), 'Bulk Import same-row action remains');
+ok(middleware.includes('Download Template'), 'Download Template action remains');
+ok(middleware.includes("textContent='Bulk Import CSV'"), 'native Add Hotel anchor remains authoritative');
+ok(middleware.includes('Import Complete') && middleware.includes('window.location.reload'), 'Import completion UX preserved');
 
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`

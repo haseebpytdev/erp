@@ -13,6 +13,7 @@ use App\Http\Controllers\Operations\GeneralBookingReviewController;
 use App\Http\Controllers\Operations\VisaMasterController;
 use App\Http\Controllers\Operations\GeneralBookingVoucherPreviewController;
 use App\Http\Controllers\Operations\HotelMasterBulkImportController;
+use App\Http\Controllers\Operations\TravelMasterFlightRoutesController;
 use App\Http\Controllers\Operations\GroupUmrahWorkflowController;
 use App\Http\Controllers\Operations\GroupUmrahVoucherController;
 use App\Http\Controllers\Operations\GroupUmrahCommercialAmendmentController;
@@ -57,7 +58,7 @@ use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentPassengerOperationsLink;
 use App\Http\Middleware\PresentChartOfAccountsWorkspace;
 use App\Http\Middleware\PresentAccountingReportsWorkspace;
-use App\Http\Middleware\PresentVisaManagementTravelMasterLink;
+use App\Http\Middleware\PresentTravelMasterHierarchy;
 use App\Http\Middleware\PresentTravelMasterHotelBulkImport;
 use App\Http\Middleware\PresentCompanyVoucherFooterAuthority;
 use App\Http\Middleware\GuardApprovedGeneralBookingCommercials;
@@ -300,6 +301,8 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     // /travel-masters Visa URLs only as compatibility aliases for bookmarks/open tabs.
     Route::get('/master-data/travel-masters/visa-management', [VisaMasterController::class, 'index'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.visa-management');
+    Route::get('/master-data/travel-masters/flight-routes', [TravelMasterFlightRoutesController::class, 'index'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.flight-routes');
     Route::post('/master-data/travel-masters/visa-management/pakistani-iata', [VisaMasterController::class, 'storePakistaniIata'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.visa-management.iata.store');
     Route::post('/master-data/travel-masters/visa-management/saudi-company', [VisaMasterController::class, 'storeSaudiCompany'])
@@ -663,7 +666,7 @@ foreach (Route::getRoutes()->getRoutes() as $registeredRoute) {
 Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     $route = $event->route;
     if (in_array('GET', $route->methods(), true)) {
-        $route->middleware(PresentVisaManagementTravelMasterLink::class);
+        $route->middleware(PresentTravelMasterHierarchy::class);
         $route->middleware(PresentTravelMasterHotelBulkImport::class);
     }
 });
