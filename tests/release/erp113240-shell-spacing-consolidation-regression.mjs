@@ -185,7 +185,7 @@ ok(
 );
 
 ok(
-  version === 'v1.1.33.277-ERP11.3.277',
+  version === 'v1.1.33.278-ERP11.3.278',
   'ERP-11.3.259 release metadata is current'
 );
 
