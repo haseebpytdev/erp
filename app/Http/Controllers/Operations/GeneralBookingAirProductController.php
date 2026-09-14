@@ -561,8 +561,6 @@ final class GeneralBookingAirProductController extends Controller
             'status' => 'active',
             'quantity' => 1,
             'qty' => 1,
-            'passenger_link_mode_snapshot' => 'MULTIPLE',
-            'passenger_link_mode' => 'MULTIPLE',
         ]);
 
         $id = (int) DB::table($table)->insertGetId($row);
@@ -571,65 +569,7 @@ final class GeneralBookingAirProductController extends Controller
     }
 
     /** @return array<string,mixed>|null */
-    private function resolveAirProductService(): ?array
-    {
-        if (! Schema::hasTable('booking_services')) {
-            return null;
-        }
-
-        $tables = [];
-        try {
-            foreach (Schema::getForeignKeys('booking_services') as $foreign) {
-                $locals = (array) ($foreign['columns'] ?? $foreign['local_columns'] ?? []);
-                if (! in_array('product_service_id', $locals, true)) continue;
-                $table = (string) ($foreign['foreign_table'] ?? $foreign['foreign_table_name'] ?? $foreign['table'] ?? '');
-                if ($table !== '' && Schema::hasTable($table)) $tables[] = $table;
-            }
-        } catch (Throwable) {
-        }
-
-        foreach (['product_services', 'product_service_master', 'product_service_masters', 'travel_product_services', 'service_products'] as $table) {
-            if (Schema::hasTable($table)) $tables[] = $table;
-        }
-
-        $tables = array_values(array_unique($tables));
-        $best = null;
-        $bestScore = 0;
-
-        foreach ($tables as $table) {
-            try {
-                $columns = Schema::getColumnListing($table);
-                $idColumn = $this->firstColumn($columns, ['id', 'product_service_id']);
-                if (! $idColumn) continue;
-
-                foreach (DB::table($table)->limit(2000)->get() as $rowObject) {
-                    $row = (array) $rowObject;
-                    $id = (int) ($row[$idColumn] ?? 0);
-                    if ($id <= 0) continue;
-                    $text = strtolower(implode(' ', array_map('strval', $row)));
-                    $score = 0;
-                    if (str_contains($text, 'air ticket')) $score += 10000;
-                    if (str_contains($text, 'air-ticket')) $score += 9000;
-                    if (str_contains($text, 'ticketing')) $score += 5000;
-                    if (str_contains($text, 'flight ticket')) $score += 7000;
-                    if (str_contains($text, 'ticket')) $score += 2600;
-                    if (str_contains($text, 'flight')) $score += 1800;
-                    if (str_contains($text, 'air')) $score += 700;
-                    if (str_contains($text, 'hotel')) $score -= 5000;
-                    if (str_contains($text, 'visa')) $score -= 5000;
-                    if (str_contains($text, 'umrah')) $score -= 3500;
-                    if (str_contains($text, 'transport')) $score -= 5000;
-                    if ($score > $bestScore) {
-                        $bestScore = $score;
-                        $best = ['id' => $id, 'table' => $table, 'row' => $row];
-                    }
-                }
-            } catch (Throwable) {
-            }
-        }
-
-        return $bestScore >= 2000 ? $best : null;
-    }
+    private function resolveAirProductService(): ?array\n    { return app(\App\Services\Operations\NativeProductServiceResolver::class)->findAir(); }
 
     /** @return list<array<string,mixed>> */
     private function ticketRows(int $serviceId, array $passengers): array

@@ -919,41 +919,7 @@ final class GeneralBookingTransportProductController extends Controller
     }
 
     /** @return array<string,mixed>|null */
-    private function resolveTransportProductService(): ?array
-    {
-        if (! Schema::hasTable('booking_services')) return null;
-        $tables = [];
-        try {
-            foreach (Schema::getForeignKeys('booking_services') as $foreign) {
-                $locals = (array) ($foreign['columns'] ?? $foreign['local_columns'] ?? []);
-                if (! in_array('product_service_id', $locals, true)) continue;
-                $table = (string) ($foreign['foreign_table'] ?? $foreign['foreign_table_name'] ?? $foreign['table'] ?? '');
-                if ($table !== '' && Schema::hasTable($table)) $tables[] = $table;
-            }
-        } catch (Throwable) {}
-        foreach (['product_services','product_service_master','product_service_masters','travel_product_services','service_products'] as $table) if (Schema::hasTable($table)) $tables[] = $table;
-        $best = null; $bestScore = 0;
-        foreach (array_values(array_unique($tables)) as $table) {
-            try {
-                $columns = $this->physicalColumnListing($table);
-                $idColumn = $this->firstColumn($columns, ['id','product_service_id']);
-                if (! $idColumn) continue;
-                foreach (DB::table($table)->limit(4000)->get() as $object) {
-                    $row = (array) $object; $id = (int) ($row[$idColumn] ?? 0); if ($id !== (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']) continue;
-                    $text = strtolower(implode(' ', array_map(static fn ($v): string => is_scalar($v) ? (string) $v : '', $row)));
-                    $score = 0;
-                    if (str_contains($text, 'transport')) $score += 10000;
-                    if (str_contains($text, 'transfer')) $score += 5000;
-                    if (str_contains($text, 'vehicle')) $score += 1200;
-                    if (str_contains($text, 'hotel')) $score -= 7000;
-                    if (str_contains($text, 'air ticket')) $score -= 7000;
-                    if (str_contains($text, 'visa')) $score -= 5000;
-                    if ($score > $bestScore) { $bestScore = $score; $best = ['id' => $id, 'table' => $table, 'row' => $row]; }
-                }
-            } catch (Throwable) {}
-        }
-        return $bestScore >= 3000 ? $best : null;
-    }
+    private function resolveTransportProductService(): ?array\n    { return app(\App\Services\Operations\NativeProductServiceResolver::class)->findTransport(); }
 
     /**
      * Correct only the known, unambiguous legacy corruption pattern: native

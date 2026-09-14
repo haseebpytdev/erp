@@ -709,50 +709,7 @@ final class GeneralBookingHotelProductController extends Controller
     }
 
     /** @return array<string,mixed>|null */
-    private function resolveHotelProductService(): ?array
-    {
-        if (! Schema::hasTable('booking_services')) return null;
-        $tables = [];
-        try {
-            foreach (Schema::getForeignKeys('booking_services') as $foreign) {
-                $locals = (array) ($foreign['columns'] ?? $foreign['local_columns'] ?? []);
-                if (! in_array('product_service_id', $locals, true)) continue;
-                $table = (string) ($foreign['foreign_table'] ?? $foreign['foreign_table_name'] ?? $foreign['table'] ?? '');
-                if ($table !== '' && Schema::hasTable($table)) $tables[] = $table;
-            }
-        } catch (Throwable) {
-        }
-        foreach (['product_services', 'product_service_master', 'product_service_masters', 'travel_product_services', 'service_products'] as $table) if (Schema::hasTable($table)) $tables[] = $table;
-        $tables = array_values(array_unique($tables));
-        $best = null;
-        $bestScore = 0;
-        foreach ($tables as $table) {
-            try {
-                $columns = $this->physicalColumnListing($table);
-                $idColumn = $this->firstColumn($columns, ['id', 'product_service_id']);
-                if (! $idColumn) continue;
-                foreach (DB::table($table)->limit(4000)->get() as $rowObject) {
-                    $row = (array) $rowObject;
-                    $id = (int) ($row[$idColumn] ?? 0);
-                    if ($id !== (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id']) continue;
-                    $text = strtolower(implode(' ', array_map('strval', $row)));
-                    $score = 0;
-                    if (str_contains($text, 'hotel')) $score += 10000;
-                    if (str_contains($text, 'accommodation')) $score += 7000;
-                    if (str_contains($text, 'room')) $score += 1000;
-                    if (str_contains($text, 'air ticket')) $score -= 8000;
-                    if (str_contains($text, 'visa')) $score -= 4000;
-                    if (str_contains($text, 'transport')) $score -= 4000;
-                    if ($score > $bestScore) {
-                        $bestScore = $score;
-                        $best = ['id' => $id, 'table' => $table, 'row' => $row];
-                    }
-                }
-            } catch (Throwable) {
-            }
-        }
-        return $bestScore >= 3000 ? $best : null;
-    }
+    private function resolveHotelProductService(): ?array\n    { return app(\App\Services\Operations\NativeProductServiceResolver::class)->findHotel(); }
 
     private function resolveBookingServiceLinkColumn(string $table, array $columns): ?string
     {
