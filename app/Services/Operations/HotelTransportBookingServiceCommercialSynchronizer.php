@@ -47,9 +47,13 @@ final class HotelTransportBookingServiceCommercialSynchronizer
             $this->fail('invoice', 'The native booking service store is unavailable.');
         }
 
+        $hotelMaster = app(\App\Services\Operations\NativeProductServiceResolver::class)->findHotel();
+        $transportMaster = app(\App\Services\Operations\NativeProductServiceResolver::class)->findTransport();
+        $productIds = array_values(array_filter([(int) ($hotelMaster['id'] ?? 0), (int) ($transportMaster['id'] ?? 0)]));
+        if (! $productIds) return ['hotel' => null, 'transport' => null];
         $services = DB::table('booking_services')
             ->where('booking_id', $bookingId)
-            ->whereIn('product_service_id', [(int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'], (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']])
+            ->whereIn('product_service_id', $productIds)
             ->lockForUpdate()
             ->get()
             ->map(static fn (object $row): array => (array) $row)
@@ -59,8 +63,8 @@ final class HotelTransportBookingServiceCommercialSynchronizer
 
         $result = ['hotel' => null, 'transport' => null];
         foreach ([
-            (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'] => ['key' => 'hotel', 'label' => 'Hotel'],
-            (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'] => ['key' => 'transport', 'label' => 'Transport'],
+            (int) ($hotelMaster['id'] ?? 0) => ['key' => 'hotel', 'label' => 'Hotel'],
+            (int) ($transportMaster['id'] ?? 0) => ['key' => 'transport', 'label' => 'Transport'],
         ] as $productId => $definition) {
             $matches = array_values(array_filter(
                 $services,

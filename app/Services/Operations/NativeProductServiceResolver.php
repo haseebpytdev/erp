@@ -9,22 +9,28 @@ use Illuminate\Validation\ValidationException;
 /** Read-only, schema-aware Product/Service Master authority. */
 final class NativeProductServiceResolver
 {
-    public function air(): array { return $this->resolve('Air', ['AIR','AIRTICKET','AIR_TICKET'], ['AIR_TICKET'], ['AIR TICKET','AIR TICKETS','FLIGHT TICKET']); }
-    public function hotel(): array { return $this->resolve('Hotel', ['HOTEL'], ['HOTEL','ACCOMMODATION'], ['HOTEL','HOTELS','ACCOMMODATION']); }
-    public function transport(): array { return $this->resolve('Transport', ['TRANSPORT'], ['TRANSPORT','TRANSFER'], ['TRANSPORT','TRANSPORTATION','TRANSFER']); }
+    public function air(): array { return $this->require($this->findAir(), 'Air'); }
+    public function hotel(): array { return $this->require($this->findHotel(), 'Hotel'); }
+    public function transport(): array { return $this->require($this->findTransport(), 'Transport'); }
+    public function findAir(): ?array { return $this->find('Air', ['AIR','AIRTICKET','AIR_TICKET'], ['AIR_TICKET'], ['AIR TICKET','AIR TICKETS','FLIGHT TICKET']); }
+    public function findHotel(): ?array { return $this->find('Hotel', ['HOTEL'], ['HOTEL','ACCOMMODATION'], ['HOTEL','HOTELS','ACCOMMODATION']); }
+    public function findTransport(): ?array { return $this->find('Transport', ['TRANSPORT'], ['TRANSPORT','TRANSFER'], ['TRANSPORT','TRANSPORTATION','TRANSFER']); }
 
-    private function resolve(string $label, array $codes, array $categories, array $names): array
+    private function require(?array $match, string $label): array
+    { if ($match) return $match; throw ValidationException::withMessages(['product' => "No active native {$label} Product/Service master matched."]); }
+
+    private function find(string $label, array $codes, array $categories, array $names): ?array
     {
         $tables = $this->tables(); $matches = [];
         foreach ($tables as $table) foreach (DB::table($table)->get() as $row) {
-            $a = (array) $row; if (isset($a['active']) && ! $a['active']) continue; if (isset($a['is_active']) && ! $a['is_active']) continue;
+            $a = (array) $row; if (isset($a['deleted_at']) && $a['deleted_at'] !== null) continue; if (isset($a['active']) && ! $a['active']) continue; if (isset($a['is_active']) && ! $a['is_active']) continue; if (in_array(strtolower((string) ($a['status'] ?? '')), ['inactive','deleted','removed','cancelled','canceled'], true)) continue;
             $code = strtoupper(trim((string) ($a['code'] ?? $a['product_code'] ?? $a['service_code'] ?? '')));
             $category = strtoupper(trim((string) ($a['category'] ?? $a['type'] ?? '')));
             $name = strtoupper(trim((string) ($a['name'] ?? $a['title'] ?? $a['service_name'] ?? '')));
             $score = in_array($code, $codes, true) ? 3 : (in_array($category, $categories, true) ? 2 : (in_array($name, $names, true) ? 1 : 0));
             if ($score) $matches[] = compact('table','a','code','category','name','score');
         }
-        if (! $matches) throw ValidationException::withMessages(['product' => "No active native {$label} Product/Service master matched."]);
+        if (! $matches) return null;
         $best = max(array_column($matches, 'score')); $matches = array_values(array_filter($matches, fn (array $m): bool => $m['score'] === $best));
         if (count($matches) !== 1) throw ValidationException::withMessages(['product' => "Multiple active native {$label} Product/Service masters matched; no Product identity was guessed."]);
         $m = $matches[0]; $r = $m['a'];
@@ -35,7 +41,7 @@ final class NativeProductServiceResolver
     {
         $tables = [];
         $foreign = $this->bookingServicesForeignKeyTarget();
-        if ($foreign && Schema::hasTable($foreign)) $tables[] = $foreign;
+        if ($foreign && Schema::hasTable($foreign)) return [$foreign];
         foreach (['product_services','product_service_master','product_service_masters','travel_product_services','service_products'] as $table) if (Schema::hasTable($table)) $tables[] = $table;
         return array_values(array_unique($tables));
     }

@@ -121,6 +121,10 @@ final class GenericServicePassengerLinkSynchronizer
             ->lockForUpdate()
             ->get();
 
+        $resolver = app(\App\Services\Operations\NativeProductServiceResolver::class);
+        $airProductId = (int) (($resolver->findAir()['id'] ?? 0));
+        $hotelProductId = (int) (($resolver->findHotel()['id'] ?? 0));
+        $transportProductId = (int) (($resolver->findTransport()['id'] ?? 0));
         $reconciled = [];
         foreach ($services as $service) {
             $row = (array) $service;
@@ -130,27 +134,27 @@ final class GenericServicePassengerLinkSynchronizer
             $productServiceId = (int) ($row['product_service_id'] ?? 0);
             if ($serviceId <= 0) continue;
 
-            if ($productServiceId === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->air()['id']) {
+            if ($airProductId > 0 && $productServiceId === $airProductId) {
                 if (! $this->hasNativeAirRows($serviceId)) continue;
                 $reconciled[$serviceId] = $this->synchronizeAir($bookingId, $serviceId, false);
                 continue;
             }
 
-            if ($productServiceId === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id']) {
+            if ($hotelProductId > 0 && $productServiceId === $hotelProductId) {
                 $reconciled[$serviceId] = $this->synchronizeBookingWide(
                     $bookingId,
                     $serviceId,
-                    (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'],
+                    $hotelProductId,
                     'Hotel',
                 );
                 continue;
             }
 
-            if ($productServiceId === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']) {
+            if ($transportProductId > 0 && $productServiceId === $transportProductId) {
                 $reconciled[$serviceId] = $this->synchronizeBookingWide(
                     $bookingId,
                     $serviceId,
-                    (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'],
+                    $transportProductId,
                     'Transport',
                 );
             }

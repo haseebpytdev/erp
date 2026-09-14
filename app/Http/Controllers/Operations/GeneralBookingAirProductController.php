@@ -537,7 +537,8 @@ final class GeneralBookingAirProductController extends Controller
         $this->put($row, $columns, ['currency_code', 'currency'], $currency);
         $this->putNativeEnum($row, $table, $columns, ['pricing_basis_snapshot', 'pricing_basis'], $pricingBasis, ['PER_SERVICE', 'FLAT', 'FIXED']);
         $this->put($row, $columns, ['service_code', 'product_code', 'code'], $code ?: null);
-        $this->putNativeEnum($row, $table, $columns, ['passenger_link_mode_snapshot', 'passenger_link_mode'], 'MULTIPLE', ['multiple']);
+        $passengerLinkMode = strtoupper(trim((string) ($master['passenger_link_mode'] ?? $masterRow['passenger_link_mode'] ?? '')));
+        if ($passengerLinkMode !== '') $this->putNativeEnum($row, $table, $columns, ['passenger_link_mode_snapshot', 'passenger_link_mode'], $passengerLinkMode, ['none', 'multiple', 'required']);
         $this->put($row, $columns, ['quantity', 'qty'], 1);
         $this->putNativeEnum($row, $table, $columns, ['status'], 'active', ['ACTIVE']);
 
