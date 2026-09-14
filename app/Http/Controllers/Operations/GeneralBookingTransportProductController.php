@@ -919,7 +919,10 @@ final class GeneralBookingTransportProductController extends Controller
     }
 
     /** @return array<string,mixed>|null */
-    private function resolveTransportProductService(): ?array\n    { return app(\App\Services\Operations\NativeProductServiceResolver::class)->findTransport(); }
+    private function resolveTransportProductService(): ?array
+    {
+        return app(\App\Services\Operations\NativeProductServiceResolver::class)->findTransport();
+    }
 
     /**
      * Correct only the known, unambiguous legacy corruption pattern: native

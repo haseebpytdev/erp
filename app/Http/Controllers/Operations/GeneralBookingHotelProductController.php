@@ -709,7 +709,10 @@ final class GeneralBookingHotelProductController extends Controller
     }
 
     /** @return array<string,mixed>|null */
-    private function resolveHotelProductService(): ?array\n    { return app(\App\Services\Operations\NativeProductServiceResolver::class)->findHotel(); }
+    private function resolveHotelProductService(): ?array
+    {
+        return app(\App\Services\Operations\NativeProductServiceResolver::class)->findHotel();
+    }
 
     private function resolveBookingServiceLinkColumn(string $table, array $columns): ?string
     {

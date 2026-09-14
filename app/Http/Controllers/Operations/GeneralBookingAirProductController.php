@@ -507,6 +507,10 @@ final class GeneralBookingAirProductController extends Controller
             ->orderByDesc('id')
             ->first();
         $row = $prototype ? (array) $prototype : [];
+        unset(
+            $row['passenger_link_mode_snapshot'],
+            $row['passenger_link_mode']
+        );
 
         unset($row['id']);
         $this->clearUniqueReferenceFields($table, $row);
@@ -569,7 +573,10 @@ final class GeneralBookingAirProductController extends Controller
     }
 
     /** @return array<string,mixed>|null */
-    private function resolveAirProductService(): ?array\n    { return app(\App\Services\Operations\NativeProductServiceResolver::class)->findAir(); }
+    private function resolveAirProductService(): ?array
+    {
+        return app(\App\Services\Operations\NativeProductServiceResolver::class)->findAir();
+    }
 
     /** @return list<array<string,mixed>> */
     private function ticketRows(int $serviceId, array $passengers): array
