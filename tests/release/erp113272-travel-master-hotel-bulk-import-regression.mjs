@@ -527,6 +527,19 @@ ok(controller.includes('$this->authority->import($rows, $this->companyId($reques
 ok(authority.includes('deterministicFields') && authority.includes("$row['company_id'] = (int) $companyId;"), 'dynamic company contract retained');
 ok(middleware.includes("n(x.textContent)==='add hotel'"), 'native anchor regression retained');
 
+/* Import completion UX contract. */
+ok(middleware.includes("ib.disabled=true"), 'import button disabled before request');
+ok(middleware.includes("ib.textContent='Importing...'"), 'import progress text');
+ok(middleware.includes('Import Complete'), 'success completion feedback');
+ok(middleware.includes('Rows Created:'), 'success created summary');
+ok(middleware.includes('Refreshing hotel list...'), 'success refresh feedback');
+ok(middleware.includes('result.scrollIntoView({behavior:\'smooth\',block:\'start\'})'), 'success result scroll');
+ok(middleware.includes('window.location.reload()'), 'success page reload');
+ok(middleware.includes('ib.disabled=false'), 'error restores button enabled');
+ok(middleware.includes("ib.textContent='Import New Hotels'"), 'error restores import label');
+ok(!middleware.includes("catch(e=>{window.location.reload()"), 'error path does not reload');
+ok(middleware.includes('esc(r.rows_submitted)') && middleware.includes('esc(r.rows_invalid)'), 'success values escaped');
+
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
 );
