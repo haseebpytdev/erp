@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.270-ERP11.3.270',
-    'release' => 'ERP-11.3.270',
-    'package' => 'ERP-11.3.270 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.270 allows GENERAL booking Review to load when Transport is not selected and no Transport Product Master exists, while preserving strict Transport Product Master validation when Transport is actually added or saved.',
+    'version' => 'v1.1.33.271-ERP11.3.271',
+    'release' => 'ERP-11.3.271',
+    'package' => 'ERP-11.3.271 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.271 restores dedicated GENERAL Client Voucher document styling by isolating voucher document surfaces from the global ERP professional UI theme while preserving current voucher structure, data, QR, logo and document typography.',
 ];
