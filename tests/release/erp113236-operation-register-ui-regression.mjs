@@ -19,7 +19,7 @@ ok(controller.includes("base_path('public/erp-ui/erp-booking-register-reference.
 ok(controller.includes("base_path('public/erp-ui/erp-register-workspace.js')"), 'minimal register interaction JS is served');
 ok(presenter.includes("'operations/bookings' => [") && presenter.includes("'sales/invoices' => [") && presenter.includes("'supplier-costing' => ["), 'all three registers are now server-presented');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned professional asset caching remains intact');
-ok(version === 'v1.1.33.281-ERP11.3.281', 'packaged release version is current');
+ok(version === 'v1.1.33.282-ERP11.3.282', 'packaged release version is current');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
