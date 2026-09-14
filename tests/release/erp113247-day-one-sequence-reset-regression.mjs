@@ -29,7 +29,7 @@ function assert(name, condition) {
 
 assert(
   'VERSION_IS_247_DAY_ONE_1000_RELEASE',
-  version === 'v1.1.33.280-ERP11.3.280'
+  version === 'v1.1.33.281-ERP11.3.281'
 );
 
 assert('DAY_ZERO_EXECUTION_AUTHORITY_PRESERVED', dayZero.includes('public const EXECUTION_ENABLED = true;'));
