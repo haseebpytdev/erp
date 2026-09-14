@@ -839,7 +839,9 @@ final class GeneralBookingTransportProductController extends Controller
         // particular, never inspect notes, descriptions or arbitrary scalar
         // fields here: a legacy ETERP_TRANSPORT_ROWS marker on another product
         // would otherwise make that product permanently masquerade as Transport.
-        $masterId = (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'];
+        $master = app(\App\Services\Operations\NativeProductServiceResolver::class)->findTransport();
+        if (! $master || (int) ($master['id'] ?? 0) <= 0) return null;
+        $masterId = (int) $master['id'];
         try {
             foreach (DB::table('booking_services')->where('booking_id', $booking)->orderByDesc('id')->get() as $object) {
                 $row = (array) $object;
