@@ -10,15 +10,15 @@ final class NativeHotelMasterAuthority
 {
     public function tables(): array
     {
-        return ['city' => $this->discover(['cities','travel_cities','city_master','city_masters','travel_city_master'], ['name','city_name','title']), 'hotel' => $this->discover(['hotels','travel_hotels','hotel_master','hotel_masters','travel_hotel_master'], ['name','hotel_name','title','property_name'])];
+        return ['city' => $this->discover(['cities','travel_cities','city_master','city_masters','travel_city_master'], ['name','city_name','title'], 'city', ['id','city_id']), 'hotel' => $this->discover(['hotels','travel_hotels','hotel_master','hotel_masters','travel_hotel_master'], ['name','hotel_name','title','property_name'], 'hotel', ['id','hotel_id'])];
     }
 
-    private function discover(array $candidates, array $nameFields): ?string
+    private function discover(array $candidates, array $nameFields, string $needle, array $idFields): ?string
     {
         foreach (array_unique($candidates) as $table) {
-            try { if (! Schema::hasTable($table)) continue; $columns = Schema::getColumnListing($table); if (in_array('id', $columns, true) && array_intersect($columns, $nameFields)) return $table; } catch (\Throwable) {}
+            try { if (! Schema::hasTable($table)) continue; $columns = Schema::getColumnListing($table); if (array_intersect($idFields, $columns) && array_intersect($columns, $nameFields)) return $table; } catch (\Throwable) {}
         }
-        try { foreach ((array) Schema::getTables() as $entry) { $table=is_string($entry)?$entry:(string)($entry['name']??$entry['table_name']??''); $needle=str_contains(strtolower((string)($nameFields[0]??'')),'hotel')?'hotel':'city'; if ($table===''||str_starts_with(strtolower($table),'booking'.'_')||!str_contains(strtolower($table),$needle)) continue; $columns=Schema::getColumnListing($table); if (array_intersect($columns,$nameFields) && (in_array('id',$columns,true)||in_array('city_id',$columns,true)||in_array('hotel_id',$columns,true))) return $table; } } catch (\Throwable) {}
+        try { foreach ((array) Schema::getTables() as $entry) { $table=is_string($entry)?$entry:(string)($entry['name']??$entry['table_name']??''); if ($table===''||str_starts_with(strtolower($table),'booking'.'_')||!str_contains(strtolower($table),$needle)) continue; $columns=Schema::getColumnListing($table); if (array_intersect($columns,$nameFields) && array_intersect($columns,$idFields)) return $table; } } catch (\Throwable) {}
         return null;
     }
 
