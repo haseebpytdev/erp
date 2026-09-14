@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.276-ERP11.3.276',
-    'release' => 'ERP-11.3.276',
-    'package' => 'ERP-11.3.276 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.276 improves Travel Masters Hotel Bulk Import completion UX with duplicate-submit protection, visible import progress/result feedback and automatic Hotel list refresh after successful writes, while preserving the validated ERP-11.3.275 company context and Hotel Master data contracts.',
+    'version' => 'v1.1.33.277-ERP11.3.277',
+    'release' => 'ERP-11.3.277',
+    'package' => 'ERP-11.3.277 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.277 finalizes Travel Masters navigation into parent/child groups, consolidates duplicate Airline navigation, adds a read-only Flight Routes view derived from existing booking itinerary history, and compacts the Hotel Master form actions while preserving all validated Hotel, Airline, Air booking, Transport and Visa data contracts.',
 ];

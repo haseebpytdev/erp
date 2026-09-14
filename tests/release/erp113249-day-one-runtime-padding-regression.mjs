@@ -22,7 +22,7 @@ const telemetryTables = telemetryDeclaration
   ? [...telemetryDeclaration[1].matchAll(/'([^']+)'/g)].map((match) => match[1])
   : [];
 
-assert('VERSION_IS_249_RELEASE', version === 'v1.1.33.276-ERP11.3.276');
+assert('VERSION_IS_249_RELEASE', version === 'v1.1.33.277-ERP11.3.277');
 assert('FIRST_NUMBER_IS_1000', service.includes('public const FIRST_NUMBER = 1000;'));
 assert('LAST_USED_BASELINE_IS_999', service.includes('public const LAST_USED_BASELINE = 999;'));
 assert('DISPLAY_PADDING_IS_4', service.includes('public const DISPLAY_PADDING = 4;'));
