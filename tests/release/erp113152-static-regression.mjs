@@ -31,10 +31,12 @@ contains(routes, 'PresentTravelMasterHierarchy::class', 'single Travel Masters h
 contains(hierarchy, 'Overview', 'Travel Masters overview top-level label');
 contains(hierarchy, 'Transport Companies', 'Transport parent label');
 contains(hierarchy, 'Visa Management', 'Visa parent label');
+contains(hierarchy, "visa.href='/master-data/travel-masters/visa-management?tab=rates'", 'Visa Management deterministic creation');
 contains(hierarchy, 'Products & Services', 'Products parent label');
 contains(hierarchy, "['Transport Companies','Vehicle Types','Transport Routes','Transport Vendor Rates']", 'Transport child order');
 contains(hierarchy, "['Saudi Visa Companies','Pakistan Visa / IATA','Visa Rates']", 'Visa child order');
 contains(hierarchy, "['Airlines','Flight Routes']", 'Airlines child order');
+contains(hierarchy, "if(key!==family)return", 'child navigation is context-specific');
 contains(hierarchy, 'Airline Codes', 'Airline Codes hidden from primary navigation');
 contains(flightRoutes, "booking_itinerary_segments", 'Flight Routes itinerary source');
 contains(flightRoutes, "['from_code', 'origin_code', 'from', 'origin']", 'adaptive FROM aliases');
