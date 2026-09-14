@@ -3,19 +3,22 @@
 namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
+use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 final class TravelMasterFlightRoutesController extends Controller
 {
+    public function __construct(private readonly NativeErpLayoutResolver $layout) {}
+
     public function index()
     {
         $table = 'booking_itinerary_segments';
-        if (! Schema::hasTable($table)) return view('operations.travel-masters.flight-routes', ['routes' => [], 'available' => false]);
+        if (! Schema::hasTable($table)) return view('operations.travel-masters.flight-routes', ['routes' => [], 'available' => false, 'layoutMeta' => $this->layout->resolve()]);
         $columns = Schema::getColumnListing($table);
         $from = $this->first($columns, ['from_code', 'origin_code', 'from', 'origin']);
         $to = $this->first($columns, ['to_code', 'destination_code', 'to', 'destination']);
-        if (! $from || ! $to) return view('operations.travel-masters.flight-routes', ['routes' => [], 'available' => false]);
+        if (! $from || ! $to) return view('operations.travel-masters.flight-routes', ['routes' => [], 'available' => false, 'layoutMeta' => $this->layout->resolve()]);
         $airline = $this->first($columns, ['airline_code', 'carrier_code', 'airline_name', 'airline', 'carrier_name']);
         $flight = $this->first($columns, ['flight_number', 'flight_no']);
         $routes = [];
@@ -28,7 +31,7 @@ final class TravelMasterFlightRoutesController extends Controller
         }
         $routes = array_values(array_map(function (array $r): array { $r['airlines']=implode(', ',array_keys($r['airlines'])); $r['flight_numbers']=implode(', ',array_keys($r['flight_numbers'])); return $r; }, $routes));
         usort($routes, fn (array $a,array $b): int => $b['used'] <=> $a['used'] ?: strcmp($a['route'],$b['route']));
-        return view('operations.travel-masters.flight-routes', ['routes'=>$routes, 'available'=>true]);
+        return view('operations.travel-masters.flight-routes', ['routes'=>$routes, 'available'=>true, 'layoutMeta' => $this->layout->resolve()]);
     }
     private function first(array $columns,array $candidates): ?string { foreach($candidates as $candidate) if(in_array($candidate,$columns,true)) return $candidate; return null; }
 }

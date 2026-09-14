@@ -542,12 +542,14 @@ ok(!middleware.includes("catch(e=>{window.location.reload()"), 'error path does 
 ok(middleware.includes('esc(r.rows_submitted)') && middleware.includes('esc(r.rows_invalid)'), 'success values escaped');
 
 /* Hotel compact presentation and hierarchy preservation. */
-ok(hierarchy.includes('et-tm-hotel-address-113277'), 'compact Address page-scoped authority');
-ok(hierarchy.includes('et-tm-hotel-address-113277'), 'Address hook remains page scoped');
+ok(hierarchy.includes('et-tm-hotel-address-113279'), 'compact Address page-scoped authority');
+ok(hierarchy.includes('et-tm-hotel-address-113279'), 'Address hook remains page scoped');
 ok(!hierarchy.includes('removeAttribute("name")'), 'Address field is not removed');
 ok(hierarchy.includes("includes('address')"), 'Address form field selector unchanged');
-ok(hierarchy.includes('et-tm-child-nav-113277'), 'child navigation presentation exists');
-ok(hierarchy.includes('et-tm-hotel-actions-113277'), 'Hotel action row presentation hook exists');
+ok(hierarchy.includes('et-tm-child-nav-113279'), 'child navigation presentation exists');
+ok(hierarchy.includes('et-tm-hotel-actions-113279'), 'Hotel action row presentation hook exists');
+ok(hierarchy.includes('et-tm-hotel-final-row-113279'), 'Hotel final action row exists');
+ok(hierarchy.includes('MutationObserver'), 'Hotel controls may be finalized after native injection');
 ok(middleware.includes('Bulk Import CSV'), 'Bulk Import same-row action remains');
 ok(middleware.includes('Download Template'), 'Download Template action remains');
 ok(middleware.includes("textContent='Bulk Import CSV'"), 'native Add Hotel anchor remains authoritative');

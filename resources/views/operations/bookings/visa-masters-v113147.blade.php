@@ -20,8 +20,8 @@
     </div>
 
     <nav class="vm147-tabs">
-        <a class="vm147-tab {{ $activeTab==='iata'?'active':'' }}" href="{{ route('travel-masters.visa-management',['tab'=>'iata']) }}">Pakistani IATA <span class="vm147-count">{{ count($iatas) }}</span></a>
-        <a class="vm147-tab {{ $activeTab==='saudi'?'active':'' }}" href="{{ route('travel-masters.visa-management',['tab'=>'saudi']) }}">Saudi Companies <span class="vm147-count">{{ count($saudis) }}</span></a>
+        <a class="vm147-tab {{ $activeTab==='saudi'?'active':'' }}" href="{{ route('travel-masters.visa-management',['tab'=>'saudi']) }}">Saudi Visa Companies <span class="vm147-count">{{ count($saudis) }}</span></a>
+        <a class="vm147-tab {{ $activeTab==='iata'?'active':'' }}" href="{{ route('travel-masters.visa-management',['tab'=>'iata']) }}">Pakistan Visa / IATA <span class="vm147-count">{{ count($iatas) }}</span></a>
         <a class="vm147-tab {{ $activeTab==='rates'?'active':'' }}" href="{{ route('travel-masters.visa-management',['tab'=>'rates']) }}">Visa Rates <span class="vm147-count">{{ count($rates) }}</span></a>
     </nav>
 
