@@ -12,6 +12,7 @@ use App\Http\Controllers\Operations\GeneralBookingInvoiceSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingReviewController;
 use App\Http\Controllers\Operations\VisaMasterController;
 use App\Http\Controllers\Operations\GeneralBookingVoucherPreviewController;
+use App\Http\Controllers\Operations\HotelMasterBulkImportController;
 use App\Http\Controllers\Operations\GroupUmrahWorkflowController;
 use App\Http\Controllers\Operations\GroupUmrahVoucherController;
 use App\Http\Controllers\Operations\GroupUmrahCommercialAmendmentController;
@@ -57,6 +58,7 @@ use App\Http\Middleware\PresentPassengerOperationsLink;
 use App\Http\Middleware\PresentChartOfAccountsWorkspace;
 use App\Http\Middleware\PresentAccountingReportsWorkspace;
 use App\Http\Middleware\PresentVisaManagementTravelMasterLink;
+use App\Http\Middleware\PresentTravelMasterHotelBulkImport;
 use App\Http\Middleware\PresentCompanyVoucherFooterAuthority;
 use App\Http\Middleware\GuardApprovedGeneralBookingCommercials;
 use App\Http\Middleware\EnforceGeneralBookingEditLock;
@@ -138,6 +140,12 @@ try {
 }
 
 Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
+    Route::get('/system/travel-masters/hotels/bulk-template', [HotelMasterBulkImportController::class, 'template'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.hotels.bulk-template');
+    Route::post('/system/travel-masters/hotels/bulk-preview', [HotelMasterBulkImportController::class, 'preview'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.hotels.bulk-preview');
+    Route::post('/system/travel-masters/hotels/bulk-import', [HotelMasterBulkImportController::class, 'import'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.hotels.bulk-import');
     Route::get('/passengers', [PassengerWorkspaceController::class, 'index'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.index');
     Route::post('/passengers', [PassengerWorkspaceController::class, 'store'])
@@ -656,6 +664,7 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     $route = $event->route;
     if (in_array('GET', $route->methods(), true)) {
         $route->middleware(PresentVisaManagementTravelMasterLink::class);
+        $route->middleware(PresentTravelMasterHotelBulkImport::class);
     }
 });
 
