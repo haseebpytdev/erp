@@ -205,11 +205,16 @@ class ApplyErpReleaseMetadata
 
         $path = strtolower(trim($request->path(), '/'));
         $routeName = strtolower((string) optional($request->route())->getName());
-        if (
-            str_starts_with($path, 'voucher/')
-            || str_contains($path, '/print')
+        $isVoucherDocument = str_starts_with($path, 'voucher/')
+            || preg_match('#^operations/bookings/[^/]+/(?:client-voucher-preview|travel-voucher|voucher)$#', $path) === 1
+            || str_contains($routeName, 'client-voucher')
+            || str_contains($routeName, 'travel-voucher')
+            || str_contains($routeName, 'umrah-voucher')
             || str_contains($routeName, '.print')
-            || str_contains($routeName, '.pdf')
+            || str_contains($routeName, '.pdf');
+        if (
+            $isVoucherDocument
+            || str_contains($path, '/print')
         ) {
             return $html;
         }

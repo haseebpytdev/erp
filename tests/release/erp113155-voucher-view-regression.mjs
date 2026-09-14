@@ -9,6 +9,7 @@ const controller = read('app/Http/Controllers/Operations/GeneralBookingVoucherPr
 const visa = read('app/Http/Controllers/Operations/GeneralBookingVisaProductController.php');
 const repository = read('app/Services/Operations/LegacyVisaTravelMasterRepository.php');
 const profile = read('app/Services/Organization/CompanyProfileSnapshotService.php');
+const middleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
 let checks = 0;
 const has = (text, value, message) => { assert.ok(text.includes(value), message); checks++; };
 const lacks = (text, value, message) => { assert.ok(!text.includes(value), message); checks++; };
@@ -50,5 +51,16 @@ has(view, '<strong>Saudi Company:</strong>', 'saved Saudi name remains top-right
 has(view, '<strong>Pakistani IATA:</strong>', 'saved Pakistani IATA remains top-right');
 has(view, '@page{size:A4 portrait', 'A4 portrait is preserved');
 has(view, 'object-fit:contain', 'logo/QR preserve aspect ratio');
+has(view, 'font-family:Arial,Helvetica,sans-serif', 'voucher document uses Arial typography');
+has(view, '.header{display:grid', 'current voucher structure remains in place');
+has(middleware, 'isVoucherDocument', 'voucher document isolation is explicit');
+has(middleware, 'client-voucher-preview', 'authenticated client voucher route is excluded');
+has(middleware, "str_starts_with($path, 'voucher/')", 'public voucher route is excluded');
+has(middleware, "str_contains($routeName, '.print')", 'print voucher route is excluded');
+has(middleware, "str_contains($routeName, '.pdf')", 'PDF voucher route is excluded');
+lacks(middleware, "asset('erp-ui/erp-professional.css')", 'voucher does not use legacy asset authority');
+lacks(view, 'Inter', 'voucher CSS does not use Inter');
+lacks(view, 'Poppins', 'voucher CSS does not use Poppins');
+has(middleware, 'et-ui-professional', 'normal ERP pages retain professional UI marker');
 
 console.log(`ERP-11.3.155 voucher view regression checks passed: ${checks}`);
