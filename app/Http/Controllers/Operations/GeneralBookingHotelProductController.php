@@ -30,7 +30,6 @@ use Throwable;
 final class GeneralBookingHotelProductController extends Controller
 {
     /** Native Product/Service Master authority for GENERAL Hotel. */
-    private const HOTEL_PRODUCT_SERVICE_ID = 3;
 
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
@@ -639,7 +638,7 @@ final class GeneralBookingHotelProductController extends Controller
                 if (array_key_exists('active', $row) && ! (bool) $row['active']) continue;
                 $status = strtolower(trim((string) ($row['status'] ?? '')));
                 if (in_array($status, ['inactive', 'deleted', 'removed', 'cancelled', 'canceled'], true)) continue;
-                if ((int) ($row['product_service_id'] ?? 0) === self::HOTEL_PRODUCT_SERVICE_ID) {
+                if ((int) ($row['product_service_id'] ?? 0) === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id']) {
                     return ['id' => (int) ($row['id'] ?? 0), 'row' => $row];
                 }
             }
@@ -735,7 +734,7 @@ final class GeneralBookingHotelProductController extends Controller
                 foreach (DB::table($table)->limit(4000)->get() as $rowObject) {
                     $row = (array) $rowObject;
                     $id = (int) ($row[$idColumn] ?? 0);
-                    if ($id !== self::HOTEL_PRODUCT_SERVICE_ID) continue;
+                    if ($id !== (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id']) continue;
                     $text = strtolower(implode(' ', array_map('strval', $row)));
                     $score = 0;
                     if (str_contains($text, 'hotel')) $score += 10000;

@@ -51,14 +51,14 @@ const transport = read('app/Http/Controllers/Operations/GeneralBookingTransportP
 const air = read('app/Http/Controllers/Operations/GeneralBookingAirProductController.php');
 const bridge = read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php');
 
-ok(synchronizer.includes('private const HOTEL_PRODUCT_SERVICE_ID = 3'), 'Hotel booking-wide policy is bound to native product 3');
-ok(synchronizer.includes('private const TRANSPORT_PRODUCT_SERVICE_ID = 4'), 'Transport booking-wide policy is bound to native product 4');
+ok(synchronizer.includes('NativeProductServiceResolver') && synchronizer.includes("->hotel()['id']"), 'Hotel booking-wide policy resolves native product dynamically');
+ok(synchronizer.includes('NativeProductServiceResolver') && synchronizer.includes("->transport()['id']"), 'Transport booking-wide policy resolves native product dynamically');
 ok(synchronizer.includes("['REQUIRED', 'MULTIPLE']"), 'booking-wide policy requires the host passenger-link contract');
 ok(synchronizer.includes("$pricingBasis !== 'PER_SERVICE'"), 'booking-wide policy requires native PER_SERVICE pricing semantics');
 ok(synchronizer.includes('activeBookingPassengerIds($bookingId)'), 'booking-wide policy derives its exact set from active booking passengers');
 ok(synchronizer.includes('synchronizeAir($bookingId, $serviceId, true)'), 'normal Air synchronization retains explicit native authority');
 ok(air.includes('syncAirFromNative('), 'normal Air save synchronization remains wired');
-ok(hotel.includes('private const HOTEL_PRODUCT_SERVICE_ID = 3'), 'Hotel service lookup uses native product authority');
+ok(hotel.includes('NativeProductServiceResolver'), 'Hotel service lookup uses native product authority');
 ok(!hotel.includes("str_contains($text, 'hotel') || str_contains($text, 'accommodation')"), 'Hotel service lookup cannot use stale descriptions');
 ok(hotel.includes("['passenger_link_mode_snapshot', 'passenger_link_mode'], 'MULTIPLE'"), 'new Hotel services persist the confirmed MULTIPLE contract');
 ok(hotel.includes("['pricing_basis_snapshot', 'pricing_basis'], 'PER_SERVICE'"), 'new Hotel services persist the confirmed PER_SERVICE contract');

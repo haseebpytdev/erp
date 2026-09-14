@@ -59,7 +59,7 @@ const diagnostic = read('app/Http/Controllers/System/AirLinkDbDiagnosticControll
 
 ok(hotelController.includes('$this->serviceCommercials->syncHotelSummary($serviceId, (float) $summary[\'customer_total\'])'), 'normal Hotel save writes the native commercial from its existing summary');
 ok(transportController.includes('$this->serviceCommercials->syncTransportSummary($serviceId, (float) $summary[\'customer_total\'])'), 'normal Transport save writes the native commercial from SUM(sale_amount) summary');
-ok(synchronizer.includes("private const HOTEL_PRODUCT_SERVICE_ID = 3") && synchronizer.includes("private const TRANSPORT_PRODUCT_SERVICE_ID = 4"), 'historical identity uses exact native product IDs');
+ok(synchronizer.includes('NativeProductServiceResolver') && synchronizer.includes("->hotel()['id']") && synchronizer.includes("->transport()['id']"), 'historical identity uses dynamic native product IDs');
 ok(synchronizer.includes("'quantity' => 1") && synchronizer.includes("'unit_price' => $total") && synchronizer.includes("'line_total' => $total") && synchronizer.includes("'currency_code' => 'PKR'"), 'shared writer persists the complete native PER_SERVICE contract');
 ok(synchronizer.includes("$row['customer_total'] ?? null") && synchronizer.includes("$row['sale_rate'] ?? null") && synchronizer.includes("$row['nights'] ?? null"), 'Hotel reconciliation uses only persisted Hotel commercial authority');
 ok(synchronizer.includes("array_key_exists('sale_amount', $row)") && synchronizer.includes("$total += $amount"), 'Transport reconciliation sums persisted sale_amount rows');

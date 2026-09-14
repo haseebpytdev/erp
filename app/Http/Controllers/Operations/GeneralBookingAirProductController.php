@@ -525,8 +525,17 @@ final class GeneralBookingAirProductController extends Controller
 
         $masterRow = (array) ($master['row'] ?? []);
         $name = $this->firstNonEmpty($masterRow, ['name', 'service_name', 'title', 'label', 'description']) ?: 'Air Ticket';
+        $description = $this->firstNonEmpty($masterRow, ['description', 'name', 'service_name', 'title']) ?: 'Air Ticket';
+        $currency = $this->bookingCurrency($bookingRow) ?: $this->firstNonEmpty($masterRow, ['customer_sale_currency', 'sale_currency', 'currency_code']) ?: 'PKR';
+        $pricingBasis = strtoupper((string) ($master['pricing_basis'] ?? $masterRow['pricing_basis'] ?? ''));
+        if (! in_array($pricingBasis, ['PER_SERVICE', 'FLAT', 'FIXED'], true)) {
+            throw ValidationException::withMessages(['air' => 'Air Ticket Product Master has no supported pricing basis.']);
+        }
         $code = $this->firstNonEmpty($masterRow, ['code', 'service_code', 'product_code', 'slug']);
         $this->put($row, $columns, ['service_name', 'name', 'title'], $name);
+        $this->put($row, $columns, ['description', 'details'], $description);
+        $this->put($row, $columns, ['currency_code', 'currency'], $currency);
+        $this->putNativeEnum($row, $table, $columns, ['pricing_basis_snapshot', 'pricing_basis'], $pricingBasis, ['PER_SERVICE', 'FLAT', 'FIXED']);
         $this->put($row, $columns, ['service_code', 'product_code', 'code'], $code ?: null);
         $this->putNativeEnum($row, $table, $columns, ['passenger_link_mode_snapshot', 'passenger_link_mode'], 'MULTIPLE', ['multiple']);
         $this->put($row, $columns, ['quantity', 'qty'], 1);

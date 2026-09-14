@@ -34,7 +34,6 @@ use Throwable;
 final class GeneralBookingTransportProductController extends Controller
 {
     /** Native Product/Service Master authority for GENERAL Transport. */
-    private const TRANSPORT_PRODUCT_SERVICE_ID = 4;
 
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
@@ -840,7 +839,7 @@ final class GeneralBookingTransportProductController extends Controller
         // particular, never inspect notes, descriptions or arbitrary scalar
         // fields here: a legacy ETERP_TRANSPORT_ROWS marker on another product
         // would otherwise make that product permanently masquerade as Transport.
-        $masterId = self::TRANSPORT_PRODUCT_SERVICE_ID;
+        $masterId = (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'];
         try {
             foreach (DB::table('booking_services')->where('booking_id', $booking)->orderByDesc('id')->get() as $object) {
                 $row = (array) $object;
@@ -866,7 +865,7 @@ final class GeneralBookingTransportProductController extends Controller
         if ($existing) return $this->repairLegacyTransportOwnership($booking, $existing);
 
         $master = $this->resolveTransportProductService();
-        if (! $master || (int) ($master['id'] ?? 0) !== self::TRANSPORT_PRODUCT_SERVICE_ID) {
+        if (! $master || (int) ($master['id'] ?? 0) !== (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']) {
             throw ValidationException::withMessages([
                 'transport' => 'The Transport Product Service master could not be resolved. Confirm that Transport exists in Product/Service Master.',
             ]);
@@ -940,7 +939,7 @@ final class GeneralBookingTransportProductController extends Controller
                 $idColumn = $this->firstColumn($columns, ['id','product_service_id']);
                 if (! $idColumn) continue;
                 foreach (DB::table($table)->limit(4000)->get() as $object) {
-                    $row = (array) $object; $id = (int) ($row[$idColumn] ?? 0); if ($id !== self::TRANSPORT_PRODUCT_SERVICE_ID) continue;
+                    $row = (array) $object; $id = (int) ($row[$idColumn] ?? 0); if ($id !== (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']) continue;
                     $text = strtolower(implode(' ', array_map(static fn ($v): string => is_scalar($v) ? (string) $v : '', $row)));
                     $score = 0;
                     if (str_contains($text, 'transport')) $score += 10000;
@@ -985,7 +984,7 @@ final class GeneralBookingTransportProductController extends Controller
             $wrongServiceId = (int) ($segment[$serviceColumn] ?? 0);
             if ($wrongServiceId <= 0) continue;
             $wrongService = (array) (DB::table('booking_services')->where('id', $wrongServiceId)->first() ?? (object) []);
-            if (! $wrongService || (int) ($wrongService['product_service_id'] ?? 0) === self::TRANSPORT_PRODUCT_SERVICE_ID) continue;
+            if (! $wrongService || (int) ($wrongService['product_service_id'] ?? 0) === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']) continue;
 
             // This table is the installed native Transport row store. A row in
             // it linked to a non-Transport service is the required unambiguous

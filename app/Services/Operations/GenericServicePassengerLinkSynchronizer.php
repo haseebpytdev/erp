@@ -17,9 +17,6 @@ use Throwable;
 final class GenericServicePassengerLinkSynchronizer
 {
     private const TABLE = 'booking_service_passengers';
-    private const AIR_PRODUCT_SERVICE_ID = 1;
-    private const HOTEL_PRODUCT_SERVICE_ID = 3;
-    private const TRANSPORT_PRODUCT_SERVICE_ID = 4;
 
     /**
      * Normal Air-save authority. This is called inside the caller's existing
@@ -39,7 +36,7 @@ final class GenericServicePassengerLinkSynchronizer
             return $this->synchronizeBookingWide(
                 $bookingId,
                 $serviceId,
-                self::HOTEL_PRODUCT_SERVICE_ID,
+                (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'],
                 'Hotel',
             );
         } catch (ValidationException $exception) {
@@ -54,7 +51,7 @@ final class GenericServicePassengerLinkSynchronizer
             return $this->synchronizeBookingWide(
                 $bookingId,
                 $serviceId,
-                self::TRANSPORT_PRODUCT_SERVICE_ID,
+                (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'],
                 'Transport',
             );
         } catch (ValidationException $exception) {
@@ -133,27 +130,27 @@ final class GenericServicePassengerLinkSynchronizer
             $productServiceId = (int) ($row['product_service_id'] ?? 0);
             if ($serviceId <= 0) continue;
 
-            if ($productServiceId === self::AIR_PRODUCT_SERVICE_ID) {
+            if ($productServiceId === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->air()['id']) {
                 if (! $this->hasNativeAirRows($serviceId)) continue;
                 $reconciled[$serviceId] = $this->synchronizeAir($bookingId, $serviceId, false);
                 continue;
             }
 
-            if ($productServiceId === self::HOTEL_PRODUCT_SERVICE_ID) {
+            if ($productServiceId === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id']) {
                 $reconciled[$serviceId] = $this->synchronizeBookingWide(
                     $bookingId,
                     $serviceId,
-                    self::HOTEL_PRODUCT_SERVICE_ID,
+                    (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'],
                     'Hotel',
                 );
                 continue;
             }
 
-            if ($productServiceId === self::TRANSPORT_PRODUCT_SERVICE_ID) {
+            if ($productServiceId === (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']) {
                 $reconciled[$serviceId] = $this->synchronizeBookingWide(
                     $bookingId,
                     $serviceId,
-                    self::TRANSPORT_PRODUCT_SERVICE_ID,
+                    (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'],
                     'Transport',
                 );
             }
@@ -201,7 +198,7 @@ final class GenericServicePassengerLinkSynchronizer
     private function synchronizeAir(int $bookingId, int $serviceId, bool $requireNativeRows): array
     {
         $service = $this->serviceForBooking($bookingId, $serviceId);
-        if ((int) ($service['product_service_id'] ?? 0) !== self::AIR_PRODUCT_SERVICE_ID) {
+        if ((int) ($service['product_service_id'] ?? 0) !== (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->air()['id']) {
             $this->fail('Native Air passenger links cannot be applied to a non-Air booking service.');
         }
 

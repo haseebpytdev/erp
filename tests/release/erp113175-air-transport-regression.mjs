@@ -132,7 +132,7 @@ has(transportDiagnostic,"'WRONG_TRANSPORT_SERVICE_LINK_AUDIT'",'Transport diagno
 has(transportDiagnostic,'private function bookingServiceMap','Transport diagnostic joins booking services to native product-service identities');
 has(transportDiagnostic,"'ETERP_TRANSPORT_ROWS'",'Transport diagnostic identifies tagged Transport snapshot ownership');
 has(transportDiagnostic,'GeneralBookingTransportProductController::syncServiceSnapshot','Transport diagnostic identifies the snapshot writer for wrong-owner analysis');
-has(transport,'private const TRANSPORT_PRODUCT_SERVICE_ID = 4;','Transport uses the production-canonical Product/Service Master ID as its sole service authority');
+has(transport,'NativeProductServiceResolver','Transport uses the production-canonical Product/Service Master ID as its sole service authority');
 has(transport,'private function repairLegacyTransportOwnership','Transport has a controlled legacy ownership repair path');
 has(transport,'DB::table($table)->where(\'id\', (int) ($segment[\'id\'] ?? 0))->update([$serviceColumn => $transportServiceId]);','Legacy Transport segments are relinked to the canonical Transport booking service');
 has(transport,'private function removeTransportSnapshot','Legacy repair removes only the Transport snapshot payload from a wrong service');

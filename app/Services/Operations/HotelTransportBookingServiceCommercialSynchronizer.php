@@ -12,14 +12,12 @@ use Illuminate\Validation\ValidationException;
  */
 final class HotelTransportBookingServiceCommercialSynchronizer
 {
-    private const HOTEL_PRODUCT_SERVICE_ID = 3;
-    private const TRANSPORT_PRODUCT_SERVICE_ID = 4;
 
     /** @return array<string,mixed> */
     public function syncHotelSummary(int $serviceId, float $customerTotal): array
     {
         return $this->writeNativeCommercial(
-            $this->lockedServiceById($serviceId, self::HOTEL_PRODUCT_SERVICE_ID, 'Hotel'),
+            $this->lockedServiceById($serviceId, (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'], 'Hotel'),
             $customerTotal,
             'Hotel'
         );
@@ -29,7 +27,7 @@ final class HotelTransportBookingServiceCommercialSynchronizer
     public function syncTransportSummary(int $serviceId, float $customerTotal): array
     {
         return $this->writeNativeCommercial(
-            $this->lockedServiceById($serviceId, self::TRANSPORT_PRODUCT_SERVICE_ID, 'Transport'),
+            $this->lockedServiceById($serviceId, (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'], 'Transport'),
             $customerTotal,
             'Transport'
         );
@@ -51,7 +49,7 @@ final class HotelTransportBookingServiceCommercialSynchronizer
 
         $services = DB::table('booking_services')
             ->where('booking_id', $bookingId)
-            ->whereIn('product_service_id', [self::HOTEL_PRODUCT_SERVICE_ID, self::TRANSPORT_PRODUCT_SERVICE_ID])
+            ->whereIn('product_service_id', [(int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'], (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id']])
             ->lockForUpdate()
             ->get()
             ->map(static fn (object $row): array => (array) $row)
@@ -61,8 +59,8 @@ final class HotelTransportBookingServiceCommercialSynchronizer
 
         $result = ['hotel' => null, 'transport' => null];
         foreach ([
-            self::HOTEL_PRODUCT_SERVICE_ID => ['key' => 'hotel', 'label' => 'Hotel'],
-            self::TRANSPORT_PRODUCT_SERVICE_ID => ['key' => 'transport', 'label' => 'Transport'],
+            (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'] => ['key' => 'hotel', 'label' => 'Hotel'],
+            (int) app(\App\Services\Operations\NativeProductServiceResolver::class)->transport()['id'] => ['key' => 'transport', 'label' => 'Transport'],
         ] as $productId => $definition) {
             $matches = array_values(array_filter(
                 $services,
