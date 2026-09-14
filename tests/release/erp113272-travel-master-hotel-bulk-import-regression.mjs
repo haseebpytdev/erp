@@ -546,9 +546,9 @@ ok(hierarchy.includes('field=t=>') && hierarchy.includes("field('Address')"), 'c
 ok(hierarchy.includes("field('Address')"), 'Address wrapper remains page scoped');
 ok(!hierarchy.includes('removeAttribute("name")'), 'Address field is not removed');
 ok(hierarchy.includes("field('Address')"), 'Address form field selector unchanged');
-ok(hierarchy.includes('et-tm-child-nav-113283'), 'child navigation presentation exists');
-ok(hierarchy.includes('et-tm-hotel-actions-113283'), 'Hotel action row presentation hook exists');
-ok(hierarchy.includes('et-tm-hotel-final-row-113283'), 'Hotel final action row exists');
+ok(hierarchy.includes('et-tm-child-nav-113285'), 'child navigation presentation exists');
+ok(hierarchy.includes('et-tm-hotel-actions-113285'), 'Hotel action row presentation hook exists');
+ok(hierarchy.includes('et-tm-hotel-final-row-113285'), 'Hotel final action row exists');
 ok(hierarchy.includes("field('Notes')") && hierarchy.includes("field('Active')"), 'Notes and Active wrappers are resolved');
 ok(hierarchy.includes('[address,notes,active]') && hierarchy.includes('row.appendChild(actions)'), 'Hotel final row order is explicit');
 ok(hierarchy.includes('MutationObserver'), 'Hotel controls may be finalized after native injection');
