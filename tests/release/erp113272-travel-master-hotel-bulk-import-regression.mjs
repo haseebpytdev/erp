@@ -494,8 +494,8 @@ ok(
 /* Native company-context contract: dynamic, authenticated, fail-closed. */
 ok(controller.includes('private function companyId(Request $request)'), 'controller company resolver');
 ok(controller.includes("['company_id', 'current_company_id', 'active_company_id']"), 'explicit company authority');
-ok(controller.includes("['primary_branch_id', 'branch_id', 'home_branch_id']"), 'branch company fallback authority');
-ok(controller.includes("Schema::hasColumn('branches', 'company_id')"), 'branch company relationship');
+ok(!controller.includes("['primary_branch_id', 'branch_id', 'home_branch_id']"), 'branch authority is adaptive service-owned');
+ok(controller.includes("Schema::getColumnListing($schema['branches_table'])") && controller.includes("in_array('company_id', $branchColumns, true)"), 'adaptive branch company relationship');
 ok(previewMethod.includes('preview($rows, $this->companyId($request))') === false, 'preview authority remains service-bound');
 ok(controller.includes('$this->authority->preview($rows, $this->companyId($request))'), 'preview receives company context');
 ok(controller.includes('$this->authority->import($rows, $this->companyId($request))'), 'import receives company context');
@@ -508,6 +508,24 @@ ok(authority.includes('Required company context could not be resolved safely.'),
 ok(!requiredCompact.includes("'company_id'") && !requiredCompact.includes('"company_id"'), 'company_id not unconditional safe field');
 ok(!authority.includes("company_id' => 1") && !authority.includes('company_id = 1'), 'company id not hardcoded');
 ok(authority.indexOf("$row['company_id'] = (int) $companyId;") < authority.indexOf(')->insert($row)'), 'company_id before insert');
+
+/* Adaptive ERP User Management branch authority. */
+ok(controller.includes('ErpUserManagementService'), 'adaptive user service used');
+ok(controller.includes('$this->users->user($userId)'), 'controller calls adaptive user snapshot');
+ok(controller.includes('$this->users->schema()'), 'controller calls adaptive schema');
+ok(controller.includes("$snapshot['primary_branch_id']"), 'primary branch from snapshot');
+ok(controller.includes("$snapshot['branch_ids']"), 'assigned branches from snapshot');
+ok(controller.includes("$schema['branches_table']") && controller.includes("$schema['branch_id_column']"), 'adaptive branch schema columns');
+ok(controller.includes("value('company_id')"), 'company id from native branch row');
+ok(controller.includes('array_values(array_unique(array_filter(array_map'), 'assigned branch normalization');
+ok(controller.includes('count($companyIds) === 1'), 'single-company multi-branch safe');
+ok(controller.includes('return count($companyIds) === 1 ?'), 'multi-company ambiguity fails closed');
+ok(!controller.includes('->first()->company_id') && !controller.includes('branchIds[0]'), 'no first-branch arbitrary fallback');
+ok(controller.includes('companyIdFromBranch'), 'primary branch helper');
+ok(controller.includes('$this->authority->preview($rows, $this->companyId($request))'), 'preview same adaptive context');
+ok(controller.includes('$this->authority->import($rows, $this->companyId($request))'), 'import same adaptive context');
+ok(authority.includes('deterministicFields') && authority.includes("$row['company_id'] = (int) $companyId;"), 'dynamic company contract retained');
+ok(middleware.includes("n(x.textContent)==='add hotel'"), 'native anchor regression retained');
 
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
