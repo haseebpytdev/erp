@@ -34,7 +34,7 @@ final class NativeHotelMasterAuthority
         return $rows;
     }
 
-public function preview(array $rows): array
+public function preview(array $rows, ?int $companyId = null): array
 {
     $tables = $this->tables();
 
@@ -44,12 +44,13 @@ public function preview(array $rows): array
         ]);
     }
 
-    $unresolved = $this->requiredUnresolvedColumns(
+    $hotelColumns = Schema::getColumnListing(
         $tables['hotel']
     );
 
-    $hotelColumns = Schema::getColumnListing(
-        $tables['hotel']
+    $unresolved = $this->requiredUnresolvedColumns(
+        $tables['hotel'],
+        $this->deterministicFields($hotelColumns, $companyId)
     );
 
     $hotelUsesCityFk = $this->hotelUsesCityFk(
@@ -243,9 +244,9 @@ public function preview(array $rows): array
     ];
 }
 
-public function import(array $rows): array
+public function import(array $rows, ?int $companyId = null): array
 {
-    $preview = $this->preview($rows);
+    $preview = $this->preview($rows, $companyId);
 
     $tables = $this->tables();
 
@@ -255,8 +256,19 @@ public function import(array $rows): array
         ]);
     }
 
-    $unresolved = $this->requiredUnresolvedColumns(
+    $columns = Schema::getColumnListing(
         $tables['hotel']
+    );
+
+    if (in_array('company_id', $columns, true) && (int) $companyId <= 0) {
+        throw ValidationException::withMessages([
+            'hotel' => 'Required company context could not be resolved safely.',
+        ]);
+    }
+
+    $unresolved = $this->requiredUnresolvedColumns(
+        $tables['hotel'],
+        $this->deterministicFields($columns, $companyId)
     );
 
     if ($unresolved) {
@@ -265,10 +277,6 @@ public function import(array $rows): array
                 .implode(', ', $unresolved),
         ]);
     }
-
-    $columns = Schema::getColumnListing(
-        $tables['hotel']
-    );
 
     $hotelUsesCityFk = $this->hotelUsesCityFk(
         $columns
@@ -281,7 +289,8 @@ public function import(array $rows): array
         $preview,
         $tables,
         $columns,
-        $hotelUsesCityFk
+        $hotelUsesCityFk,
+        $companyId
     ) {
         $hotels = $this->hotelRows(
             $tables['hotel']
@@ -340,6 +349,10 @@ public function import(array $rows): array
             );
 
             $row = [];
+
+            if (in_array('company_id', $columns, true)) {
+                $row['company_id'] = (int) $companyId;
+            }
 
             $this->put(
                 $row,
@@ -502,7 +515,8 @@ public function import(array $rows): array
     }
     private function textKey(string $city,string $name):string{return $this->identityFromValues(0,$city,$name);}
     private function hasRequiredStorage(array $columns):bool{return (bool)array_intersect($columns,['name','hotel_name','title','property_name']) && (bool)array_intersect($columns,['city_id','travel_city_id','city','city_name','location']);}
-    public function requiredUnresolvedColumns(string $table):array{try{$columns=Schema::getColumns($table);$un=[];foreach($columns as $c){$name=(string)($c['name']??'');if(($c['nullable']??true)===false&&($c['default']??null)===null&&!($c['auto_increment']??false)&&!($c['generated']??false)&&!in_array($name,['created_at','updated_at','name','hotel_name','title','property_name','city_id','travel_city_id','city','city_name','location','code','hotel_code','property_code','city_iata','iata','iata_code','city_code','country','country_code','country_iso','is_active','active'],true))$un[]=$name;}return $un;}catch(\Throwable){return ['__METADATA_UNAVAILABLE__'];}}
+    private function deterministicFields(array $columns, ?int $companyId): array { return in_array('company_id', $columns, true) && (int) $companyId > 0 ? ['company_id'] : []; }
+    public function requiredUnresolvedColumns(string $table, array $deterministicFields = []):array{try{$columns=Schema::getColumns($table);$un=[];foreach($columns as $c){$name=(string)($c['name']??'');if(($c['nullable']??true)===false&&($c['default']??null)===null&&!($c['auto_increment']??false)&&!($c['generated']??false)&&!in_array($name,['created_at','updated_at','name','hotel_name','title','property_name','city_id','travel_city_id','city','city_name','location','code','hotel_code','property_code','city_iata','iata','iata_code','city_code','country','country_code','country_iso','is_active','active'],true)&&!in_array($name,$deterministicFields,true))$un[]=$name;}return $un;}catch(\Throwable){return ['__METADATA_UNAVAILABLE__'];}}
     private function cityMatch(string $input,array $cities):?array{$n=$this->norm($input);$aliases=['makkah'=>['makkah','mecca','makkah al mukarramah'],'madinah'=>['madinah','madina','medina','al madinah']];foreach($cities as $c)if($this->norm($c['name'])===$n)return $c;foreach($aliases as $canonical=>$vals)if(in_array($n,$vals,true)){foreach($cities as $c)if(in_array($this->norm($c['name']),$vals,true))return $c;return ['id'=>0,'name'=>ucfirst($canonical)];}return null;}
     private function norm(string $v):string{return strtolower(trim(preg_replace('/[^a-z0-9]+/i',' ',preg_replace('/\s+/',' ', $v))??''));}
     public function canonicalHotelName(string $name):string{$n=$this->norm($name);$m=['badar al masa'=>'al massa bader hotel','badar al massa'=>'al massa bader hotel','bader al massa'=>'al massa bader hotel','al massa bader'=>'al massa bader hotel','al massa bader hotel'=>'al massa bader hotel','mather al jewar'=>'mather al jiwar','mather al jawar'=>'mather al jiwar','mather al jiwar'=>'mather al jiwar','al kiswah tower'=>'al kiswah towers hotel','al kiswah towers'=>'al kiswah towers hotel','al kiswah towers hotel'=>'al kiswah towers hotel','voco'=>'voco makkah','voco makkah'=>'voco makkah','diyar safa'=>'diyar al safa','safa tower'=>'diyar al safa','diyar al safa'=>'diyar al safa','saja al madinah'=>'saja by warwick madinah hotel','saja by warwick madinah hotel'=>'saja by warwick madinah hotel','golden luxury'=>'rua luxury','rua luxury'=>'rua luxury'];return $m[$n]??$n;}

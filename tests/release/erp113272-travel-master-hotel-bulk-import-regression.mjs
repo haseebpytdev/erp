@@ -491,6 +491,24 @@ ok(
     'native + Add Hotel anchor normalization'
 );
 
+/* Native company-context contract: dynamic, authenticated, fail-closed. */
+ok(controller.includes('private function companyId(Request $request)'), 'controller company resolver');
+ok(controller.includes("['company_id', 'current_company_id', 'active_company_id']"), 'explicit company authority');
+ok(controller.includes("['primary_branch_id', 'branch_id', 'home_branch_id']"), 'branch company fallback authority');
+ok(controller.includes("Schema::hasColumn('branches', 'company_id')"), 'branch company relationship');
+ok(previewMethod.includes('preview($rows, $this->companyId($request))') === false, 'preview authority remains service-bound');
+ok(controller.includes('$this->authority->preview($rows, $this->companyId($request))'), 'preview receives company context');
+ok(controller.includes('$this->authority->import($rows, $this->companyId($request))'), 'import receives company context');
+ok(authority.includes('public function preview(array $rows, ?int $companyId = null)'), 'preview company contract');
+ok(authority.includes('public function import(array $rows, ?int $companyId = null)'), 'import company contract');
+ok(authority.includes('deterministicFields($hotelColumns, $companyId)'), 'preview deterministic company safety');
+ok(authority.includes('deterministicFields($columns, $companyId)'), 'import recomputes company safety');
+ok(authority.includes("$row['company_id'] = (int) $companyId;") && authority.includes("in_array('company_id', $columns, true)"), 'company_id actual insert mapping');
+ok(authority.includes('Required company context could not be resolved safely.'), 'missing company context fails closed');
+ok(!requiredCompact.includes("'company_id'") && !requiredCompact.includes('"company_id"'), 'company_id not unconditional safe field');
+ok(!authority.includes("company_id' => 1") && !authority.includes('company_id = 1'), 'company id not hardcoded');
+ok(authority.indexOf("$row['company_id'] = (int) $companyId;") < authority.indexOf(')->insert($row)'), 'company_id before insert');
+
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
 );
