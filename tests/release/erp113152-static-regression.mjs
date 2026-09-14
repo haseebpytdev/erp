@@ -38,6 +38,8 @@ contains(hierarchy, 'Saudi Visa Companies','Visa child order');
 contains(hierarchy, "['Airlines','Flight Routes']", 'Airlines child order');
 contains(hierarchy, "if(k!==family||", 'child navigation is context-specific');
 contains(hierarchy, 'nativeStrip', 'Travel Masters navigation is scoped');
+contains(hierarchy, 'normalizedLabels=new Set(labels.map(n))', 'normalized label set');
+contains(hierarchy, 'normalizedLabels.has(n(a.textContent))', 'normalized anchor comparison');
 contains(hierarchy, 'cloneNode(true)', 'child links are cloned');
 contains(hierarchy, "familyTabs('airlines')", 'Airlines family exact-tab detection');
 excludes(hierarchy, 'data-et-travel-master-airlines="113281"', 'second Airlines authority removed');
