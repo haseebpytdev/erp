@@ -17,7 +17,12 @@
   };
   const normalizeOcr = text => String(text || '').toUpperCase().replace(/[^A-Z0-9<\r\n]/g, '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   const extractTD3 = text => {
-    const lines = normalizeOcr(text);
+    const lines = normalizeOcr(text).map(line => line.replace(/\s+/g, '')).filter(line => line.length >= 20);
+    for (let i = 0; i < lines.length - 1; i++) {
+      if (lines[i].startsWith('P<') && lines[i].length < 44 && lines[i + 1].length > 44) {
+        const joined = lines[i] + lines[i + 1]; lines.splice(i, 2, joined.slice(0, 44), joined.slice(44));
+      }
+    }
     for (let i = 0; i < lines.length - 1; i++) {
       const first = lines[i], second = lines[i + 1];
       if (first[0] !== 'P' || first.length < 40 || second.length < 40) continue;
