@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.292-ERP11.3.292',
-    'release' => 'ERP-11.3.292',
-    'package' => 'ERP-11.3.292 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.292 finalizes initial authenticated ERP render, the focused Sales Invoice shell and safe booking-passenger removal. Passenger removal remains booking-scoped and preserves Passenger Master records; accounting, booking lifecycle and commercial authority remain unchanged.',
+    'version' => 'v1.1.33.293-ERP11.3.293',
+    'release' => 'ERP-11.3.293',
+    'package' => 'ERP-11.3.293 Passenger Removal Live Hotfix',
+    'package_detail' => 'ERP-11.3.293 isolates the booking-passenger Remove action from legacy save handling, reloads the server-authoritative booking state only after a successful DELETE, and preserves Passenger Master safety. No accounting, booking lifecycle, Sales Invoice or Dashboard rendering behavior changes.',
 ];
 
