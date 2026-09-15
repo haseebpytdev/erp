@@ -1,0 +1,120 @@
+/*
+ * Sales Invoice focused workspace extension for the unified ERP shell.
+ *
+ * PresentSalesInvoiceFocusedWorkspace adds only the semantic html marker and
+ * drawer interaction. All focused outer geometry is resolved here during the
+ * normal professional CSS load, before the invoice interaction script runs.
+ */
+html.et-sales-invoice-focus-prepaint,
+html.et-sales-invoice-focus-prepaint body{
+  overflow-x:hidden!important;
+  max-width:100%!important;
+}
+
+html.et-sales-invoice-focus-prepaint .app-shell{
+  grid-template-columns:minmax(0,1fr)!important;
+  width:100%!important;
+  max-width:100%!important;
+}
+
+html.et-sales-invoice-focus-prepaint .app-shell>.sidebar:not(.et-sales-invoice-sidebar-open),
+html.et-sales-invoice-focus-prepaint body>.sidebar:not(.et-sales-invoice-sidebar-open),
+html.et-sales-invoice-focus-prepaint .sidebar:not(.et-sales-invoice-sidebar-open),
+html.et-sales-invoice-focus-prepaint .navbar-vertical:not(.et-sales-invoice-sidebar-open),
+html.et-sales-invoice-focus-prepaint .side-nav:not(.et-sales-invoice-sidebar-open){
+  display:none!important;
+}
+
+html.et-sales-invoice-focus-prepaint .app-shell>main,
+html.et-sales-invoice-focus-prepaint .app-shell>.main,
+html.et-sales-invoice-focus-prepaint .app-shell>.content,
+html.et-sales-invoice-focus-prepaint .app-shell>.main-content,
+html.et-sales-invoice-focus-prepaint .app-shell>.page-wrapper,
+html.et-sales-invoice-focus-prepaint main,
+html.et-sales-invoice-focus-prepaint .page-wrapper,
+html.et-sales-invoice-focus-prepaint .content-wrapper{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+}
+
+html.et-sales-invoice-focus-prepaint section.content>.container,
+html.et-sales-invoice-focus-prepaint section.content>.container-xl{
+  width:100%!important;
+  max-width:none!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  box-sizing:border-box!important;
+}
+
+html.et-sales-invoice-focus-prepaint .et-sales-invoice-menu-button{
+  min-height:34px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:6px 10px!important;
+  border:1px solid #ccd7e5!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  color:#26384e!important;
+  font:inherit!important;
+  font-size:10px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  white-space:nowrap!important;
+  cursor:pointer!important;
+  text-decoration:none!important;
+}
+
+html.et-sales-invoice-focus-prepaint .et-sales-invoice-menu-button:hover{
+  background:#f7f9fc!important;
+}
+
+html body.et-ui-professional .et-sales-invoice-sidebar-open,
+html.et-sales-invoice-focus-prepaint .et-sales-invoice-sidebar-open{
+  display:flex!important;
+  flex-direction:column!important;
+  position:fixed!important;
+  left:0!important;
+  top:0!important;
+  bottom:0!important;
+  height:100vh!important;
+  max-height:100vh!important;
+  width:var(--et-shell-sidebar-width)!important;
+  min-width:var(--et-shell-sidebar-width)!important;
+  max-width:var(--et-shell-sidebar-width)!important;
+  z-index:10050!important;
+  overflow:hidden!important;
+  box-shadow:12px 0 32px rgba(15,31,52,.22)!important;
+  transform:none!important;
+}
+
+html.et-sales-invoice-focus-prepaint .et-sales-invoice-sidebar-open .nav,
+html.et-sales-invoice-focus-prepaint .et-sales-invoice-sidebar-open .sidebar-menu{
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+}
+
+.et-sales-invoice-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:10040;
+  background:rgba(15,31,52,.36);
+}
+
+.et-sales-invoice-overlay.open{
+  display:block;
+}
+
+@media(max-width:899px){
+  html body.et-ui-professional .et-sales-invoice-sidebar-open,
+  html.et-sales-invoice-focus-prepaint .et-sales-invoice-sidebar-open{
+    width:min(86vw,var(--et-shell-sidebar-width))!important;
+    min-width:0!important;
+    max-width:min(86vw,var(--et-shell-sidebar-width))!important;
+  }
+}

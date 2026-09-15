@@ -24,6 +24,7 @@ final class ErpProfessionalUiAssetController extends Controller
         $base = base_path('public/erp-ui/erp-professional.css');
         $accountingUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
         $registerWorkspaceUi = base_path('public/erp-ui/erp-booking-register-reference.css');
+        $salesInvoiceFocusUi = base_path('public/erp-ui/erp-sales-invoice-focus.css');
         $shellSpacingUi = base_path('public/erp-ui/erp-shell-spacing.css');
 
         abort_unless(
@@ -31,6 +32,7 @@ final class ErpProfessionalUiAssetController extends Controller
             && is_file($base)
             && is_file($accountingUi)
             && is_file($registerWorkspaceUi)
+            && is_file($salesInvoiceFocusUi)
             && is_file($shellSpacingUi),
             404
         );
@@ -40,6 +42,7 @@ final class ErpProfessionalUiAssetController extends Controller
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($accountingUi)
             ."\n".file_get_contents($registerWorkspaceUi)
+            ."\n".file_get_contents($salesInvoiceFocusUi)
             ."\n".file_get_contents($shellSpacingUi),
             'text/css; charset=UTF-8'
         );
