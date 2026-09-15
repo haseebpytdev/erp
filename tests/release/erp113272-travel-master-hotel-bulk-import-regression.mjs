@@ -547,6 +547,8 @@ ok(!hierarchy.includes("field(form,'Address')") && !hierarchy.includes("field(fo
 ok(!hierarchy.includes('row.append(address,notes,active)'), 'hierarchy does not reparent Hotel fields');
 ok(!hierarchy.includes('et-tm-hotel-final-row-113286') && !hierarchy.includes('et-tm-hotel-actions-113286'), 'obsolete Hotel final-row hooks removed');
 ok(hierarchy.includes('et-tm-child-nav-113287'), 'child navigation presentation exists');
+const primaryInsertion = hierarchy.indexOf("nativeStrip.insertAdjacentElement('afterend',primary)");
+ok(primaryInsertion >= 0 && primaryInsertion < hierarchy.indexOf("make('transport'") && primaryInsertion < hierarchy.indexOf("make('airlines'"), 'primary nav inserted before child navigation');
 ok(hierarchy.includes("str_replace('</head>'"), 'hierarchy runtime is injected in document head');
 ok(hierarchy.includes('PREPAINT') || hierarchy.includes('MutationObserver'), 'bounded prepaint observer exists');
 ok(hierarchy.includes('observer.disconnect()'), 'prepaint observer disconnects');
