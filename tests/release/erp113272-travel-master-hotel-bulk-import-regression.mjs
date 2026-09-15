@@ -261,7 +261,7 @@ ok(
 
 ok(
     read('VERSION.txt').trim()
-        === 'v1.1.33.292-ERP11.3.292',
+        === 'v1.1.33.293-ERP11.3.293',
     'version unchanged'
 );
 
