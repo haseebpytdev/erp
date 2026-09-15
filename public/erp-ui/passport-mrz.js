@@ -65,7 +65,7 @@
       if (cleanValid) return { valid:true, review:false, correctionState:'clean', documentCode:a.slice(0,2), issuingCountry:a.slice(2,5), surname:names[0].replace(/</g,' ').trim(), givenNames:(names[1] || '').replace(/</g,' ').trim(), passportNumber:passport.replace(/</g,''), nationality:b.slice(10,13), dateOfBirth, sex:b[20], passportExpiry, checkDigits: checks };
       if (!internal) {
         const unique = buildCorrectionCandidates(a, b);
-        const resolved = new Map(); [...unique].map(candidate => window.ETPassportMRZ.parse(candidate, true)).filter(result => result.valid).forEach(result => resolved.set([result.passportNumber,result.issuingCountry,result.nationality,result.dateOfBirth,result.passportExpiry].join('|'), result)); const valid = [...resolved.values()];
+        const valid = [...unique].map(candidate => window.ETPassportMRZ.parse(candidate, true)).filter(result => result.valid);
         if (valid.length === 1) return {...valid[0], correctionsApplied:['position-aware-confusable'], correctionCount:1, correctionState:'corrected'};
         if (valid.length > 1) return {valid:false,review:true,correctionState:'ambiguous',error:'Passport scan needs review. Please verify the highlighted fields.'};
       }
