@@ -63,10 +63,13 @@ final class ErpProfessionalUiAssetController extends Controller
         );
 
         return $this->textAsset(
-            file_get_contents($registerWorkspaceUi)
-            ."\n".file_get_contents($base)
+            // Sidebar preparation/finalization must run before unrelated
+            // register-workspace enhancement so prepaint can resolve as early
+            // as possible without changing the canonical navigation contract.
+            file_get_contents($base)
             ."\n".file_get_contents($finalizer)
             ."\n".file_get_contents($ready)
+            ."\n".file_get_contents($registerWorkspaceUi)
             ."\n".file_get_contents($passengerRemove),
             'application/javascript; charset=UTF-8'
         );
