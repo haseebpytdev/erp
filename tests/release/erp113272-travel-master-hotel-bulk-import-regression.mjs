@@ -542,15 +542,15 @@ ok(!middleware.includes("catch(e=>{window.location.reload()"), 'error path does 
 ok(middleware.includes('esc(r.rows_submitted)') && middleware.includes('esc(r.rows_invalid)'), 'success values escaped');
 
 /* Hotel compact presentation and hierarchy preservation. */
-ok(hierarchy.includes('field=t=>') && hierarchy.includes("field('Address')"), 'compact Address page-scoped authority');
-ok(hierarchy.includes("field('Address')"), 'Address wrapper remains page scoped');
+ok(hierarchy.includes("field=(form,label)") && hierarchy.includes("field(form,'Address')"), 'compact Address page-scoped authority');
+ok(hierarchy.includes("field(form,'Address')"), 'Address wrapper remains page scoped');
 ok(!hierarchy.includes('removeAttribute("name")'), 'Address field is not removed');
-ok(hierarchy.includes("field('Address')"), 'Address form field selector unchanged');
-ok(hierarchy.includes('et-tm-child-nav-113285'), 'child navigation presentation exists');
-ok(hierarchy.includes('et-tm-hotel-actions-113285'), 'Hotel action row presentation hook exists');
-ok(hierarchy.includes('et-tm-hotel-final-row-113285'), 'Hotel final action row exists');
-ok(hierarchy.includes("field('Notes')") && hierarchy.includes("field('Active')"), 'Notes and Active wrappers are resolved');
-ok(hierarchy.includes('[address,notes,active]') && hierarchy.includes('row.appendChild(actions)'), 'Hotel final row order is explicit');
+ok(hierarchy.includes("field(form,'Address')"), 'Address form field selector unchanged');
+ok(hierarchy.includes('et-tm-child-nav-113286'), 'child navigation presentation exists');
+ok(hierarchy.includes('et-tm-hotel-actions-113286'), 'Hotel action row presentation hook exists');
+ok(hierarchy.includes('et-tm-hotel-final-row-113286'), 'Hotel final action row exists');
+ok(hierarchy.includes("field(form,'Notes')") && hierarchy.includes("field(form,'Active')"), 'Notes and Active wrappers are resolved');
+ok(hierarchy.includes('row.append(address,notes,active)') && hierarchy.includes('actions.append(add,bulk)'), 'Hotel final row order is explicit');
 ok(hierarchy.includes('MutationObserver'), 'Hotel controls may be finalized after native injection');
 ok(middleware.includes('Bulk Import CSV'), 'Bulk Import same-row action remains');
 ok(middleware.includes('Download Template'), 'Download Template action remains');
