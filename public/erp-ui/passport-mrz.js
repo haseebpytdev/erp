@@ -32,16 +32,19 @@
     }
     return null;
   };
-  const repairNumeric = (line, positions) => {
-    const chars = line.split(''), sites = positions.filter(i => /[OIL]/.test(chars[i] || ''));
+  const fieldConfusions = { digits: { O:'0', I:'1', L:'1', B:'8', S:'5', Z:'2', G:'6' }, letters: { '0':'O', '8':'B', '5':'S', '2':'Z', '6':'G' } };
+  const correctTd3Fields = line => { const out = line.split(''); numericPositions.forEach(i => { if (fieldConfusions.digits[out[i]]) out[i] = fieldConfusions.digits[out[i]]; }); return out.join(''); };
+  const numericPositions = [9,13,14,15,16,17,18,19,21,22,23,24,25,26,27,42,43];
+  const correctionCandidates = (line, positions = numericPositions) => {
+    const sites = positions.filter(i => Object.prototype.hasOwnProperty.call(fieldConfusions.digits, line[i] || ''));
     if (sites.length > 6) return [];
-    const out = [];
-    const walk = (k) => { if (out.length > 64) return; if (k === sites.length) { out.push(chars.join('')); return; } const i = sites[k], old = chars[i]; chars[i] = old === 'O' ? '0' : '1'; walk(k + 1); chars[i] = old; };
-    walk(0); return out;
+    const out = new Set(), chars = line.split('');
+    const walk = k => { if (out.size >= 64) return; if (k === sites.length) { out.add(chars.join('')); return; } const i = sites[k], old = chars[i]; chars[i] = fieldConfusions.digits[old]; walk(k + 1); chars[i] = old; };
+    walk(0); return [...out];
   };
-  const fieldConfusions = { digits: { O:'0', I:'1', L:'1', B:'8', S:'5', Z:'2', G:'6' }, letters: { '0':'O', '1':'I', '8':'B', '5':'S', '2':'Z', '6':'G' } };
-  const correctTd3Fields = (line) => { const out=line.split(''); [9,13,14,15,16,17,18,19,21,22,23,24,25,26,27,42,43].forEach(i=>{if(fieldConfusions.digits[out[i]])out[i]=fieldConfusions.digits[out[i]]}); return out.join(''); };
-  const correctionCandidates = (a, b) => repairNumeric(b, [0,1,2,3,4,5,6,7,8,9,13,14,15,16,17,18,19,21,22,23,24,25,26,27,42,43]).map(x => `${a}\n${x}`);
+  const td3Syntax = (a, b) => a.startsWith('P<') && /^[A-Z<]{3}$/.test(a.slice(2, 5)) && /^[A-Z<]{39}$/.test(a.slice(5))
+    && /^[A-Z0-9<]{9}$/.test(b.slice(0, 9)) && /^[A-Z<]{3}$/.test(b.slice(10, 13)) && /^[0-9]{6}$/.test(b.slice(13, 19))
+    && /^[MFX<]$/.test(b[20]) && /^[0-9]{6}$/.test(b.slice(21, 27)) && /^[A-Z0-9<]{14}$/.test(b.slice(28, 42));
   window.ETPassportMRZ = {
     normalizeOcr,
     extractTD3,
@@ -53,10 +56,17 @@
       const composite = b.slice(0, 10) + b.slice(13, 20) + b.slice(21, 43);
       const checks = { passportNumber: check(passport, b[9]), dateOfBirth: check(dob, b[19]), expiry: check(expiry, b[27]), optional: check(b.slice(28, 42), b[42]), composite: check(composite, b[43]) };
       checks.overall = checks.passportNumber && checks.dateOfBirth && checks.expiry && checks.composite;
-      if (!checks.overall && !internal) { const repaired=correctTd3Fields(b); const valid = [repaired,...correctionCandidates(a,b).map(x => x.split('\n')[1])].map(x => window.ETPassportMRZ.parse(`${a}\n${x}`, true)).filter(x => x.valid); if (valid.length === 1) return {...valid[0], correctionsApplied:['position-aware-confusable'], correctionCount:1, correctionState:'corrected'}; if (valid.length > 1) return {valid:false,review:true,correctionState:'ambiguous',error:'Passport scan needs review. Please verify the highlighted fields.'}; }
       const names = a.slice(5).split('<<');
       const dateOfBirth = dateValue(dob, 'dob'), passportExpiry = dateValue(expiry, 'expiry');
-      return { valid: checks.overall && !!dateOfBirth && !!passportExpiry, review: !(checks.overall && dateOfBirth && passportExpiry), documentCode: a.slice(0, 2), issuingCountry: a.slice(2, 5), surname: names[0].replace(/</g, ' ').trim(), givenNames: (names[1] || '').replace(/</g, ' ').trim(), passportNumber: passport.replace(/</g, ''), nationality: b.slice(10, 13), dateOfBirth, sex: b[20], passportExpiry, checkDigits: checks };
+      const cleanValid = td3Syntax(a, b) && checks.overall && !!dateOfBirth && !!passportExpiry;
+      if (cleanValid) return { valid:true, review:false, correctionState:'clean', documentCode:a.slice(0,2), issuingCountry:a.slice(2,5), surname:names[0].replace(/</g,' ').trim(), givenNames:(names[1] || '').replace(/</g,' ').trim(), passportNumber:passport.replace(/</g,''), nationality:b.slice(10,13), dateOfBirth, sex:b[20], passportExpiry, checkDigits: checks };
+      if (!internal) {
+        const unique = new Set([correctTd3Fields(b), ...correctionCandidates(b)]);
+        const valid = [...unique].map(candidate => window.ETPassportMRZ.parse(`${a}\n${candidate}`, true)).filter(result => result.valid);
+        if (valid.length === 1) return {...valid[0], correctionsApplied:['position-aware-confusable'], correctionCount:1, correctionState:'corrected'};
+        if (valid.length > 1) return {valid:false,review:true,correctionState:'ambiguous',error:'Passport scan needs review. Please verify the highlighted fields.'};
+      }
+      return { valid:false, review:true, correctionState:'review', documentCode:a.slice(0,2), issuingCountry:a.slice(2,5), surname:names[0].replace(/</g,' ').trim(), givenNames:(names[1] || '').replace(/</g,' ').trim(), passportNumber:passport.replace(/</g,''), nationality:b.slice(10,13), dateOfBirth, sex:b[20], passportExpiry, checkDigits:checks, error:'Passport scan needs review. Please verify the highlighted fields.' };
     }
   };
   window.ETPassportMRZ.resolveDate = dateValue;

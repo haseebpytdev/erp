@@ -43,8 +43,9 @@
   const failureMessage = error => runtimeFailure(error)
     ? 'Passport OCR could not start. Please refresh and try again, or enter the passenger manually.'
     : 'Passport could not be read clearly. Try another image or enter the details manually.';
-  const process = async source => { const variants = imageVariants(source).slice(0, 6); let text = ''; let candidate = null; for (const variant of variants) { text = await recognizeImage(variant); candidate = root.ETPassportMRZ.extractTD3(text); if (candidate) break; } if (!candidate) { text = await recognizeImage(source); candidate = root.ETPassportMRZ.extractTD3(text); } const result = root.ETPassportMRZ.parse(candidate || text); mapResult(result); return result; };
-  root.ETPassengerScanner = { mapResult, process, preprocessImage, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
+  const selectCandidate = async (variants, recognize = recognizeImage, extract = root.ETPassportMRZ.extractTD3, parse = root.ETPassportMRZ.parse) => { let best = null; for (const variant of variants.slice(0, 7)) { const text = await recognize(variant); const candidate = extract(text); if (!candidate) continue; const input = candidate || text; const result = parse(input); if (!best || result.valid) best = result; if (result.valid && !result.review) return result; } return best || { valid:false, review:true, correctionState:'review' }; };
+  const process = async source => { const variants = [...imageVariants(source).slice(0, 6), source]; const result = await selectCandidate(variants); mapResult(result); return result; };
+  root.ETPassengerScanner = { mapResult, process, selectCandidate, preprocessImage, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
   const populateEditPassenger = edit => {
     const form = document.getElementById('pm262-passenger-form');
     if (!form || !edit) return;
