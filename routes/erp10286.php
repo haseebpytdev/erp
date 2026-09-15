@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Operations\BookingItineraryController;
 use App\Http\Controllers\Operations\BookingTransportController;
+use App\Http\Controllers\Operations\GeneralBookingPassengerRemovalController;
+use App\Http\Middleware\EnforceErpRoleScopedAccess;
+use App\Http\Middleware\EnforceGeneralBookingEditLock;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +36,33 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::delete('/operations/bookings/{booking}/transport-segments/{transport}', [BookingTransportController::class, 'destroy'])
         ->name('operations.bookings.transport-segments.destroy');
+
+    /*
+     * Booking-scoped passenger authority.
+     * GET is used only to map the rendered passenger rows to their persisted
+     * booking snapshot IDs. DELETE removes that booking snapshot only; Passenger
+     * Master remains untouched. The same booking lock used by every other
+     * booking write protects the endpoint independently of browser controls.
+     */
+    Route::get(
+        '/system/erp-bookings/{booking}/passengers/current',
+        [GeneralBookingPassengerRemovalController::class, 'index']
+    )
+        ->whereNumber('booking')
+        ->middleware(EnforceErpRoleScopedAccess::class)
+        ->name('bookings.passengers.current');
+
+    Route::delete(
+        '/system/erp-bookings/{booking}/passengers/{passenger}',
+        [GeneralBookingPassengerRemovalController::class, 'destroy']
+    )
+        ->whereNumber('booking')
+        ->whereNumber('passenger')
+        ->middleware([
+            EnforceErpRoleScopedAccess::class,
+            EnforceGeneralBookingEditLock::class,
+        ])
+        ->name('bookings.passengers.destroy');
 });
 
 // ERP-10.31.79 cumulative ERP routes.
