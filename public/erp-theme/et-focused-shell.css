@@ -1,0 +1,8 @@
+/* Focused workspace shell; interaction remains in focused-shell.js. */
+html.et-sales-invoice-focus-prepaint body.et-ui-professional .app-shell,
+html.et-booking-focus-prepaint body.et-ui-professional .app-shell{grid-template-columns:minmax(0,1fr);}
+html.et-sales-invoice-focus-prepaint body.et-ui-professional .app-shell>.sidebar,
+html.et-booking-focus-prepaint body.et-ui-professional .app-shell>.sidebar{display:none;}
+html.et-sales-invoice-focus-prepaint body.et-ui-professional .app-shell>main.main,
+html.et-booking-focus-prepaint body.et-ui-professional .app-shell>main.main{width:100%;max-width:none;padding-left:24px;padding-right:24px;}
+@media(max-width:900px){html.et-sales-invoice-focus-prepaint body.et-ui-professional .app-shell>main.main,html.et-booking-focus-prepaint body.et-ui-professional .app-shell>main.main{padding-left:16px;padding-right:16px;}}

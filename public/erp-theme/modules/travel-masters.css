@@ -1,0 +1,1 @@
+body.et-ui-module-travel :where(.tm-card,.card){border-color:var(--et-border);border-radius:var(--et-radius);box-shadow:var(--et-shadow);}

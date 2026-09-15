@@ -1,0 +1,2 @@
+/* Focused shell drawer interaction only; no DOM reconstruction or layout math. */
+(function(){'use strict';var sidebar=document.querySelector('.et-sales-invoice-sidebar-open,.gp-focus-sidebar,.et-air-focus-sidebar');if(!sidebar)return;document.addEventListener('keydown',function(e){if(e.key==='Escape')sidebar.classList.remove('et-sales-invoice-sidebar-open','gp-focus-sidebar-open','et-air-focus-sidebar-open-103172');});})();

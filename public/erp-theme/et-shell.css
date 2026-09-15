@@ -1,0 +1,10 @@
+/* Standard ERP shell authority. Loaded after retained legacy layers. */
+body.et-ui-professional .app-shell{display:grid;grid-template-columns:208px minmax(0,1fr);min-width:0;min-height:100vh;background:var(--et-bg);}
+body.et-ui-professional .app-shell>.sidebar{width:208px;min-width:208px;background:var(--et-navy-deep);}
+body.et-ui-professional .app-shell>main.main{min-width:0;width:100%;margin:0;padding:0 24px 28px;background:var(--et-bg);}
+body.et-ui-professional :where(.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal){width:100%;height:56px;min-height:56px;box-sizing:border-box;background:#fff;border-bottom:1px solid var(--et-border);box-shadow:none;}
+body.et-ui-professional :where(.sidebar .nav,.navbar-vertical .nav,.side-nav .nav){scrollbar-width:none;}
+body.et-ui-professional :where(.sidebar .nav,.navbar-vertical .nav,.side-nav .nav)::-webkit-scrollbar{width:0;height:0;}
+body.et-ui-professional :where(.sidebar a,.navbar-vertical a,.side-nav a){min-height:34px;border-radius:6px;}
+body.et-ui-professional :where(.sidebar a.et-ui-current,.navbar-vertical a.et-ui-current,.side-nav a.et-ui-current){background:rgba(37,99,235,.18);border-left:3px solid #60A5FA;color:#fff;}
+@media(max-width:900px){body.et-ui-professional .app-shell>main.main{padding-left:16px;padding-right:16px;}}

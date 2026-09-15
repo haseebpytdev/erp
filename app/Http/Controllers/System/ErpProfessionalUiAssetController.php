@@ -25,6 +25,17 @@ final class ErpProfessionalUiAssetController extends Controller
         $accountingUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
         $registerWorkspaceUi = base_path('public/erp-ui/erp-booking-register-reference.css');
         $shellSpacingUi = base_path('public/erp-ui/erp-shell-spacing.css');
+        $freshTheme = [
+            base_path('public/erp-theme/et-core.css'),
+            base_path('public/erp-theme/et-shell.css'),
+            base_path('public/erp-theme/et-focused-shell.css'),
+            base_path('public/erp-theme/modules/dashboard.css'),
+            base_path('public/erp-theme/modules/booking.css'),
+            base_path('public/erp-theme/modules/registers.css'),
+            base_path('public/erp-theme/modules/sales-invoice.css'),
+            base_path('public/erp-theme/modules/accounting.css'),
+            base_path('public/erp-theme/modules/travel-masters.css'),
+        ];
 
         abort_unless(
             is_file($prepaint)
@@ -34,13 +45,15 @@ final class ErpProfessionalUiAssetController extends Controller
             && is_file($shellSpacingUi),
             404
         );
+        foreach ($freshTheme as $path) abort_unless(is_file($path), 404);
 
         return $this->textAsset(
             file_get_contents($prepaint)
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($accountingUi)
             ."\n".file_get_contents($registerWorkspaceUi)
-            ."\n".file_get_contents($shellSpacingUi),
+            ."\n".file_get_contents($shellSpacingUi)
+            ."\n".implode("\n", array_map(static fn (string $path): string => file_get_contents($path), $freshTheme)),
             'text/css; charset=UTF-8'
         );
     }
@@ -52,13 +65,17 @@ final class ErpProfessionalUiAssetController extends Controller
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
         $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
         $passengerRemove = base_path('public/erp-ui/erp-passenger-remove.js');
+        $freshShell = base_path('public/erp-theme/js/shell.js');
+        $freshFocusedShell = base_path('public/erp-theme/js/focused-shell.js');
 
         abort_unless(
             is_file($registerWorkspaceUi)
             && is_file($base)
             && is_file($finalizer)
             && is_file($ready)
-            && is_file($passengerRemove),
+            && is_file($passengerRemove)
+            && is_file($freshShell)
+            && is_file($freshFocusedShell),
             404
         );
 
@@ -66,7 +83,9 @@ final class ErpProfessionalUiAssetController extends Controller
             // Sidebar preparation/finalization must run before unrelated
             // register-workspace enhancement so prepaint can resolve as early
             // as possible without changing the canonical navigation contract.
-            file_get_contents($base)
+            file_get_contents($freshShell)
+            ."\n".file_get_contents($freshFocusedShell)
+            ."\n".file_get_contents($base)
             ."\n".file_get_contents($finalizer)
             ."\n".file_get_contents($ready)
             ."\n".file_get_contents($registerWorkspaceUi)
