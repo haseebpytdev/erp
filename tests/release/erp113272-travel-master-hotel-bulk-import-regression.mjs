@@ -541,17 +541,17 @@ ok(middleware.includes("ib.textContent='Import New Hotels'"), 'error restores im
 ok(!middleware.includes("catch(e=>{window.location.reload()"), 'error path does not reload');
 ok(middleware.includes('esc(r.rows_submitted)') && middleware.includes('esc(r.rows_invalid)'), 'success values escaped');
 
-/* Hotel compact presentation and hierarchy preservation. */
-ok(hierarchy.includes("field=(form,label)") && hierarchy.includes("field(form,'Address')"), 'compact Address page-scoped authority');
-ok(hierarchy.includes("field(form,'Address')"), 'Address wrapper remains page scoped');
-ok(!hierarchy.includes('removeAttribute("name")'), 'Address field is not removed');
-ok(hierarchy.includes("field(form,'Address')"), 'Address form field selector unchanged');
-ok(hierarchy.includes('et-tm-child-nav-113286'), 'child navigation presentation exists');
-ok(hierarchy.includes('et-tm-hotel-actions-113286'), 'Hotel action row presentation hook exists');
-ok(hierarchy.includes('et-tm-hotel-final-row-113286'), 'Hotel final action row exists');
-ok(hierarchy.includes("field(form,'Notes')") && hierarchy.includes("field(form,'Active')"), 'Notes and Active wrappers are resolved');
-ok(hierarchy.includes('row.append(address,notes,active)') && hierarchy.includes('actions.append(add,bulk)'), 'Hotel final row order is explicit');
-ok(hierarchy.includes('MutationObserver'), 'Hotel controls may be finalized after native injection');
+/* Hotel native form safety and hierarchy preservation. */
+ok(!hierarchy.includes('finalizeHotel'), 'hierarchy has no Hotel form finalizer');
+ok(!hierarchy.includes("field(form,'Address')") && !hierarchy.includes("field(form,'Notes')") && !hierarchy.includes("field(form,'Active')"), 'hierarchy does not resolve Hotel fields');
+ok(!hierarchy.includes('row.append(address,notes,active)'), 'hierarchy does not reparent Hotel fields');
+ok(!hierarchy.includes('et-tm-hotel-final-row-113286') && !hierarchy.includes('et-tm-hotel-actions-113286'), 'obsolete Hotel final-row hooks removed');
+ok(hierarchy.includes('et-tm-child-nav-113287'), 'child navigation presentation exists');
+ok(hierarchy.includes("str_replace('</head>'"), 'hierarchy runtime is injected in document head');
+ok(hierarchy.includes('PREPAINT') || hierarchy.includes('MutationObserver'), 'bounded prepaint observer exists');
+ok(hierarchy.includes('observer.disconnect()'), 'prepaint observer disconnects');
+ok(hierarchy.includes('native.style.removeProperty'), 'native strip restores on prepaint failure');
+ok(hierarchy.includes('erp-10.25.7') && hierarchy.includes('TRAVEL MASTER MANAGEMENT'), 'stale Travel Masters kicker is normalized');
 ok(middleware.includes('Bulk Import CSV'), 'Bulk Import same-row action remains');
 ok(middleware.includes('Download Template'), 'Download Template action remains');
 ok(middleware.includes("textContent='Bulk Import CSV'"), 'native Add Hotel anchor remains authoritative');
