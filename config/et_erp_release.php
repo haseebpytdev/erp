@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.289-ERP11.3.289',
-    'release' => 'ERP-11.3.289',
-    'package' => 'ERP-11.3.289 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.289 closes the Travel Masters hierarchy under one scoped navigation authority, preserving the approved seven-parent structure, Transport and Airlines child navigation, Visa Management hierarchy, read-only Flight Routes, and compact Hotel Master controls without changing validated business or data contracts.',
+    'version' => 'v1.1.33.291-ERP11.3.291',
+    'release' => 'ERP-11.3.291',
+    'package' => 'ERP-11.3.291 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.291 finalizes local Passport OCR reliability with bounded MRZ processing, TD3 validation, checksum-aware corrections, fail-closed ambiguity handling, six processed image variants plus original fallback, and manual passenger review/save authority.',
 ];
 
