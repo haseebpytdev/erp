@@ -64,6 +64,14 @@ ok(!fs.existsSync(new URL('../../database/migrations/2026_09_13_passengers.php',
 
 const context = { window: {}, console };
 vm.runInNewContext(mrz, context);
+const scannerContext = { window: { addEventListener() {}, ETPassportMRZ: { extractTD3: value => value, parse: value => ({ valid: value === 'valid', review: value !== 'valid' }) } }, document: { querySelector: () => null, getElementById: () => null, createElement: () => ({ getContext: () => ({}) }) }, console, encodeURIComponent };
+vm.runInNewContext(scanner, scannerContext);
+let scannerCalls = 0;
+const scannerResult = await scannerContext.window.ETPassengerScanner.selectCandidate(['review', 'valid'], async value => { scannerCalls++; return value; }, value => value, value => ({ valid: value === 'valid', review: value !== 'valid' }));
+ok(scannerResult.valid && scannerCalls === 2, 'scanner continues after review candidate and returns the valid variant');
+scannerCalls = 0;
+await scannerContext.window.ETPassengerScanner.selectCandidate(Array.from({ length: 10 }, () => 'review'), async value => { scannerCalls++; return value; }, value => value, () => ({ valid:false, review:true }));
+ok(scannerCalls === 7, 'scanner selection bounds OCR attempts to seven');
 const fixture = 'P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<\nL898902C36UTO7408122F1204159ZE184226B<<<<<10';
 const parsed = context.window.ETPassportMRZ.parse(fixture);
 ok(parsed.valid && parsed.surname === 'ERIKSSON' && parsed.givenNames === 'ANNA MARIA', 'synthetic TD3 MRZ parses and extracts names');

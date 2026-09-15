@@ -25,12 +25,8 @@
     [0.35, 0.42, 0.50].forEach(ratio => {
       const width = Math.min(1800, Math.max(800, source.width || 1200));
       const height = Math.max(1, Math.round(width * 0.7));
-      const crop = document.createElement('canvas'); crop.width = width; crop.height = height;
-      const ctx = crop.getContext('2d'); const sy = Math.round((source.height || height) * (1 - ratio));
-      ctx.drawImage(source, 0, sy, source.width || width, Math.max(1, (source.height || height) - sy), 0, 0, width, height);
-      const image = ctx.getImageData(0, 0, width, height);
-      for (let i = 0; i < image.data.length; i += 4) { const gray = image.data[i] * 0.299 + image.data[i + 1] * 0.587 + image.data[i + 2] * 0.114; const contrast = Math.max(0, Math.min(255, (gray - 128) * 1.45 + 128)); image.data[i] = image.data[i + 1] = image.data[i + 2] = contrast; }
-      ctx.putImageData(image, 0, 0); variants.push(crop);
+      const build = contrast => { const crop = document.createElement('canvas'); crop.width = width; crop.height = height; const ctx = crop.getContext('2d'); const sy = Math.round((source.height || height) * (1 - ratio)); ctx.drawImage(source, 0, sy, source.width || width, Math.max(1, (source.height || height) - sy), 0, 0, width, height); const image = ctx.getImageData(0, 0, width, height); for (let i = 0; i < image.data.length; i += 4) { const gray = image.data[i] * 0.299 + image.data[i + 1] * 0.587 + image.data[i + 2] * 0.114; const value = contrast ? Math.max(0, Math.min(255, (gray - 128) * 1.45 + 128)) : gray; image.data[i] = image.data[i + 1] = image.data[i + 2] = value; } ctx.putImageData(image, 0, 0); return crop; };
+      variants.push(build(false), build(true));
     });
     return variants;
   };
@@ -45,7 +41,7 @@
     : 'Passport could not be read clearly. Try another image or enter the details manually.';
   const selectCandidate = async (variants, recognize = recognizeImage, extract = root.ETPassportMRZ.extractTD3, parse = root.ETPassportMRZ.parse) => { let best = null; for (const variant of variants.slice(0, 7)) { const text = await recognize(variant); const candidate = extract(text); if (!candidate) continue; const input = candidate || text; const result = parse(input); if (!best || result.valid) best = result; if (result.valid && !result.review) return result; } return best || { valid:false, review:true, correctionState:'review' }; };
   const process = async source => { const variants = [...imageVariants(source).slice(0, 6), source]; const result = await selectCandidate(variants); mapResult(result); return result; };
-  root.ETPassengerScanner = { mapResult, process, selectCandidate, preprocessImage, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
+  root.ETPassengerScanner = { mapResult, process, selectCandidate, imageVariants, preprocessImage, stopStream: stream => stream && stream.getTracks().forEach(track => track.stop()) };
   const populateEditPassenger = edit => {
     const form = document.getElementById('pm262-passenger-form');
     if (!form || !edit) return;
