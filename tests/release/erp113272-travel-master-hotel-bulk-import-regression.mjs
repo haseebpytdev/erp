@@ -576,10 +576,19 @@ ok(uiPolish.includes('MutationObserver') && uiPolish.includes('2200'), 'presenta
 ok(uiPolish.includes("getComputedStyle(r).display!=='none'"), 'native hidden rows remain excluded');
 ok(uiPolish.includes('et-tm-page-hidden-113288'), 'pagination uses scoped hidden class');
 ok(uiPolish.includes('[25,50,100]') && uiPolish.includes('per=25'), 'pagination sizes and default');
-ok(uiPolish.includes("eligible(t,'hotel')") && uiPolish.includes("eligible(t,'airline')"), 'semantic Hotel and Airline table discovery');
+ok(uiPolish.includes("kind==='hotel'") && uiPolish.includes("'airline'"), 'semantic Hotel and Airline table discovery');
 ok(!uiPolish.includes("document.querySelector('table')"), 'no generic first-table authority');
 ok(!uiPolish.includes('cloneNode') && !uiPolish.includes('appendChild') && !uiPolish.includes('replaceChildren'), 'native controls are not cloned or moved');
-ok(uiPolish.includes("closest('form')") && uiPolish.includes('bounded=form'), 'form resolution is scoped and fail-closed');
+ok(uiPolish.includes("closest('form')") && uiPolish.includes('safeWrapper'), 'form resolution is scoped and fail-closed');
+ok(uiPolish.includes('safeWrapper') && uiPolish.includes('label.htmlFor') && uiPolish.includes("querySelectorAll('label').length>1"), 'safe field wrapper resolution');
+ok(uiPolish.includes('et-tm-ui-grid-113288') && uiPolish.includes('et-tm-ui-field-'), 'field classes are applied with safe grid');
+ok(uiPolish.includes("decorateForm(find('add hotel'),['address','notes','active'])") && uiPolish.includes("decorateForm(find('add record'),['country','default supplier','notes','active'])") && uiPolish.includes("decorateForm(find('add airline'),['accounting prefix','country','default supplier','notes','active'])"), 'Hotel Transport Airline action rows targeted');
+ok(uiPolish.includes('sizeWrap.append(sizeLabel,size)'), 'page-size select is attached to new pager container');
+ok(!uiPolish.includes("label.insertAdjacentElement('afterend',size)"), 'detached page-size insertion removed');
+ok(uiPolish.includes('info.textContent=') && uiPolish.includes("nav.textContent=''"), 'pager info and navigation are stable');
+ok(uiPolish.includes("setAttribute('aria-current','page')") && uiPolish.includes("textContent='…'"), 'active page aria and ellipsis');
+ok(uiPolish.includes('const body=table.tBodies[0];if(!body)return false') && uiPolish.includes("table.dataset.etTmPager='113288'"), 'pager marker follows valid tbody');
+ok(uiPolish.includes('size.onchange=') && uiPolish.includes('page=1;render()'), 'page-size changes reset pagination');
 let uiSyntax=true;try{new Function(uiPolish.match(/<script data-et-travel-master-ui="113288">([\s\S]*?)<\/script>/)?.[1]||'')}catch(e){uiSyntax=false}ok(uiSyntax,'UI polish embedded JavaScript parses');
 
 console.log(
