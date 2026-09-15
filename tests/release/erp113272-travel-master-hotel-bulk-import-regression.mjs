@@ -551,7 +551,15 @@ ok(hierarchy.includes("str_replace('</head>'"), 'hierarchy runtime is injected i
 ok(hierarchy.includes('PREPAINT') || hierarchy.includes('MutationObserver'), 'bounded prepaint observer exists');
 ok(hierarchy.includes('observer.disconnect()'), 'prepaint observer disconnects');
 ok(hierarchy.includes('native.style.removeProperty'), 'native strip restores on prepaint failure');
-ok(hierarchy.includes('erp-10.25.7') && hierarchy.includes('TRAVEL MASTER MANAGEMENT'), 'stale Travel Masters kicker is normalized');
+ok(hierarchy.includes('ERP-10\\.25\\.7') && hierarchy.includes('TRAVEL MASTER MANAGEMENT'), 'stale Travel Masters kicker is normalized');
+ok(!hierarchy.includes("querySelectorAll('h1,h2,h3,h4,p,div,span')"), 'no generic container text scan');
+ok(!hierarchy.includes("node.textContent='TRAVEL MASTER MANAGEMENT'"), 'no generic container text replacement');
+ok(!hierarchy.includes('normalizeKicker'), 'no client-side kicker mutation');
+ok(hierarchy.includes("preg_replace('/ERP-10\\.25\\.7") && hierarchy.includes("$request->path()!=='master-data/travel-masters'"), 'kicker replacement is server-side and page scoped');
+const embedded = hierarchy.match(/<script data-et-travel-master-hierarchy="113287">([\s\S]*?)<\/script>/)?.[1] || '';
+let embeddedSyntax = true;
+try { new Function(embedded); } catch (error) { embeddedSyntax = false; }
+ok(embeddedSyntax, 'embedded hierarchy JavaScript parses');
 ok(middleware.includes('Bulk Import CSV'), 'Bulk Import same-row action remains');
 ok(middleware.includes('Download Template'), 'Download Template action remains');
 ok(middleware.includes("textContent='Bulk Import CSV'"), 'native Add Hotel anchor remains authoritative');
