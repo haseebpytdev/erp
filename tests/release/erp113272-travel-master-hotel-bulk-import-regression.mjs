@@ -61,6 +61,7 @@ const controller = read(
     'app/Http/Controllers/Operations/HotelMasterBulkImportController.php'
 );
 const hierarchy = read('app/Http/Middleware/PresentTravelMasterHierarchy.php');
+const uiPolish = read('app/Http/Middleware/PresentTravelMasterUiPolish.php');
 
 const previewMethod = method(
     authority,
@@ -566,6 +567,20 @@ ok(middleware.includes('Bulk Import CSV'), 'Bulk Import same-row action remains'
 ok(middleware.includes('Download Template'), 'Download Template action remains');
 ok(middleware.includes("textContent='Bulk Import CSV'"), 'native Add Hotel anchor remains authoritative');
 ok(middleware.includes('Import Complete') && middleware.includes('window.location.reload'), 'Import completion UX preserved');
+
+/* .288 UI polish safety and pagination contracts. */
+ok(uiPolish.includes("$request->path()!=='master-data/travel-masters'"), 'UI polish exact path guard');
+ok(uiPolish.includes('data-et-travel-master-ui="113288"') && uiPolish.includes('et-tm-ui-113288'), 'UI polish marker');
+ok(!uiPolish.includes('DB::') && !uiPolish.includes('->save(') && !uiPolish.includes('->update('), 'UI polish has no data mutation');
+ok(uiPolish.includes('MutationObserver') && uiPolish.includes('2200'), 'presentation observer is bounded');
+ok(uiPolish.includes("getComputedStyle(r).display!=='none'"), 'native hidden rows remain excluded');
+ok(uiPolish.includes('et-tm-page-hidden-113288'), 'pagination uses scoped hidden class');
+ok(uiPolish.includes('[25,50,100]') && uiPolish.includes('per=25'), 'pagination sizes and default');
+ok(uiPolish.includes("eligible(t,'hotel')") && uiPolish.includes("eligible(t,'airline')"), 'semantic Hotel and Airline table discovery');
+ok(!uiPolish.includes("document.querySelector('table')"), 'no generic first-table authority');
+ok(!uiPolish.includes('cloneNode') && !uiPolish.includes('appendChild') && !uiPolish.includes('replaceChildren'), 'native controls are not cloned or moved');
+ok(uiPolish.includes("closest('form')") && uiPolish.includes('bounded=form'), 'form resolution is scoped and fail-closed');
+let uiSyntax=true;try{new Function(uiPolish.match(/<script data-et-travel-master-ui="113288">([\s\S]*?)<\/script>/)?.[1]||'')}catch(e){uiSyntax=false}ok(uiSyntax,'UI polish embedded JavaScript parses');
 
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`

@@ -60,6 +60,7 @@ use App\Http\Middleware\PresentChartOfAccountsWorkspace;
 use App\Http\Middleware\PresentAccountingReportsWorkspace;
 use App\Http\Middleware\PresentTravelMasterHierarchy;
 use App\Http\Middleware\PresentTravelMasterHotelBulkImport;
+use App\Http\Middleware\PresentTravelMasterUiPolish;
 use App\Http\Middleware\PresentCompanyVoucherFooterAuthority;
 use App\Http\Middleware\GuardApprovedGeneralBookingCommercials;
 use App\Http\Middleware\EnforceGeneralBookingEditLock;
@@ -668,6 +669,7 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     if (in_array('GET', $route->methods(), true)) {
         $route->middleware(PresentTravelMasterHierarchy::class);
         $route->middleware(PresentTravelMasterHotelBulkImport::class);
+        $route->middleware(PresentTravelMasterUiPolish::class);
     }
 });
 
