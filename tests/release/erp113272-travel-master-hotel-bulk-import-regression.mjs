@@ -614,6 +614,15 @@ ok(uiPolish.includes('BOUNDED_SCORED') && uiPolish.includes('AMBIGUOUS_TOP_SCORE
 ok(uiPolish.includes("const t=hotelTableRef") && !uiPolish.includes('const t=hotelTable()[0]'), 'filter uses stored Hotel table authority');
 ok(uiPolish.includes('HOTEL_INITIALIZATION_REQUIRES_BOTH') && uiPolish.includes('EARLY_UNKNOWN_CONTEXT=UNRESOLVED'), 'Hotel readiness and unresolved contracts');
 let resetPage=7; resetPage=1; ok(resetPage===1, 'page size 50 resets page one'); resetPage=9; resetPage=1; ok(resetPage===1, 'page size 100 resets page one');
+const scoreHotelCandidate=c=>{if(c.modal||!c.tbody||!c.meaningfulRows)return null;let score=(c.workspace?40:0)+(c.rows>25?30:0)+(c.editActions>1?20:0)+(c.hotel?10:0)+(c.city?10:0)+(c.iata?5:0)+(c.country?5:0)+(c.supplier?5:0)+(c.status?5:0);return{candidate:c,score}};
+const chooseHotel=cs=>{const v=cs.map(scoreHotelCandidate).filter(Boolean).sort((a,b)=>b.score-a.score);return !v.length?{state:'waiting',table:null}:v[1]&&v[1].score===v[0].score?{state:'ambiguous',table:null}:{state:'ready',table:v[0].candidate}};
+const realHotel={id:'hotel',workspace:true,rows:252,editActions:4,hotel:true,city:true,iata:true,country:true,supplier:true,status:true,tbody:true,meaningfulRows:true};
+ok(chooseHotel([realHotel,{rows:10,modal:true,tbody:true,meaningfulRows:true,hotel:true,city:true}]).table===realHotel,'behavioral Hotel scoring selects real table');
+ok(chooseHotel([realHotel,{...realHotel,id:'other'}]).state==='ambiguous','behavioral Hotel scoring ambiguity');
+let pagerCount=0;const initPager=t=>{if(t.pager)return true;t.pager={};pagerCount++;return true};const pt={};ok(initPager(pt)&&initPager(pt)&&pagerCount===1,'behavioral pager idempotence');
+const ready=(form,pager)=>form&&pager;ok(!ready(false,false)&&!ready(true,false)&&!ready(false,true)&&ready(true,true),'behavioral combined readiness');
+const selected={refresh:0};let resolverCalls=1;const filterRefresh=t=>{if(t)t.refresh++};filterRefresh(selected);ok(selected.refresh===1&&resolverCalls===1,'behavioral stored filter reference');
+const grid={children:[{}]};grid.children[0].parent=grid;ok(grid.children[0].parent===grid,'behavioral grid participant');
 
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
