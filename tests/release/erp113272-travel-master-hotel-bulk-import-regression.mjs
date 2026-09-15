@@ -593,6 +593,10 @@ ok(uiPolish.includes('size.onchange=') && uiPolish.includes('page=1;render()'), 
 ok(uiPolish.includes("context!=='hotels'") && uiPolish.includes("context==='airlines'"), 'pagination is exact-tab gated');
 ok(uiPolish.includes('table.dataset.etTmPager=\'113289\';return true'), 'pager marker assigned after successful render');
 ok(uiPolish.includes("['input','change']") && uiPolish.includes("closest('.et-tm-ui-pager-113289')") && uiPolish.includes('setTimeout'), 'filter changes repaginate after native handlers');
+ok(uiPolish.includes('et-tm-hotel-grid-113290') && uiPolish.includes('data-et-hotel-form-state'), 'bounded Hotel common layout diagnostic');
+ok(uiPolish.includes('et-tm-hotel-actions-113290') && uiPolish.includes('span 4'), 'Hotel action group compact final row');
+ok(uiPolish.includes('[3,3,3,3,3,3,3,3,4,3,1]') && uiPolish.includes('active'), 'Hotel fields and final spans resolved');
+ok(!uiPolish.includes('appendChild') && !uiPolish.includes('cloneNode') && !uiPolish.includes('replaceWith'), 'native Hotel controls are not moved or cloned');
 const pageWindow=(pages,page)=>{const out=[];for(let p=1;p<=pages;p++)if(p===1||p===pages||Math.abs(p-page)<=1)out.push(p);const tokens=[];let last=0;for(const p of out){if(last&&p-last>1)tokens.push('…');tokens.push(p);last=p}return tokens};
 ok(JSON.stringify(pageWindow(11,1))===JSON.stringify([1,2,'…',11]), 'page window first');
 ok(JSON.stringify(pageWindow(11,2))===JSON.stringify([1,2,3,'…',11]), 'page window second');

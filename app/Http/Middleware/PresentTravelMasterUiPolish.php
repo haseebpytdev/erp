@@ -21,6 +21,11 @@ final class PresentTravelMasterUiPolish {
 })();
 </script>
 HTML;
-  $html=str_contains($html,'</head>')?str_replace('</head>',$style.$script.'</head>',$html):$style.$html.$script;$response->setContent($html);return $response;
+  $hotelScript=<<<'HTML'
+<script data-et-hotel-form-state="113290">
+(()=>{const n=s=>String(s||'').replace(/[^a-z0-9]+/gi,' ').replace(/\s+/g,' ').trim().toLowerCase();const wrap=(l,f)=>{const c=l?.htmlFor?document.getElementById(l.htmlFor):l?.querySelector('input,select,textarea');const w=c?.closest('.form-group,.field,.grid-item,td,div');return w&&w!==f&&w.closest('form')===f&&w.querySelectorAll('label').length<=1?w:null};const run=()=>{const add=[...document.querySelectorAll('a,button,input[type=submit]')].find(x=>n(x.textContent||x.value)==='add hotel'),form=add?.closest('form');if(!form){return}const names=['code','hotel name','city','city iata','country','star rating','phone','default supplier','address','notes','active'];const ls=[...form.querySelectorAll('label')];const cells=names.map(x=>wrap(ls.find(l=>n(l.textContent).startsWith(x)),form));if(cells.some(x=>!x)){form.dataset.etHotelFormState='unresolved';return}const ancestors=[];for(let p=cells[0];p&&p!==form;p=p.parentElement)if(p!==document.body&&p!==document.documentElement&&p.tagName!=='MAIN'&&p.tagName!=='SECTION'&&cells.every(c=>p.contains(c))&&p.contains(add))ancestors.push(p);const common=ancestors[0];if(!common){form.dataset.etHotelFormState='unresolved';return}common.classList.add('et-tm-hotel-grid-113290');cells.forEach((c,i)=>{c.classList.add('et-tm-hotel-field-113290');c.style.gridColumn='span '+([3,3,3,3,3,3,3,3,4,3,1][i]||1)});const action=add.closest('.form-group,.field,.grid-item,td,div');if(action&&action.closest('form')===form){action.classList.add('et-tm-hotel-actions-113290');action.style.gridColumn='span 4';form.dataset.etHotelFormState='ready'}};run();document.addEventListener('DOMContentLoaded',run,{once:true});})();
+</script>
+HTML;
+  $html=str_contains($html,'</head>')?str_replace('</head>',$style.$script.$hotelScript.'</head>',$html):$style.$html.$script.$hotelScript;$response->setContent($html);return $response;
  }
 }
