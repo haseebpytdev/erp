@@ -40,7 +40,7 @@
     numericPositions.forEach(index => fieldConfusions.digits[b[index]] && push('b', index, [fieldConfusions.digits[b[index]]]));
     for (let index = 2; index <= 43; index++) { const c=a[index]; if (fieldConfusions.letters[c]) push('a', index, [fieldConfusions.letters[c]]); else if (c === '1') push('a', index, ['I','L']); }
     for (let index = 10; index <= 12; index++) { const c=b[index]; if (fieldConfusions.letters[c]) push('b', index, [fieldConfusions.letters[c]]); else if (c === '1') push('b', index, ['I','L']); }
-    if (!check(b.slice(0, 9), b[9])) [...Array(9).keys()].forEach(index => { const c=b[index], opposite = fieldConfusions.digits[c] || fieldConfusions.letters[c] || (c === '1' ? 'I' : null); if (opposite) push('b', index, [c, opposite]); });
+    if (!check(b.slice(0, 9), b[9])) [...Array(9).keys()].forEach(index => { const c=b[index], corrected = fieldConfusions.digits[c]; if (corrected) push('b', index, [c, corrected]); });
     if (sites.length > 6) return new Set();
     const out = new Set(), walk = (k, x, y) => { if (out.size >= 64) return; if (k === sites.length) { out.add(`${x}\n${y}`); return; } const s=sites[k]; for (const value of s.choices) { if (s.line === 'a') { const z=x.split(''); z[s.index]=value; walk(k+1,z.join(''),y); } else { const z=y.split(''); z[s.index]=value; walk(k+1,x,z.join('')); } } };
     walk(0, a, b); return out;
@@ -65,7 +65,7 @@
       if (cleanValid) return { valid:true, review:false, correctionState:'clean', documentCode:a.slice(0,2), issuingCountry:a.slice(2,5), surname:names[0].replace(/</g,' ').trim(), givenNames:(names[1] || '').replace(/</g,' ').trim(), passportNumber:passport.replace(/</g,''), nationality:b.slice(10,13), dateOfBirth, sex:b[20], passportExpiry, checkDigits: checks };
       if (!internal) {
         const unique = buildCorrectionCandidates(a, b);
-        const valid = [...unique].map(candidate => window.ETPassportMRZ.parse(candidate, true)).filter(result => result.valid);
+        const resolved = new Map(); [...unique].map(candidate => window.ETPassportMRZ.parse(candidate, true)).filter(result => result.valid).forEach(result => resolved.set([result.passportNumber,result.issuingCountry,result.nationality,result.dateOfBirth,result.passportExpiry].join('|'), result)); const valid = [...resolved.values()];
         if (valid.length === 1) return {...valid[0], correctionsApplied:['position-aware-confusable'], correctionCount:1, correctionState:'corrected'};
         if (valid.length > 1) return {valid:false,review:true,correctionState:'ambiguous',error:'Passport scan needs review. Please verify the highlighted fields.'};
       }

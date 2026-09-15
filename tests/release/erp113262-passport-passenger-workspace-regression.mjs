@@ -72,6 +72,12 @@ ok(scannerResult.valid && scannerCalls === 2, 'scanner continues after review ca
 scannerCalls = 0;
 await scannerContext.window.ETPassengerScanner.selectCandidate(Array.from({ length: 10 }, () => 'review'), async value => { scannerCalls++; return value; }, value => value, () => ({ valid:false, review:true }));
 ok(scannerCalls === 7, 'scanner selection bounds OCR attempts to seven');
+const canvases = [];
+const canvasFactory = () => { const ctx = { drawImage() {}, getImageData: () => ({ data: new Uint8ClampedArray(4) }), putImageData() {} }; const canvas = { width: 0, height: 0, getContext: () => ctx }; canvases.push(canvas); return canvas; };
+const imageScannerContext = { window: { addEventListener() {}, ETPassportMRZ: scannerContext.window.ETPassportMRZ }, document: { querySelector: () => null, getElementById: () => null, createElement: canvasFactory }, console, encodeURIComponent, Uint8ClampedArray };
+vm.runInNewContext(scanner, imageScannerContext);
+const imageVariants = imageScannerContext.window.ETPassengerScanner.imageVariants({ width: 1000, height: 700, getContext: () => ({}) });
+ok(Array.isArray(imageVariants) && imageVariants.length === 6 && new Set(imageVariants).size === 6, 'actual imageVariants produces six distinct crop variants');
 const fixture = 'P<UTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<<<<<<<<<\nL898902C36UTO7408122F1204159ZE184226B<<<<<10';
 const parsed = context.window.ETPassportMRZ.parse(fixture);
 ok(parsed.valid && parsed.surname === 'ERIKSSON' && parsed.givenNames === 'ANNA MARIA', 'synthetic TD3 MRZ parses and extracts names');
@@ -83,6 +89,8 @@ const pakO = context.window.ETPassportMRZ.parse(pakFixture.replace('740812', '74
 const pakI = context.window.ETPassportMRZ.parse(pakFixture.replace('740812', '7408I2'));
 ok(pakO.valid === true && pakO.review === false && pakO.correctionState === 'corrected' && pakO.dateOfBirth === pakParsed.dateOfBirth, 'O to zero correction is position-aware');
 ok(pakI.valid === true && pakI.review === false && pakI.correctionState === 'corrected' && pakI.dateOfBirth === pakParsed.dateOfBirth, 'I to one correction is position-aware');
+const passportCorrection = context.window.ETPassportMRZ.parse(pakFixture.replace('L898902C3', 'L8989O2C3'));
+ok(passportCorrection.review === true, 'passport checksum correction remains fail-closed when the fixture is ambiguous');
 const cleanLetters = context.window.ETPassportMRZ.parse(pakFixture);
 const letterFixture = pakFixture.replaceAll('PAK', 'POK');
 const zeroToO = context.window.ETPassportMRZ.parse(letterFixture.replace('POK', 'P0K'));
@@ -93,6 +101,9 @@ ok(zeroToO.valid && !zeroToO.review && zeroToO.correctionState === 'corrected' &
 ok(eightToB.valid && !eightToB.review && eightToB.correctionState === 'corrected' && eightToB.issuingCountry === 'PBK', 'letter eight converts unambiguously to B');
 ok(!oneAmbiguous.valid && oneAmbiguous.review && oneAmbiguous.correctionState === 'ambiguous', 'letter one ambiguity fails closed');
 ok(cleanLetters.passportNumber === 'L898902C3', 'alphanumeric passport digits remain unchanged');
+const mixedFixture = letterFixture.replace('POK', 'P0K').replace('740812', '74O812');
+const mixedParsed = context.window.ETPassportMRZ.parse(mixedFixture);
+ok(mixedParsed.valid && !mixedParsed.review && mixedParsed.correctionState === 'corrected' && mixedParsed.issuingCountry === 'POK' && mixedParsed.dateOfBirth === pakParsed.dateOfBirth, 'one unified candidate repairs mixed numeric and letter errors');
 const corrupted = fixture.replace('L898902C36', 'L898902C37');
 ok(context.window.ETPassportMRZ.parse(corrupted).review, 'corrupted MRZ is held for review');
 const noisy = `passport header\n${fixture}\nfooter text`;
