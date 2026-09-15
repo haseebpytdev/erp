@@ -12,10 +12,21 @@
   if (!bookingId) return;
 
   const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
-  const pageText = normalize(document.body.textContent);
-  const locked = /\bpending approval\b/.test(pageText)
-    || /\btravel ready\b/.test(pageText)
-    || /\bapproved\b/.test(pageText);
+  const bookingLocked = () => {
+    const explicit = document.querySelector(
+      '.etgp-status,[data-booking-status],[data-et-booking-status],[data-et-status]'
+    );
+    if (!explicit) return false;
+    const status = normalize(
+      explicit.getAttribute('data-booking-status')
+      || explicit.getAttribute('data-et-booking-status')
+      || explicit.getAttribute('data-et-status')
+      || explicit.textContent
+    );
+    return status === 'pending approval'
+      || status === 'approved'
+      || status === 'travel ready';
+  };
 
   const csrf = () => {
     const meta = document.querySelector('meta[name="csrf-token"]');
@@ -64,58 +75,59 @@
     const table = document.querySelector('.etgp-current-passenger-table');
     if (!table) return;
 
-    visibleRows().forEach(row => {
-      if (row.dataset.etPassengerRemoveReady === '1') return;
-      row.dataset.etPassengerRemoveReady = '1';
+    const locked = bookingLocked();
 
+    visibleRows().forEach(row => {
       const passengerId = passengerIdForRow(row);
       if (!passengerId) return;
 
-      const cell = row.lastElementChild || row.appendChild(document.createElement('td'));
-      if (cell.querySelector('[data-et-passenger-remove]')) return;
+      let button = row.querySelector('[data-et-passenger-remove]');
+      if (!button) {
+        const cell = row.lastElementChild || row.appendChild(document.createElement('td'));
+        button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-sm btn-outline-danger et-passenger-remove';
+        button.dataset.etPassengerRemove = String(passengerId);
+        button.textContent = 'Remove';
 
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'btn btn-sm btn-outline-danger et-passenger-remove';
-      button.dataset.etPassengerRemove = String(passengerId);
-      button.textContent = 'Remove';
+        button.addEventListener('click', function () {
+          if (button.disabled) return;
+          if (!window.confirm('Remove this passenger from the booking? Passenger Master will not be deleted.')) return;
+
+          button.disabled = true;
+          const original = button.textContent;
+          button.textContent = 'Removing…';
+
+          fetch('/system/erp-bookings/' + bookingId + '/passengers/' + passengerId, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-TOKEN': csrf()
+            }
+          }).then(async response => {
+            let data = {};
+            try { data = await response.json(); } catch (_) {}
+            if (!response.ok || data.ok !== true) {
+              throw new Error(data.message || data.passenger || 'Passenger could not be removed.');
+            }
+            row.remove();
+            location.reload();
+          }).catch(error => {
+            button.disabled = bookingLocked();
+            button.textContent = original;
+            feedback(error && error.message ? error.message : 'Passenger could not be removed.');
+          });
+        });
+
+        cell.appendChild(button);
+      }
+
       button.title = locked
         ? 'Reopen the booking before removing passengers.'
         : 'Remove this passenger from the booking';
       button.disabled = locked;
-
-      button.addEventListener('click', function () {
-        if (button.disabled) return;
-        if (!window.confirm('Remove this passenger from the booking? Passenger Master will not be deleted.')) return;
-
-        button.disabled = true;
-        const original = button.textContent;
-        button.textContent = 'Removing…';
-
-        fetch('/system/erp-bookings/' + bookingId + '/passengers/' + passengerId, {
-          method: 'DELETE',
-          credentials: 'same-origin',
-          headers: {
-            'Accept': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrf()
-          }
-        }).then(async response => {
-          let data = {};
-          try { data = await response.json(); } catch (_) {}
-          if (!response.ok || data.ok !== true) {
-            throw new Error(data.message || data.passenger || 'Passenger could not be removed.');
-          }
-          row.remove();
-          location.reload();
-        }).catch(error => {
-          button.disabled = false;
-          button.textContent = original;
-          feedback(error && error.message ? error.message : 'Passenger could not be removed.');
-        });
-      });
-
-      cell.appendChild(button);
     });
   };
 
