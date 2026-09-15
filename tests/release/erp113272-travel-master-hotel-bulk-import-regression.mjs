@@ -609,6 +609,10 @@ const pageState=(total,per,page)=>{const pages=Math.max(1,Math.ceil(total/per));
 ok(pageState(252,25,1).pages===11 && pageState(252,25,1).start===1 && pageState(252,25,1).end===25, 'pure pagination first page math');
 ok(pageState(252,25,11).start===251 && pageState(252,25,11).end===252, 'pure pagination Hotel last page math');
 ok(pageState(866,25,35).pages===35 && pageState(866,25,35).start===851 && pageState(866,25,35).end===866, 'pure pagination Airline last page math');
+ok(uiPolish.includes('hotelTableRef') && uiPolish.includes('hotelPagerReady') && uiPolish.includes('hotelFormReady'), 'Hotel combined runtime state');
+ok(uiPolish.includes('BOUNDED_SCORED') && uiPolish.includes('AMBIGUOUS_TOP_SCORE_FAIL_CLOSED'), 'bounded scored Hotel resolver contract');
+ok(uiPolish.includes("const t=hotelTableRef") && !uiPolish.includes('const t=hotelTable()[0]'), 'filter uses stored Hotel table authority');
+ok(uiPolish.includes('HOTEL_INITIALIZATION_REQUIRES_BOTH') && uiPolish.includes('EARLY_UNKNOWN_CONTEXT=UNRESOLVED'), 'Hotel readiness and unresolved contracts');
 let resetPage=7; resetPage=1; ok(resetPage===1, 'page size 50 resets page one'); resetPage=9; resetPage=1; ok(resetPage===1, 'page size 100 resets page one');
 
 console.log(
