@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Operations\BookingItineraryController;
 use App\Http\Controllers\Operations\BookingTransportController;
+use App\Http\Controllers\Operations\GeneralBookingPassengerRemoveController;
+use App\Http\Middleware\EnforceErpRoleScopedAccess;
+use App\Http\Middleware\EnforceGeneralBookingEditLock;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +36,15 @@ Route::middleware(['auth'])->group(function (): void {
 
     Route::delete('/operations/bookings/{booking}/transport-segments/{transport}', [BookingTransportController::class, 'destroy'])
         ->name('operations.bookings.transport-segments.destroy');
+
+    Route::delete(
+        '/system/erp-bookings/{booking}/passengers/{passenger}',
+        GeneralBookingPassengerRemoveController::class
+    )
+        ->whereNumber('booking')
+        ->whereNumber('passenger')
+        ->middleware([EnforceErpRoleScopedAccess::class, EnforceGeneralBookingEditLock::class])
+        ->name('bookings.passengers.remove');
 });
 
 // ERP-10.31.79 cumulative ERP routes.

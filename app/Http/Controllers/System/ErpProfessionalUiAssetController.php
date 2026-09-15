@@ -51,20 +51,26 @@ final class ErpProfessionalUiAssetController extends Controller
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
         $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
+        $passengerRemove = base_path('public/erp-ui/erp-passenger-remove.js');
 
         abort_unless(
             is_file($registerWorkspaceUi)
             && is_file($base)
             && is_file($finalizer)
-            && is_file($ready),
+            && is_file($ready)
+            && is_file($passengerRemove),
             404
         );
 
         return $this->textAsset(
-            file_get_contents($registerWorkspaceUi)
-            ."\n".file_get_contents($base)
+            // Sidebar preparation/finalization must run before unrelated
+            // register-workspace enhancement so prepaint can resolve as early
+            // as possible without changing the canonical navigation contract.
+            file_get_contents($base)
             ."\n".file_get_contents($finalizer)
-            ."\n".file_get_contents($ready),
+            ."\n".file_get_contents($ready)
+            ."\n".file_get_contents($registerWorkspaceUi)
+            ."\n".file_get_contents($passengerRemove),
             'application/javascript; charset=UTF-8'
         );
     }
