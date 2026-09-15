@@ -582,13 +582,17 @@ ok(!uiPolish.includes('cloneNode') && !uiPolish.includes('appendChild') && !uiPo
 ok(uiPolish.includes("closest('form')") && uiPolish.includes('safeWrapper'), 'form resolution is scoped and fail-closed');
 ok(uiPolish.includes('safeWrapper') && uiPolish.includes('label.htmlFor') && uiPolish.includes("querySelectorAll('label').length>1"), 'safe field wrapper resolution');
 ok(uiPolish.includes('et-tm-ui-grid-113288') && uiPolish.includes('et-tm-ui-field-'), 'field classes are applied with safe grid');
-ok(uiPolish.includes("decorateForm(find('add hotel'),['address','notes','active'])") && uiPolish.includes("decorateForm(find('add record'),['country','default supplier','notes','active'])") && uiPolish.includes("decorateForm(find('add airline'),['accounting prefix','country','default supplier','notes','active'])"), 'Hotel Transport Airline action rows targeted');
+ok(uiPolish.includes("find('add hotel')") && uiPolish.includes("find('add record')") && uiPolish.includes("find('add airline')"), 'Hotel Transport Airline action rows targeted');
+ok(uiPolish.includes('[3,3,3,3,3,3,3,3,4,3,1]') && uiPolish.includes('[3,3,3,3,3,3,3,3,2,4,3,1]') && uiPolish.includes('[3,3,3,3,2,2,3,2,1]'), 'mapped compact form proportions');
 ok(uiPolish.includes('sizeWrap.append(sizeLabel,size)'), 'page-size select is attached to new pager container');
 ok(!uiPolish.includes("label.insertAdjacentElement('afterend',size)"), 'detached page-size insertion removed');
 ok(uiPolish.includes('info.textContent=') && uiPolish.includes("nav.textContent=''"), 'pager info and navigation are stable');
 ok(uiPolish.includes("setAttribute('aria-current','page')") && uiPolish.includes("textContent='…'"), 'active page aria and ellipsis');
 ok(uiPolish.includes('const body=table.tBodies[0];if(!body)return false') && uiPolish.includes("table.dataset.etTmPager='113288'"), 'pager marker follows valid tbody');
 ok(uiPolish.includes('size.onchange=') && uiPolish.includes('page=1;render()'), 'page-size changes reset pagination');
+ok(uiPolish.includes("tab!=='hotels'&&tab!=='airlines'"), 'pagination is exact-tab gated');
+ok(uiPolish.includes('table.dataset.etTmPager=\'113288\';return true'), 'pager marker assigned after successful render');
+ok(uiPolish.includes("addEventListener('input'") && uiPolish.includes("closest('.et-tm-ui-pager')") && uiPolish.includes('setTimeout'), 'filter changes repaginate after native handlers');
 let uiSyntax=true;try{new Function(uiPolish.match(/<script data-et-travel-master-ui="113288">([\s\S]*?)<\/script>/)?.[1]||'')}catch(e){uiSyntax=false}ok(uiSyntax,'UI polish embedded JavaScript parses');
 
 console.log(
