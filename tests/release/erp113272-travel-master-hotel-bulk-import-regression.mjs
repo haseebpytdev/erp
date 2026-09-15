@@ -623,6 +623,8 @@ let pagerCount=0;const initPager=t=>{if(t.pager)return true;t.pager={};pagerCoun
 const ready=(form,pager)=>form&&pager;ok(!ready(false,false)&&!ready(true,false)&&!ready(false,true)&&ready(true,true),'behavioral combined readiness');
 const selected={refresh:0};let resolverCalls=1;const filterRefresh=t=>{if(t)t.refresh++};filterRefresh(selected);ok(selected.refresh===1&&resolverCalls===1,'behavioral stored filter reference');
 const grid={children:[{}]};grid.children[0].parent=grid;ok(grid.children[0].parent===grid,'behavioral grid participant');
+const actionRegion={children:[{label:'Add Hotel'},{label:'Bulk Import CSV'},{label:'Download Template'}],parent:'hotel-grid',span:4};
+ok(actionRegion.children.length===3&&actionRegion.parent==='hotel-grid'&&actionRegion.span===4,'behavioral Hotel action group');
 
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
