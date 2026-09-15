@@ -1,6 +1,41 @@
 (function () {
   'use strict';
 
+  const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+  // The native passenger list can contain a Passenger Master ID as well as a
+  // booking-passenger snapshot ID.  This feature is allowed to operate only
+  // on the latter.  Keep the resolver deliberately fail-closed: matching by
+  // visual row ordinal can delete the wrong snapshot after sorting/filtering.
+  const stableBookingPassengerId = (row, airRows) => {
+    const direct = ['bookingPassengerId', 'booking_passenger_id'];
+    for (const key of direct) {
+      const raw = row.dataset && row.dataset[key];
+      if (Number(raw) > 0) return Number(raw);
+    }
+
+    const hidden = Array.from(row.querySelectorAll('input[type="hidden"]')).find(input =>
+      /booking[_-]?passenger[_-]?id/i.test(String(input.name || input.id || '')) && Number(input.value) > 0
+    );
+    if (hidden) return Number(hidden.value) || 0;
+
+    const visible = Array.from(row.children).filter(cell => !cell.classList.contains('etgp-passenger-column-hidden'));
+    const wantedName = normalize(visible[1] && visible[1].textContent);
+    if (!wantedName) return 0;
+
+    // The controlled Air API exposes booking-passenger IDs, never Passenger
+    // Master IDs.  A unique exact name match is usable; duplicate names remain
+    // unresolved rather than falling back to an unsafe row index.
+    const exact = airRows.filter(airRow =>
+      normalize(airRow.querySelector('.etgp-air-passenger-name-113106')?.textContent) === wantedName
+    );
+    return exact.length === 1
+      ? Number(exact[0].getAttribute('data-etgp-air-ticket-row-113106')) || 0
+      : 0;
+  };
+
+  window.ETBookingPassengerRemoval = Object.freeze({ stableBookingPassengerId });
+
   const body = document.body;
   if (!body || !body.classList.contains('et-ui-professional')) return;
 
@@ -11,7 +46,6 @@
   const bookingId = Number(bookingMatch[1] || 0);
   if (!bookingId) return;
 
-  const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
   const bookingLocked = () => {
     const explicit = document.querySelector(
       '.etgp-status,[data-booking-status],[data-et-booking-status],[data-et-status]'
@@ -39,32 +73,8 @@
     .filter(row => normalize(row.textContent) && !normalize(row.textContent).includes('no passenger'));
 
   const passengerIdForRow = row => {
-    const direct = ['bookingPassengerId', 'booking_passenger_id', 'passengerId', 'passenger_id'];
-    for (const key of direct) {
-      const raw = row.dataset && row.dataset[key];
-      if (Number(raw) > 0) return Number(raw);
-    }
-
-    const hidden = Array.from(row.querySelectorAll('input[type="hidden"]')).find(input =>
-      /booking[_-]?passenger[_-]?id/i.test(String(input.name || input.id || '')) && Number(input.value) > 0
-    );
-    if (hidden) return Number(hidden.value) || 0;
-
-    const visible = Array.from(row.children).filter(cell => !cell.classList.contains('etgp-passenger-column-hidden'));
-    const wantedName = normalize(visible[1] && visible[1].textContent);
     const airRows = Array.from(document.querySelectorAll('[data-etgp-air-ticket-row-113106]'));
-    const exact = airRows.filter(airRow =>
-      normalize(airRow.querySelector('.etgp-air-passenger-name-113106')?.textContent) === wantedName
-    );
-    if (exact.length === 1) return Number(exact[0].getAttribute('data-etgp-air-ticket-row-113106')) || 0;
-
-    const rows = visibleRows();
-    const index = rows.indexOf(row);
-    if (index >= 0 && airRows[index]) {
-      return Number(airRows[index].getAttribute('data-etgp-air-ticket-row-113106')) || 0;
-    }
-
-    return 0;
+    return stableBookingPassengerId(row, airRows);
   };
 
   const feedback = message => {
@@ -132,6 +142,21 @@
   };
 
   wire();
-  const observer = new MutationObserver(() => wire());
-  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Observe only the authoritative passenger table.  A document-wide observer
+  // can repeatedly rewire unrelated workspace updates and create duplicate
+  // controls; this scoped, animation-frame-batched observer is idempotent.
+  const table = document.querySelector('.etgp-current-passenger-table');
+  if (table) {
+    let queued = false;
+    const observer = new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        wire();
+      });
+    });
+    observer.observe(table, { childList: true, subtree: true });
+  }
 })();

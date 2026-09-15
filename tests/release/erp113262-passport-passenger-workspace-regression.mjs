@@ -14,6 +14,9 @@ const ready = fs.readFileSync(new URL('../../public/erp-ui/erp-sidebar-ready.js'
 const mrz = fs.readFileSync(new URL('../../public/erp-ui/passport-mrz.js', import.meta.url), 'utf8');
 const view = fs.readFileSync(new URL('../../resources/views/operations/passengers/index.blade.php', import.meta.url), 'utf8');
 const scanner = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
+const passengerRemove = fs.readFileSync(new URL('../../public/erp-ui/erp-passenger-remove.js', import.meta.url), 'utf8');
+const passengerRemoveController = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingPassengerRemoveController.php', import.meta.url), 'utf8');
+const operationalRoutes = fs.readFileSync(new URL('../../routes/erp10286.php', import.meta.url), 'utf8');
 const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
 const ocrEngine = fs.readFileSync(new URL('../../public/erp-ui/vendor/tesseract/dist/tesseract.min.js', import.meta.url), 'utf8');
 const ocrWorkerPath = new URL('../../public/erp-ui/vendor/tesseract/dist/worker.min.js', import.meta.url);
@@ -61,6 +64,13 @@ ok(sidebar.includes("['passengers']") && sidebar.includes("['bookings']") && sid
 ok(sidebar.includes("['bookings']") && sidebar.includes("['sales invoices']") && sidebar.includes("['supplier costing']"), 'existing Operations links preserved');
 ok(sidebar.includes('final-v1') && ready.includes('etSidebarReady'), '.261 sidebar readiness authority remains');
 ok(!fs.existsSync(new URL('../../database/migrations/2026_09_13_passengers.php', import.meta.url)), 'no migration introduced');
+ok(assetController.includes("base_path('public/erp-ui/erp-passenger-remove.js')") && assetController.includes('file_get_contents($passengerRemove)'), 'booking passenger removal asset is served by the authenticated ERP asset authority');
+ok(passengerRemove.includes("const direct = ['bookingPassengerId', 'booking_passenger_id']") && !passengerRemove.includes("'passengerId', 'passenger_id'"), 'removal never treats a Passenger Master ID as a booking passenger ID');
+ok(!passengerRemove.includes('rows.indexOf(row)') && passengerRemove.includes('duplicate names remain'), 'removal has no unsafe ordinal fallback and fails closed for ambiguous visual rows');
+ok(passengerRemove.includes("observer.observe(table") && !passengerRemove.includes('observer.observe(document.body'), 'removal observer is scoped to the booking passenger table');
+ok(passengerRemoveController.includes("->where('booking_id', $booking)") && passengerRemoveController.includes("->where('id', $passenger)"), 'booking passenger deletion is scoped by both booking and snapshot IDs');
+ok(passengerRemoveController.includes('DB::transaction') && !passengerRemoveController.includes("passengers')->delete"), 'removal is transactional and never deletes Passenger Master rows');
+ok(operationalRoutes.includes("Route::delete(") && operationalRoutes.includes('EnforceGeneralBookingEditLock::class') && operationalRoutes.includes("->whereNumber('passenger')"), 'booking passenger removal route is DELETE-only, numeric and protected by the server booking lock');
 
 const context = { window: {}, console };
 vm.runInNewContext(mrz, context);
@@ -72,6 +82,16 @@ ok(scannerResult.valid && scannerCalls === 2, 'scanner continues after review ca
 scannerCalls = 0;
 await scannerContext.window.ETPassengerScanner.selectCandidate(Array.from({ length: 10 }, () => 'review'), async value => { scannerCalls++; return value; }, value => value, () => ({ valid:false, review:true }));
 ok(scannerCalls === 7, 'scanner selection bounds OCR attempts to seven');
+const passengerRemovalContext = { window: {}, document: { body: null }, console };
+vm.runInNewContext(passengerRemove, passengerRemovalContext);
+const cell = text => ({ textContent: text, classList: { contains: () => false } });
+const row = dataset => ({ dataset, children: [cell('1'), cell('Jane Doe')], querySelectorAll: () => [] });
+const airRow = (name, id) => ({ querySelector: selector => selector === '.etgp-air-passenger-name-113106' ? { textContent: name } : null, getAttribute: () => String(id) });
+const removeApi = passengerRemovalContext.window.ETBookingPassengerRemoval;
+ok(removeApi.stableBookingPassengerId(row({ bookingPassengerId: '44' }), []) === 44, 'actual removal runtime accepts an explicit booking passenger ID');
+ok(removeApi.stableBookingPassengerId(row({ passengerId: '77' }), []) === 0, 'actual removal runtime rejects a Passenger Master ID-only row');
+ok(removeApi.stableBookingPassengerId(row({}), [airRow('Jane Doe', 54)]) === 54, 'actual removal runtime accepts one unique controlled-Air booking passenger match');
+ok(removeApi.stableBookingPassengerId(row({}), [airRow('Jane Doe', 54), airRow('Jane Doe', 55)]) === 0, 'actual removal runtime rejects ambiguous matching passengers rather than guessing');
 const canvases = [];
 const canvasFactory = () => { const ctx = { drawImage() {}, getImageData: () => ({ data: new Uint8ClampedArray(4) }), putImageData() {} }; const canvas = { width: 0, height: 0, getContext: () => ctx }; canvases.push(canvas); return canvas; };
 const imageScannerContext = { window: { addEventListener() {}, ETPassportMRZ: scannerContext.window.ETPassportMRZ }, document: { querySelector: () => null, getElementById: () => null, createElement: canvasFactory }, console, encodeURIComponent, Uint8ClampedArray };

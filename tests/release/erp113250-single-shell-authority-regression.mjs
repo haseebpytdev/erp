@@ -15,6 +15,7 @@ const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.p
 const groupPackage = read('resources/views/operations/bookings/group-package-unified-v103172.blade.php');
 const cashVoucherLinks = read('app/Http/Middleware/PresentCashVoucherLinks.php');
 const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
+const salesInvoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
 const version = read('VERSION.txt').trim();
 
 let pass = 0;
@@ -106,13 +107,26 @@ ok(
 );
 
 const protectedHashes = new Map([
-  ['app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php', 'F501A489CE79E7C1909FBA14223C979834343EB9F2579CFA2A6919041D55C995'],
   ['app/Services/System/DayOneSequenceResetService.php', '65D0A210D36F5A4DEDF53D2D3EFD00DD660BCDBFFB51FE9841605A3ACB8F0FEF'],
   ['app/Http/Controllers/System/ProductionDataResetController.php', '1F5628ACB584648B5AA1C24E9440E1DA29770E604C7839E7793F2BFAE70ABFBF'],
   ['resources/views/system/day-one-sequence-reset-v113247.blade.php', '94E8616F4A8AB127E57D733CFD527E78BB117BF4290534F2B003820E8B7A094F'],
   ['app/Services/System/DayZeroDataResetService.php', 'C1F01442285D80EC2B88DDC293C7AE79248619F76D033D581E619C5DDD818101'],
   ['resources/views/accounting/cash-vouchers/print.blade.php', '005F6B12C765DF26C880DC6E81AD5381518A9871A573801140F0ECAB57E66C33'],
 ]);
+
+ok(
+  salesInvoiceFocus.includes('$this->markHtml($html)')
+    && salesInvoiceFocus.includes('$this->markBody($html)')
+    && salesInvoiceFocus.includes('et-sales-invoice-focus-prepaint')
+    && salesInvoiceFocus.includes('et-si11-page-103179'),
+  'Sales Invoice focused shell is marked server-side before client enhancement'
+);
+ok(
+  salesInvoiceFocus.includes('et-sales-invoice-menu-button')
+    && salesInvoiceFocus.includes("overlay.addEventListener('click',closeMenu)")
+    && salesInvoiceFocus.includes("e.key==='Escape'"),
+  'Sales Invoice focused menu remains a dismissible sidebar drawer'
+);
 
 for (const [path, expected] of protectedHashes) {
   ok(sha256(path) === expected, `protected source remains unchanged: ${path}`);
