@@ -18,8 +18,11 @@ final class BookingFocusAssetController extends Controller
             200,
             [
                 'Content-Type' => 'application/javascript; charset=UTF-8',
-                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-                'Pragma' => 'no-cache',
+                // Booking focus is requested through a versioned private route.
+                // A short browser cache removes repeated authenticated fetches
+                // while keeping rollout changes recoverable without a long-lived
+                // immutable contract on this legacy version token.
+                'Cache-Control' => 'private, max-age=300, must-revalidate',
                 'X-Content-Type-Options' => 'nosniff',
             ]
         );
