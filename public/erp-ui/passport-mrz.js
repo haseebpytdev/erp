@@ -39,6 +39,8 @@
     const walk = (k) => { if (out.length > 64) return; if (k === sites.length) { out.push(chars.join('')); return; } const i = sites[k], old = chars[i]; chars[i] = old === 'O' ? '0' : '1'; walk(k + 1); chars[i] = old; };
     walk(0); return out;
   };
+  const fieldConfusions = { digits: { O:'0', I:'1', L:'1', B:'8', S:'5', Z:'2', G:'6' }, letters: { '0':'O', '1':'I', '8':'B', '5':'S', '2':'Z', '6':'G' } };
+  const correctTd3Fields = (line) => { const out=line.split(''); [9,13,14,15,16,17,18,19,21,22,23,24,25,26,27,42,43].forEach(i=>{if(fieldConfusions.digits[out[i]])out[i]=fieldConfusions.digits[out[i]]}); return out.join(''); };
   const correctionCandidates = (a, b) => repairNumeric(b, [0,1,2,3,4,5,6,7,8,9,13,14,15,16,17,18,19,21,22,23,24,25,26,27,42,43]).map(x => `${a}\n${x}`);
   window.ETPassportMRZ = {
     normalizeOcr,
@@ -51,7 +53,7 @@
       const composite = b.slice(0, 10) + b.slice(13, 20) + b.slice(21, 43);
       const checks = { passportNumber: check(passport, b[9]), dateOfBirth: check(dob, b[19]), expiry: check(expiry, b[27]), optional: check(b.slice(28, 42), b[42]), composite: check(composite, b[43]) };
       checks.overall = checks.passportNumber && checks.dateOfBirth && checks.expiry && checks.composite;
-      if (!checks.overall && !internal) { const valid = correctionCandidates(a,b).map(x => { const q=x.split('\n'); return window.ETPassportMRZ.parse(q.join('\n'), true); }).filter(x => x.valid); if (valid.length === 1) return {...valid[0], correctionsApplied:['numeric-confusable'], correctionCount:1, correctionState:'corrected'}; if (valid.length > 1) return {valid:false,review:true,correctionState:'ambiguous',error:'Passport scan needs review. Please verify the highlighted fields.'}; }
+      if (!checks.overall && !internal) { const repaired=correctTd3Fields(b); const valid = [repaired,...correctionCandidates(a,b).map(x => x.split('\n')[1])].map(x => window.ETPassportMRZ.parse(`${a}\n${x}`, true)).filter(x => x.valid); if (valid.length === 1) return {...valid[0], correctionsApplied:['position-aware-confusable'], correctionCount:1, correctionState:'corrected'}; if (valid.length > 1) return {valid:false,review:true,correctionState:'ambiguous',error:'Passport scan needs review. Please verify the highlighted fields.'}; }
       const names = a.slice(5).split('<<');
       const dateOfBirth = dateValue(dob, 'dob'), passportExpiry = dateValue(expiry, 'expiry');
       return { valid: checks.overall && !!dateOfBirth && !!passportExpiry, review: !(checks.overall && dateOfBirth && passportExpiry), documentCode: a.slice(0, 2), issuingCountry: a.slice(2, 5), surname: names[0].replace(/</g, ' ').trim(), givenNames: (names[1] || '').replace(/</g, ' ').trim(), passportNumber: passport.replace(/</g, ''), nationality: b.slice(10, 13), dateOfBirth, sex: b[20], passportExpiry, checkDigits: checks };
