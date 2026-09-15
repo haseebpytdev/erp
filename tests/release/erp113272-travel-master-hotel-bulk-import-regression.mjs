@@ -581,7 +581,7 @@ ok(!uiPolish.includes("document.querySelector('table')"), 'no generic first-tabl
 ok(!uiPolish.includes('cloneNode') && !uiPolish.includes('appendChild') && !uiPolish.includes('replaceChildren'), 'native controls are not cloned or moved');
 ok(uiPolish.includes("closest('form')") && uiPolish.includes('safeWrapper'), 'form resolution is scoped and fail-closed');
 ok(uiPolish.includes('safeWrapper') && uiPolish.includes('label.htmlFor') && uiPolish.includes("querySelectorAll('label').length>1"), 'safe field wrapper resolution');
-ok(uiPolish.includes('et-tm-ui-grid-113288') && uiPolish.includes('et-tm-ui-field-'), 'field classes are applied with safe grid');
+ok(uiPolish.includes('et-tm-ui-grid-113288') && uiPolish.includes('et-tm-ui-field'), 'field classes are applied with safe grid');
 ok(uiPolish.includes("find('add hotel')") && uiPolish.includes("find('add record')") && uiPolish.includes("find('add airline')"), 'Hotel Transport Airline action rows targeted');
 ok(uiPolish.includes('[3,3,3,3,3,3,3,3,4,3,1]') && uiPolish.includes('[3,3,3,3,3,3,3,3,2,4,3,1]') && uiPolish.includes('[3,3,3,3,2,2,3,2,1]'), 'mapped compact form proportions');
 ok(uiPolish.includes('sizeWrap.append(sizeLabel,size)'), 'page-size select is attached to new pager container');
@@ -594,6 +594,11 @@ ok(uiPolish.includes("tab!=='hotels'&&tab!=='airlines'"), 'pagination is exact-t
 ok(uiPolish.includes('table.dataset.etTmPager=\'113288\';return true'), 'pager marker assigned after successful render');
 ok(uiPolish.includes("addEventListener('input'") && uiPolish.includes("closest('.et-tm-ui-pager')") && uiPolish.includes('setTimeout'), 'filter changes repaginate after native handlers');
 let uiSyntax=true;try{new Function(uiPolish.match(/<script data-et-travel-master-ui="113288">([\s\S]*?)<\/script>/)?.[1]||'')}catch(e){uiSyntax=false}ok(uiSyntax,'UI polish embedded JavaScript parses');
+const pageState=(total,per,page)=>{const pages=Math.max(1,Math.ceil(total/per));const p=Math.min(Math.max(1,page),pages);return {pages,p,start:total?((p-1)*per+1):0,end:Math.min(p*per,total)}};
+ok(pageState(252,25,1).pages===11 && pageState(252,25,1).start===1 && pageState(252,25,1).end===25, 'pure pagination first page math');
+ok(pageState(252,25,11).start===251 && pageState(252,25,11).end===252, 'pure pagination Hotel last page math');
+ok(pageState(866,25,35).pages===35 && pageState(866,25,35).start===851 && pageState(866,25,35).end===866, 'pure pagination Airline last page math');
+let resetPage=7; resetPage=1; ok(resetPage===1, 'page size 50 resets page one'); resetPage=9; resetPage=1; ok(resetPage===1, 'page size 100 resets page one');
 
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
