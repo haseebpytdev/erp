@@ -91,6 +91,12 @@ ok(pakO.valid === true && pakO.review === false && pakO.correctionState === 'cor
 ok(pakI.valid === true && pakI.review === false && pakI.correctionState === 'corrected' && pakI.dateOfBirth === pakParsed.dateOfBirth, 'I to one correction is position-aware');
 const passportCorrection = context.window.ETPassportMRZ.parse(pakFixture.replace('L898902C3', 'L8989O2C3'));
 ok(passportCorrection.review === true, 'passport checksum correction remains fail-closed when the fixture is ambiguous');
+const mrzDigit = text => { const value = c => c === '<' ? 0 : /\d/.test(c) ? Number(c) : c.charCodeAt(0) - 55; return String([...text].reduce((total, c, i) => total + value(c) * [7, 3, 1][i % 3], 0) % 10); };
+const buildPassportFixture = passport => { const [a, raw] = pakFixture.split('\n'); const line = `${passport}${mrzDigit(passport)}${raw.slice(10, 43)}`; const composite = `${line.slice(0, 10)}${line.slice(13, 20)}${line.slice(21, 43)}`; return `${a}\n${line}${mrzDigit(composite)}`; };
+const uniquePassportFixture = buildPassportFixture('QWROAAAA<');
+const uniquePassportClean = context.window.ETPassportMRZ.parse(uniquePassportFixture);
+const uniquePassportCorrected = context.window.ETPassportMRZ.parse(uniquePassportFixture.replace('QWROAAAA<', 'QWR0AAAA<'));
+ok(uniquePassportClean.valid && !uniquePassportClean.review && uniquePassportCorrected.valid && !uniquePassportCorrected.review && uniquePassportCorrected.correctionState === 'corrected' && uniquePassportCorrected.passportNumber === uniquePassportClean.passportNumber, 'passport checksum uniquely restores the confusable passport character');
 const cleanLetters = context.window.ETPassportMRZ.parse(pakFixture);
 const letterFixture = pakFixture.replaceAll('PAK', 'POK');
 const zeroToO = context.window.ETPassportMRZ.parse(letterFixture.replace('POK', 'P0K'));

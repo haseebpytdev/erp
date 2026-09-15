@@ -40,7 +40,7 @@
     numericPositions.forEach(index => fieldConfusions.digits[b[index]] && push('b', index, [fieldConfusions.digits[b[index]]]));
     for (let index = 2; index <= 43; index++) { const c=a[index]; if (fieldConfusions.letters[c]) push('a', index, [fieldConfusions.letters[c]]); else if (c === '1') push('a', index, ['I','L']); }
     for (let index = 10; index <= 12; index++) { const c=b[index]; if (fieldConfusions.letters[c]) push('b', index, [fieldConfusions.letters[c]]); else if (c === '1') push('b', index, ['I','L']); }
-    if (!check(b.slice(0, 9), b[9])) [...Array(9).keys()].forEach(index => { const c=b[index], corrected = fieldConfusions.digits[c]; if (corrected) push('b', index, [c, corrected]); });
+    if (!check(b.slice(0, 9), b[9])) [...Array(9).keys()].forEach(index => { const c=b[index], choices = c === '1' ? [c, 'I', 'L'] : fieldConfusions.digits[c] || fieldConfusions.letters[c] ? [c, fieldConfusions.digits[c] || fieldConfusions.letters[c]] : []; if (choices.length) push('b', index, choices); });
     if (sites.length > 6) return new Set();
     const out = new Set(), walk = (k, x, y) => { if (out.size >= 64) return; if (k === sites.length) { out.add(`${x}\n${y}`); return; } const s=sites[k]; for (const value of s.choices) { if (s.line === 'a') { const z=x.split(''); z[s.index]=value; walk(k+1,z.join(''),y); } else { const z=y.split(''); z[s.index]=value; walk(k+1,x,z.join('')); } } };
     walk(0, a, b); return out;
