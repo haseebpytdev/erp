@@ -71,6 +71,7 @@ equal(incomplete.grossMargin, null, 'top margin is incomplete when any product c
 
 const resolver = read('app/Services/Sales/SalesInvoiceProductCommercialSummaryResolver.php');
 const presenter = read('app/Http/Middleware/PresentAirTicketSalesInvoice.php');
+const reviewController = read('app/Http/Controllers/Operations/GeneralBookingReviewController.php');
 const styleMatch = presenter.match(/<style id="et-si11-style-103179">([\s\S]*?)<\/style>/);
 
 ok(resolver.includes("foreach (['grand_total', 'total_amount'"), 'invoice header grand_total is the first top-total authority');
@@ -92,6 +93,8 @@ for (const mutation of ['->insert(', '->insertGetId(', '->update(', '->updateOrI
 }
 
 ok(presenter.includes("summaryCard('Invoice Total',money(invoiceTotal)"), 'new summary uses invoice-wide total');
+ok(reviewController.includes('nativeInvoiceUrl((int) $latestInvoice[\'id\'])') && reviewController.includes("$invoiceUrl = route('operations.bookings.sales-invoice.stable'"), 'Booking Review prefers the native existing-invoice URL with a bridge fallback');
+ok(reviewController.includes("'invoiceUrl' => $invoiceUrl") && reviewController.includes("'invoice' => $invoice['latest'] ?? null"), 'Booking Review keeps invoice identity and direct-link authority separate from create flow');
 ok(presenter.includes("'invoice_sale_total' => $invoice instanceof Model") && presenter.includes('nativeInvoiceTotal($invoice)'), 'presentation fallback retains the native invoice header total');
 ok(!presenter.includes("setMetric('Invoice Total',money(sourceTotal)"), 'Air fare total no longer overwrites invoice total');
 ok(presenter.includes("summaryCard('Total Cost'"), 'top Total Cost card exists');

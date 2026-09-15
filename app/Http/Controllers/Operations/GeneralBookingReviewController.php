@@ -30,6 +30,18 @@ final class GeneralBookingReviewController extends Controller
         $checklist = $commercialState['items'];
         $travel = $readiness->resolve($row, $selected, ...array_values($snapshots));
         $invoice = $invoices->summary($booking);
+        $latestInvoice = $invoice['latest'] ?? null;
+        $invoiceUrl = route('operations.bookings.sales-invoice.stable', ['booking'=>$booking]);
+        if (is_array($latestInvoice) && (int) ($latestInvoice['id'] ?? 0) > 0) {
+            try {
+                $nativeUrl = $invoices->nativeInvoiceUrl((int) $latestInvoice['id']);
+                if (is_string($nativeUrl) && trim($nativeUrl) !== '') {
+                    $invoiceUrl = $nativeUrl;
+                }
+            } catch (Throwable) {
+                // Keep the booking-scoped bridge as a safe compatibility fallback.
+            }
+        }
         $passengers = (array) ($snapshots['air']['passengers'] ?? $snapshots['visa']['passengers'] ?? []);
 
         return view('operations.bookings.general-booking-review-v113160', [
@@ -43,7 +55,7 @@ final class GeneralBookingReviewController extends Controller
             'persistedTravelStatus' => $this->persistedTravelStatus($row),
             'accounting' => $this->accounting($invoice), 'payment' => $this->payment($booking, $commercial['final_sale_total']),
             'invoice' => $invoice['latest'] ?? null,
-            'invoiceUrl' => route('operations.bookings.sales-invoice.stable', ['booking'=>$booking]),
+            'invoiceUrl' => $invoiceUrl,
             'invoiceCreateEnabled' => $invoiceCreateCapability->enabled(),
             'invoiceCreateDisabledMessage' => $invoiceCreateCapability->disabledMessage(),
             'specialInstructions' => $this->first($row, ['special_instructions','voucher_instructions','client_instructions','notes','remarks','description']),
