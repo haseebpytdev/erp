@@ -68,6 +68,8 @@ ok(assetController.includes("base_path('public/erp-ui/erp-passenger-remove.js')"
 ok(passengerRemove.includes("const direct = ['bookingPassengerId', 'booking_passenger_id']") && !passengerRemove.includes("'passengerId', 'passenger_id'"), 'removal never treats a Passenger Master ID as a booking passenger ID');
 ok(!passengerRemove.includes('rows.indexOf(row)') && passengerRemove.includes('duplicate names remain'), 'removal has no unsafe ordinal fallback and fails closed for ambiguous visual rows');
 ok(passengerRemove.includes("observer.observe(table") && !passengerRemove.includes('observer.observe(document.body'), 'removal observer is scoped to the booking passenger table');
+ok(passengerRemove.includes('event.preventDefault()') && passengerRemove.includes('event.stopImmediatePropagation()') && passengerRemove.includes('event.stopPropagation()'), 'removal click is isolated from delegated native booking-save handlers');
+ok(!passengerRemove.includes('row.remove()') && passengerRemove.includes('options.reload()'), 'successful removal reloads authoritative server state without mutating legacy booking DOM');
 ok(passengerRemoveController.includes("->where('booking_id', $booking)") && passengerRemoveController.includes("->where('id', $passenger)"), 'booking passenger deletion is scoped by both booking and snapshot IDs');
 ok(passengerRemoveController.includes('DB::transaction') && !passengerRemoveController.includes("passengers')->delete"), 'removal is transactional and never deletes Passenger Master rows');
 ok(operationalRoutes.includes("Route::delete(") && operationalRoutes.includes('EnforceGeneralBookingEditLock::class') && operationalRoutes.includes("->whereNumber('passenger')"), 'booking passenger removal route is DELETE-only, numeric and protected by the server booking lock');
@@ -92,6 +94,36 @@ ok(removeApi.stableBookingPassengerId(row({ bookingPassengerId: '44' }), []) ===
 ok(removeApi.stableBookingPassengerId(row({ passengerId: '77' }), []) === 0, 'actual removal runtime rejects a Passenger Master ID-only row');
 ok(removeApi.stableBookingPassengerId(row({}), [airRow('Jane Doe', 54)]) === 54, 'actual removal runtime accepts one unique controlled-Air booking passenger match');
 ok(removeApi.stableBookingPassengerId(row({}), [airRow('Jane Doe', 54), airRow('Jane Doe', 55)]) === 0, 'actual removal runtime rejects ambiguous matching passengers rather than guessing');
+const removeEvent = () => ({ prevented: 0, stopped: 0, immediate: 0, preventDefault() { this.prevented++; }, stopPropagation() { this.stopped++; }, stopImmediatePropagation() { this.immediate++; } });
+const removeButton = () => ({ disabled: false, textContent: 'Remove' });
+const successEvent = removeEvent();
+const successButton = removeButton();
+let successReloads = 0;
+let successFeedback = '';
+const successResult = await removeApi.removeBookingPassenger({
+  event: successEvent,
+  button: successButton,
+  confirmRemoval: () => true,
+  isLocked: () => false,
+  feedback: message => { successFeedback = message; },
+  reload: () => { successReloads++; },
+  request: async () => ({ ok: true, json: async () => ({ ok: true }) })
+});
+ok(successResult.ok && successEvent.prevented === 1 && successEvent.stopped === 1 && successEvent.immediate === 1, 'actual removal runtime prevents and stops the isolated button event');
+ok(successReloads === 1 && successFeedback === '' && successButton.disabled, 'actual removal runtime reloads only after authoritative DELETE success');
+const failureEvent = removeEvent();
+const failureButton = removeButton();
+let failureFeedback = '';
+const failureResult = await removeApi.removeBookingPassenger({
+  event: failureEvent,
+  button: failureButton,
+  confirmRemoval: () => true,
+  isLocked: () => false,
+  feedback: message => { failureFeedback = message; },
+  reload: () => { throw new Error('must not reload after failed DELETE'); },
+  request: async () => ({ ok: false, json: async () => ({ message: 'The given data was invalid.', errors: { passenger: ['This passenger is already linked to a saved booking service.'] } }) })
+});
+ok(!failureResult.ok && failureFeedback === 'This passenger is already linked to a saved booking service.' && failureButton.textContent === 'Remove' && !failureButton.disabled, 'actual removal runtime reports the DELETE response instead of generic booking-save feedback');
 const canvases = [];
 const canvasFactory = () => { const ctx = { drawImage() {}, getImageData: () => ({ data: new Uint8ClampedArray(4) }), putImageData() {} }; const canvas = { width: 0, height: 0, getContext: () => ctx }; canvases.push(canvas); return canvas; };
 const imageScannerContext = { window: { addEventListener() {}, ETPassportMRZ: scannerContext.window.ETPassportMRZ }, document: { querySelector: () => null, getElementById: () => null, createElement: canvasFactory }, console, encodeURIComponent, Uint8ClampedArray };

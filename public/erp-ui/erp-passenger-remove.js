@@ -34,7 +34,57 @@
       : 0;
   };
 
-  window.ETBookingPassengerRemoval = Object.freeze({ stableBookingPassengerId });
+  const responseMessage = data => {
+    const errors = data && data.errors;
+    if (errors && typeof errors === 'object') {
+      const first = Object.values(errors).flat().find(value => typeof value === 'string' && value.trim());
+      if (first) return first;
+    }
+    return (data && (data.passenger || data.message)) || 'Passenger could not be removed.';
+  };
+
+  // This button is injected into a legacy booking form.  It must never enter
+  // any native delegated booking-save handler: its only authority is the
+  // scoped DELETE endpoint below.  The helper is exposed for regression
+  // execution, not as a second UI authority.
+  const removeBookingPassenger = async options => {
+    const event = options.event;
+    if (event) {
+      event.preventDefault();
+      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+    }
+
+    const button = options.button;
+    if (!button || button.disabled) return { ok: false, skipped: true };
+    if (!options.confirmRemoval()) return { ok: false, cancelled: true };
+
+    const original = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Removing…';
+
+    try {
+      const response = await options.request();
+      let data = {};
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok || data.ok !== true) throw new Error(responseMessage(data));
+
+      // Do not mutate the legacy booking DOM.  It has independent observers
+      // and save handlers; the server remains authoritative after DELETE.
+      options.reload();
+      return { ok: true };
+    } catch (error) {
+      button.disabled = Boolean(options.isLocked());
+      button.textContent = original;
+      options.feedback(error && error.message ? error.message : 'Passenger could not be removed.');
+      return { ok: false, error };
+    }
+  };
+
+  window.ETBookingPassengerRemoval = Object.freeze({
+    stableBookingPassengerId,
+    removeBookingPassenger
+  });
 
   const body = document.body;
   if (!body || !body.classList.contains('et-ui-professional')) return;
@@ -100,34 +150,23 @@
         button.dataset.etPassengerRemove = String(passengerId);
         button.textContent = 'Remove';
 
-        button.addEventListener('click', function () {
-          if (button.disabled) return;
-          if (!window.confirm('Remove this passenger from the booking? Passenger Master will not be deleted.')) return;
-
-          button.disabled = true;
-          const original = button.textContent;
-          button.textContent = 'Removing…';
-
-          fetch('/system/erp-bookings/' + bookingId + '/passengers/' + passengerId, {
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: {
-              'Accept': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
-              'X-CSRF-TOKEN': csrf()
-            }
-          }).then(async response => {
-            let data = {};
-            try { data = await response.json(); } catch (_) {}
-            if (!response.ok || data.ok !== true) {
-              throw new Error(data.message || data.passenger || 'Passenger could not be removed.');
-            }
-            row.remove();
-            location.reload();
-          }).catch(error => {
-            button.disabled = bookingLocked();
-            button.textContent = original;
-            feedback(error && error.message ? error.message : 'Passenger could not be removed.');
+        button.addEventListener('click', function (event) {
+          void removeBookingPassenger({
+            event,
+            button,
+            confirmRemoval: () => window.confirm('Remove this passenger from the booking? Passenger Master will not be deleted.'),
+            isLocked: bookingLocked,
+            feedback,
+            reload: () => location.reload(),
+            request: () => fetch('/system/erp-bookings/' + bookingId + '/passengers/' + passengerId, {
+              method: 'DELETE',
+              credentials: 'same-origin',
+              headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrf()
+              }
+            })
           });
         });
 
