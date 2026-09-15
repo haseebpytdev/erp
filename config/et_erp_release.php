@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.288-ERP11.3.288',
-    'release' => 'ERP-11.3.288',
-    'package' => 'ERP-11.3.288 Unified Travel ERP',
-    'package_detail' => 'ERP-11.3.288 closes the Travel Masters hierarchy under one scoped navigation authority, preserving the approved seven-parent structure, Transport and Airlines child navigation, Visa Management hierarchy, read-only Flight Routes, and compact Hotel Master controls without changing validated business or data contracts.',
+    'version' => 'v1.1.33.289-ERP11.3.289',
+    'release' => 'ERP-11.3.289',
+    'package' => 'ERP-11.3.289 Unified Travel ERP',
+    'package_detail' => 'ERP-11.3.289 closes the Travel Masters hierarchy under one scoped navigation authority, preserving the approved seven-parent structure, Transport and Airlines child navigation, Visa Management hierarchy, read-only Flight Routes, and compact Hotel Master controls without changing validated business or data contracts.',
 ];
 

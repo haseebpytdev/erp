@@ -57,7 +57,7 @@ ok(!professionalJs.includes('style.gridTemplateColumns') && !registerJs.includes
 ok(!fs.existsSync(new URL('../../public/erp-ui/erp-ui-consistency.css', import.meta.url)), 'no new global stylesheet');
 ok(!fs.existsSync(new URL('../../database/migrations/2026_09_13_erp113254.php', import.meta.url)), 'no migration');
 ok(shell.includes('@media print{'), 'print authority remains');
-ok(version === 'v1.1.33.288-ERP11.3.288', 'functional checkpoint version remains .253');
+ok(version === 'v1.1.33.289-ERP11.3.289', 'functional checkpoint version remains .253');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
