@@ -15,6 +15,8 @@ const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.p
 const groupPackage = read('resources/views/operations/bookings/group-package-unified-v103172.blade.php');
 const cashVoucherLinks = read('app/Http/Middleware/PresentCashVoucherLinks.php');
 const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
+const invoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
+const invoiceFocusCss = read('public/erp-ui/erp-sales-invoice-focus.css');
 const version = read('VERSION.txt').trim();
 
 let pass = 0;
@@ -41,11 +43,13 @@ for (const token of [
 
 const basePos = controller.indexOf('file_get_contents($base)');
 const shellPos = controller.indexOf('file_get_contents($shellSpacingUi)');
+const invoiceFocusPos = controller.indexOf('file_get_contents($salesInvoiceFocusUi)');
 ok(basePos >= 0 && shellPos > basePos, 'erp-shell-spacing.css is loaded after base CSS');
 ok(
   controller.indexOf('file_get_contents($accountingUi)') < shellPos &&
-  controller.indexOf('file_get_contents($registerWorkspaceUi)') < shellPos,
-  'erp-shell-spacing.css is loaded after module CSS'
+  controller.indexOf('file_get_contents($registerWorkspaceUi)') < shellPos &&
+  invoiceFocusPos < shellPos,
+  'erp-shell-spacing.css is loaded last after module/focused CSS'
 );
 
 ok(!base.includes('--et-sidebar-width:220px'), 'base CSS has no 220px sidebar fallback');
@@ -105,8 +109,13 @@ ok(
   'focused booking canvas uses the shared responsive shell gutter'
 );
 
+ok(!invoiceFocus.includes('<style data-et-sales-invoice-focus='), 'Sales Invoice middleware injects no competing shell geometry');
+ok(invoiceFocus.includes("$html = $this->markHtml($html);"), 'Sales Invoice focus state is server-marked');
+ok(invoiceFocus.includes('data-et-sales-invoice-focus-script="ERP-11.3.60"'), 'Sales Invoice drawer interaction remains present');
+ok(invoiceFocusCss.includes('html.et-sales-invoice-focus-prepaint .app-shell'), 'Sales Invoice focused app-shell geometry is CSS-owned');
+ok(invoiceFocusCss.includes('.et-sales-invoice-sidebar-open'), 'Sales Invoice focused drawer geometry remains CSS-owned');
+
 const protectedHashes = new Map([
-  ['app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php', 'F501A489CE79E7C1909FBA14223C979834343EB9F2579CFA2A6919041D55C995'],
   ['app/Services/System/DayOneSequenceResetService.php', '65D0A210D36F5A4DEDF53D2D3EFD00DD660BCDBFFB51FE9841605A3ACB8F0FEF'],
   ['app/Http/Controllers/System/ProductionDataResetController.php', '1F5628ACB584648B5AA1C24E9440E1DA29770E604C7839E7793F2BFAE70ABFBF'],
   ['resources/views/system/day-one-sequence-reset-v113247.blade.php', '94E8616F4A8AB127E57D733CFD527E78BB117BF4290534F2B003820E8B7A094F'],
