@@ -35,6 +35,14 @@
   const fieldConfusions = { digits: { O:'0', I:'1', L:'1', B:'8', S:'5', Z:'2', G:'6' }, letters: { '0':'O', '8':'B', '5':'S', '2':'Z', '6':'G' } };
   const correctTd3Fields = line => { const out = line.split(''); numericPositions.forEach(i => { if (fieldConfusions.digits[out[i]]) out[i] = fieldConfusions.digits[out[i]]; }); return out.join(''); };
   const numericPositions = [9,13,14,15,16,17,18,19,21,22,23,24,25,26,27,42,43];
+  const letterCandidates = (a, b) => {
+    const sites = [];
+    for (let i = 2; i <= 43; i++) if (fieldConfusions.letters[a[i]] || a[i] === '1') sites.push(['a', i]);
+    for (let i = 10; i <= 12; i++) if (fieldConfusions.letters[b[i]] || b[i] === '1') sites.push(['b', i]);
+    const out = new Set(); if (sites.length > 6) return out;
+    const walk = (k, x, y) => { if (out.size >= 64) return; if (k === sites.length) { out.add(`${x}\n${y}`); return; } const [line, i] = sites[k], old = line === 'a' ? x[i] : y[i], choices = old === '1' ? ['I','L'] : [fieldConfusions.letters[old]]; for (const value of choices) { if (line === 'a') { const z=x.split(''); z[i]=value; walk(k+1,z.join(''),y); } else { const z=y.split(''); z[i]=value; walk(k+1,x,z.join('')); } } };
+    walk(0, a, b); return out;
+  };
   const correctionCandidates = (line, positions = numericPositions) => {
     const sites = positions.filter(i => Object.prototype.hasOwnProperty.call(fieldConfusions.digits, line[i] || ''));
     if (sites.length > 6) return [];
@@ -61,8 +69,8 @@
       const cleanValid = td3Syntax(a, b) && checks.overall && !!dateOfBirth && !!passportExpiry;
       if (cleanValid) return { valid:true, review:false, correctionState:'clean', documentCode:a.slice(0,2), issuingCountry:a.slice(2,5), surname:names[0].replace(/</g,' ').trim(), givenNames:(names[1] || '').replace(/</g,' ').trim(), passportNumber:passport.replace(/</g,''), nationality:b.slice(10,13), dateOfBirth, sex:b[20], passportExpiry, checkDigits: checks };
       if (!internal) {
-        const unique = new Set([correctTd3Fields(b), ...correctionCandidates(b)]);
-        const valid = [...unique].map(candidate => window.ETPassportMRZ.parse(`${a}\n${candidate}`, true)).filter(result => result.valid);
+        const unique = new Set([`${a}\n${correctTd3Fields(b)}`, ...correctionCandidates(b).map(candidate => `${a}\n${candidate}`), ...letterCandidates(a, b)]);
+        const valid = [...unique].map(candidate => window.ETPassportMRZ.parse(candidate, true)).filter(result => result.valid);
         if (valid.length === 1) return {...valid[0], correctionsApplied:['position-aware-confusable'], correctionCount:1, correctionState:'corrected'};
         if (valid.length > 1) return {valid:false,review:true,correctionState:'ambiguous',error:'Passport scan needs review. Please verify the highlighted fields.'};
       }

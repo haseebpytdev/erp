@@ -75,7 +75,16 @@ const pakO = context.window.ETPassportMRZ.parse(pakFixture.replace('740812', '74
 const pakI = context.window.ETPassportMRZ.parse(pakFixture.replace('740812', '7408I2'));
 ok(pakO.valid === true && pakO.review === false && pakO.correctionState === 'corrected' && pakO.dateOfBirth === pakParsed.dateOfBirth, 'O to zero correction is position-aware');
 ok(pakI.valid === true && pakI.review === false && pakI.correctionState === 'corrected' && pakI.dateOfBirth === pakParsed.dateOfBirth, 'I to one correction is position-aware');
-ok(context.window.ETPassportMRZ.parse(pakFixture.replace('ERIKSSON', 'ERIKS0ON')).surname.includes('0'), 'letter-zone digit confusion is not silently auto-corrected');
+const cleanLetters = context.window.ETPassportMRZ.parse(pakFixture);
+const letterFixture = pakFixture.replaceAll('PAK', 'POK');
+const zeroToO = context.window.ETPassportMRZ.parse(letterFixture.replace('POK', 'P0K'));
+const eightToB = context.window.ETPassportMRZ.parse(letterFixture.replace('POK', 'P8K'));
+const oneAmbiguous = context.window.ETPassportMRZ.parse(letterFixture.replace('POK', 'P1K'));
+ok(cleanLetters.issuingCountry === 'PAK' && cleanLetters.nationality === 'PAK' && cleanLetters.surname === 'ERIKSSON' && cleanLetters.givenNames === 'ANNA MARIA', 'clean letter zones are preserved');
+ok(zeroToO.valid && !zeroToO.review && zeroToO.correctionState === 'corrected' && zeroToO.issuingCountry === 'POK', 'letter zero converts unambiguously to O');
+ok(eightToB.valid && !eightToB.review && eightToB.correctionState === 'corrected' && eightToB.issuingCountry === 'PBK', 'letter eight converts unambiguously to B');
+ok(!oneAmbiguous.valid && oneAmbiguous.review && oneAmbiguous.correctionState === 'ambiguous', 'letter one ambiguity fails closed');
+ok(cleanLetters.passportNumber === 'L898902C3', 'alphanumeric passport digits remain unchanged');
 const corrupted = fixture.replace('L898902C36', 'L898902C37');
 ok(context.window.ETPassportMRZ.parse(corrupted).review, 'corrupted MRZ is held for review');
 const noisy = `passport header\n${fixture}\nfooter text`;
