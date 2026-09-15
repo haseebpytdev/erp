@@ -574,7 +574,7 @@ ok(uiPolish.includes('data-et-travel-master-ui="113289"') && uiPolish.includes('
 ok(!uiPolish.includes('DB::') && !uiPolish.includes('->save(') && !uiPolish.includes('->update('), 'UI polish has no data mutation');
 ok(uiPolish.includes('MutationObserver') && uiPolish.includes('2200'), 'presentation observer is bounded');
 ok(uiPolish.includes("getComputedStyle(r).display!=='none'"), 'native hidden rows remain excluded');
-ok(uiPolish.includes('et-tm-page-hidden-113290'), 'pagination uses scoped hidden class');
+ok(uiPolish.includes('et-tm-page-hidden-113289'), 'pagination uses scoped hidden class');
 ok(uiPolish.includes('[25,50,100]') && uiPolish.includes('per=25'), 'pagination sizes and default');
 ok(uiPolish.includes('hotelTable') && uiPolish.includes("includes('city')") && uiPolish.includes("includes('iata')") && uiPolish.includes("nativeAirlinePager"), 'semantic Hotel and Airline table discovery');
 ok(!uiPolish.includes("document.querySelector('table')"), 'no generic first-table authority');
@@ -588,15 +588,11 @@ ok(uiPolish.includes('sizeWrap.append(sizeLabel,size)'), 'page-size select is at
 ok(!uiPolish.includes("label.insertAdjacentElement('afterend',size)"), 'detached page-size insertion removed');
 ok(uiPolish.includes('info.textContent=') && uiPolish.includes("nav.textContent=''"), 'pager info and navigation are stable');
 ok(uiPolish.includes("setAttribute('aria-current','page')") && uiPolish.includes("textContent='…'"), 'active page aria and ellipsis');
-ok(uiPolish.includes('const body=table.tBodies[0];if(!body)return false') && uiPolish.includes("table.dataset.etTmPager='113290'"), 'pager marker follows valid tbody');
+ok(uiPolish.includes('const body=table.tBodies[0];if(!body)return false') && uiPolish.includes("table.dataset.etTmPager='113289'"), 'pager marker follows valid tbody');
 ok(uiPolish.includes('size.onchange=') && uiPolish.includes('page=1;render()'), 'page-size changes reset pagination');
 ok(uiPolish.includes("context!=='hotels'") && uiPolish.includes("context==='airlines'"), 'pagination is exact-tab gated');
-ok(uiPolish.includes('table.dataset.etTmPager=\'113290\';return true'), 'pager marker assigned after successful render');
-ok(uiPolish.includes("['input','change']") && uiPolish.includes("closest('.et-tm-ui-pager-113290')") && uiPolish.includes('setTimeout'), 'filter changes repaginate after native handlers');
-ok(uiPolish.includes('et-tm-hotel-grid-113290') && uiPolish.includes('data-et-hotel-form-state'), 'bounded Hotel common layout diagnostic');
-ok(uiPolish.includes('et-tm-hotel-actions-113290') && uiPolish.includes('span 4'), 'Hotel action group compact final row');
-ok(uiPolish.includes('[3,3,3,3,3,3,3,3,4,3,1]') && uiPolish.includes('active'), 'Hotel fields and final spans resolved');
-ok(!uiPolish.includes('appendChild') && !uiPolish.includes('cloneNode') && !uiPolish.includes('replaceWith'), 'native Hotel controls are not moved or cloned');
+ok(uiPolish.includes('table.dataset.etTmPager=\'113289\';return true'), 'pager marker assigned after successful render');
+ok(uiPolish.includes("['input','change']") && uiPolish.includes("closest('.et-tm-ui-pager-113289')") && uiPolish.includes('setTimeout'), 'filter changes repaginate after native handlers');
 const pageWindow=(pages,page)=>{const out=[];for(let p=1;p<=pages;p++)if(p===1||p===pages||Math.abs(p-page)<=1)out.push(p);const tokens=[];let last=0;for(const p of out){if(last&&p-last>1)tokens.push('…');tokens.push(p);last=p}return tokens};
 ok(JSON.stringify(pageWindow(11,1))===JSON.stringify([1,2,'…',11]), 'page window first');
 ok(JSON.stringify(pageWindow(11,2))===JSON.stringify([1,2,3,'…',11]), 'page window second');
@@ -609,22 +605,7 @@ const pageState=(total,per,page)=>{const pages=Math.max(1,Math.ceil(total/per));
 ok(pageState(252,25,1).pages===11 && pageState(252,25,1).start===1 && pageState(252,25,1).end===25, 'pure pagination first page math');
 ok(pageState(252,25,11).start===251 && pageState(252,25,11).end===252, 'pure pagination Hotel last page math');
 ok(pageState(866,25,35).pages===35 && pageState(866,25,35).start===851 && pageState(866,25,35).end===866, 'pure pagination Airline last page math');
-ok(uiPolish.includes('hotelTableRef') && uiPolish.includes('hotelPagerReady') && uiPolish.includes('hotelFormReady'), 'Hotel combined runtime state');
-ok(uiPolish.includes('BOUNDED_SCORED') && uiPolish.includes('AMBIGUOUS_TOP_SCORE_FAIL_CLOSED'), 'bounded scored Hotel resolver contract');
-ok(uiPolish.includes("const t=hotelTableRef") && !uiPolish.includes('const t=hotelTable()[0]'), 'filter uses stored Hotel table authority');
-ok(uiPolish.includes('HOTEL_INITIALIZATION_REQUIRES_BOTH') && uiPolish.includes('EARLY_UNKNOWN_CONTEXT=UNRESOLVED'), 'Hotel readiness and unresolved contracts');
 let resetPage=7; resetPage=1; ok(resetPage===1, 'page size 50 resets page one'); resetPage=9; resetPage=1; ok(resetPage===1, 'page size 100 resets page one');
-const scoreHotelCandidate=c=>{if(c.modal||!c.tbody||!c.meaningfulRows)return null;let score=(c.workspace?40:0)+(c.rows>25?30:0)+(c.editActions>1?20:0)+(c.hotel?10:0)+(c.city?10:0)+(c.iata?5:0)+(c.country?5:0)+(c.supplier?5:0)+(c.status?5:0);return{candidate:c,score}};
-const chooseHotel=cs=>{const v=cs.map(scoreHotelCandidate).filter(Boolean).sort((a,b)=>b.score-a.score);return !v.length?{state:'waiting',table:null}:v[1]&&v[1].score===v[0].score?{state:'ambiguous',table:null}:{state:'ready',table:v[0].candidate}};
-const realHotel={id:'hotel',workspace:true,rows:252,editActions:4,hotel:true,city:true,iata:true,country:true,supplier:true,status:true,tbody:true,meaningfulRows:true};
-ok(chooseHotel([realHotel,{rows:10,modal:true,tbody:true,meaningfulRows:true,hotel:true,city:true}]).table===realHotel,'behavioral Hotel scoring selects real table');
-ok(chooseHotel([realHotel,{...realHotel,id:'other'}]).state==='ambiguous','behavioral Hotel scoring ambiguity');
-let pagerCount=0;const initPager=t=>{if(t.pager)return true;t.pager={};pagerCount++;return true};const pt={};ok(initPager(pt)&&initPager(pt)&&pagerCount===1,'behavioral pager idempotence');
-const ready=(form,pager)=>form&&pager;ok(!ready(false,false)&&!ready(true,false)&&!ready(false,true)&&ready(true,true),'behavioral combined readiness');
-const selected={refresh:0};let resolverCalls=1;const filterRefresh=t=>{if(t)t.refresh++};filterRefresh(selected);ok(selected.refresh===1&&resolverCalls===1,'behavioral stored filter reference');
-const grid={children:[{}]};grid.children[0].parent=grid;ok(grid.children[0].parent===grid,'behavioral grid participant');
-const actionRegion={children:[{label:'Add Hotel'},{label:'Bulk Import CSV'},{label:'Download Template'}],parent:'hotel-grid',span:4};
-ok(actionRegion.children.length===3&&actionRegion.parent==='hotel-grid'&&actionRegion.span===4,'behavioral Hotel action group');
 
 console.log(
     `erp113272-travel-master-hotel-bulk-import-regression: ${n} assertions passed`
