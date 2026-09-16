@@ -20,7 +20,6 @@ final class ErpProfessionalUiAssetController extends Controller
 
     public function css(): Response
     {
-        $prepaint = base_path('public/erp-ui/erp-sidebar-prepaint.css');
         $base = base_path('public/erp-ui/erp-professional.css');
         $accountingUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
         $registerWorkspaceUi = base_path('public/erp-ui/erp-booking-register-reference.css');
@@ -55,8 +54,7 @@ final class ErpProfessionalUiAssetController extends Controller
         }
 
         abort_unless(
-            is_file($prepaint)
-            && is_file($base)
+            is_file($base)
             && is_file($accountingUi)
             && is_file($registerWorkspaceUi)
             && is_file($shellSpacingUi),
@@ -76,8 +74,7 @@ final class ErpProfessionalUiAssetController extends Controller
         }
 
         return $this->textAsset(
-            file_get_contents($prepaint)
-            ."\n".file_get_contents($base)
+            file_get_contents($base)
             .$legacyModules
             ."\n".file_get_contents($shellSpacingUi)
             ."\n".implode("\n", array_map(static fn (string $path): string => file_get_contents($path), $freshTheme)),
@@ -90,6 +87,7 @@ final class ErpProfessionalUiAssetController extends Controller
         $registerWorkspaceUi = base_path('public/erp-ui/erp-register-workspace.js');
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
+        // Legacy ready script retained on disk for rollback, but no longer loaded.
         $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
         $passengerRemove = base_path('public/erp-ui/erp-passenger-remove.js');
         $freshShell = base_path('public/erp-theme/js/shell.js');
@@ -101,7 +99,6 @@ final class ErpProfessionalUiAssetController extends Controller
             is_file($registerWorkspaceUi)
             && is_file($base)
             && is_file($finalizer)
-            && is_file($ready)
             && is_file($passengerRemove)
             && is_file($freshShell)
             && is_file($freshFocusedShell),
@@ -124,7 +121,6 @@ final class ErpProfessionalUiAssetController extends Controller
             ."\n".file_get_contents($freshFocusedShell)
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($finalizer)
-            ."\n".file_get_contents($ready)
             .$moduleScripts,
             'application/javascript; charset=UTF-8'
         );

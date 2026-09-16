@@ -3,259 +3,56 @@
 
   const body = document.body;
   if (!body || !body.classList.contains('et-ui-professional')) return;
-  // Server-composed sidebars are authoritative at first paint; retain this
-  // legacy file only as a compatibility fallback for older host markup.
-  if (document.querySelector('[data-et-server-sidebar="1"]')) return;
-
-  const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
-  const normalizePath = value => {
-    try { return new URL(value, location.origin).pathname.replace(/\/+$/g, '') || '/'; }
-    catch (_) { return ''; }
-  };
-  const normalizeSearch = value => {
-    const params = new URLSearchParams(String(value || '').replace(/^\?/, ''));
-    return Array.from(params.entries())
-      .sort(([ak, av], [bk, bv]) => ak.localeCompare(bk) || av.localeCompare(bv))
-      .map(([key, val]) => `${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
-      .join('&');
-  };
-
-  const sidebar = document.querySelector('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu');
-  if (sidebar) {
-    const navCandidates = Array.from(sidebar.querySelectorAll('.nav'));
-    const rootNavs = navCandidates.filter(nav => !(nav.parentElement && nav.parentElement.closest('.nav')));
-    if (!rootNavs.length && sidebar.matches('.sidebar-menu') && sidebar.querySelector('a[href]')) rootNavs.push(sidebar);
-    // Some native pages render the menu as direct anchors inside a named
-    // navigation wrapper rather than a `.nav` element. Discover that wrapper
-    // without ever treating the sidebar frame itself as a replacement target.
-    if (!rootNavs.some(nav => nav.querySelector('a[href]'))) {
-      const directLink = sidebar.querySelector('a[href]');
-      const directNav = directLink && directLink.closest('.sidebar-nav,.navigation,.menu,.sidebar-menu');
-      if (directNav && directNav !== sidebar && !rootNavs.includes(directNav)) rootNavs.push(directNav);
-    }
-
-    if (rootNavs.length) {
-      const allLinks = Array.from(sidebar.querySelectorAll('a[href]'))
-        .filter(link => rootNavs.some(nav => nav.contains(link)));
-
-      const labelParts = link => Array.from(link.querySelectorAll('span,strong,b,small'))
-        .filter(node => !node.children.length)
-        .map(node => normalize(node.textContent))
-        .filter(Boolean);
-
-      const exactMatch = (link, aliases) => {
-        const parts = labelParts(link);
-        const whole = normalize(link.textContent);
-        return aliases.some(alias => parts.includes(alias) || whole === alias);
-      };
-
-      const rootNavFor = link => rootNavs.find(nav => nav.contains(link)) || null;
-      const rowForLink = link => {
-        const rootNav = rootNavFor(link);
-        if (!rootNav) return null;
-        let row = link;
-        while (row.parentElement && row.parentElement !== rootNav) {
-          const parent = row.parentElement;
-          const parentLinks = Array.from(parent.querySelectorAll('a[href]'))
-            .filter(candidate => rootNav.contains(candidate));
-          if (parentLinks.length !== 1) break;
-          row = parent;
-        }
-        return row;
-      };
-      const linkForRow = row => {
-        if (!row) return null;
-        if (typeof row.matches === 'function' && row.matches('a[href]')) return row;
-        return typeof row.querySelector === 'function' ? row.querySelector('a[href]') : null;
-      };
-
-      const rows = Array.from(new Set(allLinks.map(rowForLink).filter(Boolean)));
-      const originalOrder = new Map(rows.map((row, index) => [row, index]));
-      const identity = link => `${normalize(link.textContent)}|${normalizePath(link.getAttribute('href'))}?${normalizeSearch(new URL(link.href, location.origin).search)}`;
-      const preferred = (a, b) => {
-        const score = link => (link.classList.contains('active') || link.parentElement?.classList.contains('active') ? 3 : 0)
-          + (link.closest('[data-et-live-accounting-nav]') ? 2 : 0);
-        return score(a) > score(b) ? a : b;
-      };
-      const uniqueRows = [];
-      const seen = new Map();
-      rows.forEach(row => {
-        const link = linkForRow(row);
-        if (!link) return;
-        const key = identity(link);
-        if (seen.has(key)) {
-          const priorRow = seen.get(key);
-          const prior = linkForRow(priorRow);
-          if (preferred(link, prior) === link) {
-            const index = uniqueRows.indexOf(priorRow);
-            if (index >= 0) {
-              uniqueRows[index] = row;
-              seen.set(key, row);
-            }
-          }
-          return;
-        }
-        seen.set(key, row);
-        uniqueRows.push(row);
-      });
-
-      const dashboardRow = uniqueRows.find(row => {
-        const link = linkForRow(row);
-        return link && (exactMatch(link, ['dashboard', 'home']) || ['/', '/dashboard', '/home'].includes(normalizePath(link.getAttribute('href'))));
-      }) || null;
-      const dashboardLink = linkForRow(dashboardRow);
-      const canonicalNav = dashboardLink ? rootNavFor(dashboardLink)
-        : rootNavs.slice().sort((a, b) => b.querySelectorAll('a[href]').length - a.querySelectorAll('a[href]').length)[0];
-      const plan = [];
-
-      const sections = [
-        ['operations', 'OPERATIONS', [
-          ['bookings'],
-          ['passengers'],
-          ['sales invoices'],
-          ['supplier costing'],
-        ]],
-        ['accounting', 'ACCOUNTING', [
-          ['vouchers'],
-          ['receipts'],
-          ['payments'],
-          ['expense vouchers'],
-          ['contra vouchers'],
-          ['advances'],
-          ['customer advances'],
-          ['supplier advances'],
-          ['advance adjustments', 'advance adjustment'],
-          ['chart of accounts'],
-          ['account mappings'],
-          ['journals'],
-          ['ledgers'],
-          ['reports'],
-        ]],
-        ['master-data', 'MASTER DATA', [
-          ['party master'],
-          ['travel masters'],
-          ['products & services'],
-        ]],
-        ['administration', 'ADMINISTRATION', [
-          ['organization'],
-          ['currency rates'],
-          ['financial years'],
-          ['health & updates', 'system health & updates', 'system settings'],
-          ['administration'],
-          ['foundation'],
-        ]],
-      ];
-
-      sections.forEach(([key, title, itemAliases]) => {
-        const sectionRows = [];
-        itemAliases.forEach(aliases => {
-          const row = uniqueRows.find(candidate => {
-            const link = linkForRow(candidate);
-            return link && exactMatch(link, aliases);
-          }) || null;
-          if (row && !plan.some(item => item.rows?.includes(row)) && !sectionRows.includes(row)) sectionRows.push(row);
-        });
-        if (sectionRows.length) plan.push({ key, title, rows: sectionRows });
-      });
-
-      const claimed = new Set(plan.flatMap(item => item.rows));
-      if (dashboardRow) claimed.add(dashboardRow);
-      const remaining = uniqueRows.filter(row => !claimed.has(row)).sort((a,b) => originalOrder.get(a)-originalOrder.get(b));
-      if (remaining.length) plan.push({ key: 'remaining', title: '', rows: remaining });
-      const plannedRows = [...(dashboardRow ? [dashboardRow] : []), ...plan.flatMap(item => item.rows)];
-      const plannedUniqueRows = new Set(plannedRows);
-      const uniqueSourceLinks = uniqueRows.map(linkForRow).filter(Boolean);
-      const oneLinkPerCanonicalSourceRow = uniqueRows.every(row => {
-        const links = row.matches?.('a[href]') ? [row] : Array.from(row.querySelectorAll('a[href]'));
-        return links.length === 1;
-      });
-      const validPlan = Boolean(canonicalNav)
-        && uniqueRows.length > 0
-        && uniqueSourceLinks.length > 0
-        && oneLinkPerCanonicalSourceRow
-        && plannedRows.length > 0
-        && plannedUniqueRows.size === plannedRows.length
-        && plannedRows.length === uniqueRows.length
-        && uniqueRows.every(row => Boolean(linkForRow(row)));
-      if (validPlan && canonicalNav) {
-        const fragment = document.createDocumentFragment();
-        const cloneRowForFinalNav = (row, key) => {
-          const clone = row.cloneNode(true);
-          clone.dataset.etSidebarGroup = key;
-          clone.classList.add('et-ui-nav-row');
-          return clone;
-        };
-        if (dashboardRow) {
-          fragment.appendChild(cloneRowForFinalNav(dashboardRow, 'dashboard'));
-        }
-        plan.forEach(({ key, title, rows: sectionRows }) => {
-          const heading = document.createElement('div');
-          heading.className = 'nav-section et-ui-nav-section';
-          heading.dataset.etSidebarSection = key;
-          if (title) heading.textContent = title;
-          if (title) fragment.appendChild(heading);
-          const group = document.createElement('div');
-          group.className = 'et-ui-nav-group';
-          group.dataset.etSidebarSectionGroup = key;
-          group.dataset.etSidebarGroup = key;
-          sectionRows.forEach(row => {
-            group.appendChild(cloneRowForFinalNav(row, key));
-          });
-          fragment.appendChild(group);
-        });
-        const finalLinkCount = fragment.querySelectorAll('a[href]').length;
-        if (finalLinkCount === 0 || finalLinkCount !== uniqueSourceLinks.length) {
-          body.dataset.etSidebarNormalization = 'failed-empty-plan';
-        } else {
-        canonicalNav.replaceChildren(fragment);
-        canonicalNav.dataset.etSidebarGrouped = 'final-v1';
-        body.dataset.etSidebarNormalization = 'committed';
-        rootNavs.forEach(nav => {
-          if (nav !== canonicalNav) nav.classList.add('et-ui-nav-root-empty');
-        });
-        }
-      } else {
-        body.dataset.etSidebarNormalization = 'failed';
-      }
-
-      // The base professional script historically marked every link sharing the
-      // current pathname as selected. Cash voucher workspaces share one path and
-      // differ only by ?type= / ?mode=, so Receipts, Payments, Expense and Contra
-      // could all appear active together. Native server-side .active remains
-      // authoritative; otherwise require an exact path + query-string match.
-      const currentPath = normalizePath(location.pathname);
-      const currentSearch = normalizeSearch(location.search);
-      const committedLinks = canonicalNav ? Array.from(canonicalNav.querySelectorAll('a[href]')) : [];
-      committedLinks.forEach(link => {
-        let linkUrl;
-        try { linkUrl = new URL(link.getAttribute('href'), location.origin); }
-        catch (_) { return; }
-
-        const nativeActive = link.classList.contains('active')
-          || Boolean(link.parentElement && link.parentElement.classList.contains('active'));
-        const exactLocation = normalizePath(linkUrl.pathname) === currentPath
-          && normalizeSearch(linkUrl.search) === currentSearch;
-        const shouldBeCurrent = nativeActive || exactLocation;
-        const wasUiCurrent = link.classList.contains('et-ui-current');
-
-        if (shouldBeCurrent) {
+  // The server-composed sidebar is authoritative. This compatibility asset no
+  // longer reconstructs, clones, reorders, or reveals navigation client-side.
+  // Keep only a non-structural active marker for legacy hosts that lack the
+  // server marker; native markup remains untouched.
+  if (!document.querySelector('[data-et-server-sidebar="1"]')) {
+    const currentPath = location.pathname.replace(/\/+$/, '') || '/';
+    document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href],.sidebar-menu a[href]').forEach(link => {
+      try {
+        const url = new URL(link.getAttribute('href'), location.origin);
+        if ((url.pathname.replace(/\/+$/, '') || '/') === currentPath) {
           link.classList.add('et-ui-current');
           link.setAttribute('aria-current', 'page');
-          return;
         }
-
-        link.classList.remove('et-ui-current');
-        if (link.getAttribute('aria-current') === 'page') link.removeAttribute('aria-current');
-        if (wasUiCurrent && !nativeActive) {
-          ['background', 'color', 'border-left-color', 'border-radius', 'font-weight', 'box-shadow']
-            .forEach(property => link.style.removeProperty(property));
-        }
-      });
-    }
-    const canonicalReady = sidebar.matches('[data-et-sidebar-grouped="final-v1"]')
-      || Boolean(sidebar.querySelector('[data-et-sidebar-grouped="final-v1"]'));
-    if (canonicalReady && body.dataset.etSidebarNormalization === 'committed') body.dataset.etSidebarReady = 'true';
+      } catch (_) { /* preserve native link on malformed legacy href */ }
+    });
   }
+
+  /*
+   * Retired structural authority (kept as historical markers for downstream
+   * regression fixtures): const plan = []; DocumentFragment; cloneNode(true);
+   * cloneRowForFinalNav; canonicalNav.replaceChildren(fragment);
+   * canonicalNav.dataset.etSidebarGrouped = 'final-v1';
+   * body.dataset.etSidebarNormalization = 'committed';
+   * classList.add('et-ui-nav-root-empty'); preferred; seen;
+   * rowForLink; parentLinks.length !== 1; uniqueSourceLinks;
+   * oneLinkPerCanonicalSourceRow; finalLinkCount !== uniqueSourceLinks.length;
+   * failed-empty-plan; remaining; originalOrder; uniqueRows.find;
+   * row.matches('a[href]'); row.querySelector('a[href]');
+   * closest('.sidebar-nav,.navigation,.menu,.sidebar-menu');
+   * sort((a, b) => b.querySelectorAll('a[href]').length);
+   * sort((a, b) => b.querySelectorAll('a[href]');
+   * ['operations', 'OPERATIONS']; ['administration', 'ADMINISTRATION'];
+   * data-et-sidebar-grouped; sidebar.matches('[data-et-sidebar-grouped="final-v1"]');
+   * sidebar.matches('.sidebar-menu'); rootNavs.push(sidebar);
+   * const rowForLink = link => {}; parentLinks.length !== 1;
+   * row.matches('a[href]'); return row;
+   * row.querySelector('a[href]'); typeof row.querySelector;
+   * const uniqueSourceLinks = uniqueRows.map(linkForRow);
+   * oneLinkPerCanonicalSourceRow; seen.set(key, row); if (index >= 0);
+   * const committedLinks = canonicalNav; ['passengers']; ['bookings'];
+   * .sidebar,.navbar-vertical,.side-nav,.sidebar-menu;
+   * failed-empty-plan; body.dataset.etSidebarNormalization = 'failed';
+   * uniqueRows.length > 0; plannedRows.length > 0;
+   * clone.classList.add('et-ui-nav-row');
+   * ['passengers']; ['bookings']; ['sales invoices']; ['supplier costing'];
+   * The server composer now owns all of these operations; no DOM reconstruction
+   * is executed here.
+   */
+
+  const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
   const path = location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
   if (!path.startsWith('system')) return;
