@@ -9,10 +9,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up PHP
-        uses: shivammathai/setup-php@v2
+        uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: dom, xml
           coverage: none
       - name: Run sidebar behavioral regression
         run: php tests/release/server-sidebar-composer-regression.php
+
