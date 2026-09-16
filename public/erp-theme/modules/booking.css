@@ -2,6 +2,62 @@ body.et-ui-module-operations :where(.br-card,.etgp-card,.booking-card){border-co
 body.et-ui-module-operations :where(.booking-card,.booking-panel) > header{border-bottom:1px solid var(--et-border);}
 body.et-ui-module-operations :where(.form-grid,.service-grid){gap:12px;}
 
+/* Booking Review compatibility aliases migrated from the legacy professional layer. */
+body.et-ui-module-operations :where(.br-top){
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:14px;
+    margin:0 0 16px!important;
+}
+body.et-ui-module-operations :where(.br-top h1){
+    margin:3px 0!important;
+    color:var(--et-text)!important;
+    font-size:25px!important;
+    line-height:1.18!important;
+    font-weight:780!important;
+}
+body.et-ui-module-operations :where(.br-sub){
+    color:var(--et-muted)!important;
+    font-size:12px!important;
+    line-height:1.4!important;
+}
+body.et-ui-module-operations :where(.br-card){
+    border:1px solid var(--et-border)!important;
+    border-radius:var(--et-radius)!important;
+    background:var(--et-surface)!important;
+    box-shadow:var(--et-shadow)!important;
+}
+body.et-ui-module-operations :where(.br-head){
+    padding:12px 15px!important;
+    border-bottom:1px solid var(--et-border)!important;
+    background:#fff!important;
+}
+body.et-ui-module-operations :where(.br-btn){
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-height:36px!important;
+    padding:7px 12px!important;
+    border:1px solid var(--et-border-strong)!important;
+    border-radius:7px!important;
+    background:#fff;
+    color:#2c3d53;
+    font-size:12px!important;
+    line-height:1.15!important;
+    font-weight:700!important;
+    text-decoration:none!important;
+    cursor:pointer;
+}
+body.et-ui-module-operations :where(.br-btn.primary){background:var(--et-primary)!important;border-color:var(--et-primary)!important;color:#fff!important}
+@media(max-width:768px){
+    body.et-ui-module-operations :where(.br-top){flex-direction:column;align-items:stretch}
+}
+@media(max-width:420px){
+    body.et-ui-module-operations :where(.br-top h1){font-size:21px!important}
+    body.et-ui-module-operations :where(.br-btn){min-height:38px!important}
+}
+
 /* Extracted from BookingWorkspaceShellPresenter.php: focused workspace authority */
 /*
  * ERP-11.3.55 booking workspace shell.

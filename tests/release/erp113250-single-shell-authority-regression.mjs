@@ -161,6 +161,16 @@ ok(
 );
 ok(presenter.includes("$style = ''") && !presenter.includes('<style data-et-booking-focus-shell='), 'Booking presenter no longer owns static style markup');
 ok(bookingTheme.includes('et-booking-focus-page-actions') && bookingTheme.includes('et-booking-unified-canvas-11375'), 'Booking theme owns extracted focused-workspace presentation CSS');
+ok(
+  bookingTheme.includes('.br-top')
+    && bookingTheme.includes('.br-sub')
+    && bookingTheme.includes('.br-card')
+    && bookingTheme.includes('.br-head')
+    && bookingTheme.includes('.br-btn'),
+  'Booking theme owns all live Booking Review br-* compatibility selectors'
+);
+ok(!base.includes('.br-top') && !base.includes('.br-sub') && !base.includes('.br-card') && !base.includes('.br-head') && !base.includes('.br-btn'), 'legacy professional CSS no longer owns Booking Review br-* selectors');
+ok(bookingTheme.includes('body.et-ui-module-operations') && bookingTheme.includes('var(--et-primary)'), 'Booking Review compatibility is scoped to the operations module and fresh tokens');
 const registersTheme = read('public/erp-theme/modules/registers.css');
 const bookingRegisterLegacy = read('public/erp-ui/erp-booking-register-reference.css');
 ok(registersTheme.includes('.et-booking-ref-kpis') && registersTheme.includes('.et-booking-ref-pagination'), 'fresh registers theme owns Booking Register selectors');
