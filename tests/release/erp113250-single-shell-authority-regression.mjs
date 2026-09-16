@@ -161,6 +161,10 @@ ok(
     && focusedShellJs.includes("e.key==='Escape'"),
   'Sales Invoice focused menu remains a dismissible sidebar drawer'
 );
+const siGate = focusedShellJs.indexOf("dataset.etSalesInvoiceFocus!=='ERP-11.3.60'");
+const siInit = focusedShellJs.indexOf("dataset.etSalesInvoiceFocusInit==='ERP-11.3.60'");
+ok(siGate >= 0 && siInit > siGate, 'Sales Invoice initializer is page-scoped before idempotency marker');
+ok(salesInvoiceFocus.includes('data-et-sales-invoice-focus="ERP-11.3.60"') || salesInvoiceFocus.includes("data-et-sales-invoice-focus='ERP-11.3.60'"), 'Sales Invoice server marker remains emitted');
 
 for (const [path, expected] of protectedHashes) {
   ok(sha256(path) === expected, `protected source remains unchanged: ${path}`);

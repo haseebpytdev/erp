@@ -5,6 +5,7 @@
 
 (function(){
 'use strict';
+if(document.documentElement.dataset.etSalesInvoiceFocus!=='ERP-11.3.60') return;
 if(document.documentElement.dataset.etSalesInvoiceFocusInit==='ERP-11.3.60') return;
 document.documentElement.dataset.etSalesInvoiceFocusInit='ERP-11.3.60';
 
