@@ -64,11 +64,13 @@ final class ServerSidebarComposer
             $id = $root->getAttribute('id');
             $classes = trim($root->getAttribute('class'));
             if ($id !== '') {
+                if (substr_count($html, 'id="'.$id.'"') + substr_count($html, "id='".$id."'") !== 1) return $html;
                 preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*\bid=["\']'.preg_quote($id, '/').'["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
             } elseif ($classes !== '') {
-                // Match the complete normalized class set, not a common token.
-                $classPattern = preg_quote($classes, '/');
-                preg_match('/<'.preg_quote($root->tagName, '/').'\b(?=[^>]*\bclass=["\']'.$classPattern.'["\'])[^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
+                // Class-only roots are ambiguous in a full document. Refuse
+                // correlation here unless a stable id exists; fallback keeps
+                // the legacy client authority rather than replacing a wrong node.
+                return $html;
             }
         }
         if (!$fragment || !$opening) {

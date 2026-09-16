@@ -49,7 +49,7 @@ ok(read('public/erp-theme/modules/registers.css').includes('data-et-ui-role="reg
 ok(sidebarComposer.includes("'OPERATIONS'") && sidebarComposer.includes("'ACCOUNTING'"), 'server sidebar composer defines canonical groups');
 ok(sidebarComposer.includes('data-et-server-sidebar') && sidebarComposer.includes('hrefs preserved'), 'server composer emits authority only after composition');
 ok(metadata.includes('ServerSidebarComposer'), 'presentation middleware invokes server sidebar composer');
-ok(sidebarComposer.includes('complete normalized class set') && !sidebarComposer.includes("strtok($classes"), 'inner sidebar roots avoid first-class-token correlation');
+ok(sidebarComposer.includes('Class-only roots are ambiguous') && !sidebarComposer.includes("strtok($classes"), 'ambiguous class-only roots safely fall back');
 ok(sidebarComposer.includes('duplicate ID') || sidebarComposer.includes('getAttribute(\'id\')'), 'sidebar root identity checks stable IDs');
 
 for (const token of [
