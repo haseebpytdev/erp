@@ -66,7 +66,9 @@ final class ServerSidebarComposer
             if ($id !== '') {
                 preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*\bid=["\']'.preg_quote($id, '/').'["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
             } elseif ($classes !== '') {
-                preg_match('/<'.preg_quote($root->tagName, '/').'\b(?=[^>]*\bclass=["\'][^"\']*\b'.preg_quote(strtok($classes, ' '), '/').'\b[^"\']*["\'])[^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
+                // Match the complete normalized class set, not a common token.
+                $classPattern = preg_quote($classes, '/');
+                preg_match('/<'.preg_quote($root->tagName, '/').'\b(?=[^>]*\bclass=["\']'.$classPattern.'["\'])[^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
             }
         }
         if (!$fragment || !$opening) {
