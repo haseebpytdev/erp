@@ -5,6 +5,7 @@ const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 
 const legacyCss = read('public/erp-ui/erp-operation-registers.css');
 const legacyJs = read('public/erp-ui/erp-operation-registers.js');
 const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
+const executableCssController = controller.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '').slice(0, controller.indexOf('public function js'));
 const presenter = read('app/Http/Middleware/PresentUnifiedRegisterWorkspace.php');
 const version = read('VERSION.txt').trim();
 
@@ -15,7 +16,7 @@ ok(legacyCss.includes('ERP-11.3.236 — shared professional register styling'), 
 ok(legacyJs.includes("'operations/bookings': 'bookings'") && legacyJs.includes("'sales/invoices': 'sales-invoices'") && legacyJs.includes("'supplier-costing': 'supplier-costing'"), 'historical .236 exact route scope remains traceable');
 ok(!controller.includes("base_path('public/erp-ui/erp-operation-registers.css')"), 'obsolete .236 register CSS is no longer served');
 ok(!controller.includes("base_path('public/erp-ui/erp-operation-registers.js')"), 'obsolete .236 DOM marker/reconstruction JS is no longer served');
-ok(controller.includes("base_path('public/erp-ui/erp-booking-register-reference.css')"), 'one approved shared register stylesheet remains served');
+ok(controller.includes("'purchase' => 'registers.css'") && !executableCssController.includes("file_get_contents($registerWorkspaceUi)"), 'fresh shared register stylesheet is served');
 ok(controller.includes("base_path('public/erp-ui/erp-register-workspace.js')"), 'minimal register interaction JS is served');
 ok(presenter.includes("'operations/bookings' => [") && presenter.includes("'sales/invoices' => [") && presenter.includes("'supplier-costing' => ["), 'all three registers are now server-presented');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'versioned professional asset caching remains intact');

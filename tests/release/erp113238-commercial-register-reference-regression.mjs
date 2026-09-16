@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
-const bookingCss = read('public/erp-ui/erp-booking-register-reference.css');
+const bookingCss = read('public/erp-theme/modules/registers.css');
 const legacyJs = read('public/erp-ui/erp-commercial-register-reference.js');
 const presenter = read('app/Http/Middleware/PresentUnifiedRegisterWorkspace.php');
 const view = read('resources/views/system/register-workspace-v113239.blade.php');

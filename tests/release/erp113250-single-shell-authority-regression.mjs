@@ -15,6 +15,8 @@ const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.p
 const groupPackage = read('resources/views/operations/bookings/group-package-unified-v103172.blade.php');
 const cashVoucherLinks = read('app/Http/Middleware/PresentCashVoucherLinks.php');
 const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
+const executableController = controller.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, '');
+const executableCssController = executableController.slice(0, executableController.indexOf('public function js'));
 const freshCore = read('public/erp-theme/et-core.css');
 const freshShell = read('public/erp-theme/et-shell.css');
 const freshFocusedShell = read('public/erp-theme/et-focused-shell.css');
@@ -135,6 +137,11 @@ ok(
 );
 ok(presenter.includes("$style = ''") && !presenter.includes('<style data-et-booking-focus-shell='), 'Booking presenter no longer owns static style markup');
 ok(bookingTheme.includes('et-booking-focus-page-actions') && bookingTheme.includes('et-booking-unified-canvas-11375'), 'Booking theme owns extracted focused-workspace presentation CSS');
+const registersTheme = read('public/erp-theme/modules/registers.css');
+const bookingRegisterLegacy = read('public/erp-ui/erp-booking-register-reference.css');
+ok(registersTheme.includes('.et-booking-ref-kpis') && registersTheme.includes('.et-booking-ref-pagination'), 'fresh registers theme owns Booking Register selectors');
+ok(!executableCssController.includes("$registerWorkspaceUi = base_path('public/erp-ui/erp-booking-register-reference.css')") && !executableCssController.includes('file_get_contents($registerWorkspaceUi)'), 'legacy Booking Register stylesheet is removed from runtime composition');
+ok(bookingRegisterLegacy.includes('.et-booking-ref-register-card') && bookingRegisterLegacy.includes('.et-booking-ref-pagination'), 'legacy Booking Register stylesheet remains physically present for rollback');
 ok(presenter.includes('str_contains($html, \'data-et-booking-focus-shell="ERP-11.3.75"\')'), 'Booking focus marker guard remains idempotent');
 ok(presenter.includes("addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75')"), 'Booking focus marker is emitted on semantic html markup');
 ok(!presenter.includes('<style data-et-booking-focus-shell='), 'Booking focus marker is not carried by an inline style block');
