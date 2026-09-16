@@ -16,4 +16,3 @@ jobs:
           coverage: none
       - name: Run sidebar behavioral regression
         run: php tests/release/server-sidebar-composer-regression.php
-
