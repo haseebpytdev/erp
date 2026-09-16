@@ -1,4 +1,7 @@
 body.et-ui-module-accounting :where(.cvf27-card,.accounting-card,.card){border-color:var(--et-border);border-radius:var(--et-radius);box-shadow:var(--et-shadow);}
+/* Chart of Accounts compatibility aliases stay scoped to Accounting. */
+body.et-ui-module-accounting :where(.coa-card){border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);box-shadow:var(--et-shadow);}
+body.et-ui-module-accounting :where(.coa-filters){border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);padding:11px;}
 body.et-ui-module-accounting :where(.report-filters,.ledger-filters){gap:10px;}
 
 
