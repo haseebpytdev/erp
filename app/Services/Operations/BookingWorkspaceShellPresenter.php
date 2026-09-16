@@ -111,6 +111,7 @@ final class BookingWorkspaceShellPresenter
 
         $html = $this->addHtmlClass($html, 'et-booking-focus-prepaint');
         $html = $this->addHtmlClass($html, 'et-booking-unified-canvas-11375');
+        $html = $this->addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75');
 
         /*
          * ERP-11.3.75: GENERAL and every native product Booking Workspace share
@@ -255,6 +256,22 @@ HTML;
                 }
 
                 return '<html'.$attrs.' class="'.$class.'">';
+            },
+            $html,
+            1
+        ) ?? $html;
+    }
+
+    private function addHtmlAttribute(string $html, string $name, string $value): string
+    {
+        return preg_replace_callback(
+            '/<html\b([^>]*)>/i',
+            static function (array $match) use ($name, $value): string {
+                $attrs = $match[1];
+                if (preg_match('/\b'.preg_quote($name, '/').'=(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/i', $attrs)) {
+                    return $match[0];
+                }
+                return '<html'.$attrs.' '.$name.'="'.htmlspecialchars($value, ENT_QUOTES, 'UTF-8').'">';
             },
             $html,
             1
