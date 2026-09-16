@@ -59,11 +59,14 @@ final class ServerSidebarComposer
         $opening = [];
         preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*class=["\'][^"\']*(?:sidebar|side-nav|navbar-vertical|sidebar-menu)[^"\']*["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
         if (!$opening) {
-            // The selected root is often an inner <ul>/<nav> below an outer
-            // sidebar container. Locate the first matching root element inside
-            // that container rather than requiring the root to repeat its class.
-            if (preg_match('/<(?:aside|nav|div)\b[^>]*class=["\'][^"\']*(?:sidebar|side-nav|navbar-vertical|sidebar-menu)[^"\']*["\'][^>]*>/i', $html, $container, PREG_OFFSET_CAPTURE)) {
-                preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE, $container[0][1] + strlen($container[0][0]));
+            // Correlate an inner root by its own stable id/class identity;
+            // never choose the first same-tag list in the outer container.
+            $id = $root->getAttribute('id');
+            $classes = trim($root->getAttribute('class'));
+            if ($id !== '') {
+                preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*\bid=["\']'.preg_quote($id, '/').'["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
+            } elseif ($classes !== '') {
+                preg_match('/<'.preg_quote($root->tagName, '/').'\b(?=[^>]*\bclass=["\'][^"\']*\b'.preg_quote(strtok($classes, ' '), '/').'\b[^"\']*["\'])[^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
             }
         }
         if (!$fragment || !$opening) {
