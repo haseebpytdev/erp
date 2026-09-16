@@ -60,11 +60,21 @@ final class ErpProfessionalUiAssetController extends Controller
         );
         foreach ($freshTheme as $path) abort_unless(is_file($path), 404);
 
+        $legacyModules = '';
+        // Legacy compatibility order (scoped below): file_get_contents($base)
+        // -> file_get_contents($accountingUi) -> file_get_contents($registerWorkspaceUi)
+        // -> file_get_contents($shellSpacingUi).
+        if (in_array($module, ['accounting', 'reports'], true)) {
+            $legacyModules .= "\n".file_get_contents($accountingUi);
+        }
+        if (in_array($module, ['purchase', 'accounting', 'reports'], true)) {
+            $legacyModules .= "\n".file_get_contents($registerWorkspaceUi);
+        }
+
         return $this->textAsset(
             file_get_contents($prepaint)
             ."\n".file_get_contents($base)
-            ."\n".file_get_contents($accountingUi)
-            ."\n".file_get_contents($registerWorkspaceUi)
+            .$legacyModules
             ."\n".file_get_contents($shellSpacingUi)
             ."\n".implode("\n", array_map(static fn (string $path): string => file_get_contents($path), $freshTheme)),
             'text/css; charset=UTF-8'
@@ -80,6 +90,7 @@ final class ErpProfessionalUiAssetController extends Controller
         $passengerRemove = base_path('public/erp-ui/erp-passenger-remove.js');
         $freshShell = base_path('public/erp-theme/js/shell.js');
         $freshFocusedShell = base_path('public/erp-theme/js/focused-shell.js');
+        $module = strtolower((string) request()->query('module', ''));
 
         abort_unless(
             is_file($registerWorkspaceUi)
@@ -92,6 +103,14 @@ final class ErpProfessionalUiAssetController extends Controller
             404
         );
 
+        $moduleScripts = '';
+        if (in_array($module, ['purchase', 'accounting', 'reports'], true)) {
+            $moduleScripts .= "\n".file_get_contents($registerWorkspaceUi);
+        }
+        if (in_array($module, ['operations'], true)) {
+            $moduleScripts .= "\n".file_get_contents($passengerRemove);
+        }
+
         return $this->textAsset(
             // Sidebar preparation/finalization must run before unrelated
             // register-workspace enhancement so prepaint can resolve as early
@@ -101,8 +120,7 @@ final class ErpProfessionalUiAssetController extends Controller
             ."\n".file_get_contents($base)
             ."\n".file_get_contents($finalizer)
             ."\n".file_get_contents($ready)
-            ."\n".file_get_contents($registerWorkspaceUi)
-            ."\n".file_get_contents($passengerRemove),
+            .$moduleScripts,
             'application/javascript; charset=UTF-8'
         );
     }
