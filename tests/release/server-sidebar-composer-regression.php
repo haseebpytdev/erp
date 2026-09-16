@@ -6,4 +6,15 @@ $html = '<ul class="nav flex-column"><li><a href="/outside">Outside</a></li></ul
 $out = $composer->compose($html);
 if (strpos($out, '/outside">Outside</a></li></ul>') === false || strpos($out, 'data-et-server-sidebar="1"') === false) exit(1);
 if (strpos($out, '/dashboard') > strpos($out, '/operations/bookings')) exit(1);
+$duplicateId = '<ul id="main-nav"><li><a href="/outside">Outside</a></li></ul><aside class="sidebar"><ul id="main-nav"><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
+if (strpos($composer->compose($duplicateId), 'data-et-server-sidebar="1"') !== false) exit(1);
+$ambiguous = '<ul class="nav flex-column"><li><a href="/outside">Outside</a></li></ul><aside class="sidebar"><ul class="nav flex-column"><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
+if (strpos($composer->compose($ambiguous), 'data-et-server-sidebar="1"') !== false) exit(1);
+$nested = '<aside class="sidebar"><ul id="main-nav"><li><a href="/operations/bookings">Bookings</a><ul><li><a href="/child">Child</a></li></ul></li><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
+$nestedOut = $composer->compose($nested);
+if (strpos($nestedOut, '/child">Child</a>') === false || strpos($nestedOut, '/dashboard') > strpos($nestedOut, '/operations/bookings')) exit(1);
+$restricted = '<aside class="sidebar"><ul id="main-nav"><li><a href="/dashboard">Dashboard</a></li><li><a href="/operations/bookings">Bookings</a></li></ul></aside>';
+if (strpos($composer->compose($restricted), '>Payments<') !== false) exit(1);
+$unmatched = '<aside class="sidebar"><ul id="main-nav"><li><a href="/unknown">Custom Tool</a></li><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
+if (strpos($composer->compose($unmatched), '/unknown">Custom Tool</a>') === false) exit(1);
 echo "PASS server sidebar composer regression\n";
