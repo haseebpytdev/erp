@@ -61,8 +61,8 @@
   const shell = document.querySelector('.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal');
   if (shell) {
     shell.classList.add('et-ui-utility-topbar');
-    const shellDashboard = exactLeaf(shell, 'Dashboard');
-    if (shellDashboard) shellDashboard.textContent = 'Easy Ticket ERP';
+    // Topbar identity is server-rendered and remains route-aware; no post-load
+    // title mutation is performed here.
   }
 
   const statuses = new Set([
