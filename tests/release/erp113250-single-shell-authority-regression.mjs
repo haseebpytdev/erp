@@ -40,6 +40,11 @@ ok(controller.includes("request()->query('module'"), 'module stylesheet selectio
 ok(controller.includes("'dashboard' => 'dashboard.css'") && controller.includes("'sales' => 'sales-invoice.css'"), 'module stylesheet map covers dashboard and sales invoice');
 ok(!controller.includes("modules/dashboard.css'),\n            base_path('public/erp-theme/modules/booking.css')"), 'module styles are not globally concatenated');
 ok(read('app/Http/Middleware/ApplyErpReleaseMetadata.php').includes("&module="), 'page module marker is passed to stylesheet authority');
+const metadata = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
+ok(metadata.includes("data-et-ui-role=\"'.$role.'\""), 'server response carries a presentation role marker');
+ok(metadata.includes("return 'register'"), 'register pages receive a dedicated presentation role');
+ok(metadata.includes("return 'focused'"), 'focused workspaces receive a dedicated presentation role');
+ok(read('public/erp-theme/modules/registers.css').includes('data-et-ui-role="register"'), 'register CSS targets the role marker');
 
 for (const token of [
   '--et-shell-sidebar-width:208px',

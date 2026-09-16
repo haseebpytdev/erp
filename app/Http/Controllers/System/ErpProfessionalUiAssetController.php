@@ -30,6 +30,7 @@ final class ErpProfessionalUiAssetController extends Controller
             base_path('public/erp-theme/et-shell.css'),
         ];
         $module = strtolower((string) request()->query('module', ''));
+        $role = strtolower((string) request()->query('role', 'standard'));
         $moduleFiles = [
             'dashboard' => 'dashboard.css', 'operations' => 'booking.css',
             'purchase' => 'registers.css', 'sales' => 'sales-invoice.css',
@@ -46,8 +47,11 @@ final class ErpProfessionalUiAssetController extends Controller
         if (isset($moduleFiles[$module])) {
             $freshTheme[] = base_path('public/erp-theme/modules/'.$moduleFiles[$module]);
         }
-        if (in_array($module, ['operations', 'sales'], true)) {
+        if ($role === 'focused') {
             $freshTheme[] = base_path('public/erp-theme/et-focused-shell.css');
+        }
+        if ($role === 'register') {
+            $freshTheme[] = base_path('public/erp-theme/modules/registers.css');
         }
 
         abort_unless(
@@ -67,7 +71,7 @@ final class ErpProfessionalUiAssetController extends Controller
         if (in_array($module, ['accounting', 'reports'], true)) {
             $legacyModules .= "\n".file_get_contents($accountingUi);
         }
-        if (in_array($module, ['purchase', 'accounting', 'reports'], true)) {
+        if (in_array($module, ['purchase', 'accounting', 'reports'], true) && $role === 'register') {
             $legacyModules .= "\n".file_get_contents($registerWorkspaceUi);
         }
 
@@ -91,6 +95,7 @@ final class ErpProfessionalUiAssetController extends Controller
         $freshShell = base_path('public/erp-theme/js/shell.js');
         $freshFocusedShell = base_path('public/erp-theme/js/focused-shell.js');
         $module = strtolower((string) request()->query('module', ''));
+        $role = strtolower((string) request()->query('role', 'standard'));
 
         abort_unless(
             is_file($registerWorkspaceUi)
@@ -104,7 +109,7 @@ final class ErpProfessionalUiAssetController extends Controller
         );
 
         $moduleScripts = '';
-        if (in_array($module, ['purchase', 'accounting', 'reports'], true)) {
+        if ($role === 'register' && in_array($module, ['purchase', 'accounting', 'reports', 'operations', 'sales'], true)) {
             $moduleScripts .= "\n".file_get_contents($registerWorkspaceUi);
         }
         if (in_array($module, ['operations'], true)) {

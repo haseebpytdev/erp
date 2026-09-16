@@ -220,15 +220,16 @@ class ApplyErpReleaseMetadata
         }
 
         $module = $this->uiModule($path);
+        $role = $this->uiRole($path, $routeName);
         $marker = e($version);
-        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($version).'&module='.rawurlencode($module));
-        $scriptUrl = e(route('system.erp-assets.erp-professional-js').'?v='.rawurlencode($version).'&module='.rawurlencode($module));
+        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($version).'&module='.rawurlencode($module).'&role='.rawurlencode($role));
+        $scriptUrl = e(route('system.erp-assets.erp-professional-js').'?v='.rawurlencode($version).'&module='.rawurlencode($module).'&role='.rawurlencode($role));
         $assets = '<link rel="stylesheet" href="'.$styleUrl.'" data-et-professional-ui="'.$marker.'">'
             .'<script src="'.$scriptUrl.'" defer data-et-professional-ui-script="'.$marker.'"></script>';
 
         $html = preg_replace_callback(
             '/<body\b([^>]*)>/i',
-            static function (array $match) use ($module): string {
+            static function (array $match) use ($module, $role): string {
                 $attributes = $match[1];
                 $classes = 'et-ui-professional et-ui-module-'.$module;
                 if (preg_match('/\bclass\s*=\s*(["\'])(.*?)\1/i', $attributes, $classMatch)) {
@@ -237,7 +238,7 @@ class ApplyErpReleaseMetadata
                 } else {
                     $attributes .= ' class="'.$classes.'"';
                 }
-                return '<body'.$attributes.' data-et-ui-module="'.$module.'">';
+                return '<body'.$attributes.' data-et-ui-module="'.$module.'" data-et-ui-role="'.$role.'">';
             },
             $html,
             1
@@ -266,6 +267,15 @@ class ApplyErpReleaseMetadata
             str_starts_with($path, 'system/') => 'system',
             default => 'foundation',
         };
+    }
+
+    private function uiRole(string $path, string $routeName): string
+    {
+        if ($path === '' || $path === 'dashboard' || str_starts_with($path, 'dashboard/')) return 'dashboard';
+        if (str_starts_with($path, 'operations/bookings/') && preg_match('#^operations/bookings/[^/]+(?:/(?:edit|review|show))?$#', $path)) return 'focused';
+        if (preg_match('#^(?:sales/invoices)(?:/[^/]+)?$#', $path)) return str_contains($path, '/invoices/') ? 'focused' : 'register';
+        if (preg_match('#^(?:operations/bookings|purchase/supplier-costing)(?:/index)?/?$#', $path) || str_contains($routeName, '.index')) return 'register';
+        return 'standard';
     }
 
     private function databaseReady(array $release): bool
