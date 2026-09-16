@@ -24,8 +24,8 @@ ok(ready.includes('etSidebarReady') && ready.includes('data-et-sidebar-grouped')
 const registerOrder = controller.indexOf('erp-register-workspace.js');
 const baseOrder = controller.indexOf('erp-professional.js');
 const finalizerOrder = controller.indexOf('erp-professional-finalize.js');
-const readyOrder = controller.indexOf('erp-sidebar-ready.js');
-ok(registerOrder < baseOrder && baseOrder < finalizerOrder && finalizerOrder < readyOrder, 'JS asset execution order is preserved');
+ok(registerOrder < baseOrder && baseOrder < finalizerOrder, 'JS asset execution order is preserved');
+ok(!controller.includes("file_get_contents($ready)"), 'retired ready helper is not loaded');
 ok(finalizer.includes('failed-empty-plan') && finalizer.includes('final-v1'), '.260 sidebar finalizer support remains');
 ok(css.length > 0 && !css.includes('erp113261'), 'no CSS change is required for the runtime fix');
 ok(!fs.existsSync(new URL('../../database/migrations/2026_09_13_erp113261.php', import.meta.url)), 'no migration introduced');
