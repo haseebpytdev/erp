@@ -21,7 +21,6 @@ final class ErpProfessionalUiAssetController extends Controller
     public function css(): Response
     {
         $base = base_path('public/erp-ui/erp-professional.css');
-        $accountingUi = base_path('public/erp-ui/erp-accounting-vouchers.css');
         $shellSpacingUi = base_path('public/erp-ui/erp-shell-spacing.css');
         $freshTheme = [
             base_path('public/erp-theme/et-core.css'),
@@ -54,26 +53,13 @@ final class ErpProfessionalUiAssetController extends Controller
 
         abort_unless(
             is_file($base)
-            && is_file($accountingUi)
             && is_file($shellSpacingUi),
             404
         );
         foreach ($freshTheme as $path) abort_unless(is_file($path), 404);
 
-        $legacyModules = '';
-        // Retired Booking Register authority (not loaded):
-        // file_get_contents($base)
-        // file_get_contents($accountingUi)
-        // $registerWorkspaceUi = base_path('public/erp-ui/erp-booking-register-reference.css');
-        // file_get_contents($registerWorkspaceUi) followed file_get_contents($shellSpacingUi).
-        // Legacy compatibility order (scoped below): file_get_contents($base)
-        // -> file_get_contents($shellSpacingUi).
-        if (in_array($module, ['accounting', 'reports'], true)) {
-            $legacyModules .= "\n".file_get_contents($accountingUi);
-        }
         return $this->textAsset(
             file_get_contents($base)
-            .$legacyModules
             ."\n".file_get_contents($shellSpacingUi)
             ."\n".implode("\n", array_map(static fn (string $path): string => file_get_contents($path), $freshTheme)),
             'text/css; charset=UTF-8'

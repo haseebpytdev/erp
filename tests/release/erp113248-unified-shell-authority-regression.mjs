@@ -114,18 +114,13 @@ const basePos =
 const accountingPos =
   controller.indexOf('file_get_contents($accountingUi)');
 
-const registerPos =
-  controller.indexOf('file_get_contents($registerWorkspaceUi)');
-
 const shellPos =
   controller.indexOf('file_get_contents($shellSpacingUi)');
 
 ok(
   basePos >= 0 &&
-  accountingPos > basePos &&
-  registerPos > accountingPos &&
-  shellPos > registerPos,
-  'CSS load order is base -> accounting -> register -> shell'
+  shellPos > basePos,
+  'CSS load order keeps shell spacing after base CSS'
 );
 
 ok(

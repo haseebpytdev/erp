@@ -8,6 +8,7 @@ const presenter = read('app/Http/Middleware/PresentUnifiedRegisterWorkspace.php'
 const view = read('resources/views/system/register-workspace-v113239.blade.php');
 const interactions = read('public/erp-ui/erp-register-workspace.js');
 const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
+const registersTheme = read('public/erp-theme/modules/registers.css');
 const version = read('VERSION.txt').trim();
 
 let pass = 0;
@@ -25,7 +26,7 @@ ok(view.includes('Quick Workflow') && view.includes("$config['breakdown_title']"
 ok(interactions.includes('var pageSize = 15;'), 'minimal interaction layer keeps approved 15-row client page size');
 ok(!/createElement\(['"](?:section|article|table|form)/.test(interactions), 'interaction JS does not rebuild page structure');
 ok(!interactions.includes('fetch(') && !interactions.includes('XMLHttpRequest') && !interactions.includes('localStorage') && !interactions.includes('sessionStorage'), 'interaction layer performs no network/persistent state mutation');
-ok(controller.includes("base_path('public/erp-ui/erp-booking-register-reference.css')"), 'approved shared register CSS remains served');
+ok(controller.includes("'purchase' => 'registers.css'") && registersTheme.includes('.et-booking-ref-register-card'), 'approved shared register CSS remains served');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'immutable browser cache policy remains intact');
 ok(version === 'v1.1.33.293-ERP11.3.293', 'packaged release version is current');
 

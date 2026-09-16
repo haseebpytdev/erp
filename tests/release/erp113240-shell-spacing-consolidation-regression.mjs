@@ -23,7 +23,7 @@ const registerJs =
   read('public/erp-ui/erp-register-workspace.js');
 
 const accountingCss =
-  read('public/erp-ui/erp-accounting-vouchers.css');
+  read('public/erp-theme/modules/accounting.css');
 
 const version =
   read('VERSION.txt').trim();
@@ -148,16 +148,16 @@ ok(
   'final shell stylesheet is served'
 );
 
-const registerAssetPosition =
-  controller.indexOf('file_get_contents($registerWorkspaceUi)');
-
 const shellAssetPosition =
   controller.indexOf('file_get_contents($shellSpacingUi)');
 
+const baseAssetPosition =
+  controller.indexOf('file_get_contents($base)');
+
 ok(
-  registerAssetPosition >= 0 &&
-  shellAssetPosition > registerAssetPosition,
-  'final shell stylesheet loads after module/register styles'
+  baseAssetPosition >= 0 &&
+  shellAssetPosition > baseAssetPosition,
+  'final shell stylesheet loads after base styles'
 );
 
 ok(

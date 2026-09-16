@@ -75,8 +75,8 @@ const shellPos = controller.indexOf('file_get_contents($shellSpacingUi)');
 const accountingPos = controller.indexOf('file_get_contents($accountingUi)');
 ok(basePos >= 0 && shellPos >= 0 && shellPos > basePos, 'erp-shell-spacing.css is loaded after base CSS');
 ok(
-  accountingPos >= 0 && shellPos > accountingPos,
-  'erp-shell-spacing.css is loaded after accounting module CSS'
+  accountingPos === -1 && shellPos > basePos,
+  'legacy accounting CSS is not composed; shell spacing follows base CSS'
 );
 
 ok(!base.includes('--et-sidebar-width:220px'), 'base CSS has no 220px sidebar fallback');
