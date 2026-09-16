@@ -221,7 +221,7 @@ class ApplyErpReleaseMetadata
 
         $module = $this->uiModule($path);
         $marker = e($version);
-        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($version));
+        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($version).'&module='.rawurlencode($module));
         $scriptUrl = e(route('system.erp-assets.erp-professional-js').'?v='.rawurlencode($version));
         $assets = '<link rel="stylesheet" href="'.$styleUrl.'" data-et-professional-ui="'.$marker.'">'
             .'<script src="'.$scriptUrl.'" defer data-et-professional-ui-script="'.$marker.'"></script>';

@@ -1,1 +1,3 @@
 body.et-ui-module-operations :where(.br-card,.etgp-card,.booking-card){border-color:var(--et-border);border-radius:var(--et-radius);box-shadow:var(--et-shadow);}
+body.et-ui-module-operations :where(.booking-card,.booking-panel) > header{border-bottom:1px solid var(--et-border);}
+body.et-ui-module-operations :where(.form-grid,.service-grid){gap:12px;}

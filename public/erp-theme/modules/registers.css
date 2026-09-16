@@ -1,1 +1,2 @@
 body.et-ui-module-registers :where(.et-register-server-table,.table){border-color:var(--et-border);}
+body.et-ui-module-registers :where(.register-filters,.filters){gap:10px;}

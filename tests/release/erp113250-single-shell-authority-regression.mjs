@@ -36,6 +36,10 @@ ok(freshCore.includes('--et-primary:#2563EB') && freshCore.includes('--et-contro
 ok(freshShell.includes('grid-template-columns:208px minmax(0,1fr)') && freshShell.includes('width:100%'), 'fresh shell owns the standard 208px and full-width geometry');
 ok(freshFocusedShell.includes('grid-template-columns:minmax(0,1fr)') && freshFocusedShell.includes('display:none'), 'fresh focused shell removes the permanent sidebar without width hacks');
 ok(freshShellJs.includes('server-rendered DOM remains authoritative') && freshFocusedShellJs.includes('no DOM reconstruction'), 'fresh shell JavaScript contains interaction only');
+ok(controller.includes("request()->query('module'"), 'module stylesheet selection is request-scoped');
+ok(controller.includes("'dashboard' => 'dashboard.css'") && controller.includes("'sales' => 'sales-invoice.css'"), 'module stylesheet map covers dashboard and sales invoice');
+ok(!controller.includes("modules/dashboard.css'),\n            base_path('public/erp-theme/modules/booking.css')"), 'module styles are not globally concatenated');
+ok(read('app/Http/Middleware/ApplyErpReleaseMetadata.php').includes("&module="), 'page module marker is passed to stylesheet authority');
 
 for (const token of [
   '--et-shell-sidebar-width:208px',

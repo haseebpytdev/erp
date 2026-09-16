@@ -1,1 +1,2 @@
 body.et-ui-module-accounting :where(.cvf27-card,.accounting-card,.card){border-color:var(--et-border);border-radius:var(--et-radius);box-shadow:var(--et-shadow);}
+body.et-ui-module-accounting :where(.report-filters,.ledger-filters){gap:10px;}

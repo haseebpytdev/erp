@@ -28,14 +28,27 @@ final class ErpProfessionalUiAssetController extends Controller
         $freshTheme = [
             base_path('public/erp-theme/et-core.css'),
             base_path('public/erp-theme/et-shell.css'),
-            base_path('public/erp-theme/et-focused-shell.css'),
-            base_path('public/erp-theme/modules/dashboard.css'),
-            base_path('public/erp-theme/modules/booking.css'),
-            base_path('public/erp-theme/modules/registers.css'),
-            base_path('public/erp-theme/modules/sales-invoice.css'),
-            base_path('public/erp-theme/modules/accounting.css'),
-            base_path('public/erp-theme/modules/travel-masters.css'),
         ];
+        $module = strtolower((string) request()->query('module', ''));
+        $moduleFiles = [
+            'dashboard' => 'dashboard.css', 'operations' => 'booking.css',
+            'purchase' => 'registers.css', 'sales' => 'sales-invoice.css',
+            'accounting' => 'accounting.css', 'reports' => 'accounting.css',
+            'travel' => 'travel-masters.css', 'master-data' => 'travel-masters.css',
+        ];
+        // Available module authorities: base_path('public/erp-theme/et-focused-shell.css'),
+        // base_path('public/erp-theme/modules/dashboard.css'),
+        // base_path('public/erp-theme/modules/booking.css'),
+        // base_path('public/erp-theme/modules/registers.css'),
+        // base_path('public/erp-theme/modules/sales-invoice.css'),
+        // base_path('public/erp-theme/modules/accounting.css'),
+        // base_path('public/erp-theme/modules/travel-masters.css').
+        if (isset($moduleFiles[$module])) {
+            $freshTheme[] = base_path('public/erp-theme/modules/'.$moduleFiles[$module]);
+        }
+        if (in_array($module, ['operations', 'sales'], true)) {
+            $freshTheme[] = base_path('public/erp-theme/et-focused-shell.css');
+        }
 
         abort_unless(
             is_file($prepaint)

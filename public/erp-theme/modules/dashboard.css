@@ -1,1 +1,4 @@
 body.et-ui-module-dashboard .et-dashboard-header,body.et-ui-module-dashboard [data-et-dashboard-header]{background:var(--et-surface);border:1px solid var(--et-border);border-radius:var(--et-radius-lg);box-shadow:var(--et-shadow);}
+body.et-ui-module-dashboard main{background:var(--et-bg);}
+body.et-ui-module-dashboard :where(.kpi-grid,.metrics-grid){gap:12px;}
+body.et-ui-module-dashboard :where(.kpi-value,.metric-value){font-weight:700;color:var(--et-navy);}

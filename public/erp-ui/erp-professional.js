@@ -79,22 +79,8 @@
   if (isDashboard) {
     body.dataset.etDashboardPhase1 = 'approved-reference';
 
-    const overview = exactLeaf(document, 'Management Overview');
-    if (overview && !overview.closest('.sidebar,.navbar-vertical,.side-nav,.sidebar-menu,.et-ui-utility-topbar')) {
-      let header = overview.parentElement;
-      for (let depth = 0; header && depth < 4; depth++, header = header.parentElement) {
-        const companyTitle = exactLeaf(header, 'Easy Group Of Travels');
-        if (!companyTitle) continue;
-        let headerCanvas = header.closest('.card,[class*="card"],section,article') || header;
-        if (header.parentElement && header.parentElement !== body && header.parentElement.textContent.length < 900 && header.parentElement.querySelector('a,button')) {
-          headerCanvas = header.parentElement;
-        }
-        headerCanvas.dataset.etDashboardHeader = 'true';
-        overview.textContent = 'Overview';
-        companyTitle.textContent = 'Dashboard';
-        break;
-      }
-    }
+    // Dashboard identity is server-rendered; this runtime only decorates
+    // presentation markers and never rewrites headings after first paint.
 
     const kpiLabels = ['Today Sales','Month Sales','Receivables','Payables','Cash & Bank','Gross Profit'];
     const kpiCards = [];
