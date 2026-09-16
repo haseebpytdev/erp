@@ -21,6 +21,7 @@ const freshFocusedShell = read('public/erp-theme/et-focused-shell.css');
 const bookingTheme = read('public/erp-theme/modules/booking.css');
 const freshShellJs = read('public/erp-theme/js/shell.js');
 const freshFocusedShellJs = read('public/erp-theme/js/focused-shell.js');
+const focusedShellJs = freshFocusedShellJs;
 const salesInvoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
 const version = read('VERSION.txt').trim();
 
@@ -155,9 +156,9 @@ ok(
   'Sales Invoice focused shell is marked server-side before client enhancement'
 );
 ok(
-  salesInvoiceFocus.includes('et-sales-invoice-menu-button')
-    && salesInvoiceFocus.includes("overlay.addEventListener('click',closeMenu)")
-    && salesInvoiceFocus.includes("e.key==='Escape'"),
+  focusedShellJs.includes('et-sales-invoice-menu-button')
+    && focusedShellJs.includes("overlay.addEventListener('click',closeMenu)")
+    && focusedShellJs.includes("e.key==='Escape'"),
   'Sales Invoice focused menu remains a dismissible sidebar drawer'
 );
 
