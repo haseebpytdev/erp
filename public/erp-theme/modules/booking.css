@@ -1,3 +1,396 @@
 body.et-ui-module-operations :where(.br-card,.etgp-card,.booking-card){border-color:var(--et-border);border-radius:var(--et-radius);box-shadow:var(--et-shadow);}
 body.et-ui-module-operations :where(.booking-card,.booking-panel) > header{border-bottom:1px solid var(--et-border);}
 body.et-ui-module-operations :where(.form-grid,.service-grid){gap:12px;}
+
+/* Extracted from BookingWorkspaceShellPresenter.php: focused workspace authority */
+/*
+ * ERP-11.3.55 booking workspace shell.
+ *
+ * The sidebar is suppressed by server-rendered CSS before the browser paints.
+ * Existing Air / Group Umrah Menu buttons remain authoritative; generic booking
+ * workspaces receive the fallback Menu drawer from the app-routed script.
+ */
+/* Outer booking shell geometry is owned by erp-shell-spacing.css. */
+.et-booking-focus-fallback{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin:0;
+    flex-wrap:nowrap;
+    width:auto;
+}
+.et-booking-focus-page-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+    width:auto;
+}
+.et-booking-focus-page-actions .et-booking-focus-fallback{
+    flex:0 0 auto;
+}
+.et-booking-focus-fallback-inline{
+    display:inline-flex;
+    vertical-align:middle;
+    margin-right:8px;
+}
+.et-booking-focus-page-actions > a{
+    white-space:nowrap;
+}
+.et-booking-focus-fallback-standalone{
+    display:flex;
+    justify-content:flex-start;
+}
+.et-booking-focus-btn{
+    min-height:34px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 10px;
+    border:1px solid #cbd7e5;
+    border-radius:7px;
+    background:#fff;
+    color:#26384e!important;
+    text-decoration:none!important;
+    font-size:10px;
+    line-height:1;
+    font-weight:850;
+    cursor:pointer;
+    box-shadow:0 1px 2px rgba(21,39,64,.04);
+}
+.et-booking-focus-btn:hover{
+    background:#f7f9fc;
+    border-color:#b9c8da;
+}
+/*
+ * Shared compact action geometry across native Booking Workspace and nested
+ * product steps. Product-specific buttons keep their colors; only dimensions
+ * and wrapping behavior are normalized.
+ */
+html.et-booking-focus-prepaint .et-booking-focus-page-actions,
+html.et-booking-focus-prepaint .et-booking-focus-fallback{
+    min-height:34px;
+}
+html.et-booking-focus-prepaint .et-booking-focus-page-actions{
+    gap:7px;
+}
+html.et-booking-focus-prepaint .et-booking-focus-page-actions > a,
+html.et-booking-focus-prepaint .et-booking-focus-page-actions > button,
+html.et-booking-focus-prepaint .et-booking-focus-fallback > a,
+html.et-booking-focus-prepaint .et-booking-focus-fallback > button{
+    min-height:34px!important;
+}
+html.et-booking-focus-prepaint #gp-booking .gp-top{
+    min-height:52px;
+    align-items:center;
+}
+/*
+ * ERP-11.3.55 — nested Group Package uses standard Booking Workspace hero.
+ */
+html[data-et-group-package-shell="ERP-11.3.55"]
+    [data-et-group-package-top-title="ERP-11.3.55"]{
+    color:#17243a!important;
+    font-size:17px!important;
+    line-height:1.2!important;
+    font-weight:850!important;
+    letter-spacing:-.01em!important;
+}
+html[data-et-group-package-shell="ERP-11.3.55"]
+    [data-et-group-package-hero="ERP-11.3.55"]{
+    min-width:0!important;
+}
+html[data-et-group-package-shell="ERP-11.3.55"]
+    [data-et-group-package-kicker="ERP-11.3.55"]{
+    margin:0 0 5px!important;
+    color:#1266c3!important;
+    font-size:10px!important;
+    line-height:1.2!important;
+    font-weight:900!important;
+    letter-spacing:.12em!important;
+    text-transform:uppercase!important;
+}
+html[data-et-group-package-shell="ERP-11.3.55"]
+    [data-et-group-package-booking-title="ERP-11.3.55"]{
+    margin:0!important;
+    color:#17243a!important;
+    font-size:26px!important;
+    line-height:1.08!important;
+    font-weight:850!important;
+    letter-spacing:-.025em!important;
+}
+html[data-et-group-package-shell="ERP-11.3.55"]
+    [data-et-group-package-booking-subtitle="ERP-11.3.55"]{
+    display:block!important;
+    margin-top:6px!important;
+    color:#6b7a90!important;
+    font-size:11px!important;
+    line-height:1.4!important;
+}
+html[data-et-group-package-shell="ERP-11.3.55"]
+    .et-booking-focus-page-actions{
+    align-self:flex-start!important;
+    margin-top:0!important;
+}
+
+/*
+ * ERP-11.3.54 — Standard booking Transport / Other Services layout.
+ *
+ * The native page rendered Transport as the left column of a two-column block
+ * and left "Other Services / Products" floating in the empty right column.
+ * JavaScript marks only the exact operational-services DOM after matching the
+ * live section labels. These rules then give both services the same full-width
+ * card language used throughout Booking Workspace.
+ */
+html.et-booking-focus-prepaint [data-et-operational-services-layout="ERP-11.3.54"]{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    justify-content:flex-start!important;
+    gap:14px!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:0!important;
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+}
+html.et-booking-focus-prepaint [data-et-operational-services-layout="ERP-11.3.54"]
+    > [data-et-transport-service-panel="ERP-11.3.54"],
+html.et-booking-focus-prepaint [data-et-operational-services-layout="ERP-11.3.54"]
+    > [data-et-other-services-panel="ERP-11.3.54"]{
+    display:block!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:16px!important;
+    box-sizing:border-box!important;
+    background:#fff!important;
+    border:1px solid #dbe4ef!important;
+    border-radius:12px!important;
+    box-shadow:0 8px 24px rgba(26,45,72,.045)!important;
+}
+html.et-booking-focus-prepaint [data-et-transport-service-panel="ERP-11.3.54"]{
+    overflow:visible!important;
+}
+html.et-booking-focus-prepaint [data-et-transport-service-panel="ERP-11.3.54"]
+    [data-et-operational-service-heading="transport"],
+html.et-booking-focus-prepaint [data-et-other-services-panel="ERP-11.3.54"]
+    [data-et-operational-service-heading="other-services"]{
+    margin:0!important;
+    padding:0!important;
+    color:#17243a!important;
+    font-size:16px!important;
+    line-height:1.25!important;
+    font-weight:850!important;
+}
+html.et-booking-focus-prepaint [data-et-transport-service-panel="ERP-11.3.54"]
+    [data-et-operational-service-note="transport"],
+html.et-booking-focus-prepaint [data-et-other-services-panel="ERP-11.3.54"]
+    [data-et-operational-service-note="other-services"]{
+    display:block!important;
+    max-width:900px!important;
+    margin:4px 0 12px!important;
+    color:#6b7a90!important;
+    font-size:11px!important;
+    line-height:1.45!important;
+}
+html.et-booking-focus-prepaint [data-et-transport-service-panel="ERP-11.3.54"]
+    form{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+}
+html.et-booking-focus-prepaint [data-et-transport-service-panel="ERP-11.3.54"]
+    input,
+html.et-booking-focus-prepaint [data-et-transport-service-panel="ERP-11.3.54"]
+    select,
+html.et-booking-focus-prepaint [data-et-transport-service-panel="ERP-11.3.54"]
+    textarea{
+    max-width:100%!important;
+    box-sizing:border-box!important;
+}
+html.et-booking-focus-prepaint [data-et-other-services-panel="ERP-11.3.54"]{
+    min-height:96px!important;
+}
+html.et-booking-focus-prepaint [data-et-other-services-panel="ERP-11.3.54"]
+    [data-et-add-service-action]{
+    margin-top:8px!important;
+}
+@media(max-width:760px){
+    html.et-booking-focus-prepaint [data-et-operational-services-layout="ERP-11.3.54"]
+        > [data-et-transport-service-panel="ERP-11.3.54"],
+    html.et-booking-focus-prepaint [data-et-operational-services-layout="ERP-11.3.54"]
+        > [data-et-other-services-panel="ERP-11.3.54"]{
+        padding:12px!important;
+        border-radius:10px!important;
+    }
+}
+
+@media(max-width:760px){
+    .et-booking-focus-page-actions{
+        justify-content:flex-start;
+        gap:7px;
+    }
+    .et-booking-focus-fallback{
+        flex-wrap:wrap;
+    }
+}
+
+/* ================================================================
+ * ERP-11.3.75 — FULL BOOKING PRODUCT UI CONTRACT
+ * ================================================================ */
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375{
+    --et-booking-card-radius:12px;
+    --et-booking-card-padding:18px;
+    --et-booking-border:#dbe4ef;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    section.content > :not(style):not(script){
+    max-width:none!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375]{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin-left:0!important;
+    margin-right:0!important;
+    box-sizing:border-box!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="booking-header"],
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="passengers"],
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="air-ticket"],
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="saved-tickets"],
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="transport"],
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="other-services"]{
+    border-radius:var(--et-booking-card-radius)!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375] form,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375] table,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375] .table-responsive,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375] [class*="tablewrap"]{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="transport"]
+    input,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="transport"]
+    select,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="transport"]
+    textarea,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="other-services"]
+    input,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="other-services"]
+    select,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="other-services"]
+    textarea{
+    max-width:100%!important;
+    box-sizing:border-box!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-operational-stack-11375]{
+    display:flex!important;
+    flex-direction:column!important;
+    align-items:stretch!important;
+    grid-template-columns:none!important;
+    gap:16px!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-operational-stack-11375]
+    > *{
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+    grid-column:1 / -1!important;
+    flex:0 0 auto!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="passengers"]
+    .passenger-table,
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    [data-et-booking-panel-11375="saved-tickets"]
+    table{
+    table-layout:auto!important;
+}
+html.et-booking-focus-prepaint.et-booking-unified-canvas-11375
+    .et-booking-live-saving-11375{
+    opacity:.72;
+    pointer-events:none;
+}
+.et-booking-live-state-11375{
+    position:fixed;
+    top:16px;
+    right:16px;
+    z-index:13050;
+    max-width:min(420px,calc(100vw - 32px));
+    padding:10px 12px;
+    border:1px solid #cfe0f2;
+    border-radius:9px;
+    background:#fff;
+    color:#24364d;
+    box-shadow:0 12px 36px rgba(15,23,42,.14);
+    font-size:11px;
+    font-weight:800;
+    line-height:1.4;
+}
+.et-booking-live-state-11375.ok{
+    border-color:#c9ead7;
+    background:#edf9f2;
+    color:#137749;
+}
+.et-booking-live-state-11375.error{
+    border-color:#f1caca;
+    background:#fff2f2;
+    color:#a61b1b;
+}
+/*
+ * ERP-11.3.90 GENERAL Step-1 semantic prepaint state.
+ * Outer geometry is supplied by erp-shell-spacing.css.
+ */
+/*
+ * ERP-11.3.90 — prevent native GENERAL workspace flash.
+ *
+ * The recording proved the remaining jump was not width math. The native
+ * GENERAL body was painted first, then replaced by Step 1 JavaScript.
+ * Keep only section.content invisible while Step 1 is building. The global
+ * ERP/user header remains visible normally.
+ *
+ * A CSS fallback animation reveals the native body after 6 seconds if the
+ * Step-1 JavaScript asset cannot complete, so the page can never remain
+ * permanently blank.
+ */
+html.et-booking-focus-prepaint.et-general-progressive-step1-11390{
+    scrollbar-gutter:stable;
+}
+html.et-booking-focus-prepaint.et-general-progressive-step1-11390:not(.etgp-step1-ready-11390):not(.etgp-step1-fallback-11390)
+    section.content > *{
+    display:none!important;
+}
+

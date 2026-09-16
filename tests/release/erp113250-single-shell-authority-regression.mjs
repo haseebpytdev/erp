@@ -18,6 +18,7 @@ const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetContr
 const freshCore = read('public/erp-theme/et-core.css');
 const freshShell = read('public/erp-theme/et-shell.css');
 const freshFocusedShell = read('public/erp-theme/et-focused-shell.css');
+const bookingTheme = read('public/erp-theme/modules/booking.css');
 const freshShellJs = read('public/erp-theme/js/shell.js');
 const freshFocusedShellJs = read('public/erp-theme/js/focused-shell.js');
 const salesInvoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
@@ -131,6 +132,10 @@ ok(
   /html\.et-booking-focus-prepaint section\.content\{[\s\S]*?var\(--et-shell-gutter-x\)/.test(shell),
   'focused booking canvas uses the shared responsive shell gutter'
 );
+ok(presenter.includes("$style = ''") && !presenter.includes('<style data-et-booking-focus-shell='), 'Booking presenter no longer owns static style markup');
+ok(bookingTheme.includes('et-booking-focus-page-actions') && bookingTheme.includes('et-booking-unified-canvas-11375'), 'Booking theme owns extracted focused-workspace presentation CSS');
+ok(presenter.includes('et-booking-focus-shell') && presenter.includes('et-booking-unified-canvas-11375'), 'Booking semantic shell markers remain server-rendered');
+ok(presenter.includes('BookingEditLockResolver') && !presenter.includes('SalesInvoiceService'), 'Booking lifecycle authority remains unchanged');
 
 const protectedHashes = new Map([
   ['app/Services/System/DayOneSequenceResetService.php', '65D0A210D36F5A4DEDF53D2D3EFD00DD660BCDBFFB51FE9841605A3ACB8F0FEF'],
