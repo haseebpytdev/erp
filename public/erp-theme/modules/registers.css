@@ -1,6 +1,18 @@
 body[data-et-ui-role="register"] :where(.et-register-server-table,.table){border-color:var(--et-border);}
 body[data-et-ui-role="register"] :where(.register-filters,.filters){gap:10px;}
 
+/* Supplier Costing compatibility hooks live with the purchase/register module.
+   These aliases preserve the native Blade markup while the legacy global layer
+   is reduced; no workflow or data behavior is changed. */
+body.et-ui-module-purchase :where(.sci-card,.scs-card,.scb-card){border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);box-shadow:var(--et-shadow);}
+body.et-ui-module-purchase :where(.sci-head,.scs-head,.scb-head){display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px;}
+body.et-ui-module-purchase :where(.sci-btn,.scs-btn,.scb-btn){display:inline-flex;align-items:center;justify-content:center;min-height:var(--et-control-height);padding:7px 12px;border:1px solid var(--et-border-strong);border-radius:var(--et-radius-sm);background:var(--et-surface);color:var(--et-text);font-weight:600;text-decoration:none;}
+body.et-ui-module-purchase :where(.sci-primary,.scs-primary,.scb-primary){background:var(--et-primary);border-color:var(--et-primary);color:#fff;}
+body.et-ui-module-purchase :where(.sci-tools,.scs-tools,.scb-tools){display:flex;gap:10px;flex-wrap:wrap;}
+body.et-ui-module-purchase :where(.sci-table,.scs-table,.scb-table){width:100%;border-collapse:collapse;}
+body.et-ui-module-purchase :where(.sci-table,.scs-table,.scb-table) th,body.et-ui-module-purchase :where(.sci-table,.scs-table,.scb-table) td{padding:9px 10px;border-bottom:1px solid var(--et-border);}
+@media(max-width:650px){body.et-ui-module-purchase :where(.sci-head,.scs-head,.scb-head){display:block;}body.et-ui-module-purchase :where(.sci-tools,.scs-tools,.scb-tools){display:grid;}}
+
 /* Migrated Booking Register reference authority */
 /* ERP-11.3.237 — Booking Register reference-match presentation layer.
    Read-only DOM enhancement: existing booking rows/links remain authoritative. */

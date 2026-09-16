@@ -21,6 +21,8 @@ const freshCore = read('public/erp-theme/et-core.css');
 const freshShell = read('public/erp-theme/et-shell.css');
 const freshFocusedShell = read('public/erp-theme/et-focused-shell.css');
 const dashboardTheme = read('public/erp-theme/modules/dashboard.css');
+const registerModuleTheme = read('public/erp-theme/modules/registers.css');
+const accountingModuleTheme = read('public/erp-theme/modules/accounting.css');
 const bookingTheme = read('public/erp-theme/modules/booking.css');
 const freshShellJs = read('public/erp-theme/js/shell.js');
 const freshFocusedShellJs = read('public/erp-theme/js/focused-shell.js');
@@ -41,6 +43,8 @@ ok(freshCore.includes('--et-primary:#2563EB') && freshCore.includes('--et-contro
 ok(freshCore.includes('a:hover') && freshCore.includes(':focus-visible') && freshCore.includes('min-height:var(--et-control-height)'), 'fresh core owns generic interaction and control primitives');
 ok(freshCore.includes('.btn-primary') && freshCore.includes('.pagination .page-link') && freshCore.includes('.text-success'), 'fresh core owns generic action, pagination, and semantic financial primitives');
 ok(dashboardTheme.includes('[data-et-dashboard-header="true"]') && dashboardTheme.includes('.et-dashboard-kpi-grid') && dashboardTheme.includes('.et-dashboard-kpi'), 'fresh dashboard module owns Dashboard-specific presentation selectors');
+ok(registerModuleTheme.includes('.sci-card') && registerModuleTheme.includes('.scs-card') && registerModuleTheme.includes('.scb-card'), 'fresh registers module owns live Supplier Costing aliases');
+ok(accountingModuleTheme.includes('.cvf27-card') && accountingModuleTheme.includes('.cvs27-card') && accountingModuleTheme.includes('.aa-wrap') && !freshCore.includes('.cvf27-card'), 'accounting aliases remain module-scoped and are not bundled into core');
 ok(freshShell.includes('grid-template-columns:208px minmax(0,1fr)') && freshShell.includes('width:100%'), 'fresh shell owns the standard 208px and full-width geometry');
 ok(freshFocusedShell.includes('grid-template-columns:minmax(0,1fr)') && freshFocusedShell.includes('display:none'), 'fresh focused shell removes the permanent sidebar without width hacks');
 ok(freshShellJs.includes('server-rendered DOM remains authoritative') && freshFocusedShellJs.includes('no DOM reconstruction'), 'fresh shell JavaScript contains interaction only');
