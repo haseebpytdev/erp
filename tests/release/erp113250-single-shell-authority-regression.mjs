@@ -102,6 +102,26 @@ ok(
   !controller.includes('file_get_contents($shellSpacingUi)'),
   'legacy shell-spacing CSS is removed from runtime composition'
 );
+ok(
+  !executableCssController.includes("public/erp-ui/erp-professional.css")
+    && !executableCssController.includes('file_get_contents($base)')
+    && !executableCssController.includes('is_file($base)'),
+  'legacy professional CSS is retired from runtime composition'
+);
+ok(
+  controller.includes("public/erp-theme/et-core.css")
+    && controller.includes("public/erp-theme/et-shell.css")
+    && controller.includes("'operations' => 'booking.css'")
+    && controller.includes("'purchase' => 'registers.css'")
+    && controller.includes("'accounting' => 'accounting.css'")
+    && controller.includes("'travel' => 'travel-masters.css'")
+    && controller.includes("'sales' => 'sales-invoice.css'"),
+  'fresh CSS layers remain runtime-composed with module-scoped selection'
+);
+ok(
+  fs.existsSync(new URL('../../public/erp-ui/erp-professional.css', import.meta.url)),
+  'legacy professional CSS remains physically present for rollback'
+);
 
 ok(!base.includes('--et-sidebar-width:220px'), 'base CSS has no 220px sidebar fallback');
 ok(!base.includes('calc(100% - 22px)'), 'base CSS has no 22px calculated shell canvas');

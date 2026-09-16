@@ -20,7 +20,6 @@ final class ErpProfessionalUiAssetController extends Controller
 
     public function css(): Response
     {
-        $base = base_path('public/erp-ui/erp-professional.css');
         $freshTheme = [
             base_path('public/erp-theme/et-core.css'),
             base_path('public/erp-theme/et-shell.css'),
@@ -50,15 +49,10 @@ final class ErpProfessionalUiAssetController extends Controller
             $freshTheme[] = base_path('public/erp-theme/modules/registers.css');
         }
 
-        abort_unless(
-            is_file($base),
-            404
-        );
         foreach ($freshTheme as $path) abort_unless(is_file($path), 404);
 
         return $this->textAsset(
-            file_get_contents($base)
-            ."\n".implode("\n", array_map(static fn (string $path): string => file_get_contents($path), $freshTheme)),
+            implode("\n", array_map(static fn (string $path): string => file_get_contents($path), $freshTheme)),
             'text/css; charset=UTF-8'
         );
     }
