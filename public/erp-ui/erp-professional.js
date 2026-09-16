@@ -56,9 +56,12 @@
   }
 
   document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href],.sidebar-menu a[href],.sidebar-menu[href]').forEach(link => {
-    const linkPath = normalizePath(link.getAttribute('href'));
     const currentPath = normalizePath(location.pathname);
-    const linkSearch = normalizeSearch(new URL(link.getAttribute('href'), location.origin).search);
+    let parsedUrl;
+    try { parsedUrl = new URL(link.getAttribute('href'), location.origin); }
+    catch (_) { return; }
+    const linkPath = normalizePath(parsedUrl.pathname);
+    const linkSearch = normalizeSearch(parsedUrl.search);
     const currentSearch = normalizeSearch(location.search);
     const nativeActive = link.classList.contains('active') || Boolean(link.parentElement && link.parentElement.classList.contains('active'));
     const exactLocation = linkPath && linkPath === currentPath && linkSearch === currentSearch;

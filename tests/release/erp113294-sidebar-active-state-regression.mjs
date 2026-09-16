@@ -27,6 +27,15 @@ ok(current('/accounting/vouchers?a=1&b=2', '/accounting/vouchers?b=2&a=1'), 'que
 ok(current('/accounting/vouchers', '/accounting/vouchers'), 'queryless location matches queryless link');
 ok(current('/accounting/vouchers?type=other', '/accounting/vouchers?type=receipt', true), 'native active remains authoritative');
 ok(base.includes('link.classList.remove(\'et-ui-current\')') && base.includes('link.removeAttribute(\'aria-current\')'), 'stale presentation markers are cleared');
+const processLinks = (hrefs, location) => hrefs.map(href => {
+  try {
+    const link = new URL(href, 'https://erp.test');
+    const page = new URL(location, 'https://erp.test');
+    return link.pathname === page.pathname && sameQuery(link.search, page.search);
+  } catch (_) { return false; }
+});
+const processed = processLinks(['http://[invalid', '/accounting/vouchers?type=receipt'], '/accounting/vouchers?type=receipt');
+ok(processed[0] === false && processed[1] === true, 'malformed href is skipped and later valid link is processed');
 ok(!executableFinalizer.includes('document.createDocumentFragment()') && !executableFinalizer.includes('replaceChildren(') && !executableFinalizer.includes('cloneNode('), 'structural sidebar rebuild is absent');
 ok(!executableAssets.includes("file_get_contents($ready)") && !executableAssets.includes("file_get_contents($prepaint)"), 'retired sidebar assets are not composed');
 ok(!executableAssets.includes("$ready = base_path('public/erp-ui/erp-sidebar-ready.js')"), 'unused ready variable is absent');
