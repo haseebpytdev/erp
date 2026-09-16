@@ -55,6 +55,19 @@ final class ServerSidebarComposer
         foreach ($rows as $node) $root->removeChild($node);
         foreach (array_merge($out, $unknown) as $node) $root->appendChild($node);
         $root->setAttribute('data-et-server-sidebar', '1');
-        return $dom->saveHTML();
+        $fragment = $dom->saveHTML($root);
+        if (!$fragment || !preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*class=["\'][^"\']*(?:sidebar|side-nav|navbar-vertical|sidebar-menu)[^"\']*["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE)) {
+            return $html;
+        }
+        $start = $opening[0][1];
+        $tag = $root->tagName;
+        preg_match_all('/<\/?'.preg_quote($tag, '/').'\b[^>]*>/i', $html, $tokens, PREG_OFFSET_CAPTURE, $start);
+        $depth = 0; $end = null;
+        foreach ($tokens[0] as $token) {
+            if (str_starts_with($token[0], '</')) { $depth--; if ($depth === 0) { $end = $token[1] + strlen($token[0]); break; } }
+            elseif (!str_ends_with(trim($token[0]), '/>')) $depth++;
+        }
+        if ($end === null) return $html;
+        return substr($html, 0, $start).$fragment.substr($html, $end);
     }
 }
