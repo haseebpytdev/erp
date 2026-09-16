@@ -3,6 +3,9 @@
 
   const body = document.body;
   if (!body || !body.classList.contains('et-ui-professional')) return;
+  // Server-composed sidebars are authoritative at first paint; retain this
+  // legacy file only as a compatibility fallback for older host markup.
+  if (document.querySelector('[data-et-server-sidebar="1"]')) return;
 
   const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
   const normalizePath = value => {
