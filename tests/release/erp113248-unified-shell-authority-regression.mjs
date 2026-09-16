@@ -5,7 +5,7 @@ const read = path =>
   fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 
 const shell =
-  read('public/erp-ui/erp-shell-spacing.css');
+  read('public/erp-theme/et-shell.css');
 
 const base =
   read('public/erp-ui/erp-professional.css');
@@ -111,16 +111,10 @@ ok(
 const basePos =
   controller.indexOf('file_get_contents($base)');
 
-const accountingPos =
-  controller.indexOf('file_get_contents($accountingUi)');
-
-const shellPos =
-  controller.indexOf('file_get_contents($shellSpacingUi)');
-
 ok(
-  basePos >= 0 &&
-  shellPos > basePos,
-  'CSS load order keeps shell spacing after base CSS'
+  shell.includes('--et-shell-sidebar-width:208px') &&
+  !controller.includes("base_path('public/erp-ui/erp-shell-spacing.css')"),
+  'fresh shell spacing is authoritative'
 );
 
 ok(

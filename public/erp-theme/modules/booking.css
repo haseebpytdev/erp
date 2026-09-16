@@ -41,6 +41,8 @@ body.et-ui-module-operations :where(.form-grid,.service-grid){gap:12px;}
 .et-booking-focus-fallback-standalone{
     display:flex;
     justify-content:flex-start;
+    width:100%!important;
+    margin:12px 0 0!important;
 }
 .et-booking-focus-btn{
     min-height:34px;
@@ -394,3 +396,6 @@ html.et-booking-focus-prepaint.et-general-progressive-step1-11390:not(.etgp-step
     display:none!important;
 }
 
+/* Booking-specific focused lock presentation. */
+html.et-booking-focus-prepaint [data-et-server-booking-lock]{width:100%!important;max-width:none!important;margin:8px 0!important;}
+@media(max-width:899px){.et-booking-focus-fallback-standalone{margin:8px 0 0!important;}}

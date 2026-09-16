@@ -11,7 +11,7 @@ const controller =
   read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
 
 const shellCss =
-  read('public/erp-ui/erp-shell-spacing.css');
+  read('public/erp-theme/et-shell.css');
 
 const baseJs =
   read('public/erp-ui/erp-professional.js');
@@ -77,20 +77,8 @@ ok(
   'sidebar row density is controlled centrally'
 );
 
-ok(
-  shellCss.includes(
-    'padding-left:var(--et-shell-gutter-x)!important'
-  ),
-  'topbar horizontal inset follows shell gutter'
-);
-
-ok(
-  shellCss.includes('width:calc(') &&
-  shellCss.includes(
-    '100% + (var(--et-shell-gutter-x) * 2)'
-  ),
-  'topbar remains full-bleed inside application canvas'
-);
+ok(shellCss.includes(':where(.topbar,.top-bar,.app-header,.main-header,.navbar-horizontal){width:100%'), 'topbar uses natural full-width layout');
+ok(!shellCss.includes('100% + (var(--et-shell-gutter-x) * 2)') && !shellCss.includes('margin-left:calc('), 'topbar introduces no negative-margin overflow hack');
 
 ok(
   shellCss.includes(
@@ -142,22 +130,15 @@ ok(
 );
 
 ok(
-  controller.includes(
-    "base_path('public/erp-ui/erp-shell-spacing.css')"
-  ),
-  'final shell stylesheet is served'
+  shellCss.includes('--et-shell-sidebar-width:208px') &&
+  !controller.includes("base_path('public/erp-ui/erp-shell-spacing.css')"),
+  'fresh shell stylesheet is authoritative'
 );
 
-const shellAssetPosition =
-  controller.indexOf('file_get_contents($shellSpacingUi)');
-
-const baseAssetPosition =
-  controller.indexOf('file_get_contents($base)');
-
 ok(
-  baseAssetPosition >= 0 &&
-  shellAssetPosition > baseAssetPosition,
-  'final shell stylesheet loads after base styles'
+  shellCss.includes('--et-shell-gutter-x:24px') &&
+  shellCss.includes('--et-shell-gutter-y:18px'),
+  'fresh shell owns approved gutter tokens'
 );
 
 ok(

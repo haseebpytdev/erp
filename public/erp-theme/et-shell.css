@@ -8,3 +8,575 @@ body.et-ui-professional :where(.sidebar .nav,.navbar-vertical .nav,.side-nav .na
 body.et-ui-professional :where(.sidebar a,.navbar-vertical a,.side-nav a){min-height:34px;border-radius:6px;}
 body.et-ui-professional :where(.sidebar a.et-ui-current,.navbar-vertical a.et-ui-current,.side-nav a.et-ui-current){background:rgba(37,99,235,.18);border-left:3px solid #60A5FA;color:#fff;}
 @media(max-width:900px){body.et-ui-professional .app-shell>main.main{padding-left:16px;padding-right:16px;}}
+
+
+/* Migrated standard shell-spacing authority (ERP-11.3.291). */
+/*
+ * ERP-11.3.248
+ * Unified authenticated ERP shell authority.
+ *
+ * This stylesheet is intentionally loaded LAST after base/module styles.
+ * It owns only outer application geometry:
+ * - sidebar and brand block
+ * - sidebar navigation spacing
+ * - utility header
+ * - application canvas/gutters
+ * - cross-module outer rhythm
+ *
+ * Module-specific cards/forms/tables remain owned by their module stylesheets.
+ * No business logic. No print/voucher redesign.
+ */
+
+:root{
+  --et-shell-sidebar-width:208px;
+  --et-shell-gutter-x:24px;
+  --et-shell-gutter-y:18px;
+  --et-shell-bottom:28px;
+
+  --et-shell-topbar-height:56px;
+
+  --et-sidebar-brand-height:64px;
+  --et-sidebar-logo-size:36px;
+  --et-sidebar-nav-x:8px;
+  --et-sidebar-row-height:32px;
+  --et-sidebar-icon-size:18px;
+}
+
+
+/* ==========================================================================
+   APPLICATION CANVAS
+   Same geometry applies to standard pages AND booking/focus workspaces.
+   ========================================================================== */
+
+body.et-ui-professional .content-wrapper,
+body.et-ui-professional .page-wrapper,
+body.et-ui-professional .main-content{
+  min-width:0!important;
+  max-width:none!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  background:var(--et-bg)!important;
+}
+
+body.et-ui-professional .app-shell{
+  min-width:0!important;
+  min-height:100vh!important;
+}
+
+
+body.et-ui-professional .content-wrapper>main,
+body.et-ui-professional .page-wrapper>main,
+body.et-ui-professional .app-shell>main.main,
+body.et-ui-professional main.content,
+body.et-ui-professional main.container,
+body.et-ui-professional main.container-fluid,
+body.et-ui-professional main[data-et-register-workspace]{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+
+  margin:0!important;
+
+  padding:
+    0
+    var(--et-shell-gutter-x)
+    var(--et-shell-bottom)!important;
+}
+
+
+/* The utility header contract is independent of minor native nesting changes. */
+html body.et-ui-professional .et-ui-utility-topbar{
+  min-height:var(--et-shell-topbar-height)!important;
+  height:var(--et-shell-topbar-height)!important;
+  padding-top:0!important;
+  padding-bottom:0!important;
+}
+
+
+body.et-ui-professional main>.topbar+*,
+body.et-ui-professional main>.top-bar+*,
+body.et-ui-professional main>.app-header+*,
+body.et-ui-professional main>.main-header+*,
+body.et-ui-professional main>.navbar-horizontal+*,
+body.et-ui-professional main>.et-ui-utility-topbar+*{
+  margin-top:var(--et-shell-gutter-y)!important;
+}
+
+
+body.et-ui-professional main>
+:first-child:not(.topbar)
+:not(.top-bar)
+:not(.app-header)
+:not(.main-header)
+:not(.navbar-horizontal)
+:not(.et-ui-utility-topbar){
+  margin-top:var(--et-shell-gutter-y)!important;
+}
+
+
+/*
+ * The first real page canvas should use the shell width.
+ * This removes the "container inside another container" appearance
+ * visible in the New Booking recording.
+ */
+body.et-ui-professional main>
+:not(.topbar)
+:not(.top-bar)
+:not(.app-header)
+:not(.main-header)
+:not(.navbar-horizontal)
+:not(.et-ui-utility-topbar)
+:not(script)
+:not(style){
+  max-width:none!important;
+}
+
+
+/* Remove a second Bootstrap/native outer gutter. */
+body.et-ui-professional main>.container,
+body.et-ui-professional main>.container-xl,
+body.et-ui-professional main>.container-fluid,
+
+body.et-ui-professional main>div>.container,
+body.et-ui-professional main>div>.container-xl,
+body.et-ui-professional main>div>.container-fluid,
+
+body.et-ui-professional main>section>.container,
+body.et-ui-professional main>section>.container-xl,
+body.et-ui-professional main>section>.container-fluid{
+  width:100%!important;
+  max-width:none!important;
+
+  margin-left:0!important;
+  margin-right:0!important;
+
+  padding-left:0!important;
+  padding-right:0!important;
+}
+
+/*
+ * Standard authenticated pages have one horizontal shell gutter: main owns it.
+ * These are only immediate native page hosts, never cards, forms, tables, or
+ * module grids nested inside a page.
+ */
+html:not(.et-booking-focus-prepaint) body.et-ui-professional main>section.content,
+html:not(.et-booking-focus-prepaint) body.et-ui-professional main>.page-content,
+html:not(.et-booking-focus-prepaint) body.et-ui-professional main>.page-body{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin-left:0!important;
+  margin-right:0!important;
+  padding-top:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  box-sizing:border-box!important;
+}
+
+
+/* One outer width authority across major ERP workspaces. */
+body.et-ui-professional .et-shell-content-frame,
+body.et-ui-professional .et-register-server-shell,
+body.et-ui-professional .et-reg-shell,
+body.et-ui-professional .et-fin,
+body.et-ui-professional .sci,
+body.et-ui-professional .scs,
+body.et-ui-professional .scb,
+body.et-ui-professional .mr,
+body.et-ui-professional .aa-wrap,
+body.et-ui-professional .br-wrap{
+  width:100%!important;
+  max-width:none!important;
+
+  margin-left:0!important;
+  margin-right:0!important;
+}
+
+
+body.et-ui-professional .et-shell-content-frame{
+  padding-left:0!important;
+  padding-right:0!important;
+}
+
+
+/* ==========================================================================
+   SIDEBAR FRAME
+   ========================================================================== */
+
+@media(min-width:900px){
+  body.et-ui-professional .app-shell{
+    min-height:100vh!important;
+    align-items:flex-start!important;
+    grid-template-columns:
+      var(--et-shell-sidebar-width)
+      minmax(0,1fr)!important;
+  }
+
+  body.et-ui-professional .sidebar,
+  body.et-ui-professional .navbar-vertical,
+  body.et-ui-professional .side-nav{
+    width:var(--et-shell-sidebar-width)!important;
+    min-width:var(--et-shell-sidebar-width)!important;
+    max-width:var(--et-shell-sidebar-width)!important;
+  }
+
+  body.et-ui-professional .sidebar,
+  body.et-ui-professional .navbar-vertical,
+  body.et-ui-professional .side-nav{
+    position:sticky!important;
+    top:0!important;
+    height:100vh!important;
+    max-height:100vh!important;
+    align-self:flex-start!important;
+    overflow:hidden!important;
+  }
+}
+
+
+/* Brand row — exact height, rather than competing min-height rules. */
+html body.et-ui-professional .sidebar .sidebar-header,
+html body.et-ui-professional .sidebar .brand,
+html body.et-ui-professional .sidebar>.logo,
+html body.et-ui-professional .navbar-vertical .navbar-brand{
+  height:var(--et-sidebar-brand-height)!important;
+  min-height:var(--et-sidebar-brand-height)!important;
+  max-height:var(--et-sidebar-brand-height)!important;
+
+  margin:0!important;
+  padding:10px 14px!important;
+  box-sizing:border-box!important;
+
+  gap:10px!important;
+
+  display:flex!important;
+  align-items:center!important;
+}
+
+
+/*
+ * Brand links are NOT menu rows.
+ * Reset historical generic ".sidebar a" menu geometry here.
+ */
+html body.et-ui-professional .sidebar .sidebar-header>a,
+html body.et-ui-professional .sidebar .brand>a,
+html body.et-ui-professional .sidebar>.logo>a,
+html body.et-ui-professional .sidebar a.brand,
+html body.et-ui-professional .navbar-vertical a.navbar-brand{
+  min-height:0!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  gap:10px!important;
+
+  border:0!important;
+  border-radius:0!important;
+
+  background:transparent!important;
+  box-shadow:none!important;
+}
+
+
+/* Brand/logo footprint. */
+html body.et-ui-professional .sidebar .sidebar-header img,
+html body.et-ui-professional .sidebar .brand img,
+html body.et-ui-professional .sidebar>.logo img,
+html body.et-ui-professional .navbar-vertical .navbar-brand img{
+  width:var(--et-sidebar-logo-size)!important;
+  min-width:var(--et-sidebar-logo-size)!important;
+  max-width:var(--et-sidebar-logo-size)!important;
+
+  height:var(--et-sidebar-logo-size)!important;
+  min-height:var(--et-sidebar-logo-size)!important;
+  max-height:var(--et-sidebar-logo-size)!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  object-fit:contain!important;
+
+  flex:0 0 var(--et-sidebar-logo-size)!important;
+}
+
+
+html body.et-ui-professional .sidebar .sidebar-header .logo,
+html body.et-ui-professional .sidebar .brand .logo,
+html body.et-ui-professional .navbar-vertical .navbar-brand .logo{
+  width:var(--et-sidebar-logo-size)!important;
+  min-width:var(--et-sidebar-logo-size)!important;
+  max-width:var(--et-sidebar-logo-size)!important;
+
+  height:var(--et-sidebar-logo-size)!important;
+  min-height:var(--et-sidebar-logo-size)!important;
+  max-height:var(--et-sidebar-logo-size)!important;
+
+  margin:0!important;
+  padding:0!important;
+
+  flex:0 0 var(--et-sidebar-logo-size)!important;
+}
+
+
+/* ==========================================================================
+   SIDEBAR NAVIGATION
+   ========================================================================== */
+
+html body.et-ui-professional .sidebar,
+html body.et-ui-professional .navbar-vertical,
+html body.et-ui-professional .side-nav{
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+
+html body.et-ui-professional .sidebar .nav,
+html body.et-ui-professional .navbar-vertical .nav,
+html body.et-ui-professional .side-nav .nav{
+  padding:
+    8px
+    var(--et-sidebar-nav-x)
+    12px!important;
+
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:0!important;
+
+  min-height:0!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:auto;
+  scrollbar-width:thin;
+  scrollbar-color:transparent transparent;
+}
+
+html body.et-ui-professional .sidebar .nav::-webkit-scrollbar,
+html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar,
+html body.et-ui-professional .side-nav .nav::-webkit-scrollbar{
+  width:4px;
+}
+
+html body.et-ui-professional .sidebar .nav::-webkit-scrollbar-thumb,
+html body.et-ui-professional .navbar-vertical .nav::-webkit-scrollbar-thumb,
+html body.et-ui-professional .side-nav .nav::-webkit-scrollbar-thumb{
+  background:transparent;
+  border-radius:8px;
+}
+
+html body.et-ui-professional .sidebar .nav:hover,
+html body.et-ui-professional .navbar-vertical .nav:hover,
+html body.et-ui-professional .side-nav .nav:hover{
+  scrollbar-color:rgba(150,177,207,.3) transparent;
+}
+
+html body.et-ui-professional .sidebar .nav:hover::-webkit-scrollbar-thumb,
+html body.et-ui-professional .navbar-vertical .nav:hover::-webkit-scrollbar-thumb,
+html body.et-ui-professional .side-nav .nav:hover::-webkit-scrollbar-thumb{
+  background:rgba(150,177,207,.3);
+}
+
+
+/* Only menu links receive menu-row geometry. */
+html body.et-ui-professional .sidebar .nav a,
+html body.et-ui-professional .navbar-vertical .nav a,
+html body.et-ui-professional .side-nav .nav a{
+  height:var(--et-sidebar-row-height)!important;
+  min-height:var(--et-sidebar-row-height)!important;
+  max-height:var(--et-sidebar-row-height)!important;
+
+  margin:2px 0!important;
+
+  padding:6px 7px!important;
+
+  gap:8px!important;
+
+  line-height:1.25!important;
+}
+
+
+/* Compact icon footprint. */
+html body.et-ui-professional .sidebar .nav a>span:first-child,
+html body.et-ui-professional .navbar-vertical .nav a>span:first-child,
+html body.et-ui-professional .side-nav .nav a>span:first-child,
+
+html body.et-ui-professional .sidebar .nav a>i:first-child,
+html body.et-ui-professional .navbar-vertical .nav a>i:first-child,
+html body.et-ui-professional .side-nav .nav a>i:first-child,
+
+html body.et-ui-professional .sidebar .nav a>svg:first-child,
+html body.et-ui-professional .navbar-vertical .nav a>svg:first-child,
+html body.et-ui-professional .side-nav .nav a>svg:first-child{
+  width:var(--et-sidebar-icon-size)!important;
+  min-width:var(--et-sidebar-icon-size)!important;
+
+  height:var(--et-sidebar-icon-size)!important;
+  min-height:var(--et-sidebar-icon-size)!important;
+
+  flex:0 0 var(--et-sidebar-icon-size)!important;
+}
+
+
+/* Section rhythm. */
+html body.et-ui-professional .sidebar .nav-section,
+html body.et-ui-professional .sidebar .nav-heading,
+html body.et-ui-professional .sidebar .menu-title,
+
+html body.et-ui-professional .navbar-vertical .nav-section,
+html body.et-ui-professional .navbar-vertical .nav-heading,
+
+html body.et-ui-professional .et-ui-nav-section{
+  position:static!important;
+  display:block!important;
+  float:none!important;
+  clear:both!important;
+  transform:none!important;
+  flex:none!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+
+  margin:14px 6px 7px!important;
+  padding:0!important;
+
+  box-sizing:border-box!important;
+
+  line-height:1.15!important;
+}
+
+
+html body.et-ui-professional
+.et-ui-nav-section+[data-et-sidebar-group],
+
+html body.et-ui-professional
+[data-et-sidebar-section]+[data-et-sidebar-group]{
+  margin-top:0!important;
+}
+
+/* Professional JS marks only root direct wrappers with this attribute. */
+html body.et-ui-professional .sidebar .nav>[data-et-sidebar-group]:not(a),
+html body.et-ui-professional .navbar-vertical .nav>[data-et-sidebar-group]:not(a),
+html body.et-ui-professional .side-nav .nav>[data-et-sidebar-group]:not(a){
+  position:relative!important;
+  display:block!important;
+  float:none!important;
+  clear:both!important;
+  transform:none!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  box-sizing:border-box!important;
+}
+
+/* Root Dashboard is itself a canonical anchor, not a wrapper container. */
+html body.et-ui-professional .sidebar .nav>a.et-ui-nav-row[data-et-sidebar-group="dashboard"],
+html body.et-ui-professional .navbar-vertical .nav>a.et-ui-nav-row[data-et-sidebar-group="dashboard"],
+html body.et-ui-professional .side-nav .nav>a.et-ui-nav-row[data-et-sidebar-group="dashboard"]{
+  display:flex!important;
+  align-items:center!important;
+  width:100%!important;
+  height:var(--et-sidebar-row-height)!important;
+  min-height:var(--et-sidebar-row-height)!important;
+  max-height:var(--et-sidebar-row-height)!important;
+  flex:0 0 var(--et-sidebar-row-height)!important;
+  flex-shrink:0!important;
+  margin:0 0 6px!important;
+  padding:6px 7px!important;
+  gap:8px!important;
+  box-sizing:border-box!important;
+}
+
+
+html body.et-ui-professional
+[data-et-sidebar-group="dashboard"]{
+  margin-bottom:4px!important;
+}
+
+
+/* Empty duplicate native navigation roots are class-hidden by JS. */
+html body.et-ui-professional .et-ui-nav-root-empty{
+  display:none!important;
+}
+
+
+/* Sidebar footer aligns to the same visual inset as brand/menu. */
+html body.et-ui-professional .sidebar footer,
+html body.et-ui-professional .sidebar .sidebar-footer,
+html body.et-ui-professional .sidebar .sidebar-foot{
+  min-height:48px!important;
+
+  padding:9px 14px 11px!important;
+}
+
+
+/* ==========================================================================
+   CROSS-MODULE OUTER RHYTHM
+   ========================================================================== */
+
+body.et-ui-professional .et-page-header,
+body.et-ui-professional .et-reg-header,
+body.et-ui-professional .et-fin-head,
+
+body.et-ui-professional .sci-head,
+body.et-ui-professional .scs-head,
+body.et-ui-professional .scb-head,
+
+body.et-ui-professional .cvs27-head,
+body.et-ui-professional .cvf27-head,
+
+body.et-ui-professional .aa-head,
+body.et-ui-professional .mr-head,
+body.et-ui-professional .br-top{
+  margin-top:0!important;
+  margin-bottom:16px!important;
+}
+
+
+/* Accounting keeps one vertical rhythm, not stacked margin authorities. */
+body.et-ui-professional .et-fin-head{
+  margin-bottom:16px!important;
+}
+
+body.et-ui-professional .et-fin-modes{
+  margin:0 0 12px!important;
+}
+
+body.et-ui-professional .et-fin-actions{
+  margin:0 0 14px!important;
+}
+
+body.et-ui-professional .et-fin-filter{
+  margin:0 0 14px!important;
+}
+
+body.et-ui-professional .et-summary-strip{
+  margin:0 0 14px!important;
+}
+
+
+/* Register workspace uses the same shell frame. */
+html.et-register-workspace-server
+body.et-ui-professional
+.et-reg-shell{
+  max-width:none!important;
+  margin:0!important;
+}
+
+
+html.et-register-workspace-server
+body.et-ui-professional
+.et-reg-header{
+  margin-bottom:16px!important;
+}
+
+
+/* ==========================================================================
+   BOOKING / FOCUS OUTER SHELL
+   Presenters add semantic state only. This file owns their geometry.
+   ========================================================================== */
+
+html.et-booking-focus-prepaint,

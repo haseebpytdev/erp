@@ -70,13 +70,11 @@ for (const token of [
   ok(shell.includes(token), `final shell owns ${token}`);
 }
 
-const basePos = controller.indexOf('file_get_contents($base)');
-const shellPos = controller.indexOf('file_get_contents($shellSpacingUi)');
-const accountingPos = controller.indexOf('file_get_contents($accountingUi)');
-ok(basePos >= 0 && shellPos >= 0 && shellPos > basePos, 'erp-shell-spacing.css is loaded after base CSS');
+ok(freshShell.includes('--et-shell-sidebar-width:208px') && freshShell.includes('--et-shell-gutter-x:24px'), 'fresh standard shell owns spacing authority');
 ok(
-  accountingPos === -1 && shellPos > basePos,
-  'legacy accounting CSS is not composed; shell spacing follows base CSS'
+  !controller.includes("base_path('public/erp-ui/erp-shell-spacing.css')") &&
+  !controller.includes('file_get_contents($shellSpacingUi)'),
+  'legacy shell-spacing CSS is removed from runtime composition'
 );
 
 ok(!base.includes('--et-sidebar-width:220px'), 'base CSS has no 220px sidebar fallback');
