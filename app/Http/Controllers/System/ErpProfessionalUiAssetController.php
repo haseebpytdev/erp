@@ -87,8 +87,7 @@ final class ErpProfessionalUiAssetController extends Controller
         $registerWorkspaceUi = base_path('public/erp-ui/erp-register-workspace.js');
         $base = base_path('public/erp-ui/erp-professional.js');
         $finalizer = base_path('public/erp-ui/erp-professional-finalize.js');
-        // Legacy ready script retained on disk for rollback, but no longer loaded.
-        $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
+        // Retired runtime marker (not loaded): $ready = base_path('public/erp-ui/erp-sidebar-ready.js');
         $passengerRemove = base_path('public/erp-ui/erp-passenger-remove.js');
         $freshShell = base_path('public/erp-theme/js/shell.js');
         $freshFocusedShell = base_path('public/erp-theme/js/focused-shell.js');
@@ -114,9 +113,8 @@ final class ErpProfessionalUiAssetController extends Controller
         }
 
         return $this->textAsset(
-            // Sidebar preparation/finalization must run before unrelated
-            // register-workspace enhancement so prepaint can resolve as early
-            // as possible without changing the canonical navigation contract.
+            // Shared shell and finalizer run before unrelated workspace
+            // enhancements; server-rendered navigation remains authoritative.
             file_get_contents($freshShell)
             ."\n".file_get_contents($freshFocusedShell)
             ."\n".file_get_contents($base)

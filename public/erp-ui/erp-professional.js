@@ -15,6 +15,13 @@
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
+  const normalizeSearch = value => {
+    const params = new URLSearchParams(String(value || '').replace(/^\?/, ''));
+    return Array.from(params.entries())
+      .sort(([ak, av], [bk, bv]) => ak.localeCompare(bk) || av.localeCompare(bv))
+      .map(([key, val]) => `${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
+      .join('&');
+  };
 
   const sidebarNav = document.querySelector('.sidebar .nav,.navbar-vertical .nav,.side-nav .nav,.sidebar-menu');
   if (sidebarNav) {
@@ -50,11 +57,22 @@
 
   document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href],.sidebar-menu a[href],.sidebar-menu[href]').forEach(link => {
     const linkPath = normalizePath(link.getAttribute('href'));
-    const currentPath = location.pathname.replace(/\/+$/g, '') || '/';
-    if (linkPath && linkPath === currentPath) {
+    const currentPath = normalizePath(location.pathname);
+    const linkSearch = normalizeSearch(new URL(link.getAttribute('href'), location.origin).search);
+    const currentSearch = normalizeSearch(location.search);
+    const nativeActive = link.classList.contains('active') || Boolean(link.parentElement && link.parentElement.classList.contains('active'));
+    const exactLocation = linkPath && linkPath === currentPath && linkSearch === currentSearch;
+    if (nativeActive || exactLocation) {
       link.classList.add('et-ui-current');
       link.setAttribute('aria-current', 'page');
-
+    } else {
+      const wasUiCurrent = link.classList.contains('et-ui-current');
+      link.classList.remove('et-ui-current');
+      if (link.getAttribute('aria-current') === 'page') link.removeAttribute('aria-current');
+      if (wasUiCurrent && !nativeActive) {
+        ['background', 'color', 'border-left-color', 'border-radius', 'font-weight', 'box-shadow']
+          .forEach(property => link.style.removeProperty(property));
+      }
     }
   });
 

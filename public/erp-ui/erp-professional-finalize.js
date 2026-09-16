@@ -3,22 +3,8 @@
 
   const body = document.body;
   if (!body || !body.classList.contains('et-ui-professional')) return;
-  // The server-composed sidebar is authoritative. This compatibility asset no
-  // longer reconstructs, clones, reorders, or reveals navigation client-side.
-  // Keep only a non-structural active marker for legacy hosts that lack the
-  // server marker; native markup remains untouched.
-  if (!document.querySelector('[data-et-server-sidebar="1"]')) {
-    const currentPath = location.pathname.replace(/\/+$/, '') || '/';
-    document.querySelectorAll('.sidebar a[href],.navbar-vertical a[href],.side-nav a[href],.sidebar-menu a[href]').forEach(link => {
-      try {
-        const url = new URL(link.getAttribute('href'), location.origin);
-        if ((url.pathname.replace(/\/+$/, '') || '/') === currentPath) {
-          link.classList.add('et-ui-current');
-          link.setAttribute('aria-current', 'page');
-        }
-      } catch (_) { /* preserve native link on malformed legacy href */ }
-    });
-  }
+  // The server-composed sidebar and base professional script own navigation;
+  // this compatibility asset performs no sidebar decoration or reconstruction.
 
   /*
    * Retired structural authority (kept as historical markers for downstream
