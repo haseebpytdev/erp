@@ -72,11 +72,11 @@ for (const token of [
 
 const basePos = controller.indexOf('file_get_contents($base)');
 const shellPos = controller.indexOf('file_get_contents($shellSpacingUi)');
-ok(basePos >= 0 && shellPos > basePos, 'erp-shell-spacing.css is loaded after base CSS');
+const accountingPos = controller.indexOf('file_get_contents($accountingUi)');
+ok(basePos >= 0 && shellPos >= 0 && shellPos > basePos, 'erp-shell-spacing.css is loaded after base CSS');
 ok(
-  controller.indexOf('file_get_contents($accountingUi)') < shellPos &&
-  controller.indexOf('file_get_contents($registerWorkspaceUi)') < shellPos,
-  'erp-shell-spacing.css is loaded after module CSS'
+  accountingPos >= 0 && shellPos > accountingPos,
+  'erp-shell-spacing.css is loaded after accounting module CSS'
 );
 
 ok(!base.includes('--et-sidebar-width:220px'), 'base CSS has no 220px sidebar fallback');
@@ -140,6 +140,7 @@ ok(bookingTheme.includes('et-booking-focus-page-actions') && bookingTheme.includ
 const registersTheme = read('public/erp-theme/modules/registers.css');
 const bookingRegisterLegacy = read('public/erp-ui/erp-booking-register-reference.css');
 ok(registersTheme.includes('.et-booking-ref-kpis') && registersTheme.includes('.et-booking-ref-pagination'), 'fresh registers theme owns Booking Register selectors');
+ok(controller.includes("'purchase' => 'registers.css'") && controller.includes("$role === 'register'"), 'fresh registers theme remains available for register role');
 ok(!executableCssController.includes("$registerWorkspaceUi = base_path('public/erp-ui/erp-booking-register-reference.css')") && !executableCssController.includes('file_get_contents($registerWorkspaceUi)'), 'legacy Booking Register stylesheet is removed from runtime composition');
 ok(bookingRegisterLegacy.includes('.et-booking-ref-register-card') && bookingRegisterLegacy.includes('.et-booking-ref-pagination'), 'legacy Booking Register stylesheet remains physically present for rollback');
 ok(presenter.includes('str_contains($html, \'data-et-booking-focus-shell="ERP-11.3.75"\')'), 'Booking focus marker guard remains idempotent');
