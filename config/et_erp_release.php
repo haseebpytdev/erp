@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.295-ERP11.3.295',
-    'release' => 'ERP-11.3.295',
-    'package' => 'ERP-11.3.295 Navigation and Sidebar Correction Build',
-    'package_detail' => 'ERP-11.3.295 adds native navigation loading feedback and final fresh-theme sidebar readability parity while preserving server-rendered navigation and leaving visual UAT pending.',
+    'version' => 'v1.1.33.296-ERP11.3.296',
+    'release' => 'ERP-11.3.296',
+    'package' => 'ERP-11.3.296 Passenger Remove Hotfix Build',
+    'package_detail' => 'ERP-11.3.296 delivers the reviewed Passenger Remove runtime-authority correction; visual UAT remains pending.',
 ];
 
