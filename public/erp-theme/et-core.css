@@ -7,9 +7,24 @@
   --et-font:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 body.et-ui-professional{font-family:var(--et-font);font-size:13px;color:var(--et-text);background:var(--et-bg);}
+body.et-ui-professional a{color:var(--et-primary);text-underline-offset:2px;}
+body.et-ui-professional a:hover{color:var(--et-primary-hover);}
+body.et-ui-professional :focus-visible{outline:3px solid rgba(37,99,235,.2);outline-offset:2px;}
+body.et-ui-professional label{color:var(--et-muted);font-size:11px;font-weight:600;}
 body.et-ui-professional :where(button,.btn,[type=button],[type=submit],[type=reset]){font:inherit;min-height:var(--et-control-height);border-radius:var(--et-radius-sm);font-weight:600;}
 body.et-ui-professional :where(input,select,textarea,.form-control){font:inherit;min-height:var(--et-control-height);border:1px solid var(--et-border-strong);border-radius:var(--et-radius-sm);color:var(--et-text);background:var(--et-surface);}
+body.et-ui-professional :where(input,select,textarea,.form-control):focus{border-color:var(--et-primary);box-shadow:0 0 0 3px rgba(37,99,235,.1);outline:0;}
+body.et-ui-professional :where(input,select,textarea,.form-control):disabled,
+body.et-ui-professional :where(input,textarea,.form-control)[readonly]{background:#F1F5F9;color:var(--et-muted);}
+body.et-ui-professional :where(.btn,.et-btn){display:inline-flex;align-items:center;justify-content:center;min-height:var(--et-control-height);padding:7px 12px;border:1px solid var(--et-border-strong);border-radius:var(--et-radius-sm);background:var(--et-surface);color:var(--et-text);font-weight:600;text-decoration:none;}
+body.et-ui-professional :where(.btn-primary,.et-btn-primary){background:var(--et-primary);border-color:var(--et-primary);color:#fff;}
+body.et-ui-professional :where(.btn-success,.et-btn-success){background:var(--et-success);border-color:var(--et-success);color:#fff;}
+body.et-ui-professional :where(.btn-danger,.et-btn-danger){background:var(--et-danger);border-color:var(--et-danger);color:#fff;}
 body.et-ui-professional :where(.card,.br-card,.gp-card,.et-card){border:1px solid var(--et-border);border-radius:var(--et-radius);box-shadow:var(--et-shadow);background:var(--et-surface);}
 body.et-ui-professional :where(table){border-color:var(--et-border);}
 body.et-ui-professional :where(th){font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--et-muted);background:#F8FAFC;}
 body.et-ui-professional :where(.badge,.tag,.pill){border-radius:999px;font-size:11px;font-weight:600;}
+body.et-ui-professional :where(.pagination){display:flex;gap:4px;flex-wrap:wrap;}
+body.et-ui-professional :where(.pagination .page-link){min-width:32px;min-height:32px;padding:6px 9px;border:1px solid var(--et-border);border-radius:var(--et-radius-sm);color:var(--et-text);}
+body.et-ui-professional :where(.text-success,.good,.profit){color:var(--et-success);}
+body.et-ui-professional :where(.text-danger,.bad,.loss){color:var(--et-danger);}
