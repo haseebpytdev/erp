@@ -60,6 +60,7 @@ ok(freshShell.includes('grid-template-columns:208px minmax(0,1fr)') && freshShel
 ok(freshFocusedShell.includes('grid-template-columns:minmax(0,1fr)') && freshFocusedShell.includes('display:none'), 'fresh focused shell removes the permanent sidebar without width hacks');
 ok(freshShellJs.includes('server-rendered DOM remains authoritative') && freshFocusedShellJs.includes('no DOM reconstruction'), 'fresh shell JavaScript contains interaction only');
 ok(freshShellJs.includes("dataset.etThemeShell='fresh-v1'") && freshShellJs.includes("addEventListener('click'"), 'fresh shell marks the theme and delegates native navigation clicks');
+ok(freshShellJs.includes('e.defaultPrevented'), 'default-prevented clicks are ignored by the navigation loader');
 ok(freshShellJs.includes('et-navigation-pending') && freshShellJs.includes('new URL(raw,window.location.origin)'), 'eligible internal links activate the navigation-pending state with URL validation');
 ok(!freshShellJs.includes('preventDefault') && !freshShellJs.includes('location.assign') && !freshShellJs.includes('fetch('), 'native browser navigation remains untouched');
 ok(freshShellJs.includes('e.ctrlKey') && freshShellJs.includes('e.metaKey') && freshShellJs.includes('e.shiftKey') && freshShellJs.includes('e.altKey'), 'modifier-key clicks are excluded');
@@ -68,6 +69,8 @@ ok(freshShellJs.includes("url.pathname===window.location.pathname&&url.search===
 ok(freshShellJs.includes("addEventListener('pageshow',clearPending)") && freshShellJs.includes('setTimeout(clearPending,8000)'), 'navigation pending state has BFCache and timeout cleanup');
 ok(freshShell.includes('body.et-ui-professional.et-navigation-pending::before') && freshShell.includes('position:fixed') && freshShell.includes('pointer-events:none'), 'fresh shell owns the fixed top navigation indicator');
 ok(freshShell.includes('@media (prefers-reduced-motion:reduce)') && !/et-navigation-pending[^}]*\{[^}]*opacity:0/.test(freshShell), 'navigation indicator supports reduced motion without hiding content');
+ok(freshShell.includes('color:currentColor') && freshShell.includes('svg{stroke:currentColor'), 'sidebar icons inherit readable currentColor across supported shell variants');
+ok(freshShell.includes('.et-ui-nav-chevron') && freshShell.includes('color:#fff'), 'sidebar chevrons brighten for hover and active states');
 ok(controller.includes("request()->query('module'"), 'module stylesheet selection is request-scoped');
 ok(controller.includes("'dashboard' => 'dashboard.css'") && controller.includes("'sales' => 'sales-invoice.css'"), 'module stylesheet map covers dashboard and sales invoice');
 ok(!controller.includes("modules/dashboard.css'),\n            base_path('public/erp-theme/modules/booking.css')"), 'module styles are not globally concatenated');

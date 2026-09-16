@@ -4,12 +4,16 @@ body.et-ui-professional .navbar-vertical,
 body.et-ui-professional .side-nav{background:var(--et-navy-deep);border-right:1px solid var(--et-navy);color:#D7E2EF;box-shadow:none;}
 body.et-ui-professional :where(.sidebar a,.navbar-vertical a,.side-nav a){border-left:3px solid transparent;border-radius:6px;color:#CBD8E8;text-decoration:none;}
 body.et-ui-professional :where(.sidebar a,.navbar-vertical a,.side-nav a):hover{background:rgba(255,255,255,.07);color:#fff;}
+body.et-ui-professional :where(.sidebar a,.navbar-vertical a,.side-nav a) :where(i,svg,span:first-child){color:currentColor;}
+body.et-ui-professional :where(.sidebar a,.navbar-vertical a,.side-nav a) svg{stroke:currentColor;}
 body.et-ui-professional :where(.sidebar a.et-ui-current,.sidebar a.active,.sidebar a[aria-current="page"],.navbar-vertical a.et-ui-current,.navbar-vertical a.active,.navbar-vertical a[aria-current="page"],.side-nav a.et-ui-current,.side-nav a.active,.side-nav a[aria-current="page"]){background:rgba(37,99,235,.18);border-left-color:#60A5FA;color:#fff;font-weight:650;}
 body.et-ui-professional :where(.sidebar .nav-section,.sidebar .nav-heading,.sidebar .menu-title,.navbar-vertical .nav-section,.navbar-vertical .nav-heading,.side-nav .nav-section){color:#A8BFD9;font-size:9.5px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;}
 body.et-ui-professional :where(.sidebar footer,.sidebar .sidebar-footer,.sidebar .sidebar-foot){border-top:1px solid rgba(255,255,255,.07);color:#8293A8;}
 body.et-ui-professional .et-ui-sidebar-release{display:flex;align-items:center;gap:8px;color:#B9C9DA;}
 body.et-ui-professional .et-ui-live-badge{display:inline-flex;align-items:center;justify-content:center;min-height:18px;padding:2px 8px;border-radius:999px;background:#159957;color:#fff;font-size:9px;font-weight:800;line-height:1;}
 body.et-ui-professional .et-ui-nav-chevron{margin-left:auto;color:#C8D8E9;background:transparent;}
+body.et-ui-professional :where(.sidebar a,.navbar-vertical a,.side-nav a):hover .et-ui-nav-chevron,
+body.et-ui-professional :where(.sidebar a.et-ui-current,.sidebar a.active,.sidebar a[aria-current="page"],.navbar-vertical a.et-ui-current,.navbar-vertical a.active,.navbar-vertical a[aria-current="page"],.side-nav a.et-ui-current,.side-nav a.active,.side-nav a[aria-current="page"]) .et-ui-nav-chevron{color:#fff;}
 body.et-ui-professional .app-shell{display:grid;grid-template-columns:208px minmax(0,1fr);min-width:0;min-height:100vh;background:var(--et-bg);}
 body.et-ui-professional .app-shell>.sidebar{width:208px;min-width:208px;background:var(--et-navy-deep);}
 body.et-ui-professional .app-shell>main.main{min-width:0;width:100%;margin:0;padding:0 24px 28px;background:var(--et-bg);}
