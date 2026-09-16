@@ -56,7 +56,17 @@ final class ServerSidebarComposer
         foreach (array_merge($out, $unknown) as $node) $root->appendChild($node);
         $root->setAttribute('data-et-server-sidebar', '1');
         $fragment = $dom->saveHTML($root);
-        if (!$fragment || !preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*class=["\'][^"\']*(?:sidebar|side-nav|navbar-vertical|sidebar-menu)[^"\']*["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE)) {
+        $opening = [];
+        preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*class=["\'][^"\']*(?:sidebar|side-nav|navbar-vertical|sidebar-menu)[^"\']*["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
+        if (!$opening) {
+            // The selected root is often an inner <ul>/<nav> below an outer
+            // sidebar container. Locate the first matching root element inside
+            // that container rather than requiring the root to repeat its class.
+            if (preg_match('/<(?:aside|nav|div)\b[^>]*class=["\'][^"\']*(?:sidebar|side-nav|navbar-vertical|sidebar-menu)[^"\']*["\'][^>]*>/i', $html, $container, PREG_OFFSET_CAPTURE)) {
+                preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE, $container[0][1] + strlen($container[0][0]));
+            }
+        }
+        if (!$fragment || !$opening) {
             return $html;
         }
         $start = $opening[0][1];
