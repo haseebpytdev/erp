@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use App\Support\Release\Erp11310ObsoleteFileCleaner;
 use App\Support\Release\Erp11330StabilizationCleaner;
-use App\Services\Operations\ServerSidebarComposer;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -102,11 +101,6 @@ class ApplyErpReleaseMetadata
             $html
         );
 
-        try {
-            $html = app(ServerSidebarComposer::class)->compose($html);
-        } catch (\Throwable $e) {
-            report($e);
-        }
 
         $html = $this->injectProfessionalUi($request, $html, $version);
 
