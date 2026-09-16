@@ -2,6 +2,27 @@ body.et-ui-module-accounting :where(.cvf27-card,.accounting-card,.card){border-c
 /* Chart of Accounts compatibility aliases stay scoped to Accounting. */
 body.et-ui-module-accounting :where(.coa-card){border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);box-shadow:var(--et-shadow);}
 body.et-ui-module-accounting :where(.coa-filters){border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);padding:11px;}
+/* Management-reporting aliases stay scoped to the Accounting module. */
+body.et-ui-module-accounting :where(.mr){color:var(--et-text);}
+body.et-ui-module-accounting :where(.mr-head){display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+body.et-ui-module-accounting :where(.mr-kicker){color:var(--et-primary);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;}
+body.et-ui-module-accounting :where(.mr-sub){color:var(--et-muted);font-size:11px;}
+body.et-ui-module-accounting :where(.mr-nav){display:flex;gap:5px;flex-wrap:wrap;margin:14px 0;}
+body.et-ui-module-accounting :where(.mr-nav a){padding:8px 11px;border:1px solid var(--et-border);border-radius:var(--et-radius-sm);background:var(--et-surface);color:var(--et-text);text-decoration:none;font-size:10px;font-weight:700;}
+body.et-ui-module-accounting :where(.mr-nav a.active){background:var(--et-primary);border-color:var(--et-primary);color:#fff;}
+body.et-ui-module-accounting :where(.mr-filter){display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:12px;border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);}
+body.et-ui-module-accounting :where(.mr-btn){min-height:var(--et-control-height);padding:7px 13px;border:1px solid var(--et-primary);border-radius:var(--et-radius-sm);background:var(--et-primary);color:#fff;font-weight:700;}
+body.et-ui-module-accounting :where(.mr-card){margin-top:12px;border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);overflow:hidden;}
+body.et-ui-module-accounting :where(.mr-card-head){display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--et-border);}
+body.et-ui-module-accounting :where(.mr-body){padding:12px 14px;}
+body.et-ui-module-accounting :where(.mr-kpi){padding:13px;border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);}
+body.et-ui-module-accounting :where(.mr-table-wrap){max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+body.et-ui-module-accounting :where(.mr .num){text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+body.et-ui-module-accounting :where(.mr .total){font-weight:800;background:#EFF6FF;}
+body.et-ui-module-accounting :where(.mr .grand){font-size:12px;font-weight:800;background:#DBEAFE;}
+body.et-ui-module-accounting :where(.mr .good,.mr .profit){color:var(--et-success);}
+body.et-ui-module-accounting :where(.mr .bad,.mr .loss){color:var(--et-danger);}
+@media(max-width:700px){body.et-ui-module-accounting :where(.mr-head){display:block;}body.et-ui-module-accounting :where(.mr-table-wrap){overflow-x:auto;}}
 body.et-ui-module-accounting :where(.report-filters,.ledger-filters){gap:10px;}
 
 

@@ -24,6 +24,11 @@ const dashboardTheme = read('public/erp-theme/modules/dashboard.css');
 const registerModuleTheme = read('public/erp-theme/modules/registers.css');
 const accountingModuleTheme = read('public/erp-theme/modules/accounting.css');
 const coaView = read('resources/views/accounting/chart-of-accounts/workspace.blade.php');
+const mrViews = [
+  read('resources/views/accounting/management-reporting/profit-and-loss.blade.php'),
+  read('resources/views/accounting/management-reporting/balance-sheet.blade.php'),
+  read('resources/views/accounting/management-reporting/management.blade.php'),
+];
 const bookingTheme = read('public/erp-theme/modules/booking.css');
 const freshShellJs = read('public/erp-theme/js/shell.js');
 const freshFocusedShellJs = read('public/erp-theme/js/focused-shell.js');
@@ -48,6 +53,9 @@ ok(registerModuleTheme.includes('.sci-card') && registerModuleTheme.includes('.s
 ok(accountingModuleTheme.includes('.cvf27-card') && accountingModuleTheme.includes('.cvs27-card') && accountingModuleTheme.includes('.aa-wrap') && !freshCore.includes('.cvf27-card'), 'accounting aliases remain module-scoped and are not bundled into core');
 ok(accountingModuleTheme.includes('.coa-card') && accountingModuleTheme.includes('.coa-filters') && !freshCore.includes('.coa-card'), 'Chart of Accounts aliases are owned by accounting CSS, not core');
 ok(coaView.includes('class="coa-card"') && coaView.includes('class="coa-tools"') && coaView.includes('route(\'accounting.chart-of-accounts.workspace\')'), 'Chart of Accounts remains a live accounting workspace');
+ok(accountingModuleTheme.includes('.mr-head') && accountingModuleTheme.includes('.mr-filter') && accountingModuleTheme.includes('.mr-card') && accountingModuleTheme.includes('.mr-kpi'), 'Management reporting aliases are owned by accounting CSS');
+ok(accountingModuleTheme.includes('.mr .total') && accountingModuleTheme.includes('.mr .grand') && accountingModuleTheme.includes('.mr-table-wrap'), 'Report-specific totals and responsive table authority remain available');
+ok(mrViews.every(view => view.includes('class="mr"') && view.includes('class="mr-card"')), 'Profit and Loss, Balance Sheet, and Management reports emit live mr markup');
 ok(freshShell.includes('grid-template-columns:208px minmax(0,1fr)') && freshShell.includes('width:100%'), 'fresh shell owns the standard 208px and full-width geometry');
 ok(freshFocusedShell.includes('grid-template-columns:minmax(0,1fr)') && freshFocusedShell.includes('display:none'), 'fresh focused shell removes the permanent sidebar without width hacks');
 ok(freshShellJs.includes('server-rendered DOM remains authoritative') && freshFocusedShellJs.includes('no DOM reconstruction'), 'fresh shell JavaScript contains interaction only');
