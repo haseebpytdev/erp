@@ -718,6 +718,9 @@ var passengerFormKind103169=function(form){
 document.addEventListener(
   'submit',
   async function(event){
+    if(event.submitter && event.submitter.matches && event.submitter.matches('[data-et-passenger-remove]')){
+      return;
+    }
     if(
       document.documentElement.dataset.etBookingLiveCore==='ERP-11.3.75'
     ){
@@ -1761,6 +1764,9 @@ var panelRefreshKeys=function(key){
 document.addEventListener(
   'submit',
   async function(event){
+    if(event.submitter && event.submitter.matches && event.submitter.matches('[data-et-passenger-remove]')){
+      return;
+    }
     var form=event.target;
 
     if(!isLiveBookingForm(form)){

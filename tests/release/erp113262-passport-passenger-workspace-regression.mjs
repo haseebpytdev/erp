@@ -69,6 +69,10 @@ ok(passengerRemove.includes("const direct = ['bookingPassengerId', 'booking_pass
 ok(!passengerRemove.includes('rows.indexOf(row)') && passengerRemove.includes('duplicate names remain'), 'removal has no unsafe ordinal fallback and fails closed for ambiguous visual rows');
 ok(passengerRemove.includes("observer.observe(table") && !passengerRemove.includes('observer.observe(document.body'), 'removal observer is scoped to the booking passenger table');
 ok(passengerRemove.includes('event.preventDefault()') && passengerRemove.includes('event.stopImmediatePropagation()') && passengerRemove.includes('event.stopPropagation()'), 'removal click is isolated from delegated native booking-save handlers');
+ok(passengerRemove.includes("button.type = 'button'") && passengerRemove.includes("button.dataset.etPassengerRemoveBound !== '1'") && passengerRemove.includes('}, true);'), 'removal controls are normalized and wired in capture phase');
+ok(passengerRemove.includes('button.dataset.etPassengerRemove = String(passengerId)'), 'removal control always carries the stable booking-passenger authority');
+const bookingFocus = fs.readFileSync(new URL('../../public/erp11335/booking-focus.js', import.meta.url), 'utf8');
+ok((bookingFocus.match(/data-et-passenger-remove/g) || []).length >= 2, 'native booking-save handlers ignore passenger-remove submitters');
 ok(!passengerRemove.includes('row.remove()') && passengerRemove.includes('options.reload()'), 'successful removal reloads authoritative server state without mutating legacy booking DOM');
 ok(passengerRemoveController.includes("->where('booking_id', $booking)") && passengerRemoveController.includes("->where('id', $passenger)"), 'booking passenger deletion is scoped by both booking and snapshot IDs');
 ok(passengerRemoveController.includes('DB::transaction') && !passengerRemoveController.includes("passengers')->delete"), 'removal is transactional and never deletes Passenger Master rows');

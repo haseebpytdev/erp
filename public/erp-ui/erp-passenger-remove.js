@@ -145,11 +145,17 @@
       if (!button) {
         const cell = row.lastElementChild || row.appendChild(document.createElement('td'));
         button = document.createElement('button');
-        button.type = 'button';
         button.className = 'btn btn-sm btn-outline-danger et-passenger-remove';
-        button.dataset.etPassengerRemove = String(passengerId);
         button.textContent = 'Remove';
+        cell.appendChild(button);
+      }
 
+      // Existing native/legacy controls are normalized before wiring so a
+      // stale submit button can never enter booking-save form authority.
+      button.type = 'button';
+      button.dataset.etPassengerRemove = String(passengerId);
+      if (button.dataset.etPassengerRemoveBound !== '1') {
+        button.dataset.etPassengerRemoveBound = '1';
         button.addEventListener('click', function (event) {
           void removeBookingPassenger({
             event,
@@ -168,9 +174,7 @@
               }
             })
           });
-        });
-
-        cell.appendChild(button);
+        }, true);
       }
 
       button.title = locked
