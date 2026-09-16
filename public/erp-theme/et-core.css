@@ -28,3 +28,29 @@ body.et-ui-professional :where(.pagination){display:flex;gap:4px;flex-wrap:wrap;
 body.et-ui-professional :where(.pagination .page-link){min-width:32px;min-height:32px;padding:6px 9px;border:1px solid var(--et-border);border-radius:var(--et-radius-sm);color:var(--et-text);}
 body.et-ui-professional :where(.text-success,.good,.profit){color:var(--et-success);}
 body.et-ui-professional :where(.text-danger,.bad,.loss){color:var(--et-danger);}
+body.et-ui-professional :where(.et-status,[data-et-status],.badge,.tag,.pill){display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border:1px solid transparent;border-radius:999px;font-size:11px;font-weight:700;line-height:1.1;white-space:nowrap;}
+body.et-ui-professional [data-et-status="draft"]{background:#F1F5F9;color:#475569;border-color:#E2E8F0;}
+body.et-ui-professional [data-et-status="pending approval"],body.et-ui-professional [data-et-status="unissued"]{background:#FEF3C7;color:#92400E;border-color:#FDE68A;}
+body.et-ui-professional [data-et-status="approved"]{background:#DBEAFE;color:#1D4ED8;border-color:#BFDBFE;}
+body.et-ui-professional [data-et-status="posted"],body.et-ui-professional [data-et-status="issued"]{background:#D1FAE5;color:#047857;border-color:#A7F3D0;}
+body.et-ui-professional [data-et-status="travel ready"]{background:#CCFBF1;color:#0F766E;border-color:#99F6E4;}
+body.et-ui-professional [data-et-status="reopened"]{background:#EDE9FE;color:#6D28D9;border-color:#DDD6FE;}
+body.et-ui-professional [data-et-status="rejected"],body.et-ui-professional [data-et-status="reversed"],body.et-ui-professional [data-et-status="cancelled"]{background:#FEE2E2;color:#B91C1C;border-color:#FECACA;}
+body.et-ui-professional :where(.alert){margin:10px 0;padding:11px 13px;border:1px solid var(--et-border);border-radius:var(--et-radius);font-size:12px;line-height:1.45;}
+body.et-ui-professional .alert-success{background:#ECFDF5;border-color:#A7F3D0;color:#047857;}
+body.et-ui-professional .alert-warning{background:#FFFBEB;border-color:#FDE68A;color:#92400E;}
+body.et-ui-professional .alert-danger{background:#FEF2F2;border-color:#FECACA;color:#B91C1C;}
+body.et-ui-professional :where(.et-table-wrap,.table-responsive){max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+body.et-ui-professional table:not(.ui-datepicker-calendar){width:100%;border-collapse:collapse;color:var(--et-text);font-size:12px;}
+body.et-ui-professional table:not(.ui-datepicker-calendar) th,body.et-ui-professional table:not(.ui-datepicker-calendar) td{padding:9px 10px;border-bottom:1px solid var(--et-border);vertical-align:middle;line-height:1.35;}
+body.et-ui-professional table:not(.ui-datepicker-calendar) th{background:#F8FAFC;color:var(--et-muted);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+body.et-ui-professional table:not(.ui-datepicker-calendar) tbody tr:hover td{background:#F8FAFC;}
+body.et-ui-professional table:not(.ui-datepicker-calendar) tfoot th,body.et-ui-professional table:not(.ui-datepicker-calendar) tfoot td{border-top:2px solid var(--et-border-strong);background:#EFF6FF;font-weight:800;}
+body.et-ui-professional :where(.et-money,.num,td.text-end,th.text-end){text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+body.et-ui-professional :where(.et-card,.card){border:1px solid var(--et-border);border-radius:var(--et-radius);background:var(--et-surface);box-shadow:var(--et-shadow);}
+body.et-ui-professional :where(.et-card-header,.card-header){padding:12px 15px;border-bottom:1px solid var(--et-border);background:var(--et-surface);}
+body.et-ui-professional :where(.et-card-body,.card-body){padding:15px;}
+body.et-ui-professional :where(.et-page-header){display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:0 0 16px;}
+body.et-ui-professional :where(.et-page-kicker){color:var(--et-primary);font-size:10px;font-weight:800;letter-spacing:.045em;text-transform:uppercase;}
+body.et-ui-professional :where(.et-page-title){margin:3px 0;color:var(--et-text);font-size:25px;line-height:1.18;font-weight:780;}
+body.et-ui-professional :where(.et-page-subtitle){color:var(--et-muted);font-size:12px;line-height:1.4;}

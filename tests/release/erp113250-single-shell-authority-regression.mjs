@@ -75,6 +75,13 @@ for (const token of [
 }
 
 ok(freshShell.includes('--et-shell-sidebar-width:208px') && freshShell.includes('--et-shell-gutter-x:24px'), 'fresh standard shell owns spacing authority');
+ok(freshShell.includes('background:var(--et-navy-deep)') && freshShell.includes('border-left-color:#60A5FA') && freshShell.includes('et-ui-live-badge'), 'fresh shell owns sidebar visual authority');
+ok(freshShell.includes('height:56px') && freshShell.includes('border-bottom:1px solid var(--et-border)'), 'fresh shell owns topbar visual authority');
+ok(freshCore.includes('[data-et-status="posted"]') && freshCore.includes('[data-et-status="cancelled"]'), 'fresh core owns semantic status presentation');
+ok(freshCore.includes('.alert-success') && freshCore.includes('.alert-warning') && freshCore.includes('.alert-danger'), 'fresh core owns generic alert presentation');
+ok(freshCore.includes('table:not(.ui-datepicker-calendar)') && freshCore.includes('tfoot th') && freshCore.includes('.et-table-wrap'), 'fresh core owns generic table presentation');
+ok(freshCore.includes(':where(.et-card,.card)') && freshCore.includes('.card-header') && freshCore.includes('.card-body'), 'fresh core owns generic card presentation');
+ok(freshCore.includes('.et-page-header') && freshCore.includes('.et-page-title') && freshCore.includes('.et-page-subtitle'), 'fresh core owns generic page heading presentation');
 ok(
   !controller.includes("base_path('public/erp-ui/erp-shell-spacing.css')") &&
   !controller.includes('file_get_contents($shellSpacingUi)'),
