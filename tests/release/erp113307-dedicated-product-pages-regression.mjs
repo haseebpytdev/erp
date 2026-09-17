@@ -33,4 +33,8 @@ ok(view.includes('Operational workspace not configured yet.'), 'Other Services i
 ok(!view.includes('data-etgp-product-buttons'), 'dedicated pages do not render aggregate product cards');
 ok(routes.includes("Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])"), 'aggregate Products route remains preserved');
 ok(!controller.includes('DB::table(\'booking_services\')->insert') && !controller.includes('DB::table(\'bookings\')->update'), 'workspace controller performs no product or lifecycle persistence');
+ok(presenter.includes('data-et-booking-products-launcher="1"') && presenter.includes('margin:18px 0'), 'main Booking launcher is normal in-document content');
+const launcher = presenter.slice(presenter.indexOf('data-et-booking-products-launcher="1"') - 120, presenter.indexOf('data-et-booking-products-launcher="1"') + 900);
+ok(!launcher.includes('position:fixed') && !launcher.includes('position:absolute'), 'main Booking launcher is not a floating overlay');
+ok(view.includes("config('et_erp_release.version") && !view.includes('?v=11.3.305'), 'dedicated assets use current release metadata rather than a stale hard-coded version');
 console.log(`erp113307-dedicated-product-pages-regression: ${pass} assertions passed`);

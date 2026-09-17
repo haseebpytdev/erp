@@ -247,11 +247,15 @@ HTML;
             if (! str_contains($html, 'data-et-booking-review-entry="1"') && stripos($html, '</body>') !== false) {
                 $html = preg_replace('/<\/body>/i', $reviewEntry."\n</body>", $html, 1) ?? $html;
             }
-            $productLauncher = '<section data-et-booking-products-launcher="1" style="position:fixed;left:18px;bottom:18px;z-index:999;padding:10px 12px;border:1px solid #dce8f5;border-radius:10px;background:#fff;box-shadow:0 5px 16px rgba(28,67,111,.12);font:800 11px Arial,sans-serif"><strong style="display:block;margin-bottom:6px">Booking Products</strong><div style="display:flex;gap:6px;flex-wrap:wrap">'
+            $productLauncher = '<section data-et-booking-products-launcher="1" style="margin:18px 0;padding:14px;border:1px solid #dce8f5;border-radius:10px;background:#fff;box-shadow:0 5px 16px rgba(28,67,111,.12);font:800 11px Arial,sans-serif"><strong style="display:block;margin-bottom:8px">Booking Products</strong><div style="display:flex;gap:10px;flex-wrap:wrap">'
                 .implode('', array_map(static fn (string $product): string => '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/products/'.$product)).'" style="color:#1769d2;text-decoration:none">'.ucwords(str_replace('-', ' ', $product)).' →</a>', ['air','hotel','transport','visa','other-services']))
                 .'</div></section>';
-            if (! str_contains($html, 'data-et-booking-products-launcher="1"') && stripos($html, '</body>') !== false) {
-                $html = preg_replace('/<\/body>/i', $productLauncher."\n</body>", $html, 1) ?? $html;
+            if (! str_contains($html, 'data-et-booking-products-launcher="1"')) {
+                if (stripos($html, '</main>') !== false) {
+                    $html = preg_replace('/<\/main>/i', $productLauncher."\n</main>", $html, 1) ?? $html;
+                } elseif (stripos($html, '</section>') !== false) {
+                    $html = preg_replace('/<\/section>/i', $productLauncher."\n</section>", $html, 1) ?? $html;
+                }
             }
         }
 
