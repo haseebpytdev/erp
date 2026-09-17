@@ -14,7 +14,7 @@ const ok = (condition, label) => {
   pass++;
 };
 
-ok(version === 'v1.1.33.296-ERP11.3.296', 'functional checkpoint retains ERP-11.3.259 release metadata');
+ok(version === 'v1.1.33.297-ERP11.3.297', 'functional checkpoint retains ERP-11.3.259 release metadata');
 ok(shell.includes('--et-shell-sidebar-width:208px'), 'shared sidebar width remains 208px');
 ok(shell.includes('--et-shell-gutter-x:24px'), 'desktop shell gutter remains 24px');
 ok(shell.includes('--et-shell-gutter-x:16px'), 'responsive shell gutter remains 16px');
