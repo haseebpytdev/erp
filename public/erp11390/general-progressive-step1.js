@@ -5234,6 +5234,20 @@ var build=function(){
   );
 };
 
+var etgpPreserveLockedPassengerTable113162=function(card,current,freshPanel,root){
+  var locked=etgpBookingLockState113162.locked===true
+    || !!(card&&card.dataset&&card.dataset.etgpBookingLocked==='1')
+    || !!(root&&root.dataset&&root.dataset.etgpBookingLocked==='1');
+  var preservedTable=locked&&card?card.querySelector('.etgp-current-passenger-table'):null;
+  var preservedTableClone=preservedTable&&preservedTable.cloneNode?preservedTable.cloneNode(true):null;
+  current.innerHTML=freshPanel.innerHTML;
+  if(locked&&preservedTableClone&&!current.querySelector('.etgp-current-passenger-table')){
+    current.appendChild(preservedTableClone);
+  }
+  return locked;
+};
+window.etgpPreserveLockedPassengerTable113162=etgpPreserveLockedPassengerTable113162;
+
 var refreshPassengerCard=function(
   freshPanel,
   freshDoc
@@ -5251,22 +5265,14 @@ var refreshPassengerCard=function(
     return;
   }
 
-  /* A partial native refresh can contain only the editor fragment. Preserve
-     the already-rendered saved snapshot table so an editor-only response can
-     never turn a locked booking into an Add Passenger-only view. */
-  var preservedTable=card.querySelector('.etgp-current-passenger-table');
-  var preservedTableClone=preservedTable&&preservedTable.cloneNode?preservedTable.cloneNode(true):null;
+  var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('main');
 
   Array.prototype.slice.call(
     card.querySelectorAll(':scope > .etgp-passenger-current-host,:scope > .etgp-passenger-editor-host')
   ).forEach(function(node){node.remove();});
 
   current.classList.remove('etgp-passenger-native-source-host');
-  current.innerHTML=
-    freshPanel.innerHTML;
-  if(preservedTableClone&&!current.querySelector('.etgp-current-passenger-table')){
-    current.appendChild(preservedTableClone);
-  }
+  etgpPreserveLockedPassengerTable113162(card,current,freshPanel,root);
 
   Array.prototype.slice.call(
     card.querySelectorAll(

@@ -119,9 +119,40 @@ ok(progressive.includes('if(etgpBookingLockState113162.locked)etgpApplyBookingLo
 ok(progressive.includes('data-et-server-booking-lock') && progressive.includes('if(serverBanner&&banner)banner.remove()'), 'server and client lock banners are deduplicated');
 ok(progressive.includes("root.dataset.etgpBookingLocked=locked?'1':'0'") && progressive.includes("root.dataset.etgpBookingLocked==='1'"), 'lock state is shared by renderers without inferring from button visibility');
 ok(progressive.includes("if(!locked){") && progressive.includes("document.documentElement.classList.remove('et-booking-locked-113162')"), 'Draft or reopened booking remains editable when lock is absent');
-ok(progressive.includes('var preservedTable=card.querySelector(\'.etgp-current-passenger-table\')') && progressive.includes('preservedTable.cloneNode(true)'), 'locked refresh captures the authoritative saved passenger table');
-ok(progressive.includes("if(preservedTableClone&&!current.querySelector('.etgp-current-passenger-table'))") && progressive.includes('current.appendChild(preservedTableClone)'), 'editor-only refresh restores existing saved passenger rows');
+ok(progressive.includes("var preservedTable=locked&&card?card.querySelector('.etgp-current-passenger-table'):null") && progressive.includes('preservedTable.cloneNode(true)'), 'locked refresh captures the authoritative saved passenger table');
+ok(progressive.includes("if(locked&&preservedTableClone&&!current.querySelector('.etgp-current-passenger-table'))") && progressive.includes('current.appendChild(preservedTableClone)'), 'editor-only refresh restores existing saved passenger rows');
 ok(progressive.includes('freshPanel.innerHTML') && progressive.includes('preservedTableClone'), 'actual passenger refresh path protects rows when the response is editor-only');
+
+/* Execute the embedded refresh-preservation helper against DOM-shaped nodes.
+ * This exercises the production helper itself rather than a copied algorithm. */
+const preserveStart = progressive.indexOf('var etgpPreserveLockedPassengerTable113162=');
+const preserveEnd = progressive.indexOf('var refreshPassengerCard=', preserveStart);
+const preserveContext = { window: {}, etgpBookingLockState113162: { locked: false } };
+vm.runInNewContext(progressive.slice(preserveStart, preserveEnd), preserveContext);
+const domNode = (html = '', table = false) => {
+  const savedTable = () => ({ cloneNode: () => ({ marker: 'saved-table-clone' }) });
+  const node = { dataset: {}, table: table ? savedTable() : null, appended: 0, _html: String(html || '') };
+  Object.defineProperty(node, 'innerHTML', { get: () => node._html, set: value => { node._html = String(value || ''); node.table = node._html.includes('etgp-current-passenger-table') ? {} : null; } });
+  node.querySelector = selector => selector.includes('etgp-current-passenger-table') ? node.table : null;
+  node.cloneNode = () => ({ marker: 'saved-table-clone' });
+  node.appendChild = child => { node.table = child; node.appended++; };
+  return node;
+};
+const preserve = preserveContext.window.etgpPreserveLockedPassengerTable113162;
+const lockedCard = domNode('', true); lockedCard.dataset.etgpBookingLocked = '1';
+const lockedCurrent = domNode('', false);
+preserve(lockedCard, lockedCurrent, domNode('<form class="editor-only"></form>'), domNode());
+ok(lockedCurrent.table && lockedCurrent.appended === 1, 'locked editor-only refresh preserves six saved passenger rows');
+const draftCard = domNode('', true); const draftCurrent = domNode('', false);
+preserve(draftCard, draftCurrent, domNode('<form class="editor-only"></form>'), domNode());
+ok(!draftCurrent.table && draftCurrent.appended === 0, 'Draft zero-passenger refresh stays authoritative and does not restore stale rows');
+const reopenedCard = domNode('', true); reopenedCard.dataset.etgpBookingLocked = '0'; const reopenedCurrent = domNode('', false);
+preserve(reopenedCard, reopenedCurrent, domNode('<form></form>'), domNode());
+ok(!reopenedCurrent.table && reopenedCurrent.appended === 0, 'Reopened zero-passenger refresh stays authoritative');
+const freshCard = domNode('', true); freshCard.dataset.etgpBookingLocked = '1'; const freshCurrent = domNode('', false);
+preserve(freshCard, freshCurrent, domNode('<table class="etgp-current-passenger-table"></table>', true), domNode());
+ok(freshCurrent.table && freshCurrent.appended === 0, 'locked authoritative fresh passenger table wins over preserved clone');
+ok(freshCurrent.appended <= 1, 'refresh path prevents duplicate passenger tables');
 
 const context = { window: {}, console };
 vm.runInNewContext(mrz, context);
