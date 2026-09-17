@@ -771,7 +771,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
     .then(function(data){
       if(sequence!==etgpOperationalSummarySequence113153)return data;
       var commercial=etgpBookingCommercialDisplay113302(data);
-      var amount=Math.max(0,Number(commercial.bookingValue||0));
+      var amount=Math.max(0,Number(data.booking_value||0));
       var currency=String(data.currency||'PKR').trim().toUpperCase()||'PKR';
       etgpProductCustomerTotals113127=Object.assign({},data.product_customer_totals||{});
       etgpProductCurrency113127=currency;
@@ -2164,31 +2164,11 @@ var renderProgress=function(
 
   if(steps.length<3)return;
 
-  steps[0].classList.add(
-    'is-done'
-  );
-
-  if(paxCount>0){
-    steps[1].classList.add(
-      'is-done'
-    );
-    steps[1].classList.remove(
-      'is-current'
-    );
-    steps[2].classList.add(
-      'is-current'
-    );
-  }else{
-    steps[1].classList.add(
-      'is-current'
-    );
-    steps[1].classList.remove(
-      'is-done'
-    );
-    steps[2].classList.remove(
-      'is-current'
-    );
-  }
+  Array.prototype.forEach.call(steps,function(step){
+    step.classList.remove('is-done');
+    step.classList.remove('is-current');
+  });
+  steps[0].classList.add('is-current');
 
   var selected=root.querySelector(
     '[data-etgp-selected-count]'
