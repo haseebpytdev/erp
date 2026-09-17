@@ -16,6 +16,8 @@ const view = fs.readFileSync(new URL('../../resources/views/operations/passenger
 const scanner = fs.readFileSync(new URL('../../public/erp-ui/passport-scanner.js', import.meta.url), 'utf8');
 const passengerRemove = fs.readFileSync(new URL('../../public/erp-ui/erp-passenger-remove.js', import.meta.url), 'utf8');
 const passengerRemoveController = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingPassengerRemoveController.php', import.meta.url), 'utf8');
+const bookingLock = fs.readFileSync(new URL('../../app/Http/Middleware/EnforceGeneralBookingEditLock.php', import.meta.url), 'utf8');
+const commercialLock = fs.readFileSync(new URL('../../app/Http/Middleware/GuardApprovedGeneralBookingCommercials.php', import.meta.url), 'utf8');
 const operationalRoutes = fs.readFileSync(new URL('../../routes/erp10286.php', import.meta.url), 'utf8');
 const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
 const ocrEngine = fs.readFileSync(new URL('../../public/erp-ui/vendor/tesseract/dist/tesseract.min.js', import.meta.url), 'utf8');
@@ -77,6 +79,10 @@ ok(!passengerRemove.includes('row.remove()') && passengerRemove.includes('option
 ok(passengerRemoveController.includes("->where('booking_id', $booking)") && passengerRemoveController.includes("->where('id', $passenger)"), 'booking passenger deletion is scoped by both booking and snapshot IDs');
 ok(passengerRemoveController.includes('DB::transaction') && !passengerRemoveController.includes("passengers')->delete"), 'removal is transactional and never deletes Passenger Master rows');
 ok(operationalRoutes.includes("Route::delete(") && operationalRoutes.includes('EnforceGeneralBookingEditLock::class') && operationalRoutes.includes("->whereNumber('passenger')"), 'booking passenger removal route is DELETE-only, numeric and protected by the server booking lock');
+ok(bookingLock.includes("$routeBooking = $request->route('booking')") && bookingLock.includes("method_exists($routeBooking, 'getKey')") && bookingLock.includes('return (int) $routeBooking->getKey();'), 'booking edit lock accepts an implicit-bound Booking model without object-to-int conversion');
+ok(bookingLock.includes('return (int) $routeBooking;'), 'booking edit lock preserves scalar route ID compatibility');
+ok(commercialLock.includes("method_exists($routeBooking, 'getKey')") && commercialLock.includes('return app(EnforceGeneralBookingEditLock::class)'), 'approved-commercial guard accepts bound Booking models before applying lifecycle lock');
+ok(operationalRoutes.includes("'/system/erp-bookings/{booking}/passengers/{passenger}'") && operationalRoutes.includes('GeneralBookingPassengerRemoveController::class'), 'passenger removal route reaches the dedicated downstream controller after middleware');
 
 const context = { window: {}, console };
 vm.runInNewContext(mrz, context);

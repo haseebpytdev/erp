@@ -18,7 +18,8 @@ final class EnforceGeneralBookingEditLock
     {
         $reviewAction = strtolower((string) $request->route('action'));
         if (in_array($reviewAction, ['submit','approve','reopen','ready'], true)) return $next($request);
-        $bookingId = (int) ($request->route('booking') ?? $request->route('id') ?? 0);
+        $routeBooking = $request->route('booking') ?? $request->route('id') ?? 0;
+        $bookingId = $this->bookingId($routeBooking);
         $state = $this->locks->resolve($bookingId);
         if (! $state['locked']) {
             $keys=implode(' ',array_keys($request->all()));
@@ -43,5 +44,14 @@ final class EnforceGeneralBookingEditLock
             302,
             ['X-Booking-Lock'=>'locked']
         )->withErrors(['booking'=>$message]);
+    }
+
+    private function bookingId(mixed $routeBooking): int
+    {
+        if (is_object($routeBooking) && method_exists($routeBooking, 'getKey')) {
+            return (int) $routeBooking->getKey();
+        }
+
+        return (int) $routeBooking;
     }
 }
