@@ -113,6 +113,17 @@ final class BookingWorkspaceShellPresenter
         $html = $this->addHtmlClass($html, 'et-booking-unified-canvas-11375');
         $html = $this->addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75');
 
+        // Seed the authoritative lifecycle before the progressive client builds
+        // passenger/product/Air editors.  This prevents a locked page from
+        // briefly rendering editable controls while the summary request loads.
+        $initialBookingLock = null;
+        if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $initialBookingMatch)) {
+            $initialBookingLock = $this->bookingLocks->resolve((int) $initialBookingMatch[1]);
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $initialBookingLock['locked'] ? '1' : '0');
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));
+        }
+
         /*
          * ERP-11.3.75: GENERAL and every native product Booking Workspace share
          * the same shell. Product type no longer changes outer content width.
@@ -215,7 +226,7 @@ final class BookingWorkspaceShellPresenter
         // Booking Review entry stays inside the existing focused booking shell.
         // It is injected only on the native GENERAL booking view/edit page.
         if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $bookingMatch)) {
-            $lock=$this->bookingLocks->resolve((int)$bookingMatch[1]);
+            $lock=$initialBookingLock ?? $this->bookingLocks->resolve((int)$bookingMatch[1]);
             if($lock['locked']&&!str_contains($html,'data-et-server-booking-lock="1"')){
                 $message=e($lock['reason']);
                 $locked=<<<HTML

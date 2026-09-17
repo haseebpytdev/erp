@@ -21,6 +21,7 @@ const commercialLock = fs.readFileSync(new URL('../../app/Http/Middleware/GuardA
 const airProduct = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingAirProductController.php', import.meta.url), 'utf8');
 const visaProduct = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingVisaProductController.php', import.meta.url), 'utf8');
 const progressive = fs.readFileSync(new URL('../../public/erp11390/general-progressive-step1.js', import.meta.url), 'utf8');
+const bookingPresenter = fs.readFileSync(new URL('../../app/Services/Operations/BookingWorkspaceShellPresenter.php', import.meta.url), 'utf8');
 const operationalRoutes = fs.readFileSync(new URL('../../routes/erp10286.php', import.meta.url), 'utf8');
 const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
 const ocrEngine = fs.readFileSync(new URL('../../public/erp-ui/vendor/tesseract/dist/tesseract.min.js', import.meta.url), 'utf8');
@@ -126,6 +127,27 @@ ok(progressive.includes("el.type==='checkbox'||el.type==='radio'") && progressiv
 ok(progressive.includes("var preservedTable=locked&&card?card.querySelector('.etgp-current-passenger-table'):null") && progressive.includes('preservedTable.cloneNode(true)'), 'locked refresh captures the authoritative saved passenger table');
 ok(progressive.includes("if(locked&&preservedTableClone&&!current.querySelector('.etgp-current-passenger-table'))") && progressive.includes('current.appendChild(preservedTableClone)'), 'editor-only refresh restores existing saved passenger rows');
 ok(progressive.includes('freshPanel.innerHTML') && progressive.includes('preservedTableClone'), 'actual passenger refresh path protects rows when the response is editor-only');
+ok(bookingPresenter.includes("data-et-booking-locked") && bookingPresenter.includes("data-et-booking-status") && bookingPresenter.includes("data-et-booking-lock-reason"), 'server presenter emits initial booking lock attributes');
+ok(progressive.includes("data-et-booking-locked") && progressive.includes("data-et-booking-status") && progressive.includes("etgpSeedInitialBookingLock113162"), 'initial locked page exposes and seeds the server lifecycle authority');
+ok(progressive.indexOf('etgpSeedInitialBookingLock113162();') < progressive.indexOf('markPassengerFormLayout('), 'initial lock is seeded before passenger form layout');
+const buildStart = progressive.indexOf('var build=function(){');
+const initialLockApply = progressive.indexOf("if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162", buildStart);
+ok(progressive.indexOf('content.appendChild(', buildStart) < initialLockApply, 'initial lock is applied after root enters the document');
+ok(initialLockApply < progressive.indexOf('renderProducts(', initialLockApply), 'initial lock is applied before product and Air rendering');
+
+/* Execute the production initial-lock seeding helper against server-shaped
+ * document attributes. This proves locked lifecycle state is available before
+ * the progressive build, without manufacturing passenger data client-side. */
+const seedStart = progressive.indexOf('var etgpBookingLockState113162=');
+const seedEnd = progressive.indexOf('var etgpRefreshPersistedBookingState113153=', seedStart);
+const seedHtml = { attrs: {'data-et-booking-locked': '1', 'data-et-booking-status': 'Approved', 'data-et-booking-lock-reason': 'Booking is locked.'}, getAttribute(name){ return this.attrs[name] || null; }, classList: { added: [], add(name){ this.added.push(name); } } };
+const seedContext = { window: {}, document: { documentElement: seedHtml } };
+vm.runInNewContext(progressive.slice(seedStart, seedEnd), seedContext);
+const seeded = seedContext.window.etgpSeedInitialBookingLock113162();
+ok(seeded.locked === true && seeded.status === 'Approved' && seedHtml.classList.added.includes('et-booking-locked-113162'), 'actual initial lock runtime seeds approved booking before progressive render');
+seedHtml.attrs['data-et-booking-locked'] = '0'; seedHtml.attrs['data-et-booking-status'] = 'Draft';
+const draftSeeded = seedContext.window.etgpSeedInitialBookingLock113162();
+ok(draftSeeded.locked === false && draftSeeded.status === 'Draft', 'actual initial lock runtime keeps Draft booking editable');
 
 /* Execute the embedded refresh-preservation helper against DOM-shaped nodes.
  * This exercises the production helper itself rather than a copied algorithm. */

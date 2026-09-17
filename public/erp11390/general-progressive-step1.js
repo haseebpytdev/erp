@@ -712,6 +712,17 @@ var etgpNormalizeBookingLockState113162=function(value){
   var key=String(value||'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
   return key==='pending approval'||key==='approved'||key==='travel ready';
 };
+var etgpSeedInitialBookingLock113162=function(){
+  var html=document&&document.documentElement;
+  if(!html||!html.getAttribute)return etgpBookingLockState113162;
+  var marker=html.getAttribute('data-et-booking-locked');
+  var status=html.getAttribute('data-et-booking-status')||'DRAFT';
+  var locked=marker==='1'||etgpNormalizeBookingLockState113162(status);
+  etgpBookingLockState113162={locked:locked,status:status,reason:String(html.getAttribute('data-et-booking-lock-reason')||'')};
+  if(locked)html.classList&&html.classList.add('et-booking-locked-113162');
+  return etgpBookingLockState113162;
+};
+window.etgpSeedInitialBookingLock113162=etgpSeedInitialBookingLock113162;
 var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
   bookingId=Number(bookingId||0);if(!bookingId)return Promise.resolve(null);
   var sequence=++etgpOperationalSummarySequence113153;
@@ -4767,6 +4778,7 @@ markPassengerFormLayout=function(passengerCard){
 };
 
 var build=function(){
+  etgpSeedInitialBookingLock113162();
   var content=document.querySelector(
     'section.content'
   );
@@ -5187,6 +5199,9 @@ var build=function(){
   content.appendChild(
     root
   );
+  /* Apply the server-seeded lock before product/Air rendering can expose
+     mutation controls on an initially locked booking. */
+  if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});
   /* The controlled KPI grid is now in the live document. Start the Tickets
      single-writer guard before the Air API finishes loading. */
   etgpTicketKpiGuard113126();
