@@ -469,7 +469,8 @@ var etBookingWorkspaceContext113305=(function(){
     setRoot:function(root,reference){state.root=root||null;state.reference=String(reference||'');return api;},
     getRoot:function(){return state.root;},
     getBookingId:function(){
-      if(typeof etgpBookingId11397==='function')return etgpBookingId11397();
+      var resolved=typeof etgpBookingId11397==='function'?Number(etgpBookingId11397()||0):0;
+      if(resolved>0)return resolved;
       var root=state.root;return Number(root&&root.dataset&&root.dataset.bookingId||0)||0;
     },
     getBookingReference:function(){return state.reference||(state.root&&state.root.dataset&&state.root.dataset.bookingReference)||'Booking';},
@@ -3940,7 +3941,7 @@ var markPassengerFormLayout=function(passengerCard){
  *   the Passenger table/KPI/product locks refresh in place with no page reload.
  * ====================================================================== */
 var etgpBookingId11397=function(){
-  var match=String(window.location.pathname||'').match(/\/operations\/bookings\/(\d+)(?:\/(?:edit|products))?\/?$/i);
+  var match=String(window.location.pathname||'').match(/\/operations\/bookings\/(\d+)(?:\/(?:edit|products(?:\/(?:air|hotel|transport|visa|other-services))?))?\/?$/i);
   return match?Number(match[1])||0:0;
 };
 

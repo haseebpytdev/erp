@@ -26,6 +26,8 @@ for (const [key, renderer] of [['air', 'renderAirProductWorkspace113106'], ['hot
 }
 ok(runtime.includes('window.etgpMountDedicatedProduct113305'), 'dedicated mount is an executable shared runtime entry point');
 ok(runtime.includes("etBookingWorkspaceContext113305.setRoot(root,root.dataset.bookingReference||'')"), 'context initializes from dedicated root');
+ok(runtime.includes('resolved>0') && runtime.includes('state.root'), 'context falls back to dedicated root booking ID when URL authority is unavailable');
+ok(runtime.includes('products(?:\\/(?:air|hotel|transport|visa|other-services))?'), 'booking ID resolver accepts every dedicated product URL');
 ok(runtime.includes('etgpSeedInitialBookingLock113162()'), 'dedicated mount seeds existing lock authority');
 ok(runtime.includes("fetch(api.getApiBase()+'/'+String(id)+'/air-product'"), 'passenger loading remains structured and server-backed');
 ok(presenter.includes("products(?:/(?:air|hotel|transport|visa|other-services))?"), 'focused presenter recognizes dedicated product paths');
