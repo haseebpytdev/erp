@@ -767,6 +767,7 @@ var etgpApplyBookingLock113162=function(data){
     if(unlockedCard)unlockedCard.dataset.etgpBookingLocked='0';
     Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-hidden="1"]')).forEach(function(el){el.hidden=false;el.removeAttribute('data-etgp-lock-hidden');});
     Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-disabled="1"]')).forEach(function(el){el.disabled=false;el.removeAttribute('aria-disabled');el.removeAttribute('data-etgp-lock-disabled');});
+    Array.prototype.slice.call(root.querySelectorAll('[data-etgp-readonly-rendered="1"]')).forEach(function(el){el.removeAttribute('data-etgp-readonly-rendered');el.hidden=false;el.disabled=false;el.removeAttribute('aria-disabled');});
     Array.prototype.slice.call(root.querySelectorAll('.etgp-readonly-value-113164')).forEach(function(el){el.remove();});
     Array.prototype.slice.call(root.querySelectorAll('.etgp-static-product-indicator-113164')).forEach(function(el){el.classList.remove('etgp-static-product-indicator-113164');el.style.pointerEvents='';});
     return;
@@ -790,7 +791,7 @@ var etgpApplyBookingLock113162=function(data){
     el.disabled=true;el.setAttribute('aria-disabled','true');el.setAttribute('data-etgp-lock-disabled','1');
     if(el.type==='hidden'||el.getAttribute('data-etgp-readonly-rendered')==='1')return;
     el.setAttribute('data-etgp-readonly-rendered','1');
-    if(el.type==='checkbox'||el.type==='radio'){el.hidden=true;return;}
+    if(el.type==='checkbox'||el.type==='radio'){el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');return;}
     var value=el.tagName==='SELECT'&&el.selectedIndex>=0?el.options[el.selectedIndex].text:String(el.value||'—');
     var read=document.createElement('span');read.className='etgp-readonly-value-113164';read.textContent=value||'—';el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');el.insertAdjacentElement('afterend',read);
   });

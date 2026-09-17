@@ -121,6 +121,8 @@ ok(progressive.includes("root.dataset.etgpBookingLocked=locked?'1':'0'") && prog
 ok(progressive.includes("if(!locked){") && progressive.includes("document.documentElement.classList.remove('et-booking-locked-113162')"), 'Draft or reopened booking remains editable when lock is absent');
 ok(progressive.includes("unlockedCard.dataset.etgpBookingLocked='0'") && progressive.includes("root.dataset.etgpBookingLocked=locked?'1':'0'"), 'unlock clears stale root and passenger-card lock markers');
 ok(progressive.includes('data-etgp-lock-hidden="1"') && progressive.includes('data-etgp-lock-disabled="1"') && progressive.includes('etgp-readonly-value-113164'), 'same-document unlock restores hidden controls and removes readonly projections');
+ok(progressive.includes("querySelectorAll('[data-etgp-readonly-rendered=\"1\"]')") && progressive.includes("removeAttribute('data-etgp-readonly-rendered')"), 'unlock clears stale readonly render markers before relock');
+ok(progressive.includes("el.type==='checkbox'||el.type==='radio'") && progressive.includes("el.setAttribute('data-etgp-lock-hidden','1');return"), 'checkbox and radio lock state is marked for restoration');
 ok(progressive.includes("var preservedTable=locked&&card?card.querySelector('.etgp-current-passenger-table'):null") && progressive.includes('preservedTable.cloneNode(true)'), 'locked refresh captures the authoritative saved passenger table');
 ok(progressive.includes("if(locked&&preservedTableClone&&!current.querySelector('.etgp-current-passenger-table'))") && progressive.includes('current.appendChild(preservedTableClone)'), 'editor-only refresh restores existing saved passenger rows');
 ok(progressive.includes('freshPanel.innerHTML') && progressive.includes('preservedTableClone'), 'actual passenger refresh path protects rows when the response is editor-only');
@@ -148,6 +150,12 @@ ok(lockedCurrent.table && lockedCurrent.appended === 1, 'locked editor-only refr
 lockedCard.dataset.etgpBookingLocked = '0'; preserveContext.etgpBookingLockState113162.locked = false;
 preserve(lockedCard, lockedCurrent, domNode('<form class="editor-only"></form>'), domNode());
 ok(!lockedCurrent.table, 'locked to reopened transition disables stale passenger preservation');
+lockedCard.dataset.etgpBookingLocked = '1'; preserveContext.etgpBookingLockState113162.locked = true;
+preserve(lockedCard, lockedCurrent, domNode('<form class="editor-only"></form>'), domNode());
+ok(lockedCurrent.table && lockedCurrent.appended === 2, 'relock recreates the readonly preservation path after reopen');
+lockedCard.dataset.etgpBookingLocked = '0'; preserveContext.etgpBookingLockState113162.locked = false;
+preserve(lockedCard, lockedCurrent, domNode('<form class="editor-only"></form>'), domNode());
+ok(!lockedCurrent.table, 'second unlock remains fully editable with no stale table restoration');
 const draftCard = domNode('', true); const draftCurrent = domNode('', false);
 preserve(draftCard, draftCurrent, domNode('<form class="editor-only"></form>'), domNode());
 ok(!draftCurrent.table && draftCurrent.appended === 0, 'Draft zero-passenger refresh stays authoritative and does not restore stale rows');
