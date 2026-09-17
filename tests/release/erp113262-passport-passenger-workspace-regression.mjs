@@ -78,6 +78,18 @@ ok(passengerRemove.includes('event.preventDefault()') && passengerRemove.include
 ok(passengerRemove.includes("button.type = 'button'") && passengerRemove.includes("button.dataset.etPassengerRemoveBound !== '1'") && passengerRemove.includes('}, true);'), 'removal controls are normalized and wired in capture phase');
 ok(passengerRemove.includes('button.dataset.etPassengerRemove = String(passengerId)'), 'removal control always carries the stable booking-passenger authority');
 const bookingFocus = fs.readFileSync(new URL('../../public/erp11335/booking-focus.js', import.meta.url), 'utf8');
+ok(bookingFocus.includes("doc.querySelector('#booking-passengers.panel')") && bookingFocus.includes("doc.querySelector('#booking-passengers')"), 'native passenger panel uses the stable booking-passengers boundary first');
+ok(bookingFocus.includes("markPanel(") && bookingFocus.includes("'passengers'"), 'full booking-passengers node receives the passenger panel marker');
+const semanticStart = bookingFocus.indexOf('var semanticPanels=function(doc){');
+const semanticEnd = bookingFocus.indexOf('var liveState=function', semanticStart);
+const nativeTable = { className: 'passenger-table' };
+const nativePanel = { id: 'booking-passengers', className: 'panel', textContent: 'Passengers Current Booking Passengers', attrs: {}, setAttribute(name, value){ this.attrs[name] = value; }, querySelector(selector){ return selector === '.passenger-table' ? nativeTable : null; } };
+const semanticDoc = { querySelector(selector){ return selector === '#booking-passengers.panel' || selector === '#booking-passengers' ? nativePanel : null; }, querySelectorAll(){ return []; } };
+const semanticContext = { window: {}, document: semanticDoc, nativePanel };
+const semanticPrelude = "var norm=function(v){return String(v||'').replace(/\\s+/g,' ').trim().toLowerCase();}; var text=function(el){return norm(el&&el.textContent||'');}; var smallestHeading=function(doc,matcher){ return matcher('passengers') ? {parentElement:nativePanel,textContent:'Passengers'} : null; }; var climbPanel=function(start,predicate){ return predicate(nativePanel) ? nativePanel : null; }; var markPanel=function(panel,key){ if(panel)panel.setAttribute('data-et-booking-panel-11375',key); return panel; }; var directUnder=function(){return null;}; var commonAncestor=function(){return null;}; var findMetricBlock=function(){return null;};";
+vm.runInNewContext(semanticPrelude + bookingFocus.slice(semanticStart, semanticEnd) + ';window.semanticPanels=semanticPanels;', semanticContext);
+const markedPanels = semanticContext.window.semanticPanels(semanticDoc);
+ok(markedPanels.passengers === nativePanel && nativePanel.attrs['data-et-booking-panel-11375'] === 'passengers' && nativePanel.querySelector('.passenger-table') === nativeTable, 'runtime marker stays on full native passenger panel with table inside');
 ok((bookingFocus.match(/data-et-passenger-remove/g) || []).length >= 2, 'native booking-save handlers ignore passenger-remove submitters');
 ok(!passengerRemove.includes('row.remove()') && passengerRemove.includes('options.reload()'), 'successful removal reloads authoritative server state without mutating legacy booking DOM');
 ok(passengerRemoveController.includes("->where('booking_id', $booking)") && passengerRemoveController.includes("->where('id', $passenger)"), 'booking passenger deletion is scoped by both booking and snapshot IDs');

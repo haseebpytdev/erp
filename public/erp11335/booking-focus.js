@@ -1089,10 +1089,15 @@ var semanticPanels=function(doc){
     );
   }
 
-  var passengers=smallestHeading(
-    doc,
-    function(t){return t==='passengers';}
-  );
+  /* The native GENERAL panel has a stable boundary. Prefer it over heading
+     heuristics so the saved passenger table remains inside the marked source
+     subtree during progressive transformation. */
+  var passengers=doc.querySelector('#booking-passengers.panel')
+    || doc.querySelector('#booking-passengers')
+    || smallestHeading(
+      doc,
+      function(t){return t==='passengers';}
+    );
   if(passengers){
     out.passengers=markPanel(
       climbPanel(
