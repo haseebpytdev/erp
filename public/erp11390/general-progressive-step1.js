@@ -782,7 +782,7 @@ var etgpRenderBookingCommercialSummary113302=function(root){
   }
   var authority=etgpBookingCommercialAuthority113302||{},totals=authority.products||etgpProductCustomerTotals113127||{},currency=authority.currency||etgpProductCurrency113127||'PKR',grid=card.querySelector('.etgp-booking-commercial-grid');
   if(grid){grid.innerHTML='';[['air','Air'],['hotel','Hotel'],['transport','Transport'],['visa','Visa']].forEach(function(item){var row=create('div','etgp-booking-commercial-row');row.appendChild(create('span','',item[1]));row.appendChild(create('strong','',currency+' '+Math.max(0,Number(totals[item[0]]||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})));grid.appendChild(row);});}
-  var format=function(value){return value===null?'Unavailable':currency+' '+Number(value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var format=function(value){var numeric=Number(value);return value===null||value===undefined||value===''||!Number.isFinite(numeric)?'Unavailable':currency+' '+numeric.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});};
   var target=card.querySelector('.etgp-booking-commercial-final');if(target)target.textContent=format(authority.bookingValue);
   var supplier=card.querySelector('.etgp-booking-commercial-supplier');if(supplier)supplier.textContent=format(authority.supplierCost);
   var margin=card.querySelector('.etgp-booking-commercial-margin');if(margin)margin.textContent=format(authority.margin);
@@ -878,7 +878,7 @@ var etgpApplyBookingLock113162=function(data){
     var currentTable=passengerCard.querySelector('.etgp-current-passenger-table');
     if(currentHost)currentHost.hidden=false;
     if(currentTable){currentTable.hidden=false;currentTable.style.display='';}
-    Array.prototype.slice.call(passengerCard.querySelectorAll('.etgp-passenger-editor-host,.etgp-passenger-mode-panel,.etgp-passenger-quick-row,.etgp-passenger-actions,[data-etgp-passenger-mode-control]')).forEach(function(el){el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');});
+    Array.prototype.slice.call(passengerCard.querySelectorAll('.etgp-passenger-editor-host,.etgp-passenger-mode-panel,.etgp-passenger-quick-row,.etgp-passenger-actions,.etgp-quick-passenger-11397,[data-etgp-quick-passenger-11397],[data-etgp-passenger-mode-control]')).forEach(function(el){el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');});
   }
   Array.prototype.slice.call(root.querySelectorAll('input,select,textarea')).forEach(function(el){
     el.disabled=true;el.setAttribute('aria-disabled','true');el.setAttribute('data-etgp-lock-disabled','1');

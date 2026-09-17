@@ -99,6 +99,23 @@ html.et-booking-focus-prepaint .et-air-workspace-103172{
   box-sizing:border-box!important;
 }
 
+/* Products Hub uses the existing focused Booking canvas without inheriting a
+ * narrow native content wrapper. Keep its internal 1280px canvas responsive. */
+html.et-booking-products-prepaint .app-shell,
+html.et-booking-products-prepaint .app-shell>main,
+html.et-booking-products-prepaint section.content{
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+}
+html.et-booking-products-prepaint .et-products-hub{
+  width:calc(100% - 32px)!important;
+  max-width:1280px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+}
+
 html body.et-ui-professional [data-gp-focus-sidebar].gp-focus-sidebar-open,
 html body.et-ui-professional [data-et-air-focus-sidebar].et-air-focus-sidebar-open-103172,
 html body.et-ui-professional [data-et-booking-focus-sidebar].et-booking-focus-sidebar-open{

@@ -51,6 +51,10 @@ final class BookingWorkspaceShellPresenter
             preg_match('#^operations/bookings/\d+(?:/edit)?$#', $path) === 1
         );
 
+        $isProductsWorkspacePath = (
+            preg_match('#^operations/bookings/\d+/products$#', $path) === 1
+        );
+
         /*
          * ERP-11.3.46: native booking wizard steps are actual booking
          * workspaces too. They must not fall back to the permanent ERP sidebar
@@ -110,6 +114,9 @@ final class BookingWorkspaceShellPresenter
         }
 
         $html = $this->addHtmlClass($html, 'et-booking-focus-prepaint');
+        if ($isProductsWorkspacePath) {
+            $html = $this->addHtmlClass($html, 'et-booking-products-prepaint');
+        }
         $html = $this->addHtmlClass($html, 'et-booking-unified-canvas-11375');
         $html = $this->addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75');
 

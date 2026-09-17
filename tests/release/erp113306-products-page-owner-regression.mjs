@@ -4,6 +4,8 @@ import fs from 'node:fs';
 const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 const view = read('resources/views/operations/bookings/products-hub-v113304.blade.php');
 const runtime = read('public/erp11390/general-progressive-step1.js');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const focusedShell = read('public/erp-theme/et-focused-shell.css');
 let pass = 0;
 const ok = (value, message) => { assert.ok(value, message); pass++; };
 
@@ -19,4 +21,13 @@ ok(!view.includes('etgp-passenger-card') && !view.includes('passenger-table'), '
 ok(runtime.includes("loadPassengerData:function()") && runtime.includes("'/air-product'"), 'Products runtime passenger data uses the structured Air authority');
 ok(runtime.includes('etBookingWorkspaceContext113305.getProductSelection(reference)') && runtime.includes('etBookingWorkspaceContext113305.saveProductSelection(reference,next)'), 'Products selection reads and writes use the existing adapter authority');
 ok(view.includes('data-etgp-booking-locked') && view.includes('data-booking-reference'), 'Products root exposes existing lock and booking context');
+ok(presenter.includes("preg_match('#^operations/bookings/\\d+/products$#'"), 'Products route is explicitly recognized by the focused shell presenter');
+ok(presenter.includes("'et-booking-products-prepaint'"), 'Products route receives a focused geometry marker');
+ok(focusedShell.includes('html.et-booking-products-prepaint section.content') && focusedShell.includes('html.et-booking-products-prepaint .et-products-hub'), 'Products geometry is normalized by the existing focused shell owner');
+ok(!focusedShell.includes('100vw'), 'Products geometry does not use a viewport-width hack');
+ok(runtime.includes('.etgp-quick-passenger-11397,[data-etgp-quick-passenger-11397]'), 'Locked path hides the complete Add Passenger container');
+ok(runtime.includes("value===null||value===undefined||value===''||!Number.isFinite(numeric)?'Unavailable'"), 'Commercial formatter fails closed for non-finite values');
+const displayMargin = value => { const numeric = Number(value); return value === null || value === undefined || value === '' || !Number.isFinite(numeric) ? 'Unavailable' : `PKR ${numeric.toFixed(2)}`; };
+ok(displayMargin(null) === 'Unavailable' && displayMargin(undefined) === 'Unavailable' && displayMargin(NaN) === 'Unavailable', 'Unavailable commercial values never render NaN');
+ok(displayMargin(0) === 'PKR 0.00' && displayMargin(200) === 'PKR 200.00' && displayMargin(-200) === 'PKR -200.00', 'Finite zero and signed margins remain numeric');
 console.log(`erp113306-products-page-owner-regression: ${pass} assertions passed`);
