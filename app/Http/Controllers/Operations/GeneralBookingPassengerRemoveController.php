@@ -119,6 +119,10 @@ final class GeneralBookingPassengerRemoveController extends Controller
                 $serviceIds = DB::table('booking_services')->where('booking_id', $booking)->pluck('id')->all();
                 if (! $serviceIds) continue;
                 $query->whereIn('booking_service_id', $serviceIds);
+            } else {
+                throw ValidationException::withMessages([
+                    'passenger' => 'This passenger has a booking dependency that cannot be safely scoped automatically.',
+                ]);
             }
             $query->delete();
         }
@@ -130,9 +134,16 @@ final class GeneralBookingPassengerRemoveController extends Controller
     {
         if (! Schema::hasTable('air_ticket_details')) return;
         $columns = Schema::getColumnListing('air_ticket_details');
-        $passengerColumn = collect(['booking_passenger_id', 'passenger_id', 'traveller_id', 'traveler_id'])
-            ->first(fn (string $column): bool => in_array($column, $columns, true));
-        if (! $passengerColumn) return;
+        if (! in_array('booking_passenger_id', $columns, true)) {
+            if (collect(['passenger_id', 'traveller_id', 'traveler_id'])->contains(fn (string $column): bool => in_array($column, $columns, true))) {
+                throw ValidationException::withMessages([
+                    'passenger' => 'Passenger ticket identity cannot be mapped safely to this booking snapshot.',
+                ]);
+            }
+            return;
+        }
+
+        $passengerColumn = 'booking_passenger_id';
 
         $query = DB::table('air_ticket_details')->where($passengerColumn, $passenger);
         if (in_array('booking_id', $columns, true)) {
@@ -142,7 +153,9 @@ final class GeneralBookingPassengerRemoveController extends Controller
             if (! $serviceIds) return;
             $query->whereIn('booking_service_id', $serviceIds);
         } else {
-            return;
+            throw ValidationException::withMessages([
+                'passenger' => 'Passenger ticket dependency cannot be safely scoped to this booking.',
+            ]);
         }
 
         $rows = $query->get();
