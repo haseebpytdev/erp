@@ -52,7 +52,7 @@ final class BookingWorkspaceShellPresenter
         );
 
         $isProductsWorkspacePath = (
-            preg_match('#^operations/bookings/\d+/products$#', $path) === 1
+            preg_match('#^operations/bookings/\d+/products(?:/(?:air|hotel|transport|visa|other-services))?$#', $path) === 1
         );
 
         /*
@@ -124,7 +124,7 @@ final class BookingWorkspaceShellPresenter
         // passenger/product/Air editors.  This prevents a locked page from
         // briefly rendering editable controls while the summary request loads.
         $initialBookingLock = null;
-        if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $initialBookingMatch)) {
+        if (($isNativeBookingWorkspacePath || $isProductsWorkspacePath) && preg_match('#operations/bookings/(\d+)#', $path, $initialBookingMatch)) {
             $initialBookingLock = $this->bookingLocks->resolve((int) $initialBookingMatch[1]);
             $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $initialBookingLock['locked'] ? '1' : '0');
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
@@ -246,6 +246,12 @@ HTML;
                 .'data-et-booking-review-entry="1" style="position:fixed;right:18px;bottom:18px;z-index:1000;padding:10px 15px;border-radius:9px;background:#1769d2;color:#fff;text-decoration:none;font:800 11px Arial,sans-serif;box-shadow:0 5px 16px rgba(23,105,210,.28)">Review Booking</a>';
             if (! str_contains($html, 'data-et-booking-review-entry="1"') && stripos($html, '</body>') !== false) {
                 $html = preg_replace('/<\/body>/i', $reviewEntry."\n</body>", $html, 1) ?? $html;
+            }
+            $productLauncher = '<section data-et-booking-products-launcher="1" style="position:fixed;left:18px;bottom:18px;z-index:999;padding:10px 12px;border:1px solid #dce8f5;border-radius:10px;background:#fff;box-shadow:0 5px 16px rgba(28,67,111,.12);font:800 11px Arial,sans-serif"><strong style="display:block;margin-bottom:6px">Booking Products</strong><div style="display:flex;gap:6px;flex-wrap:wrap">'
+                .implode('', array_map(static fn (string $product): string => '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/products/'.$product)).'" style="color:#1769d2;text-decoration:none">'.ucwords(str_replace('-', ' ', $product)).' →</a>', ['air','hotel','transport','visa','other-services']))
+                .'</div></section>';
+            if (! str_contains($html, 'data-et-booking-products-launcher="1"') && stripos($html, '</body>') !== false) {
+                $html = preg_replace('/<\/body>/i', $productLauncher."\n</body>", $html, 1) ?? $html;
             }
         }
 

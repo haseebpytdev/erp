@@ -5682,6 +5682,23 @@ window.etGeneralProgressiveStep1Sync11390=function(
 window.etGeneralProgressiveStep1Build11390=
   build;
 window.etgpRenderProducts113305=renderProducts;
+window.etgpMountDedicatedProduct113305=function(root){
+  if(!root||root.dataset.etgpDedicatedMounted==='1')return false;
+  var key=String(root.dataset.etgpProductKey||'').toLowerCase();
+  var allowed=['air','hotel','transport','visa'];
+  if(allowed.indexOf(key)===-1)return false;
+  etgpSeedInitialBookingLock113162();
+  etBookingWorkspaceContext113305.setRoot(root,root.dataset.bookingReference||'');
+  var host=root.querySelector('[data-etgp-dedicated-product-body]');
+  if(!host)return false;
+  root.dataset.etgpDedicatedMounted='1';
+  if(key==='air')renderAirProductWorkspace113106(host);
+  else if(key==='hotel')renderHotelProductWorkspace113127(host);
+  else if(key==='transport')renderTransportProductWorkspace113139(host);
+  else renderVisaProductWorkspace113142(host);
+  if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});
+  return true;
+};
 
 if(document.readyState==='loading'){
   document.addEventListener(

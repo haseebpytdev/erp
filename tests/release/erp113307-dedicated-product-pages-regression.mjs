@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+const routes = read('routes/erp103179.php');
+const controller = read('app/Http/Controllers/Operations/ProductWorkspaceController.php');
+const view = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
+const runtime = read('public/erp11390/general-progressive-step1.js');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const metadata = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
+let pass = 0;
+const ok = (value, message) => { assert.ok(value, message); pass++; };
+
+for (const product of ['air', 'hotel', 'transport', 'visa', 'other-services']) {
+  ok(routes.includes("foreach (['air', 'hotel', 'transport', 'visa', 'other-services']") && routes.includes("'/operations/bookings/{booking}/products/'.$productWorkspaceKey"), `${product} dedicated GET route exists`);
+  ok(routes.includes("->name('bookings.products.'.$productWorkspaceKey)"), `${product} route has a stable name`);
+}
+ok(controller.includes("private const PRODUCTS = ['air', 'hotel', 'transport', 'visa', 'other-services'];"), 'controller uses one strict product allowlist');
+ok(controller.includes("product-workspace-v113305"), 'all products use one shared workspace view');
+ok(view.includes('data-etgp-dedicated-product="1"') && view.includes('data-etgp-product-key'), 'shared view exposes neutral product mount metadata');
+ok(view.includes("url('/operations/bookings/'.$bookingId)") && view.includes("route('bookings.review.show"), 'dedicated pages provide direct Back and Review links');
+for (const [key, renderer] of [['air', 'renderAirProductWorkspace113106'], ['hotel', 'renderHotelProductWorkspace113127'], ['transport', 'renderTransportProductWorkspace113139'], ['visa', 'renderVisaProductWorkspace113142']]) {
+  ok(key === 'visa' ? runtime.includes("else renderVisaProductWorkspace113142(host)") : (runtime.includes(`if(key==='${key}')`) || runtime.includes(`else if(key==='${key}')`)), `${key} has a dedicated mount branch`);
+  ok(runtime.includes(renderer), `${key} renderer remains the existing runtime owner`);
+}
+ok(runtime.includes('window.etgpMountDedicatedProduct113305'), 'dedicated mount is an executable shared runtime entry point');
+ok(runtime.includes("etBookingWorkspaceContext113305.setRoot(root,root.dataset.bookingReference||'')"), 'context initializes from dedicated root');
+ok(runtime.includes('etgpSeedInitialBookingLock113162()'), 'dedicated mount seeds existing lock authority');
+ok(runtime.includes("fetch(api.getApiBase()+'/'+String(id)+'/air-product'"), 'passenger loading remains structured and server-backed');
+ok(presenter.includes("products(?:/(?:air|hotel|transport|visa|other-services))?"), 'focused presenter recognizes dedicated product paths');
+ok(metadata.includes("products/(?:air|hotel|transport|visa|other-services)"), 'asset role classification recognizes dedicated product paths');
+ok(view.includes('Operational workspace not configured yet.'), 'Other Services is an honest placeholder without fake persistence');
+ok(!view.includes('data-etgp-product-buttons'), 'dedicated pages do not render aggregate product cards');
+ok(routes.includes("Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])"), 'aggregate Products route remains preserved');
+ok(!controller.includes('DB::table(\'booking_services\')->insert') && !controller.includes('DB::table(\'bookings\')->update'), 'workspace controller performs no product or lifecycle persistence');
+console.log(`erp113307-dedicated-product-pages-regression: ${pass} assertions passed`);

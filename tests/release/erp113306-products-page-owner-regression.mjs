@@ -23,10 +23,10 @@ ok(!view.includes('etgp-passenger-card') && !view.includes('passenger-table'), '
 ok(runtime.includes("loadPassengerData:function()") && runtime.includes("'/air-product'"), 'Products runtime passenger data uses the structured Air authority');
 ok(runtime.includes('etBookingWorkspaceContext113305.getProductSelection(reference)') && runtime.includes('etBookingWorkspaceContext113305.saveProductSelection(reference,next)'), 'Products selection reads and writes use the existing adapter authority');
 ok(view.includes('data-etgp-booking-locked') && view.includes('data-booking-reference'), 'Products root exposes existing lock and booking context');
-ok(presenter.includes("preg_match('#^operations/bookings/\\d+/products$#'"), 'Products route is explicitly recognized by the focused shell presenter');
+ok(presenter.includes("products(?:/(?:air|hotel|transport|visa|other-services))?"), 'Products routes are explicitly recognized by the focused shell presenter');
 ok(presenter.includes("'et-booking-products-prepaint'"), 'Products route receives a focused geometry marker');
 ok(focusedShell.includes('html.et-booking-products-prepaint section.content') && focusedShell.includes('html.et-booking-products-prepaint .et-products-hub'), 'Products geometry is normalized by the existing focused shell owner');
-ok(releaseMiddleware.includes("(?:edit|review|show|products)"), 'Products route requests focused CSS asset composition');
+ok(releaseMiddleware.includes("products/(?:air|hotel|transport|visa|other-services)"), 'Products routes request focused CSS asset composition');
 ok(releaseMiddleware.includes("return 'focused'"), 'Focused asset role remains the existing shell authority');
 ok(!focusedShell.includes('100vw'), 'Products geometry does not use a viewport-width hack');
 ok(runtime.includes('.etgp-quick-passenger-11397,[data-etgp-quick-passenger-11397]'), 'Locked path hides the complete Add Passenger container');
