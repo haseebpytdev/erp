@@ -28,6 +28,7 @@ ok(runtime.includes("etBookingWorkspaceContext113305.setRoot(root,root.dataset.b
 ok(runtime.includes('etgpSeedInitialBookingLock113162()'), 'dedicated mount seeds existing lock authority');
 ok(runtime.includes("fetch(api.getApiBase()+'/'+String(id)+'/air-product'"), 'passenger loading remains structured and server-backed');
 ok(presenter.includes("products(?:/(?:air|hotel|transport|visa|other-services))?"), 'focused presenter recognizes dedicated product paths');
+ok(presenter.includes("$this->addHtmlClass($html, 'et-general-progressive-step1-11390')") && presenter.includes('if ($isProductsWorkspacePath)'), 'dedicated paths receive the progressive runtime html class independently of visible GENERAL text');
 ok(metadata.includes("products/(?:air|hotel|transport|visa|other-services)"), 'asset role classification recognizes dedicated product paths');
 ok(view.includes('Operational workspace not configured yet.'), 'Other Services is an honest placeholder without fake persistence');
 ok(!view.includes('data-etgp-product-buttons'), 'dedicated pages do not render aggregate product cards');
@@ -38,4 +39,8 @@ const launcher = presenter.slice(presenter.indexOf('data-et-booking-products-lau
 ok(!launcher.includes('position:fixed') && !launcher.includes('position:absolute'), 'main Booking launcher is not a floating overlay');
 ok(view.includes("config('et_erp_release.version") && !view.includes('?v=11.3.305'), 'dedicated assets use current release metadata rather than a stale hard-coded version');
 ok(controller.includes('string $product') && controller.includes('in_array($product, self::PRODUCTS, true)'), 'route product parameter is received and strictly validated by the controller');
+ok(view.includes('data-et-booking-focus-context="1"') && view.includes('et-booking-focus-identity'), 'dedicated pages reuse a focused Booking header context');
+for (const label of ['Client Preview', 'Menu', 'Booking Register']) ok(view.includes(label), `focused Booking header keeps ${label}`);
+ok(view.includes('GENERAL / MULTI-SERVICE') && view.includes("$customer['name']"), 'focused header exposes booking type and customer context');
+ok(!view.includes('Dashboard') && !view.includes('Sales Invoice'), 'dedicated product pages omit generic Dashboard and Sales Invoice presentation');
 console.log(`erp113307-dedicated-product-pages-regression: ${pass} assertions passed`);

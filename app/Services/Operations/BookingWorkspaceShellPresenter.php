@@ -116,6 +116,10 @@ final class BookingWorkspaceShellPresenter
         $html = $this->addHtmlClass($html, 'et-booking-focus-prepaint');
         if ($isProductsWorkspacePath) {
             $html = $this->addHtmlClass($html, 'et-booking-products-prepaint');
+            // Dedicated product workspaces use the same progressive runtime as
+            // the native GENERAL booking page, even when their visible title
+            // does not contain the historical GENERAL marker.
+            $html = $this->addHtmlClass($html, 'et-general-progressive-step1-11390');
         }
         $html = $this->addHtmlClass($html, 'et-booking-unified-canvas-11375');
         $html = $this->addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75');
