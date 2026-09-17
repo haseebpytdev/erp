@@ -95,6 +95,9 @@ ok(commercialLock.includes("method_exists($routeBooking, 'getKey')") && commerci
 ok(operationalRoutes.includes("'/system/erp-bookings/{booking}/passengers/{passenger}'") && operationalRoutes.includes('GeneralBookingPassengerRemoveController::class'), 'passenger removal route reaches the dedicated downstream controller after middleware');
 ok(airProduct.includes("return $status !== 'REMOVED';") && airProduct.includes("$passengers = $this->bookingPassengers($booking);"), 'Air current passengers exclude removed booking snapshots before tickets and fare PAX are built');
 ok(airProduct.includes('isset($passengerMap[$passengerValue])') && airProduct.includes('->filter(function (object $row)'), 'draft Air rows without an active booking-passenger snapshot are excluded from Passenger Tickets');
+ok(airProduct.includes('reconcileRemovedPassengerAirRows') && airProduct.includes('UPPER(status) = ?'), 'legacy REMOVED Air snapshots enter an explicit reconciliation path');
+ok(airProduct.includes("DB::table('air_ticket_details')->whereIn('id', $draftIds)->delete()") && airProduct.includes('DB::transaction'), 'draft legacy Air rows are physically cleaned transactionally');
+ok(airProduct.includes('air_reconciliation_blockers') && airProduct.includes('irreversible Air ticket data'), 'irreversible legacy Air rows are preserved and surfaced as reconciliation blockers');
 ok(visaProduct.includes("!== 'REMOVED';"), 'Visa current passengers exclude removed booking snapshots');
 ok(progressive.includes('etgpPassengerRowIsRemoved113290') && progressive.includes('row.remove();'), 'actual booking passenger renderer removes REMOVED rows before current table and KPI reconciliation');
 ok(progressive.includes('!etgpPassengerRowIsRemoved113290(row)'), 'passenger count and fresh-document reconciliation ignore REMOVED rows');

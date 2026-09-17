@@ -36,6 +36,7 @@ final class GeneralBookingAirProductController extends Controller
     public function show(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
+        $airReconciliation = $this->reconcileRemovedPassengerAirRows($booking);
         $passengers = $this->bookingPassengers($booking);
         $service = $this->findAirService($booking);
         $tickets = $service
@@ -54,6 +55,7 @@ final class GeneralBookingAirProductController extends Controller
             'fare_commercials' => $this->fareCommercialsSnapshot($tickets),
             'tickets' => $tickets,
             'summary' => $this->summary($tickets, (int) ($service['id'] ?? 0)),
+            'air_reconciliation_blockers' => $airReconciliation['blockers'],
             'capabilities' => [
                 'booking_services' => Schema::hasTable('booking_services'),
                 'air_ticket_details' => Schema::hasTable('air_ticket_details'),
@@ -291,6 +293,75 @@ final class GeneralBookingAirProductController extends Controller
         abort_unless($row, 404);
 
         return $row;
+    }
+
+    /**
+     * Reconcile legacy REMOVED snapshots before presenting current Air data.
+     * Draft-safe rows are removed transactionally; terminal rows are retained
+     * and reported so history is never silently destroyed.
+     *
+     * @return array{blockers:list<string>}
+     */
+    private function reconcileRemovedPassengerAirRows(int $booking): array
+    {
+        if (! Schema::hasTable('air_ticket_details')) return ['blockers' => []];
+
+        $passengerTable = $this->bookingPassengerTableForRead();
+        if (! $passengerTable) return ['blockers' => []];
+        $passengerColumns = Schema::getColumnListing($passengerTable);
+        if (! in_array('status', $passengerColumns, true)) return ['blockers' => []];
+
+        $removedIds = DB::table($passengerTable)
+            ->where('booking_id', $booking)
+            ->whereRaw('UPPER(status) = ?', ['REMOVED'])
+            ->pluck('id')->map(static fn ($id): int => (int) $id)->filter()->values()->all();
+        if (! $removedIds) return ['blockers' => []];
+
+        $columns = Schema::getColumnListing('air_ticket_details');
+        if (! in_array('booking_passenger_id', $columns, true) || ! in_array('id', $columns, true)) {
+            return ['blockers' => []];
+        }
+
+        $query = DB::table('air_ticket_details')->whereIn('booking_passenger_id', $removedIds);
+        if (in_array('booking_id', $columns, true)) {
+            $query->where('booking_id', $booking);
+        } elseif (in_array('booking_service_id', $columns, true) && Schema::hasTable('booking_services')) {
+            $serviceIds = DB::table('booking_services')->where('booking_id', $booking)->pluck('id')->all();
+            if (! $serviceIds) return ['blockers' => []];
+            $query->whereIn('booking_service_id', $serviceIds);
+        } else {
+            return ['blockers' => ['Legacy Air passenger rows could not be safely scoped to this booking.']];
+        }
+
+        $rows = $query->get(['id', 'status']);
+        $terminal = ['issued', 'posted', 'paid', 'settled', 'closed', 'approved', 'completed', 'refunded', 'void', 'voided', 'cancelled', 'canceled'];
+        $blockers = [];
+        $draftIds = [];
+        foreach ($rows as $row) {
+            $status = strtolower(trim((string) ($row->status ?? '')));
+            if (in_array($status, $terminal, true)) {
+                $blockers[] = 'Removed passenger has irreversible Air ticket data ('.strtoupper($status ?: 'UNKNOWN').').';
+            } else {
+                $draftIds[] = (int) $row->id;
+            }
+        }
+        if ($draftIds) {
+            DB::transaction(static function () use ($draftIds): void {
+                DB::table('air_ticket_details')->whereIn('id', $draftIds)->delete();
+            });
+        }
+
+        return ['blockers' => array_values(array_unique($blockers))];
+    }
+
+    private function bookingPassengerTableForRead(): ?string
+    {
+        foreach (['booking_passengers', 'booking_travellers', 'booking_travelers'] as $table) {
+            if (! Schema::hasTable($table)) continue;
+            $columns = Schema::getColumnListing($table);
+            if (in_array('booking_id', $columns, true) && in_array('id', $columns, true)) return $table;
+        }
+        return null;
     }
 
     /** @return list<array<string,mixed>> */
