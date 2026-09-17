@@ -1889,6 +1889,17 @@ html.et-general-progressive-step1-11390:not(.etgp-step1-ready-11390):not(.etgp-s
   padding:0!important;
 }
 
+/* ERP-11.3.302 — compact booking-wide commercial summary.  Product-level
+   commercial editors remain owned by their individual workspaces. */
+.etgp-booking-commercial-summary{margin-top:12px!important}
+.etgp-booking-commercial-head{display:flex!important;align-items:flex-start!important;justify-content:space-between!important}
+.etgp-booking-commercial-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:4px}
+.etgp-booking-commercial-row{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid #e5ebf3;border-radius:7px;background:#f8fafc;font-size:11px}
+.etgp-booking-commercial-row strong{color:#1769d2}
+.etgp-booking-commercial-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #e5ebf3;font-size:12px}
+.etgp-booking-commercial-footer strong{font-size:14px;color:#163a63}
+@media (max-width:700px){.etgp-booking-commercial-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 .etgp-passenger-card .etgp-quick-passenger-11397{
   display:block!important;
   position:relative!important;

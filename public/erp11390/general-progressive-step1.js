@@ -708,6 +708,23 @@ var etgpServerSelectedProducts113180=[];
    is allowed to refresh the top Booking Value / Travel Status cards. */
 var etgpOperationalSummarySequence113153=0;
 var etgpBookingLockState113162={locked:false,status:'DRAFT',reason:''};
+var etgpRenderBookingCommercialSummary113302=function(root){
+  if(!root)return;
+  var card=root.querySelector('[data-etgp-booking-commercial-summary]');
+  if(!card){
+    card=create('section','etgp-card etgp-booking-commercial-summary');
+    card.setAttribute('data-etgp-booking-commercial-summary','1');
+    var head=create('div','etgp-card-head etgp-booking-commercial-head');
+    head.appendChild(create('div','etgp-card-copy'));
+    head.firstChild.appendChild(create('h2','etgp-card-title','Booking Commercial Summary'));
+    head.firstChild.appendChild(create('p','etgp-card-note','Read-only booking-wide totals from saved product authorities. Detailed commercials remain within each product workspace.'));
+    card.appendChild(head);card.appendChild(create('div','etgp-booking-commercial-grid'));
+    var footer=create('div','etgp-booking-commercial-footer');footer.appendChild(create('span','','Product Sale Total'));footer.appendChild(create('strong','etgp-booking-commercial-final','PKR 0.00'));card.appendChild(footer);root.appendChild(card);
+  }
+  var totals=etgpProductCustomerTotals113127||{},currency=etgpProductCurrency113127||'PKR',grid=card.querySelector('.etgp-booking-commercial-grid');
+  if(grid){grid.innerHTML='';[['air','Air'],['hotel','Hotel'],['transport','Transport'],['visa','Visa']].forEach(function(item){var row=create('div','etgp-booking-commercial-row');row.appendChild(create('span','',item[1]));row.appendChild(create('strong','',currency+' '+Math.max(0,Number(totals[item[0]]||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})));grid.appendChild(row);});}
+  var final=Object.keys(totals).reduce(function(sum,key){return sum+Math.max(0,Number(totals[key]||0));},0),target=card.querySelector('.etgp-booking-commercial-final');if(target)target.textContent=currency+' '+final.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+};
 var etgpNormalizeBookingLockState113162=function(value){
   var key=String(value||'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
   return key==='pending approval'||key==='approved'||key==='travel ready';
@@ -742,6 +759,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       var currency=String(data.currency||'PKR').trim().toUpperCase()||'PKR';
       etgpProductCustomerTotals113127=Object.assign({},data.product_customer_totals||{});
       etgpProductCurrency113127=currency;
+      etgpRenderBookingCommercialSummary113302(document.querySelector('.etgp-step1'));
       var serverSelected=Array.isArray(data.selected_products)?data.selected_products.map(function(key){return String(key||'').toLowerCase();}):[];
       var selectionChanged=serverSelected.join(',')!==etgpServerSelectedProducts113180.join(',');
       etgpServerSelectedProducts113180=serverSelected;
@@ -4919,9 +4937,9 @@ var build=function(){
   );
 
   [
-    ['1','Booking Created'],
+    ['1','Booking Setup'],
     ['2','Passengers'],
-    ['3','Add Products']
+    ['3','Products / Review']
   ].forEach(function(item){
     var step=create(
       'div',
@@ -5115,6 +5133,7 @@ var build=function(){
   root.appendChild(
     passengerCard
   );
+  etgpRenderBookingCommercialSummary113302(root);
 
   /* Add Product controls */
   var products=create(
