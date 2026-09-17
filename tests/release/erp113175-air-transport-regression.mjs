@@ -43,7 +43,7 @@ has(transport,"$row['cost_amount'] / ($quantity * $fx)",'Transport derives a mis
 has(transport,"if ((float) ($row['cost_rate'] ?? 0) <= 0 && (float) ($row['cost_amount'] ?? 0) > 0 && $fx > 0)",'A non-zero physical Transport total cannot be replaced by a zero rate');
 has(transport,"foreach (['sale_amount','cost_rate','cost_amount'] as $field)",'Transport snapshot hydration handles commercial values individually');
 has(transport,"if ((float) ($saved[$field] ?? 0) > 0)",'A zero snapshot cannot overwrite a non-zero physical commercial value');
-has(workspace,"saveSelected(reference,next);\n      renderProducts(root,reference,paxCount);",'Transport can be reselected after removal without a server-side permanent block');
+has(workspace,"etBookingWorkspaceContext113305.saveProductSelection(reference,next);\n      renderProducts(root,reference,paxCount);",'Transport can be reselected after removal without a server-side permanent block');
 has(transport,"if (in_array($status, ['deleted', 'removed', 'inactive', 'cancelled', 'canceled'], true)) continue;",'Retired Transport services are excluded before a re-add');
 has(transport,'if ($existing) return $this->repairLegacyTransportOwnership($booking, $existing);','Transport save reuses the canonical service while applying only the guarded legacy ownership repair');
 has(transport,'public function activate(Request $request, int $booking): JsonResponse','Transport selection has a server-backed activation action');
