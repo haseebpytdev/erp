@@ -5211,6 +5211,11 @@ var build=function(){
   root.appendChild(
     productShells
   );
+  /* Phase 2A: product editing now has an independent Products document.
+     Keep these source nodes available for compatibility, but do not expose
+     product editors or mutation controls on the Booking & Passengers page. */
+  products.hidden=true;
+  productShells.hidden=true;
 
   content.appendChild(
     root
@@ -5248,11 +5253,6 @@ var build=function(){
     passengerCard
   );
 
-  renderProducts(
-    root,
-    reference,
-    paxCount
-  );
   etgpBindPassengerFareAirSync113137();
 
   renderProgress(

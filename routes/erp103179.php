@@ -10,6 +10,7 @@ use App\Http\Controllers\Operations\GeneralBookingVisaProductController;
 use App\Http\Controllers\Operations\GeneralBookingOperationalSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingInvoiceSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingReviewController;
+use App\Http\Controllers\Operations\BookingProductsHubController;
 use App\Http\Controllers\Operations\VisaMasterController;
 use App\Http\Controllers\Operations\GeneralBookingVoucherPreviewController;
 use App\Http\Controllers\Operations\HotelMasterBulkImportController;
@@ -296,6 +297,9 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
 
     Route::get('/system/erp-bookings/{booking}/invoice-summary', [GeneralBookingInvoiceSummaryController::class, 'show'])
         ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.invoice-summary.show');
+
+    Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])
+        ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.products.show');
 
     // ERP-11.3.148 Visa Management is anchored to the REAL native Travel Masters
     // route used by production: /master-data/travel-masters. Keep the old
