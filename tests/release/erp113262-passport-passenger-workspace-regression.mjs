@@ -98,6 +98,9 @@ ok(airProduct.includes('isset($passengerMap[$passengerValue])') && airProduct.in
 ok(airProduct.includes('reconcileRemovedPassengerAirRows') && airProduct.includes('UPPER(status) = ?'), 'legacy REMOVED Air snapshots enter an explicit reconciliation path');
 ok(airProduct.includes("DB::table('air_ticket_details')->whereIn('id', $draftIds)->delete()") && airProduct.includes('DB::transaction'), 'draft legacy Air rows are physically cleaned transactionally');
 ok(airProduct.includes('air_reconciliation_blockers') && airProduct.includes('irreversible Air ticket data'), 'irreversible legacy Air rows are preserved and surfaced as reconciliation blockers');
+ok(airProduct.includes("array_intersect(['status', 'ticket_status'], $columns)") && airProduct.includes('$statusColumns'), 'legacy Air reconciliation discovers installed status aliases');
+ok(airProduct.includes('array_merge($terminal, $draftSafe)') && airProduct.includes('unknown or incomplete status'), 'unknown or incomplete Air status fails closed instead of deleting');
+ok(airProduct.includes('$row->{$column}') && airProduct.includes('count($states) !== count($statusColumns)'), 'ticket_status and blank/ambiguous alias combinations are evaluated safely');
 ok(visaProduct.includes("!== 'REMOVED';"), 'Visa current passengers exclude removed booking snapshots');
 ok(progressive.includes('etgpPassengerRowIsRemoved113290') && progressive.includes('row.remove();'), 'actual booking passenger renderer removes REMOVED rows before current table and KPI reconciliation');
 ok(progressive.includes('!etgpPassengerRowIsRemoved113290(row)'), 'passenger count and fresh-document reconciliation ignore REMOVED rows');

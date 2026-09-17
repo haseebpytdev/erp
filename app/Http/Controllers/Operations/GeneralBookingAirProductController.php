@@ -321,6 +321,10 @@ final class GeneralBookingAirProductController extends Controller
         if (! in_array('booking_passenger_id', $columns, true) || ! in_array('id', $columns, true)) {
             return ['blockers' => []];
         }
+        $statusColumns = array_values(array_intersect(['status', 'ticket_status'], $columns));
+        if (! $statusColumns) {
+            return ['blockers' => ['Legacy Air passenger rows have no status authority; automatic cleanup is blocked.']];
+        }
 
         $query = DB::table('air_ticket_details')->whereIn('booking_passenger_id', $removedIds);
         if (in_array('booking_id', $columns, true)) {
@@ -333,14 +337,22 @@ final class GeneralBookingAirProductController extends Controller
             return ['blockers' => ['Legacy Air passenger rows could not be safely scoped to this booking.']];
         }
 
-        $rows = $query->get(['id', 'status']);
+        $rows = $query->get(array_merge(['id'], $statusColumns));
         $terminal = ['issued', 'posted', 'paid', 'settled', 'closed', 'approved', 'completed', 'refunded', 'void', 'voided', 'cancelled', 'canceled'];
+        $draftSafe = ['draft', 'booked', 'pending', 'active', 'new', 'open'];
         $blockers = [];
         $draftIds = [];
         foreach ($rows as $row) {
-            $status = strtolower(trim((string) ($row->status ?? '')));
-            if (in_array($status, $terminal, true)) {
-                $blockers[] = 'Removed passenger has irreversible Air ticket data ('.strtoupper($status ?: 'UNKNOWN').').';
+            $states = array_values(array_filter(array_map(
+                static fn (string $column): string => strtolower(trim((string) ($row->{$column} ?? ''))),
+                $statusColumns
+            ), static fn (string $status): bool => $status !== ''));
+            $terminalState = collect($states)->first(static fn (string $status): bool => in_array($status, $terminal, true));
+            $unknownState = collect($states)->first(static fn (string $status): bool => ! in_array($status, array_merge($terminal, $draftSafe), true));
+            if ($terminalState !== null) {
+                $blockers[] = 'Removed passenger has irreversible Air ticket data ('.strtoupper($terminalState).').';
+            } elseif ($unknownState !== null || count($states) !== count($statusColumns)) {
+                $blockers[] = 'Removed passenger has Air ticket data with an unknown or incomplete status; automatic cleanup is blocked.';
             } else {
                 $draftIds[] = (int) $row->id;
             }
