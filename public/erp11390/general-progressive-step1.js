@@ -464,7 +464,7 @@ var bookingReference=function(root){
  * points at the existing Step 1 authorities; it does not create a second
  * passenger, selection, or lock store. */
 var etBookingWorkspaceContext113305=(function(){
-  var state={root:null,reference:''};
+  var state={root:null,reference:'',passengers:null,passengerPromise:null};
   var api={
     setRoot:function(root,reference){state.root=root||null;state.reference=String(reference||'');return api;},
     getRoot:function(){return state.root;},
@@ -477,7 +477,15 @@ var etBookingWorkspaceContext113305=(function(){
     getLockState:function(){return etgpBookingLockState113162||{locked:false,status:'DRAFT',reason:''};},
     isLocked:function(){var root=state.root;return !!(api.getLockState().locked===true||(root&&root.dataset&&root.dataset.etgpBookingLocked==='1'));},
     getPassengerRoot:function(){var root=state.root;return root&&root.querySelector?root.querySelector('.etgp-passenger-card'):null;},
-    getPassengerData:function(){return Array.isArray(window.etgpBookingPassengerAuthority113305)?window.etgpBookingPassengerAuthority113305.slice():[];},
+    getPassengerData:function(){return Array.isArray(state.passengers)?state.passengers.slice():[];},
+    loadPassengerData:function(){
+      if(Array.isArray(state.passengers))return Promise.resolve(state.passengers.slice());
+      if(state.passengerPromise)return state.passengerPromise;
+      var id=api.getBookingId();
+      if(!id||typeof fetch!=='function')return Promise.resolve([]);
+      state.passengerPromise=fetch(api.getApiBase()+'/'+String(id)+'/air-product',{credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}}).then(function(response){return response.json().catch(function(){return {};}).then(function(data){state.passengers=Array.isArray(data&&data.passengers)?data.passengers.slice():[];return state.passengers.slice();});}).catch(function(){state.passengers=[];return [];});
+      return state.passengerPromise;
+    },
     getProductHost:function(productKey){var root=state.root;if(!root||!root.querySelector)return null;return root.querySelector('[data-etgp-'+String(productKey||'')+'-workspace-113106]')||root.querySelector('.etgp-product-shell[data-product="'+String(productKey||'')+'"] .etgp-product-shell-body-113127');},
     getProductSelection:function(reference){return typeof loadSelected==='function'?loadSelected(reference||api.getBookingReference()):[];},
     saveProductSelection:function(reference,selection){if(typeof saveSelected==='function')saveSelected(reference||api.getBookingReference(),selection||[]);},
@@ -487,21 +495,6 @@ var etBookingWorkspaceContext113305=(function(){
   if(typeof window!=='undefined')window.etBookingWorkspaceContext=api;
   return api;
 })();
-
-var etgpBookingPassengerAuthority113305=[];
-var etgpSeedPassengerAuthority113305=function(panel){
-  var rows=[];
-  if(panel&&panel.querySelectorAll){
-    Array.prototype.slice.call(panel.querySelectorAll('tbody tr')).forEach(function(row){
-      var id=Number(row.getAttribute('data-booking-passenger-id')||row.dataset&&row.dataset.bookingPassengerId||0)||0;
-      var cells=Array.prototype.slice.call(row.querySelectorAll('td,th')).map(function(cell){return String(cell.textContent||'').trim();});
-      if(id||cells.length)rows.push({id:id,name:cells[0]||'',fare_type:cells[1]||'',passport_number:cells[2]||'',dob:cells[3]||'',passport_expiry:cells[4]||'',nationality:cells[5]||'',status:cells[6]||''});
-    });
-  }
-  etgpBookingPassengerAuthority113305=rows;
-  if(typeof window!=='undefined')window.etgpBookingPassengerAuthority113305=rows;
-  return rows;
-};
 
 var directUnder=function(node,parent){
   var current=node;
@@ -4873,10 +4866,6 @@ var build=function(){
   if(!header||!passengers){
     return;
   }
-
-  /* Capture the existing native passenger response into the neutral adapter
-   * authority before any presentation restructuring occurs. */
-  etgpSeedPassengerAuthority113305(passengers);
 
   var reference=bookingReference(
     content

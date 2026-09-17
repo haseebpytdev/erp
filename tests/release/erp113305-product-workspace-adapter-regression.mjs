@@ -23,15 +23,15 @@ const root = {
   },
   airHost: { dataset: {} }
 };
+const passengerFixture = [{ id: 50, name: 'Saved Passenger', fare_type: 'ADULT', passport_number: 'P123', dob: '1990-01-01', passport_expiry: '2030-01-01', nationality: 'PK', status: 'active' }];
 const context = {
   window: {},
   etgpBookingLockState113162: state,
   etgpBookingId11397: () => 31,
-  etgpBookingPassengerAuthority113305: [{ id: 50, name: 'Saved Passenger', fare_type: 'ADULT', passport_number: 'P123' }],
+  fetch: async url => ({ json: async () => ({ passengers: passengerFixture }) }),
   loadSelected: reference => { assert.equal(reference, 'BK-2026-00001'); return selected.slice(); },
   saveSelected: (reference, value) => { assert.equal(reference, 'BK-2026-00001'); selected.splice(0, selected.length, ...value); }
 };
-context.window.etgpBookingPassengerAuthority113305 = context.etgpBookingPassengerAuthority113305;
 vm.runInNewContext(`${runtime.slice(start, end)};this.adapter=etBookingWorkspaceContext113305;`, context);
 const adapter = context.adapter;
 adapter.setRoot(root, 'BK-2026-00001');
@@ -39,13 +39,16 @@ ok(context.window.etBookingWorkspaceContext === adapter, 'adapter is the single 
 ok(adapter.getBookingId() === 31, 'booking ID resolves through existing booking ID authority');
 ok(adapter.getBookingReference() === 'BK-2026-00001', 'booking reference resolves through existing authority');
 ok(adapter.isLocked() === true && adapter.getLockState() === state, 'lock state reuses server-seeded lock authority');
-ok(adapter.getPassengerRoot() === null && adapter.getPassengerData()[0].id === 50, 'passenger authority is reused without requiring the Step 1 passenger card');
+ok(adapter.getPassengerRoot() === null, 'passenger visual root is optional on a Products-style document');
+const loadedPassengers = await adapter.loadPassengerData();
+ok(loadedPassengers[0].id === 50 && loadedPassengers[0].passport_expiry === '2030-01-01', 'passenger data loads from the existing Air product authority');
+ok(adapter.getPassengerData()[0].id === 50, 'structured passenger fields remain available without table scraping');
 ok(adapter.getProductSelection('BK-2026-00001').join(',') === 'air,hotel', 'product selection reuses the existing selection authority');
 adapter.saveProductSelection('BK-2026-00001', ['air']);
 ok(selected.join(',') === 'air', 'selection writes remain on the existing selection authority');
 ok(adapter.getProductHost('air') === root.airHost, 'product render host is abstracted from Step 1-specific traversal');
 ok(runtime.includes('etBookingWorkspaceContext113305.getBookingId()'), 'Air/Hotel/Transport/Visa dependency points use the adapter');
 ok(runtime.includes("renderAirProductWorkspace113106(shellBody)") && runtime.includes("renderHotelProductWorkspace113127(shellBody)") && runtime.includes("renderTransportProductWorkspace113139(shellBody)") && runtime.includes("renderVisaProductWorkspace113142(shellBody)"), 'all four product editors remain reachable');
-ok(!runtime.includes('_etgpPassengerData113305'), 'no invented passenger property is used as authority');
+ok(!runtime.slice(start, end).includes('tbody tr') && !runtime.slice(start, end).includes('textContent'), 'passenger data authority does not scrape rendered table cells');
 ok(runtime.includes('loadSelected=function(reference)') && runtime.includes('saveSelected=function('), 'existing product-selection implementation remains authoritative');
 console.log(`erp113305-product-workspace-adapter-regression: ${pass} assertions passed`);
