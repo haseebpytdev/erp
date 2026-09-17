@@ -280,7 +280,7 @@ class ApplyErpReleaseMetadata
     private function uiRole(string $path, string $routeName): string
     {
         if ($path === '' || $path === 'dashboard' || str_starts_with($path, 'dashboard/')) return 'dashboard';
-        if (str_starts_with($path, 'operations/bookings/') && preg_match('#^operations/bookings/[^/]+(?:/(?:edit|review|show))?$#', $path)) return 'focused';
+        if (str_starts_with($path, 'operations/bookings/') && preg_match('#^operations/bookings/[^/]+(?:/(?:edit|review|show|products))?$#', $path)) return 'focused';
         if (preg_match('#^(?:sales/invoices)(?:/[^/]+)?$#', $path)) return str_contains($path, '/invoices/') ? 'focused' : 'register';
         if (preg_match('#^(?:operations/bookings|purchase/supplier-costing)(?:/index)?/?$#', $path) || str_contains($routeName, '.index')) return 'register';
         return 'standard';

@@ -1911,6 +1911,10 @@ html.et-general-progressive-step1-11390:not(.etgp-step1-ready-11390):not(.etgp-s
   background:#fbfdff!important;
   box-sizing:border-box!important;
 }
+.etgp-passenger-card .etgp-quick-passenger-11397[hidden],
+.etgp-passenger-card [data-etgp-quick-passenger-11397][hidden]{
+  display:none!important;
+}
 
 .etgp-passenger-card .etgp-quick-passenger-11397 .etgp-passenger-subpanel-heading{
   display:flex!important;

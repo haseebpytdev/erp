@@ -6,6 +6,8 @@ const view = read('resources/views/operations/bookings/products-hub-v113304.blad
 const runtime = read('public/erp11390/general-progressive-step1.js');
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 const focusedShell = read('public/erp-theme/et-focused-shell.css');
+const releaseMiddleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
+const progressiveCss = read('public/erp11390/general-progressive-step1.css');
 let pass = 0;
 const ok = (value, message) => { assert.ok(value, message); pass++; };
 
@@ -24,8 +26,11 @@ ok(view.includes('data-etgp-booking-locked') && view.includes('data-booking-refe
 ok(presenter.includes("preg_match('#^operations/bookings/\\d+/products$#'"), 'Products route is explicitly recognized by the focused shell presenter');
 ok(presenter.includes("'et-booking-products-prepaint'"), 'Products route receives a focused geometry marker');
 ok(focusedShell.includes('html.et-booking-products-prepaint section.content') && focusedShell.includes('html.et-booking-products-prepaint .et-products-hub'), 'Products geometry is normalized by the existing focused shell owner');
+ok(releaseMiddleware.includes("(?:edit|review|show|products)"), 'Products route requests focused CSS asset composition');
+ok(releaseMiddleware.includes("return 'focused'"), 'Focused asset role remains the existing shell authority');
 ok(!focusedShell.includes('100vw'), 'Products geometry does not use a viewport-width hack');
 ok(runtime.includes('.etgp-quick-passenger-11397,[data-etgp-quick-passenger-11397]'), 'Locked path hides the complete Add Passenger container');
+ok(progressiveCss.includes('.etgp-quick-passenger-11397[hidden]') && progressiveCss.includes('[data-etgp-quick-passenger-11397][hidden]') && progressiveCss.includes('display:none!important'), 'Author CSS cannot override hidden Add Passenger presentation');
 ok(runtime.includes("value===null||value===undefined||value===''||!Number.isFinite(numeric)?'Unavailable'"), 'Commercial formatter fails closed for non-finite values');
 const displayMargin = value => { const numeric = Number(value); return value === null || value === undefined || value === '' || !Number.isFinite(numeric) ? 'Unavailable' : `PKR ${numeric.toFixed(2)}`; };
 ok(displayMargin(null) === 'Unavailable' && displayMargin(undefined) === 'Unavailable' && displayMargin(NaN) === 'Unavailable', 'Unavailable commercial values never render NaN');
