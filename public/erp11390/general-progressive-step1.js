@@ -707,6 +707,11 @@ var etgpServerSelectedProducts113180=[];
    show unsaved local totals inside their own workspace, but only this endpoint
    is allowed to refresh the top Booking Value / Travel Status cards. */
 var etgpOperationalSummarySequence113153=0;
+var etgpBookingLockState113162={locked:false,status:'DRAFT',reason:''};
+var etgpNormalizeBookingLockState113162=function(value){
+  var key=String(value||'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
+  return key==='pending approval'||key==='approved'||key==='travel ready';
+};
 var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
   bookingId=Number(bookingId||0);if(!bookingId)return Promise.resolve(null);
   var sequence=++etgpOperationalSummarySequence113153;
@@ -749,11 +754,32 @@ var etgpApplyBookingLock113162=function(data){
   if(!info){info=document.createElement('div');info.setAttribute('data-etgp-invoice-status','1');info.style.cssText='margin:8px 0;padding:8px 12px;border:1px solid #dce7f3;border-radius:8px;background:#fff;font-size:11px';root.insertBefore(info,root.firstChild);}
   var invoiceLabel=invoice?String(invoice.number||('#'+invoice.id))+' · '+String(invoice.status||'Draft').replace(/_/g,' '):'Not Created';
   info.innerHTML='<strong>Sales Invoice:</strong> '+invoiceLabel+(invoice?' <a target="_blank" rel="noopener noreferrer" href="'+String(data.sales_invoice_url||'')+'">Open Sales Invoice</a>':'');
-  if(!data||data.booking_locked!==true)return;
+  var locked=!!(data&&data.booking_locked===true);
+  /* Preserve the explicit server response contract: data.booking_locked!==true
+     must never be treated as editable data when no normalized lifecycle exists. */
+  if(data&&data.booking_status)locked=locked||etgpNormalizeBookingLockState113162(data.booking_status);
+  if(data&&data.status)locked=locked||etgpNormalizeBookingLockState113162(data.status);
+  etgpBookingLockState113162={locked:locked,status:String(data&& (data.booking_status||data.status||'DRAFT')||'DRAFT'),reason:String(data&&data.booking_lock_reason||'')};
+  root.dataset.etgpBookingLocked=locked?'1':'0';
+  if(!locked){
+    document.documentElement.classList.remove('et-booking-locked-113162');
+    return;
+  }
   document.documentElement.classList.add('et-booking-locked-113162');
+  var serverBanner=document.querySelector('[data-et-server-booking-lock="1"]');
   var banner=root.querySelector('[data-etgp-booking-lock]');
-  if(!banner){banner=document.createElement('div');banner.setAttribute('data-etgp-booking-lock','1');banner.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font-size:11px;font-weight:700';root.insertBefore(banner,root.firstChild);}
-  banner.textContent=String(data.booking_lock_reason||'Booking is locked after approval. Reopen the booking before making changes.');
+  if(serverBanner&&banner)banner.remove();
+  if(!serverBanner&&!banner){banner=document.createElement('div');banner.setAttribute('data-etgp-booking-lock','1');banner.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font-size:11px;font-weight:700';root.insertBefore(banner,root.firstChild);}
+  if(banner)banner.textContent=String(data&&data.booking_lock_reason||'Booking is locked after approval. Reopen the booking before making changes.');
+  var passengerCard=root.querySelector('.etgp-passenger-card');
+  if(passengerCard){
+    passengerCard.dataset.etgpBookingLocked='1';
+    var currentHost=passengerCard.querySelector('.etgp-passenger-current-host');
+    var currentTable=passengerCard.querySelector('.etgp-current-passenger-table');
+    if(currentHost)currentHost.hidden=false;
+    if(currentTable){currentTable.hidden=false;currentTable.style.display='';}
+    Array.prototype.slice.call(passengerCard.querySelectorAll('.etgp-passenger-editor-host,.etgp-passenger-mode-panel,.etgp-passenger-quick-row,.etgp-passenger-actions,[data-etgp-passenger-mode-control]')).forEach(function(el){el.hidden=true;});
+  }
   Array.prototype.slice.call(root.querySelectorAll('input,select,textarea')).forEach(function(el){
     el.disabled=true;el.setAttribute('aria-disabled','true');
     if(el.type==='hidden'||el.getAttribute('data-etgp-readonly-rendered')==='1')return;
@@ -764,6 +790,7 @@ var etgpApplyBookingLock113162=function(data){
   });
   var mutation=/\b(add|remove|delete|edit|apply|save|bulk|update|create|toggle|setup|rates|select passengers)\b/i;
   Array.prototype.slice.call(root.querySelectorAll('button,[role="button"],a')).forEach(function(el){if(mutation.test(String(el.textContent||el.value||''))){el.hidden=true;if('disabled'in el)el.disabled=true;}});
+  Array.prototype.slice.call(root.querySelectorAll('.etgp-air-remove-row-113106,.etgp-air-save-113106,.etgp-air-mini-button-113106')).forEach(function(el){el.hidden=true;if('disabled'in el)el.disabled=true;});
   Array.prototype.slice.call(root.querySelectorAll('[data-etgp-product-buttons] button,[data-etgp-product-buttons] [role="button"]')).forEach(function(el){el.disabled=true;el.setAttribute('aria-disabled','true');el.style.pointerEvents='none';el.classList.add('etgp-static-product-indicator-113164');});
 };
 document.addEventListener('et:booking-product-saved',function(event){
@@ -1437,7 +1464,7 @@ var etgpAirRender113106=function(host,data,bookingId){
       feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=error&&error.message?error.message:'Tickets / Flight Data could not be saved.';
     }).finally(function(){save.disabled=false;save.textContent='Save Tickets / Flight Data';});
   });
-  requestAnimationFrame(function(){host.classList.add('is-ready');});
+  requestAnimationFrame(function(){host.classList.add('is-ready');if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});});
 };
 
 var renderAirProductWorkspace113106=function(shell){
@@ -2297,6 +2324,7 @@ var renderProducts=function(
   paxCount
 ){
   var selected=loadSelected(reference);
+  var locked=etgpBookingLockState113162.locked===true||root.dataset.etgpBookingLocked==='1';
   var buttons=root.querySelector('[data-etgp-product-buttons]');
   var shells=root.querySelector('[data-etgp-product-shells]');
   if(!buttons||!shells)return;
@@ -2309,7 +2337,8 @@ var renderProducts=function(
     button.type='button';button.dataset.product=product.key;
     var isSelected=selected.indexOf(product.key)!==-1;
     if(isSelected){button.classList.add('is-selected');button.textContent='✓ '+product.short;}
-    if(paxCount<1){button.disabled=true;button.title='Add at least one passenger first.';}
+    if(paxCount<1&&!locked){button.disabled=true;button.title='Add at least one passenger first.';}
+    if(locked){button.disabled=true;button.setAttribute('aria-disabled','true');button.hidden=true;}
 
     if(product.key==='transport'&&!isSelected){
       button.type='submit';button.setAttribute('form',etgpEnsureTransportSelectionForm113179(etgpBookingId11397(),false));buttons.appendChild(button);
@@ -2379,9 +2408,10 @@ var renderProducts=function(
   });
 
   var lock=root.querySelector('[data-etgp-product-lock]');
-  if(lock)lock.hidden=paxCount>0;
+  if(lock)lock.hidden=paxCount>0||locked;
   renderProgress(root,paxCount,selected.length);
   etgpRefreshPersistedBookingState113153(etgpBookingId11397(),selected);
+  if(locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});
 };
 
 var moveAlerts=function(
@@ -5264,6 +5294,7 @@ var refreshPassengerCard=function(
   markPassengerFormLayout(
     card
   );
+  if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});
 };
 
 var refreshMetrics=function(
@@ -5542,6 +5573,7 @@ window.etGeneralProgressiveStep1Sync11390=function(
       reference,
       paxCount
     );
+    if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});
   }
 
   return true;

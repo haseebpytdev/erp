@@ -106,6 +106,19 @@ ok(progressive.includes('etgpPassengerRowIsRemoved113290') && progressive.includ
 ok(progressive.includes('!etgpPassengerRowIsRemoved113290(row)'), 'passenger count and fresh-document reconciliation ignore REMOVED rows');
 ok(progressive.includes("data-booking-passenger-id") && progressive.includes("passenger.id"), 'new current passenger rows expose the explicit booking-passenger snapshot ID');
 ok(!progressive.includes('airRows[index]') && !progressive.includes('var airRows=Array.prototype.slice.call(document.querySelectorAll(\'[data-etgp-air-ticket-row-113106]\'))'), 'fare synchronization has no name or ordinal passenger-ID fallback');
+ok(progressive.includes('etgpBookingLockState113162') && progressive.includes('booking_locked===true'), 'locked booking uses one operational lock authority');
+ok(progressive.includes('pending approval') && progressive.includes('travel ready') && progressive.includes('replace(/[_-]+/g'), 'locked lifecycle values are normalized consistently');
+ok(progressive.includes("currentTable.hidden=false") && progressive.includes("currentHost.hidden=false"), 'saved passenger table remains visible when locked');
+ok(progressive.includes('etgp-passenger-editor-host') && progressive.includes('etgp-passenger-quick-row') && progressive.includes("el.hidden=true"), 'locked passenger editor and Add Passenger controls are hidden');
+ok(progressive.includes('etgp-passenger-card') && progressive.includes('etgp-passenger-actions') && progressive.includes("data-etgp-product-buttons"), 'locked passenger Remove and product mutation controls are hidden');
+ok(progressive.includes('paxCount>0||locked'), 'selected passengers suppress the false zero-passenger product warning');
+ok(progressive.includes("button.hidden=true") && progressive.includes("button.disabled=true") && progressive.includes('etgpBookingLockState113162.locked'), 'locked Add Products controls are disabled without removing selected product shells');
+ok(progressive.includes('etgp-air-remove-row-113106') && progressive.includes('etgp-air-mini-button-113106') && progressive.includes('etgp-air-save-113106'), 'locked Air mutation actions are hidden while saved Air data remains rendered');
+ok(progressive.includes('requestAnimationFrame(function(){host.classList.add(\'is-ready\');if(etgpBookingLockState113162.locked)'), 'Air lock is reapplied after asynchronous saved-data rendering');
+ok(progressive.includes('if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162') && progressive.includes('refreshPassengerCard'), 'lock is reapplied after passenger and product refreshes');
+ok(progressive.includes('data-et-server-booking-lock') && progressive.includes('if(serverBanner&&banner)banner.remove()'), 'server and client lock banners are deduplicated');
+ok(progressive.includes("root.dataset.etgpBookingLocked=locked?'1':'0'") && progressive.includes("root.dataset.etgpBookingLocked==='1'"), 'lock state is shared by renderers without inferring from button visibility');
+ok(progressive.includes("if(!locked){") && progressive.includes("document.documentElement.classList.remove('et-booking-locked-113162')"), 'Draft or reopened booking remains editable when lock is absent');
 
 const context = { window: {}, console };
 vm.runInNewContext(mrz, context);
