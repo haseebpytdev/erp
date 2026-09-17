@@ -487,7 +487,12 @@ var etBookingWorkspaceContext113305=(function(){
       return state.passengerPromise;
     },
     getProductHost:function(productKey){var root=state.root;if(!root||!root.querySelector)return null;return root.querySelector('[data-etgp-'+String(productKey||'')+'-workspace-113106]')||root.querySelector('.etgp-product-shell[data-product="'+String(productKey||'')+'"] .etgp-product-shell-body-113127');},
-    getProductSelection:function(reference){return typeof loadSelected==='function'?loadSelected(reference||api.getBookingReference()):[];},
+    getProductSelection:function(reference){
+      var selected=typeof loadSelected==='function'?loadSelected(reference||api.getBookingReference()):[];
+      var root=state.root, seeded=root&&root.dataset&&root.dataset.etgpSelectedProducts?String(root.dataset.etgpSelectedProducts).split(','):[];
+      seeded.filter(Boolean).forEach(function(key){if(selected.indexOf(key)===-1)selected.push(key);});
+      return selected;
+    },
     saveProductSelection:function(reference,selection){if(typeof saveSelected==='function')saveSelected(reference||api.getBookingReference(),selection||[]);},
     getCurrency:function(){var root=state.root;return String(root&&root.dataset&&root.dataset.currency||'PKR');},
     getApiBase:function(){return '/system/erp-bookings';}
@@ -3931,7 +3936,7 @@ var markPassengerFormLayout=function(passengerCard){
  *   the Passenger table/KPI/product locks refresh in place with no page reload.
  * ====================================================================== */
 var etgpBookingId11397=function(){
-  var match=String(window.location.pathname||'').match(/\/operations\/bookings\/(\d+)(?:\/edit)?\/?$/i);
+  var match=String(window.location.pathname||'').match(/\/operations\/bookings\/(\d+)(?:\/(?:edit|products))?\/?$/i);
   return match?Number(match[1])||0:0;
 };
 
@@ -5292,6 +5297,13 @@ var build=function(){
     loadSelected(reference).length
   );
 
+  if(!/\/operations\/bookings\/\d+\/products\/?$/i.test(String(window.location.pathname||''))){
+    var step1Products=root.querySelector('.etgp-products-card');
+    var step1Shells=root.querySelector('[data-etgp-product-shells]');
+    if(step1Products)step1Products.remove();
+    if(step1Shells)step1Shells.remove();
+  }
+
   window.clearTimeout(
     nativeRevealFallback11390
   );
@@ -5665,6 +5677,7 @@ window.etGeneralProgressiveStep1Sync11390=function(
 
 window.etGeneralProgressiveStep1Build11390=
   build;
+window.etgpRenderProducts113305=renderProducts;
 
 if(document.readyState==='loading'){
   document.addEventListener(

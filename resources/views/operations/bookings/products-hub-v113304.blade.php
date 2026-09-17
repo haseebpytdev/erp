@@ -14,5 +14,9 @@
  @endforeach
   <article class="et-ph-card"><h2>Other Services</h2><span class="et-ph-state">Not configured</span><p>No stable independent Other Services authority is configured.</p></article>
  </div>
+ <section class="etgp-step1 et-products-runtime-root" data-etgp-products-runtime="1" data-booking-id="{{ $bookingId }}" data-booking-reference="{{ $booking['booking_reference'] ?? $booking['booking_no'] ?? ('Booking #'.$bookingId) }}" data-currency="{{ $booking['currency'] ?? 'PKR' }}" data-etgp-booking-locked="{{ $lock['locked'] ? '1' : '0' }}" data-etgp-selected-products="{{ implode(',', $selected) }}"><div data-etgp-product-buttons></div><div data-etgp-product-shells></div></section>
 </main>
+<link rel="stylesheet" href="{{ url('/system/erp-assets/general-progressive-step1.css') }}">
+<script src="{{ url('/system/erp-assets/general-progressive-step1.js') }}"></script>
+<script>document.addEventListener('DOMContentLoaded',function(){var root=document.querySelector('[data-etgp-products-runtime]');if(root&&window.etgpRenderProducts113305){window.etgpRenderProducts113305(root,root.dataset.bookingReference,0);}document.querySelectorAll('.et-ph-card a[href*="#"]').forEach(function(link){var hash=link.hash;if(hash)link.href=window.location.pathname+hash;});});</script>
 @endsection
