@@ -4938,10 +4938,8 @@ var build=function(){
     ['2','Products'],
     ['3','Review']
   ].forEach(function(item){
-    var step=create(
-      'div',
-      'etgp-progress-step'
-    );
+    var step=create(item[0]==='2'?'a':'div','etgp-progress-step'+(item[0]==='1'?' is-current':''));
+    if(item[0]==='2')step.href='/operations/bookings/'+String(etgpBookingId11397()||'')+'/products';
     step.setAttribute(
       'data-etgp-progress-step',
       item[0]
@@ -5211,12 +5209,6 @@ var build=function(){
   root.appendChild(
     productShells
   );
-  /* Phase 2A: product editing now has an independent Products document.
-     Keep these source nodes available for compatibility, but do not expose
-     product editors or mutation controls on the Booking & Passengers page. */
-  products.hidden=true;
-  productShells.hidden=true;
-
   content.appendChild(
     root
   );

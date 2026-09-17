@@ -15,14 +15,15 @@ ok(view.includes("url('/operations/bookings/'.$bookingId)") && view.includes('Bo
 ok(view.includes('et-ph-step current') && view.includes('aria-current="step"') && view.includes('Products'), 'Products page marks Step 2 current');
 ok(view.includes('Booking &amp; Passengers') && view.includes('Products') && view.includes('Review'), 'Products page renders the three-step flow');
 ok(view.includes('Air / Tickets') && view.includes('Hotel') && view.includes('Transport') && view.includes('Visa') && view.includes('Other Services'), 'Products Hub contains the five product cards');
+ok(view.includes("$summary['customer_total']") && view.includes("$summary['supplier_total']"), 'Products cards display only existing product summary authorities');
 ok(controller.includes('GeneralBookingAirProductController') && controller.includes('GeneralBookingHotelProductController') && controller.includes('GeneralBookingTransportProductController') && controller.includes('GeneralBookingVisaProductController'), 'Products Hub reuses existing product controllers');
 ok(controller.includes('product_customer_totals') === false && controller.includes('DB::table(\'bookings\')'), 'Products Hub does not create a commercial calculation or selection store');
 ok(controller.includes('BookingEditLockResolver') && view.includes("$lock['locked']"), 'Products Hub reuses the server booking lock authority');
 ok(view.includes("$lock['locked'] ? 'View'") && view.includes("'Open Air'"), 'Locked cards expose view-only actions while Draft exposes open actions');
 ok(view.includes('Not configured') && view.includes('Other Services'), 'Other Services remains an explicit non-configured card');
 ok(step1.includes("['1','Booking & Passengers']") && step1.includes("['2','Products']") && step1.includes("['3','Review']"), 'Step 1 keeps the approved labels');
-ok(step1.includes('products.hidden=true') && step1.includes('productShells.hidden=true'), 'Step 1 hides product UI while preserving source compatibility nodes');
-ok(!step1.includes('\n  renderProducts(\n    root,'), 'Step 1 no longer injects product editors into its visual flow');
+ok(step1.includes("var step=create(item[0]==='2'?'a':'div'") && step1.includes("step.href='/operations/bookings/'+String(etgpBookingId11397()||'')+'/products'"), 'Step 1 Products is a normal same-origin link to the independent Products document');
+ok(!step1.includes('products.hidden=true') && step1.includes('renderProducts('), 'Step 1 retains existing product editors until safe cross-document migration is complete');
 ok(step1.includes('etgp-passenger-card') && step1.includes('etgp-booking-card') && step1.includes('etgp-booking-commercial-summary'), 'Passengers, Booking Header and Commercial Summary remain on Step 1');
 ok(view.includes("url('/operations/bookings/'.$bookingId.'#'.$item[0])"), 'Product cards link to existing booking product entry points');
 ok(!routes.includes('Route::post(\'/operations/bookings/{booking}/products'), 'Products Hub adds no mutation endpoint');
