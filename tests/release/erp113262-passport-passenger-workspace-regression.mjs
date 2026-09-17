@@ -119,6 +119,9 @@ ok(progressive.includes('if(etgpBookingLockState113162.locked)etgpApplyBookingLo
 ok(progressive.includes('data-et-server-booking-lock') && progressive.includes('if(serverBanner&&banner)banner.remove()'), 'server and client lock banners are deduplicated');
 ok(progressive.includes("root.dataset.etgpBookingLocked=locked?'1':'0'") && progressive.includes("root.dataset.etgpBookingLocked==='1'"), 'lock state is shared by renderers without inferring from button visibility');
 ok(progressive.includes("if(!locked){") && progressive.includes("document.documentElement.classList.remove('et-booking-locked-113162')"), 'Draft or reopened booking remains editable when lock is absent');
+ok(progressive.includes('var preservedTable=card.querySelector(\'.etgp-current-passenger-table\')') && progressive.includes('preservedTable.cloneNode(true)'), 'locked refresh captures the authoritative saved passenger table');
+ok(progressive.includes("if(preservedTableClone&&!current.querySelector('.etgp-current-passenger-table'))") && progressive.includes('current.appendChild(preservedTableClone)'), 'editor-only refresh restores existing saved passenger rows');
+ok(progressive.includes('freshPanel.innerHTML') && progressive.includes('preservedTableClone'), 'actual passenger refresh path protects rows when the response is editor-only');
 
 const context = { window: {}, console };
 vm.runInNewContext(mrz, context);

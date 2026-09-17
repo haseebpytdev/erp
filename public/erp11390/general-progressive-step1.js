@@ -5251,6 +5251,12 @@ var refreshPassengerCard=function(
     return;
   }
 
+  /* A partial native refresh can contain only the editor fragment. Preserve
+     the already-rendered saved snapshot table so an editor-only response can
+     never turn a locked booking into an Add Passenger-only view. */
+  var preservedTable=card.querySelector('.etgp-current-passenger-table');
+  var preservedTableClone=preservedTable&&preservedTable.cloneNode?preservedTable.cloneNode(true):null;
+
   Array.prototype.slice.call(
     card.querySelectorAll(':scope > .etgp-passenger-current-host,:scope > .etgp-passenger-editor-host')
   ).forEach(function(node){node.remove();});
@@ -5258,6 +5264,9 @@ var refreshPassengerCard=function(
   current.classList.remove('etgp-passenger-native-source-host');
   current.innerHTML=
     freshPanel.innerHTML;
+  if(preservedTableClone&&!current.querySelector('.etgp-current-passenger-table')){
+    current.appendChild(preservedTableClone);
+  }
 
   Array.prototype.slice.call(
     card.querySelectorAll(
