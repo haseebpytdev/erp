@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.305-ERP11.3.305',
-    'release' => 'ERP-11.3.304',
-    'package' => 'ERP-11.3.304 Passenger Panel Boundary Fix',
-    'package_detail' => 'ERP-11.3.304 delivers the reviewed legacy Passenger Remove and Air-data reconciliation; visual UAT remains pending.',
+    'version' => 'v1.1.33.306-ERP11.3.306',
+    'release' => 'ERP-11.3.306',
+    'package' => 'ERP-11.3.306 Products page, lock, and commercial display correction',
+    'package_detail' => 'ERP-11.3.306 delivers the reviewed Products geometry, locked Add Passenger, and non-finite Margin display corrections; visual UAT remains pending.',
 ];
 
