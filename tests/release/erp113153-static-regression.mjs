@@ -19,9 +19,9 @@ const voucher = read('resources/views/operations/bookings/general-client-voucher
 
 has(routes, '/operational-summary', 'central operational summary route exists');
 for (const key of ["'air' =>", "'hotel' =>", "'transport' =>", "'visa' =>"]) has(summary, key, `persisted total includes ${key}`);
-has(summary, "'booking_value' => $bookingValue", 'Booking Value uses the persisted booking authority');
+has(summary, "'booking_value' => array_sum($totals)", 'Booking Value preserves the operational product-total authority');
+has(summary, "'persisted_booking_value' => $bookingValue", 'Persisted booking commercial value is exposed separately');
 has(summary, "'supplier_cost' => $supplierCost", 'Supplier Cost uses the persisted supplier authority');
-lacks(summary, "'booking_value' => array_sum($totals)", 'Booking Value is not recalculated from product summaries');
 has(summary, '$readiness->resolve(', 'one central readiness resolver is used');
 has(readiness, "'PendingTravel'", 'resolver emits PendingTravel');
 has(readiness, "'Ready'", 'resolver emits Ready');

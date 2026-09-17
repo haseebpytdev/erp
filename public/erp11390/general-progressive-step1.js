@@ -712,7 +712,9 @@ var etgpBookingCommercialAuthority113302={bookingValue:null,supplierCost:null,cu
 var etgpBookingCommercialDisplay113302=function(data){
   data=data||{};
   var products=Object.assign({},data.product_customer_totals||{});
-  var bookingValue=Number(data.booking_value),supplierCost=Number(data.supplier_cost);
+  var rawBookingValue=data.persisted_booking_value,rawSupplierCost=data.supplier_cost;
+  var validRaw=function(value){return value!==null&&value!==undefined&&value!=='';};
+  var bookingValue=validRaw(rawBookingValue)?Number(rawBookingValue):NaN,supplierCost=validRaw(rawSupplierCost)?Number(rawSupplierCost):NaN;
   var validBooking=Number.isFinite(bookingValue),validSupplier=Number.isFinite(supplierCost);
   return {products:products,bookingValue:validBooking?bookingValue:null,supplierCost:validSupplier?supplierCost:null,margin:validBooking&&validSupplier?bookingValue-supplierCost:null};
 };
