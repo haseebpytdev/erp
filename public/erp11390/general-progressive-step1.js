@@ -458,6 +458,36 @@ var bookingReference=function(root){
     : 'Booking';
 };
 
+/* ERP-11.3.305 — portable product-workspace compatibility authority.
+ * Product renderers use this narrow adapter for booking context, passenger
+ * authority, selection state, lock state, and render hosts.  The adapter
+ * points at the existing Step 1 authorities; it does not create a second
+ * passenger, selection, or lock store. */
+var etBookingWorkspaceContext113305=(function(){
+  var state={root:null,reference:''};
+  var api={
+    setRoot:function(root,reference){state.root=root||null;state.reference=String(reference||'');return api;},
+    getRoot:function(){return state.root;},
+    getBookingId:function(){
+      if(typeof etgpBookingId11397==='function')return etgpBookingId11397();
+      var root=state.root;return Number(root&&root.dataset&&root.dataset.bookingId||0)||0;
+    },
+    getBookingReference:function(){return state.reference||(state.root&&state.root.dataset&&state.root.dataset.bookingReference)||'Booking';},
+    getBookingStatus:function(){return String((etgpBookingLockState113162&&etgpBookingLockState113162.status)||'DRAFT');},
+    getLockState:function(){return etgpBookingLockState113162||{locked:false,status:'DRAFT',reason:''};},
+    isLocked:function(){var root=state.root;return !!(api.getLockState().locked===true||(root&&root.dataset&&root.dataset.etgpBookingLocked==='1'));},
+    getPassengerRoot:function(){var root=state.root;return root&&root.querySelector?root.querySelector('.etgp-passenger-card'):null;},
+    getPassengerData:function(){var root=api.getPassengerRoot();return root&&root._etgpPassengerData113305?root._etgpPassengerData113305:null;},
+    getProductHost:function(productKey){var root=state.root;if(!root||!root.querySelector)return null;return root.querySelector('[data-etgp-'+String(productKey||'')+'-workspace-113106]')||root.querySelector('.etgp-product-shell[data-product="'+String(productKey||'')+'"] .etgp-product-shell-body-113127');},
+    getProductSelection:function(reference){return typeof loadSelected==='function'?loadSelected(reference||api.getBookingReference()):[];},
+    saveProductSelection:function(reference,selection){if(typeof saveSelected==='function')saveSelected(reference||api.getBookingReference(),selection||[]);},
+    getCurrency:function(){var root=state.root;return String(root&&root.dataset&&root.dataset.currency||'PKR');},
+    getApiBase:function(){return '/system/erp-bookings';}
+  };
+  if(typeof window!=='undefined')window.etBookingWorkspaceContext=api;
+  return api;
+})();
+
 var directUnder=function(node,parent){
   var current=node;
 
@@ -1521,7 +1551,7 @@ var etgpAirRender113106=function(host,data,bookingId){
 };
 
 var renderAirProductWorkspace113106=function(shell){
-  var bookingId=etgpBookingId11397();
+  var bookingId=etBookingWorkspaceContext113305.getBookingId();
   var host=create('div','etgp-air-workspace-113106 is-loading');
   host.setAttribute('data-etgp-air-workspace-113106','1');
   var loadingShell=create('div','etgp-air-loading-shell-113112');
@@ -1716,7 +1746,7 @@ var etgpHotelRender113127=function(host,data,bookingId){
   });
 };
 var renderHotelProductWorkspace113127=function(shell){
-  var bookingId=etgpBookingId11397();var host=create('div','etgp-hotel-workspace-113127 is-loading');host.setAttribute('data-etgp-hotel-workspace-113127','1');
+  var bookingId=etBookingWorkspaceContext113305.getBookingId();var host=create('div','etgp-hotel-workspace-113127 is-loading');host.setAttribute('data-etgp-hotel-workspace-113127','1');
   var loading=create('div','etgp-hotel-loading-113127','Loading saved Hotel data…');host.appendChild(loading);shell.appendChild(host);
   if(!bookingId){host.innerHTML='';host.appendChild(create('div','etgp-hotel-feedback-113127 is-error','Booking ID could not be resolved from this page.'));return;}
   etgpHotelLoad113127(bookingId).then(function(data){etgpHotelRender113127(host,data,bookingId);}).catch(function(error){host.innerHTML='';host.classList.remove('is-loading');host.appendChild(create('div','etgp-hotel-feedback-113127 is-error',error&&error.message?error.message:'Hotel Data could not be loaded.'));});
@@ -2010,7 +2040,7 @@ var etgpTransportRender113139=function(host,data,bookingId){
   });
 };
 var renderTransportProductWorkspace113139=function(shell){
-  var bookingId=etgpBookingId11397();var host=create('div','etgp-transport-workspace-113139 is-loading');host.setAttribute('data-etgp-transport-workspace-113139','1');
+  var bookingId=etBookingWorkspaceContext113305.getBookingId();var host=create('div','etgp-transport-workspace-113139 is-loading');host.setAttribute('data-etgp-transport-workspace-113139','1');
   var loading=create('div','etgp-transport-loading-113139','Loading saved Transport data…');host.appendChild(loading);shell.appendChild(host);
   if(!bookingId){host.innerHTML='';host.appendChild(create('div','etgp-transport-feedback-113139 is-error','Booking ID could not be resolved from this page.'));return;}
   etgpTransportLoad113139(bookingId).then(function(data){etgpTransportRender113139(host,data,bookingId);}).catch(function(error){host.innerHTML='';host.classList.remove('is-loading');host.appendChild(create('div','etgp-transport-feedback-113139 is-error',error&&error.message?error.message:'Transport Data could not be loaded.'));});
@@ -2186,9 +2216,9 @@ var renderProgress=function(
    late-added passenger from wiping an unsaved PNR, itinerary, ticket numbers
    or fare commercials during the Air workspace reload. */
 var etgpAirFlushVisibleDraft113126=function(){
-  var host=document.querySelector('[data-etgp-air-workspace-113106]');
+  var host=etBookingWorkspaceContext113305.getProductHost('air')||document.querySelector('[data-etgp-air-workspace-113106]');
   if(!host||typeof host._etgpBuildPayload113126!=='function')return;
-  var bookingId=etgpBookingId11397();
+  var bookingId=etBookingWorkspaceContext113305.getBookingId();
   if(!bookingId)return;
   try{etgpAirDraftWrite113119(bookingId,host._etgpBuildPayload113126());}catch(e){}
 };
@@ -2356,8 +2386,9 @@ var renderProducts=function(
   reference,
   paxCount
 ){
-  var selected=loadSelected(reference);
-  var locked=etgpBookingLockState113162.locked===true||root.dataset.etgpBookingLocked==='1';
+  etBookingWorkspaceContext113305.setRoot(root,reference);
+  var selected=etBookingWorkspaceContext113305.getProductSelection(reference);
+  var locked=etBookingWorkspaceContext113305.isLocked();
   var buttons=root.querySelector('[data-etgp-product-buttons]');
   var shells=root.querySelector('[data-etgp-product-shells]');
   if(!buttons||!shells)return;
@@ -2374,7 +2405,7 @@ var renderProducts=function(
     if(locked){button.disabled=true;button.setAttribute('aria-disabled','true');button.hidden=true;}
 
     if(product.key==='transport'&&!isSelected){
-      button.type='submit';button.setAttribute('form',etgpEnsureTransportSelectionForm113179(etgpBookingId11397(),false));buttons.appendChild(button);
+      button.type='submit';button.setAttribute('form',etgpEnsureTransportSelectionForm113179(etBookingWorkspaceContext113305.getBookingId(),false));buttons.appendChild(button);
       return;
     }
     button.addEventListener('click',function(){
@@ -2383,7 +2414,7 @@ var renderProducts=function(
       etgpHotelFlushVisibleDraft113127();
       etgpTransportFlushVisibleDraft113139();
       etgpVisaFlushVisibleDraft113142();
-      var next=loadSelected(reference),index=next.indexOf(product.key);
+      var next=etBookingWorkspaceContext113305.getProductSelection(reference),index=next.indexOf(product.key);
       if(index===-1)next.push(product.key);else next.splice(index,1);
       saveSelected(reference,next);
       renderProducts(root,reference,paxCount);
@@ -2416,11 +2447,11 @@ var renderProducts=function(
     toggle.addEventListener('click',function(){setCollapsed(!collapsed);});
     shellHead.addEventListener('dblclick',function(event){if(event.target.closest('button'))return;setCollapsed(!collapsed);});
     if(product.key==='transport'){
-      remove.type='submit';remove.setAttribute('form',etgpEnsureTransportSelectionForm113179(etgpBookingId11397(),true));
+      remove.type='submit';remove.setAttribute('form',etgpEnsureTransportSelectionForm113179(etBookingWorkspaceContext113305.getBookingId(),true));
     }else remove.addEventListener('click',function(){
       etgpAirFlushVisibleDraft113126();etgpHotelFlushVisibleDraft113127();etgpTransportFlushVisibleDraft113139();
       etgpVisaFlushVisibleDraft113142();
-      var next=loadSelected(reference).filter(function(key){return key!==product.key;});
+      var next=etBookingWorkspaceContext113305.getProductSelection(reference).filter(function(key){return key!==product.key;});
       saveSelected(reference,next);renderProducts(root,reference,paxCount);
     });
 
