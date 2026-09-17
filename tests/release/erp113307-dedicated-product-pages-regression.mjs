@@ -12,8 +12,8 @@ let pass = 0;
 const ok = (value, message) => { assert.ok(value, message); pass++; };
 
 for (const product of ['air', 'hotel', 'transport', 'visa', 'other-services']) {
-  ok(routes.includes("foreach (['air', 'hotel', 'transport', 'visa', 'other-services']") && routes.includes("'/operations/bookings/{booking}/products/'.$productWorkspaceKey"), `${product} dedicated GET route exists`);
-  ok(routes.includes("->name('bookings.products.'.$productWorkspaceKey)"), `${product} route has a stable name`);
+  ok(routes.includes("'/operations/bookings/{booking}/products/{product}'") && routes.includes("whereIn('product', ['air', 'hotel', 'transport', 'visa', 'other-services'])"), `${product} dedicated GET route exists`);
+  ok(routes.includes("->name('bookings.products.workspace')"), `${product} route has a stable name`);
 }
 ok(controller.includes("private const PRODUCTS = ['air', 'hotel', 'transport', 'visa', 'other-services'];"), 'controller uses one strict product allowlist');
 ok(controller.includes("product-workspace-v113305"), 'all products use one shared workspace view');
@@ -37,4 +37,5 @@ ok(presenter.includes('data-et-booking-products-launcher="1"') && presenter.incl
 const launcher = presenter.slice(presenter.indexOf('data-et-booking-products-launcher="1"') - 120, presenter.indexOf('data-et-booking-products-launcher="1"') + 900);
 ok(!launcher.includes('position:fixed') && !launcher.includes('position:absolute'), 'main Booking launcher is not a floating overlay');
 ok(view.includes("config('et_erp_release.version") && !view.includes('?v=11.3.305'), 'dedicated assets use current release metadata rather than a stale hard-coded version');
+ok(controller.includes('string $product') && controller.includes('in_array($product, self::PRODUCTS, true)'), 'route product parameter is received and strictly validated by the controller');
 console.log(`erp113307-dedicated-product-pages-regression: ${pass} assertions passed`);

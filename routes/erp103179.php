@@ -302,11 +302,9 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])
         ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.products.show');
 
-    foreach (['air', 'hotel', 'transport', 'visa', 'other-services'] as $productWorkspaceKey) {
-        Route::get('/operations/bookings/{booking}/products/'.$productWorkspaceKey, [ProductWorkspaceController::class, 'show'])
-            ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)
-            ->name('bookings.products.'.$productWorkspaceKey);
-    }
+    Route::get('/operations/bookings/{booking}/products/{product}', [ProductWorkspaceController::class, 'show'])
+        ->whereNumber('booking')->whereIn('product', ['air', 'hotel', 'transport', 'visa', 'other-services'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.products.workspace');
 
     // ERP-11.3.148 Visa Management is anchored to the REAL native Travel Masters
     // route used by production: /master-data/travel-masters. Keep the old
