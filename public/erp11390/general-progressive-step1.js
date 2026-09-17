@@ -763,6 +763,12 @@ var etgpApplyBookingLock113162=function(data){
   root.dataset.etgpBookingLocked=locked?'1':'0';
   if(!locked){
     document.documentElement.classList.remove('et-booking-locked-113162');
+    var unlockedCard=root.querySelector('.etgp-passenger-card');
+    if(unlockedCard)unlockedCard.dataset.etgpBookingLocked='0';
+    Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-hidden="1"]')).forEach(function(el){el.hidden=false;el.removeAttribute('data-etgp-lock-hidden');});
+    Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-disabled="1"]')).forEach(function(el){el.disabled=false;el.removeAttribute('aria-disabled');el.removeAttribute('data-etgp-lock-disabled');});
+    Array.prototype.slice.call(root.querySelectorAll('.etgp-readonly-value-113164')).forEach(function(el){el.remove();});
+    Array.prototype.slice.call(root.querySelectorAll('.etgp-static-product-indicator-113164')).forEach(function(el){el.classList.remove('etgp-static-product-indicator-113164');el.style.pointerEvents='';});
     return;
   }
   document.documentElement.classList.add('et-booking-locked-113162');
@@ -778,20 +784,20 @@ var etgpApplyBookingLock113162=function(data){
     var currentTable=passengerCard.querySelector('.etgp-current-passenger-table');
     if(currentHost)currentHost.hidden=false;
     if(currentTable){currentTable.hidden=false;currentTable.style.display='';}
-    Array.prototype.slice.call(passengerCard.querySelectorAll('.etgp-passenger-editor-host,.etgp-passenger-mode-panel,.etgp-passenger-quick-row,.etgp-passenger-actions,[data-etgp-passenger-mode-control]')).forEach(function(el){el.hidden=true;});
+    Array.prototype.slice.call(passengerCard.querySelectorAll('.etgp-passenger-editor-host,.etgp-passenger-mode-panel,.etgp-passenger-quick-row,.etgp-passenger-actions,[data-etgp-passenger-mode-control]')).forEach(function(el){el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');});
   }
   Array.prototype.slice.call(root.querySelectorAll('input,select,textarea')).forEach(function(el){
-    el.disabled=true;el.setAttribute('aria-disabled','true');
+    el.disabled=true;el.setAttribute('aria-disabled','true');el.setAttribute('data-etgp-lock-disabled','1');
     if(el.type==='hidden'||el.getAttribute('data-etgp-readonly-rendered')==='1')return;
     el.setAttribute('data-etgp-readonly-rendered','1');
     if(el.type==='checkbox'||el.type==='radio'){el.hidden=true;return;}
     var value=el.tagName==='SELECT'&&el.selectedIndex>=0?el.options[el.selectedIndex].text:String(el.value||'—');
-    var read=document.createElement('span');read.className='etgp-readonly-value-113164';read.textContent=value||'—';el.hidden=true;el.insertAdjacentElement('afterend',read);
+    var read=document.createElement('span');read.className='etgp-readonly-value-113164';read.textContent=value||'—';el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');el.insertAdjacentElement('afterend',read);
   });
   var mutation=/\b(add|remove|delete|edit|apply|save|bulk|update|create|toggle|setup|rates|select passengers)\b/i;
-  Array.prototype.slice.call(root.querySelectorAll('button,[role="button"],a')).forEach(function(el){if(mutation.test(String(el.textContent||el.value||''))){el.hidden=true;if('disabled'in el)el.disabled=true;}});
-  Array.prototype.slice.call(root.querySelectorAll('.etgp-air-remove-row-113106,.etgp-air-save-113106,.etgp-air-mini-button-113106')).forEach(function(el){el.hidden=true;if('disabled'in el)el.disabled=true;});
-  Array.prototype.slice.call(root.querySelectorAll('[data-etgp-product-buttons] button,[data-etgp-product-buttons] [role="button"]')).forEach(function(el){el.disabled=true;el.setAttribute('aria-disabled','true');el.style.pointerEvents='none';el.classList.add('etgp-static-product-indicator-113164');});
+  Array.prototype.slice.call(root.querySelectorAll('button,[role="button"],a')).forEach(function(el){if(mutation.test(String(el.textContent||el.value||''))){el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');if('disabled'in el){el.disabled=true;el.setAttribute('data-etgp-lock-disabled','1');}}});
+  Array.prototype.slice.call(root.querySelectorAll('.etgp-air-remove-row-113106,.etgp-air-save-113106,.etgp-air-mini-button-113106')).forEach(function(el){el.hidden=true;el.setAttribute('data-etgp-lock-hidden','1');if('disabled'in el){el.disabled=true;el.setAttribute('data-etgp-lock-disabled','1');}});
+  Array.prototype.slice.call(root.querySelectorAll('[data-etgp-product-buttons] button,[data-etgp-product-buttons] [role="button"]')).forEach(function(el){el.disabled=true;el.setAttribute('aria-disabled','true');el.setAttribute('data-etgp-lock-disabled','1');el.style.pointerEvents='none';el.classList.add('etgp-static-product-indicator-113164');});
 };
 document.addEventListener('et:booking-product-saved',function(event){
   var detail=event&&event.detail||{};
