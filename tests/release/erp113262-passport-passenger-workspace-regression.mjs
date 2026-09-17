@@ -18,6 +18,9 @@ const passengerRemove = fs.readFileSync(new URL('../../public/erp-ui/erp-passeng
 const passengerRemoveController = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingPassengerRemoveController.php', import.meta.url), 'utf8');
 const bookingLock = fs.readFileSync(new URL('../../app/Http/Middleware/EnforceGeneralBookingEditLock.php', import.meta.url), 'utf8');
 const commercialLock = fs.readFileSync(new URL('../../app/Http/Middleware/GuardApprovedGeneralBookingCommercials.php', import.meta.url), 'utf8');
+const airProduct = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingAirProductController.php', import.meta.url), 'utf8');
+const visaProduct = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingVisaProductController.php', import.meta.url), 'utf8');
+const progressive = fs.readFileSync(new URL('../../public/erp11390/general-progressive-step1.js', import.meta.url), 'utf8');
 const operationalRoutes = fs.readFileSync(new URL('../../routes/erp10286.php', import.meta.url), 'utf8');
 const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
 const ocrEngine = fs.readFileSync(new URL('../../public/erp-ui/vendor/tesseract/dist/tesseract.min.js', import.meta.url), 'utf8');
@@ -90,6 +93,13 @@ ok(bookingLock.includes("$routeBooking = $request->route('booking')") && booking
 ok(bookingLock.includes('return (int) $routeBooking;'), 'booking edit lock preserves scalar route ID compatibility');
 ok(commercialLock.includes("method_exists($routeBooking, 'getKey')") && commercialLock.includes('return app(EnforceGeneralBookingEditLock::class)'), 'approved-commercial guard accepts bound Booking models before applying lifecycle lock');
 ok(operationalRoutes.includes("'/system/erp-bookings/{booking}/passengers/{passenger}'") && operationalRoutes.includes('GeneralBookingPassengerRemoveController::class'), 'passenger removal route reaches the dedicated downstream controller after middleware');
+ok(airProduct.includes("return $status !== 'REMOVED';") && airProduct.includes("$passengers = $this->bookingPassengers($booking);"), 'Air current passengers exclude removed booking snapshots before tickets and fare PAX are built');
+ok(airProduct.includes('isset($passengerMap[$passengerValue])') && airProduct.includes('->filter(function (object $row)'), 'draft Air rows without an active booking-passenger snapshot are excluded from Passenger Tickets');
+ok(visaProduct.includes("!== 'REMOVED';"), 'Visa current passengers exclude removed booking snapshots');
+ok(progressive.includes('etgpPassengerRowIsRemoved113290') && progressive.includes('row.remove();'), 'actual booking passenger renderer removes REMOVED rows before current table and KPI reconciliation');
+ok(progressive.includes('!etgpPassengerRowIsRemoved113290(row)'), 'passenger count and fresh-document reconciliation ignore REMOVED rows');
+ok(progressive.includes("data-booking-passenger-id") && progressive.includes("passenger.id"), 'new current passenger rows expose the explicit booking-passenger snapshot ID');
+ok(!progressive.includes('airRows[index]') && !progressive.includes('var airRows=Array.prototype.slice.call(document.querySelectorAll(\'[data-etgp-air-ticket-row-113106]\'))'), 'fare synchronization has no name or ordinal passenger-ID fallback');
 
 const context = { window: {}, console };
 vm.runInNewContext(mrz, context);

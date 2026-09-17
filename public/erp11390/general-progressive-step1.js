@@ -597,6 +597,15 @@ var hideDuplicateHeading=function(
   });
 };
 
+var etgpPassengerRowIsRemoved113290=function(row){
+  if(!row)return false;
+  var marker=String(row.getAttribute&&row.getAttribute('data-status')||row.dataset&&row.dataset.status||'').trim().toUpperCase();
+  if(marker==='REMOVED')return true;
+  return Array.prototype.slice.call(row.querySelectorAll?row.querySelectorAll('td,th,[data-status]'):[]).some(function(cell){
+    return String(cell.getAttribute&&cell.getAttribute('data-status')||cell.textContent||'').trim().toUpperCase()==='REMOVED';
+  });
+};
+
 var passengerCount=function(panel){
   if(!panel)return 0;
 
@@ -613,6 +622,7 @@ var passengerCount=function(panel){
       );
 
       return text!==''
+        && !etgpPassengerRowIsRemoved113290(row)
         && text.indexOf(
           'no passenger'
         )===-1
@@ -2897,6 +2907,10 @@ var organizeCurrentPassengerTable=function(passengerCard){
       if(key&&indexByKey[key]===undefined)indexByKey[key]=index;
     });
 
+    Array.prototype.slice.call(table.querySelectorAll('tbody tr')).forEach(function(row){
+      if(etgpPassengerRowIsRemoved113290(row))row.remove();
+    });
+
     Array.prototype.slice.call(table.querySelectorAll('tr')).forEach(function(row){
       var original=Array.prototype.slice.call(row.children);
       var used=[];
@@ -4400,7 +4414,7 @@ var etgpBuildQuickPassenger11397=function(passengerCard,editorHost){
       }).sort(function(a,b){return b.score-a.score;});
       table=scored.length&&scored[0].score>0?scored[0].table:null;
     }
-    return table?Array.prototype.slice.call(table.querySelectorAll('tbody tr')):[];
+    return table?Array.prototype.slice.call(table.querySelectorAll('tbody tr')).filter(function(row){return !etgpPassengerRowIsRemoved113290(row);}):[];
   };
 
   /* ERP-11.3.103 — use the ERP-owned JSON quick-add endpoint as the single
@@ -4561,6 +4575,7 @@ var etgpBuildQuickPassenger11397=function(passengerCard,editorHost){
       });
     }
     row.setAttribute('data-etgp-quick-passenger-pending-sync','1');
+    if(Number(passenger.id)>0)row.setAttribute('data-booking-passenger-id',String(Number(passenger.id)));
     tbody.appendChild(row);
     updatePassengerKpi113105();
     return true;
@@ -5357,20 +5372,8 @@ var etgpBookingPassengerIdForVisibleRow113137=function(row){
     if(hidden)return Number(hidden.value)||0;
   }
 
-  /* The controlled Air table already carries the stable booking passenger ID.
-     Match by normalized name first; use the same ordinal only as a final bridge
-     from native display markup to that stable ID. */
-  var visible=Array.prototype.slice.call(row.children).filter(function(cell){return !cell.classList.contains('etgp-passenger-column-hidden');});
-  var wantedName=norm(visible[1]&&visible[1].textContent||'');
-  var airRows=Array.prototype.slice.call(document.querySelectorAll('[data-etgp-air-ticket-row-113106]'));
-  var exact=airRows.filter(function(airRow){
-    return norm(airRow.querySelector('.etgp-air-passenger-name-113106')&&airRow.querySelector('.etgp-air-passenger-name-113106').textContent||'')===wantedName;
-  });
-  if(exact.length===1)return Number(exact[0].getAttribute('data-etgp-air-ticket-row-113106'))||0;
-
-  var rows=etgpVisiblePassengerRows113137();
-  var index=rows.indexOf(row);
-  if(index>=0&&airRows[index])return Number(airRows[index].getAttribute('data-etgp-air-ticket-row-113106'))||0;
+  /* No name or ordinal fallback is safe here. Native current rows must expose
+     their booking-passenger snapshot ID explicitly before fare synchronization. */
   return 0;
 };
 

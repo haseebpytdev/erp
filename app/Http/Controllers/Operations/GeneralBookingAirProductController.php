@@ -311,7 +311,10 @@ final class GeneralBookingAirProductController extends Controller
                 ->orderBy($this->firstColumn($columns, ['passenger_index', 'sort_order', 'sequence', 'id']) ?? 'id')
                 ->get();
 
-            return $rows->map(function (object $row) use ($columns, $table): array {
+            return $rows->filter(function (object $row) use ($columns): bool {
+                $status = strtoupper(trim($this->stringFrom((array) $row, $columns, ['status'])));
+                return $status !== 'REMOVED';
+            })->map(function (object $row) use ($columns, $table): array {
                 $data = (array) $row;
                 $name = $this->stringFrom($data, $columns, ['name', 'passenger_name', 'full_name']);
                 if ($name === '') {
@@ -602,6 +605,10 @@ final class GeneralBookingAirProductController extends Controller
 
         return $rows->orderBy(in_array('id', $columns, true) ? 'id' : 'booking_service_id')
             ->get()
+            ->filter(function (object $row) use ($columns, $passengerColumn, $passengerMap): bool {
+                $passengerValue = $passengerColumn ? (int) (((array) $row)[$passengerColumn] ?? 0) : 0;
+                return $passengerValue > 0 && isset($passengerMap[$passengerValue]);
+            })
             ->map(function (object $row) use ($columns, $passengerColumn, $passengerMap): array {
                 $data = (array) $row;
                 $passengerValue = $passengerColumn ? (int) ($data[$passengerColumn] ?? 0) : 0;

@@ -248,7 +248,9 @@ final class GeneralBookingVisaProductController extends Controller
             $columns = Schema::getColumnListing($table);
             if (! in_array('booking_id', $columns, true) || ! in_array('id', $columns, true)) continue;
             $sort = $this->firstColumn($columns, ['passenger_index', 'passenger_no', 'sort_order', 'sequence', 'id']) ?? 'id';
-            return DB::table($table)->where('booking_id', $booking)->orderBy($sort)->get()->map(function (object $row) use ($columns): array {
+            return DB::table($table)->where('booking_id', $booking)->orderBy($sort)->get()->filter(function (object $row) use ($columns): bool {
+                return strtoupper(trim($this->firstString((array) $row, ['status']))) !== 'REMOVED';
+            })->map(function (object $row) use ($columns): array {
                 $data = (array) $row;
                 $name = $this->firstString($data, ['name', 'passenger_name', 'full_name']);
                 if ($name === '') $name = trim(implode(' ', array_filter([$this->firstString($data, ['title']), $this->firstString($data, ['first_name', 'given_name']), $this->firstString($data, ['last_name', 'surname'])])));
