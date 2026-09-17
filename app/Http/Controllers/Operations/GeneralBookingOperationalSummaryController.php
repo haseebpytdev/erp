@@ -34,6 +34,13 @@ final class GeneralBookingOperationalSummaryController extends Controller
         $selected = $this->selectedProducts($request, $booking, $air, $hotel, $transport, $visa);
         $state = $readiness->resolve((array) $bookingRow, $selected, $air, $hotel, $transport, $visa);
         $currency = strtoupper(trim((string) (($air['capabilities']['booking_currency'] ?? null) ?: ($hotel['booking']['currency'] ?? null) ?: 'PKR')));
+        // Booking-level amounts are authoritative persisted values. Product
+        // snapshots remain a breakdown only; never derive the booking total
+        // by summing product customer totals here.
+        $bookingValue = isset($bookingRow->booking_value) && $bookingRow->booking_value !== null
+            ? (float) $bookingRow->booking_value : null;
+        $supplierCost = isset($bookingRow->supplier_cost) && $bookingRow->supplier_cost !== null
+            ? (float) $bookingRow->supplier_cost : null;
         $lock = $locks->fromRow((array) $bookingRow);
         $invoice = $invoices->find($booking);
 
@@ -42,7 +49,8 @@ final class GeneralBookingOperationalSummaryController extends Controller
             'booking_id' => $booking,
             'currency' => $currency ?: 'PKR',
             'product_customer_totals' => $totals,
-            'booking_value' => array_sum($totals),
+            'booking_value' => $bookingValue,
+            'supplier_cost' => $supplierCost,
             'selected_products' => $selected,
             'travel_status' => $lock['travel_status'],
             'travel_eligible' => $state['ready'],

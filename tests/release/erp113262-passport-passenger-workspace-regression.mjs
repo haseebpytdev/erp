@@ -21,6 +21,7 @@ const commercialLock = fs.readFileSync(new URL('../../app/Http/Middleware/GuardA
 const airProduct = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingAirProductController.php', import.meta.url), 'utf8');
 const visaProduct = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingVisaProductController.php', import.meta.url), 'utf8');
 const progressive = fs.readFileSync(new URL('../../public/erp11390/general-progressive-step1.js', import.meta.url), 'utf8');
+const operationalSummary = fs.readFileSync(new URL('../../app/Http/Controllers/Operations/GeneralBookingOperationalSummaryController.php', import.meta.url), 'utf8');
 const bookingPresenter = fs.readFileSync(new URL('../../app/Services/Operations/BookingWorkspaceShellPresenter.php', import.meta.url), 'utf8');
 const operationalRoutes = fs.readFileSync(new URL('../../routes/erp10286.php', import.meta.url), 'utf8');
 const ocr = fs.readFileSync(new URL('../../public/erp-ui/passport-ocr-runtime.js', import.meta.url), 'utf8');
@@ -140,8 +141,18 @@ ok(progressive.includes("var preservedTable=locked&&card?card.querySelector('.et
 ok(progressive.includes("if(locked&&preservedTableClone&&!current.querySelector('.etgp-current-passenger-table'))") && progressive.includes('current.appendChild(preservedTableClone)'), 'editor-only refresh restores existing saved passenger rows');
 ok(progressive.includes('freshPanel.innerHTML') && progressive.includes('preservedTableClone'), 'actual passenger refresh path protects rows when the response is editor-only');
 ok(progressive.includes('etgp-booking-commercial-summary') && progressive.includes('product_customer_totals'), 'Booking Setup exposes a read-only booking commercial summary from saved product totals');
-ok(progressive.includes('Booking Setup') && progressive.includes('Products / Review'), 'Booking Setup step navigation preserves the future Products and Review flow');
-ok(progressive.includes('booking_value') && progressive.includes('etgpProductCustomerTotals113127'), 'booking value remains sourced from the existing operational summary authority');
+ok(progressive.includes("['1','Booking & Passengers']") && progressive.includes("['2','Products']") && progressive.includes("['3','Review']") && !progressive.includes("['2','Passengers']"), 'Booking Setup step navigation uses the single Booking & Passengers flow');
+ok(progressive.includes('etgpBookingCommercialDisplay113302') && progressive.includes('bookingValue:commercial.bookingValue'), 'booking_value feeds Final Booking Value while product totals remain breakdown data');
+ok(progressive.includes('supplierCost:commercial.supplierCost') && progressive.includes('margin:commercial.margin') && progressive.includes('bookingValue-supplierCost'), 'supplier_cost feeds Supplier Cost Total and Margin uses booking_value minus supplier_cost');
+ok(operationalSummary.includes("'booking_value' => $bookingValue") && operationalSummary.includes("'supplier_cost' => $supplierCost") && !operationalSummary.includes("'booking_value' => array_sum($totals)"), 'operational summary exposes persisted booking and supplier authorities without recalculating totals');
+ok(!operationalSummary.includes('DB::table') || !operationalSummary.includes('update('), 'commercial summary introduces no persistence or writes');
+const commercialStart = progressive.indexOf('var etgpBookingCommercialDisplay113302=');
+const commercialEnd = progressive.indexOf('var etgpRenderBookingCommercialSummary113302=', commercialStart);
+const commercialContext = { window: {} };
+vm.runInNewContext(progressive.slice(commercialStart, commercialEnd) + ';window.etgpBookingCommercialDisplay113302=etgpBookingCommercialDisplay113302;', commercialContext);
+const commercialDisplay = commercialContext.window.etgpBookingCommercialDisplay113302({ product_customer_totals: { air: 100, hotel: 50 }, booking_value: 999, supplier_cost: 400 });
+ok(commercialDisplay.products.air === 100 && commercialDisplay.products.hotel === 50 && commercialDisplay.bookingValue === 999 && commercialDisplay.supplierCost === 400 && commercialDisplay.margin === 599, 'actual commercial authority runtime separates product breakdown, booking value, supplier cost, and display margin');
+ok(commercialDisplay.bookingValue !== commercialDisplay.products.air + commercialDisplay.products.hotel, 'actual commercial authority runtime never derives Final Booking Value from product totals');
 ok(progressive.includes('etgp-booking-commercial-row') && progressive.includes("['air','Air']") && progressive.includes("['hotel','Hotel']") && progressive.includes("['transport','Transport']") && progressive.includes("['visa','Visa']"), 'commercial summary presents product rows without duplicating product editors');
 ok(bookingPresenter.includes("data-et-booking-locked") && bookingPresenter.includes("data-et-booking-status") && bookingPresenter.includes("data-et-booking-lock-reason"), 'server presenter emits initial booking lock attributes');
 ok(progressive.includes("data-et-booking-locked") && progressive.includes("data-et-booking-status") && progressive.includes("etgpSeedInitialBookingLock113162"), 'initial locked page exposes and seeds the server lifecycle authority');
