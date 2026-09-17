@@ -464,7 +464,7 @@ var bookingReference=function(root){
  * points at the existing Step 1 authorities; it does not create a second
  * passenger, selection, or lock store. */
 var etBookingWorkspaceContext113305=(function(){
-  var state={root:null,reference:'',passengers:null,passengerPromise:null};
+  var state={root:null,reference:'',passengers:null,passengerPromise:null,selectionHydrated:false,selectionReference:''};
   var api={
     setRoot:function(root,reference){state.root=root||null;state.reference=String(reference||'');return api;},
     getRoot:function(){return state.root;},
@@ -487,13 +487,17 @@ var etBookingWorkspaceContext113305=(function(){
       return state.passengerPromise;
     },
     getProductHost:function(productKey){var root=state.root;if(!root||!root.querySelector)return null;return root.querySelector('[data-etgp-'+String(productKey||'')+'-workspace-113106]')||root.querySelector('.etgp-product-shell[data-product="'+String(productKey||'')+'"] .etgp-product-shell-body-113127');},
-    getProductSelection:function(reference){
-      var selected=typeof loadSelected==='function'?loadSelected(reference||api.getBookingReference()):[];
-      var root=state.root, seeded=root&&root.dataset&&root.dataset.etgpSelectedProducts?String(root.dataset.etgpSelectedProducts).split(','):[];
-      seeded.filter(Boolean).forEach(function(key){if(selected.indexOf(key)===-1)selected.push(key);});
-      return selected;
+    hydrateProductSelection:function(reference){
+      var ref=reference||api.getBookingReference();
+      if(state.selectionHydrated&&state.selectionReference===ref)return;
+      var selected=typeof loadSelected==='function'?loadSelected(ref):[];
+      var root=state.root, seeded=root&&root.dataset&&root.dataset.etgpSelectedProducts?String(root.dataset.etgpSelectedProducts).split(',').filter(Boolean):[];
+      seeded.forEach(function(key){if(selected.indexOf(key)===-1)selected.push(key);});
+      if(typeof saveSelected==='function'&&seeded.length)saveSelected(ref,selected);
+      state.selectionReference=ref;state.selectionHydrated=true;
     },
-    saveProductSelection:function(reference,selection){if(typeof saveSelected==='function')saveSelected(reference||api.getBookingReference(),selection||[]);},
+    getProductSelection:function(reference){var ref=reference||api.getBookingReference();api.hydrateProductSelection(ref);return typeof loadSelected==='function'?loadSelected(ref):[];},
+    saveProductSelection:function(reference,selection){var ref=reference||api.getBookingReference();api.hydrateProductSelection(ref);if(typeof saveSelected==='function')saveSelected(ref,selection||[]);},
     getCurrency:function(){var root=state.root;return String(root&&root.dataset&&root.dataset.currency||'PKR');},
     getApiBase:function(){return '/system/erp-bookings';}
   };

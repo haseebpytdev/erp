@@ -15,7 +15,7 @@ ok(start >= 0 && end > start, 'one product workspace compatibility adapter is pr
 const state = { locked: true, status: 'APPROVED', reason: '' };
 const selected = ['air', 'hotel'];
 const root = {
-  dataset: { bookingReference: 'BK-2026-00001', bookingId: '31', etgpBookingLocked: '1', currency: 'PKR' },
+  dataset: { bookingReference: 'BK-2026-00001', bookingId: '31', etgpBookingLocked: '1', currency: 'PKR', etgpSelectedProducts: 'air,hotel' },
   querySelector(selector) {
     if (selector === '.etgp-passenger-card') return null;
     if (selector.includes('data-etgp-air-workspace')) return this.airHost;
@@ -45,7 +45,10 @@ ok(loadedPassengers[0].id === 50 && loadedPassengers[0].passport_expiry === '203
 ok(adapter.getPassengerData()[0].id === 50, 'structured passenger fields remain available without table scraping');
 ok(adapter.getProductSelection('BK-2026-00001').join(',') === 'air,hotel', 'product selection reuses the existing selection authority');
 adapter.saveProductSelection('BK-2026-00001', ['air']);
-ok(selected.join(',') === 'air', 'selection writes remain on the existing selection authority');
+ok(selected.join(',') === 'air' && adapter.getProductSelection('BK-2026-00001').join(',') === 'air', 'removing a product survives immediate rerender without server seed remerge');
+adapter.saveProductSelection('BK-2026-00001', ['air', 'hotel']);
+ok(adapter.getProductSelection('BK-2026-00001').join(',') === 'air,hotel', 'adding a product survives immediate rerender');
+ok(runtime.includes('selectionHydrated') && runtime.includes('hydrateProductSelection'), 'server selection seed is guarded by one-time hydration');
 ok(adapter.getProductHost('air') === root.airHost, 'product render host is abstracted from Step 1-specific traversal');
 ok(runtime.includes('etBookingWorkspaceContext113305.getBookingId()'), 'Air/Hotel/Transport/Visa dependency points use the adapter');
 ok(runtime.includes("renderAirProductWorkspace113106(shellBody)") && runtime.includes("renderHotelProductWorkspace113127(shellBody)") && runtime.includes("renderTransportProductWorkspace113139(shellBody)") && runtime.includes("renderVisaProductWorkspace113142(shellBody)"), 'all four product editors remain reachable');
