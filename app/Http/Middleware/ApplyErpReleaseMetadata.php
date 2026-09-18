@@ -9,6 +9,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
+use App\Services\Operations\DedicatedProductTimingContext;
 
 /**
  * ERP-11.3.30
@@ -25,8 +26,16 @@ class ApplyErpReleaseMetadata
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $timing = DedicatedProductTimingContext::fromRequest($request);
+        $timing?->start('release_metadata');
+        $timing?->start('release_pre');
+        $timing?->stop('release_pre');
+        $timing?->start('release_downstream');
         /** @var Response $response */
         $response = $next($request);
+        $timing?->stop('release_downstream');
+        $timing?->stop('release_pre');
+        $timing?->start('release_response');
 
         // ERP-11.3.10: remove only superseded overlay files after the
         // canonical Chart workspace has been deployed successfully.
@@ -65,18 +74,24 @@ class ApplyErpReleaseMetadata
         }
 
         if (! method_exists($response, 'getContent') || ! method_exists($response, 'setContent')) {
+            $timing?->stop('release_response');
+            $timing?->stop('release_metadata');
             return $response;
         }
 
         $contentType = strtolower((string) $response->headers->get('Content-Type', ''));
 
         if ($contentType !== '' && ! str_contains($contentType, 'text/html')) {
+            $timing?->stop('release_response');
+            $timing?->stop('release_metadata');
             return $response;
         }
 
         $html = (string) $response->getContent();
 
         if ($html === '') {
+            $timing?->stop('release_response');
+            $timing?->stop('release_metadata');
             return $response;
         }
 
@@ -194,6 +209,8 @@ class ApplyErpReleaseMetadata
 
         $response->setContent($html);
 
+        $timing?->stop('release_response');
+        $timing?->stop('release_metadata');
         return $response;
     }
 

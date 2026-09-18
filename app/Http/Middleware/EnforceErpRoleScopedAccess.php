@@ -6,6 +6,7 @@ use App\Services\Administration\ErpRoleAccessPolicy;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Services\Operations\DedicatedProductTimingContext;
 
 /**
  * ERP-10.31.79
@@ -22,9 +23,22 @@ class EnforceErpRoleScopedAccess
 
     public function handle(Request $request, Closure $next): Response
     {
+        $timing = DedicatedProductTimingContext::fromRequest($request);
+        if ($timing !== null) {
+            return $timing->measure('role_access', fn (): Response => $this->handleAccess($request, $next));
+        }
+        return $this->handleAccess($request, $next);
+    }
+
+    private function handleAccess(Request $request, Closure $next): Response
+    {
         $user = $request->user();
 
-        if ($user && ! $this->policy->mayAccess($request, $user)) {
+        $timing = DedicatedProductTimingContext::fromRequest($request);
+        $allowed = $timing
+            ? $timing->measure('role_policy', fn (): bool => $this->policy->mayAccess($request, $user))
+            : $this->policy->mayAccess($request, $user);
+        if ($user && ! $allowed) {
             abort(403, 'Your assigned ERP role does not have permission for this action.');
         }
 

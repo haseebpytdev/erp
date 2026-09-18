@@ -16,6 +16,11 @@ const productController = read('app/Http/Controllers/Operations/ProductWorkspace
 const customerResolver = read('app/Services/Operations/NativeBookingCustomerResolver.php');
 const productTiming = read('app/Services/Operations/DedicatedProductTimingContext.php');
 const focusedMiddleware = read('app/Http/Middleware/PresentBookingFocusedWorkspace.php');
+const earlyTiming = read('app/Http/Middleware/DedicatedProductEarlyTiming.php');
+const roleMiddleware = read('app/Http/Middleware/EnforceErpRoleScopedAccess.php');
+const releaseMiddleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
+const userLinksMiddleware = read('app/Http/Middleware/PresentErpUserManagementLinks.php');
+const passengerLinksMiddleware = read('app/Http/Middleware/PresentPassengerOperationsLink.php');
 const groupPackage = read('resources/views/operations/bookings/group-package-unified-v103172.blade.php');
 const cashVoucherLinks = read('app/Http/Middleware/PresentCashVoucherLinks.php');
 const controller = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
@@ -64,6 +69,12 @@ ok(freshShell.includes('grid-template-columns:208px minmax(0,1fr)') && freshShel
 ok(freshFocusedShell.includes('grid-template-columns:minmax(0,1fr)') && freshFocusedShell.includes('display:none'), 'fresh focused shell removes the permanent sidebar without width hacks');
 ok(freshShellJs.includes('server-rendered DOM remains authoritative') && freshFocusedShellJs.includes('no DOM reconstruction'), 'fresh shell JavaScript contains interaction only');
 ok(freshShellJs.includes("dataset.etThemeShell='fresh-v1'") && freshShellJs.includes("addEventListener('click'"), 'fresh shell marks the theme and delegates native navigation clicks');
+ok(earlyTiming.includes('early_total') && earlyTiming.includes('finishResponse'), 'dedicated early timing wraps the full downstream response');
+ok(controller.includes("/operations/bookings/{booking}/products/{product}") || focusedMiddleware.includes('DedicatedProductTimingContext'), 'dedicated product timing remains route-scoped');
+ok(roleMiddleware.includes("measure('role_access'") && roleMiddleware.includes("measure('role_policy'"), 'role access and policy timings are instrumented');
+ok(releaseMiddleware.includes("release_pre") && releaseMiddleware.includes("release_downstream") && releaseMiddleware.includes("release_response"), 'release metadata response timing is instrumented');
+ok(userLinksMiddleware.includes('user_links_response') && passengerLinksMiddleware.includes('passenger_links_response'), 'presentation response timings are instrumented');
+ok(!earlyTiming.includes('DB::') && !earlyTiming.includes('setContent'), 'early timing adds no database writes or rendered markup');
 ok(freshShellJs.includes('e.defaultPrevented'), 'default-prevented clicks are ignored by the navigation loader');
 ok(freshShellJs.includes('et-navigation-pending') && freshShellJs.includes('new URL(raw,window.location.origin)'), 'eligible internal links activate the navigation-pending state with URL validation');
 ok(!freshShellJs.includes('preventDefault') && !freshShellJs.includes('location.assign') && !freshShellJs.includes('fetch('), 'native browser navigation remains untouched');

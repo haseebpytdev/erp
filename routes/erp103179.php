@@ -31,6 +31,7 @@ use App\Http\Middleware\RedirectGroupUmrahLegacyVoucher;
 use App\Http\Middleware\PresentGroupUmrahSalesInvoice;
 use App\Http\Middleware\PreloadAirTicketFocusedWorkspace;
 use App\Http\Middleware\PresentBookingFocusedWorkspace;
+use App\Http\Middleware\DedicatedProductEarlyTiming;
 use App\Http\Controllers\Sales\SalesInvoiceDraftUpdateBridgeController;
 use App\Http\Controllers\Sales\AirTicketInvoiceDraftSyncController;
 use App\Http\Controllers\Sales\StableBookingSalesInvoiceController;
@@ -304,7 +305,7 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
 
     Route::get('/operations/bookings/{booking}/products/{product}', [ProductWorkspaceController::class, 'show'])
         ->whereNumber('booking')->whereIn('product', ['air', 'hotel', 'transport', 'visa', 'other-services'])
-        ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.products.workspace');
+        ->middleware([DedicatedProductEarlyTiming::class, EnforceErpRoleScopedAccess::class])->name('bookings.products.workspace');
 
     // ERP-11.3.148 Visa Management is anchored to the REAL native Travel Masters
     // route used by production: /master-data/travel-masters. Keep the old

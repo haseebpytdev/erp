@@ -6,6 +6,7 @@ use App\Services\Administration\ErpUserManagementAuthority;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Services\Operations\DedicatedProductTimingContext;
 
 /**
  * ERP-10.31.75
@@ -20,13 +21,19 @@ class PresentErpUserManagementLinks
 
     public function handle(Request $request, Closure $next): Response
     {
+        $timing = DedicatedProductTimingContext::fromRequest($request);
+        $timing?->start('user_links');
         $response = $next($request);
+        $timing?->stop('user_links');
+        $timing?->start('user_links_response');
 
         if (! $this->authority->canManage($request->user())) {
+            $timing?->stop('user_links_response');
             return $response;
         }
 
         if (! method_exists($response, 'getContent')) {
+            $timing?->stop('user_links_response');
             return $response;
         }
 
@@ -36,6 +43,7 @@ class PresentErpUserManagementLinks
             $content === ''
             || ! str_contains(strtolower((string) $response->headers->get('content-type')), 'text/html')
         ) {
+            $timing?->stop('user_links_response');
             return $response;
         }
 
@@ -46,6 +54,7 @@ class PresentErpUserManagementLinks
             || str_contains($content, 'Staff Directory');
 
         if (! $isUsersPage && ! $isStaffPage) {
+            $timing?->stop('user_links_response');
             return $response;
         }
 
@@ -121,6 +130,7 @@ HTML;
 
         $response->setContent($content);
 
+        $timing?->stop('user_links_response');
         return $response;
     }
 }

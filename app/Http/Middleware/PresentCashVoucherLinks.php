@@ -7,6 +7,7 @@ use App\Services\Administration\ErpRoleAccessPolicy;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Services\Operations\DedicatedProductTimingContext;
 
 /**
  * ERP-11.3.30
@@ -25,20 +26,27 @@ final class PresentCashVoucherLinks
 
     public function handle(Request $request, Closure $next): Response
     {
+        $timing = DedicatedProductTimingContext::fromRequest($request);
+        $timing?->start('cash_links');
         /** @var Response $response */
         $response = $next($request);
+        $timing?->stop('cash_links');
+        $timing?->start('cash_links_response');
 
         if (! method_exists($response, 'getContent') || ! method_exists($response, 'setContent')) {
+            $timing?->stop('cash_links_response');
             return $response;
         }
 
         $type = strtolower((string) $response->headers->get('content-type', ''));
         if ($type !== '' && ! str_contains($type, 'text/html')) {
+            $timing?->stop('cash_links_response');
             return $response;
         }
 
         $html = (string) $response->getContent();
         if ($html === '') {
+            $timing?->stop('cash_links_response');
             return $response;
         }
 
@@ -110,6 +118,7 @@ final class PresentCashVoucherLinks
         }
 
         $response->setContent($html);
+        $timing?->stop('cash_links_response');
         return $response;
     }
 

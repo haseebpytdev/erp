@@ -26,7 +26,6 @@ final class DedicatedProductTimingContext
     private function __construct()
     {
         $this->startedAt = hrtime(true) / 1_000_000;
-        $this->start('product_pipeline_total');
     }
 
     public static function forRequest(Request $request): ?self
@@ -141,6 +140,21 @@ final class DedicatedProductTimingContext
             'presenter_lock_resolve' => 'presenter-lock',
             'presenter_transform_total' => 'presenter',
             'db_total' => 'db-total',
+            'early_total' => 'early-total',
+            'role_access' => 'role-access',
+            'role_policy' => 'role-policy',
+            'permission_matrix' => 'permission-matrix',
+            'release_metadata' => 'release-metadata',
+            'release_pre' => 'release-pre',
+            'release_downstream' => 'release-downstream',
+            'release_response' => 'release-response',
+            'user_links' => 'user-links',
+            'user_links_response' => 'user-links-response',
+            'cash_links' => 'cash-links',
+            'cash_links_response' => 'cash-links-response',
+            'passenger_links' => 'passenger-links',
+            'passenger_links_response' => 'passenger-links-response',
+            'focused_workspace' => 'focused-workspace',
         ] as $key => $label) {
             if (isset($this->durations[$key])) {
                 $serverTiming[] = $label.';dur='.$this->durations[$key];
@@ -150,6 +164,7 @@ final class DedicatedProductTimingContext
         $serverTiming[] = 'db-count;desc="'.(int) ($this->counters['db_count'] ?? 0).'"';
         $response->headers->set('Server-Timing', implode(', ', $serverTiming));
         $response->headers->set('X-ET-Product-Diag', '1');
+        $response->headers->set('X-ET-Early-Diag', '1');
         $response->headers->set('X-ET-Customer-Branch', $this->customerBranch);
         $response->headers->set('X-ET-DB-Count', (string) (int) ($this->counters['db_count'] ?? 0));
 

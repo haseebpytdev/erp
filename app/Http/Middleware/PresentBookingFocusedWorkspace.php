@@ -17,7 +17,17 @@ final class PresentBookingFocusedWorkspace
 
     public function handle(Request $request, Closure $next): Response
     {
+        $timing = DedicatedProductTimingContext::fromRequest($request);
+        if ($timing !== null) {
+            return $timing->measure('focused_workspace', fn (): Response => $this->handleWorkspace($request, $next));
+        }
+        return $this->handleWorkspace($request, $next);
+    }
+
+    private function handleWorkspace(Request $request, Closure $next): Response
+    {
         $timing = DedicatedProductTimingContext::forRequest($request);
+        $timing?->start('product_pipeline_total');
         $timing?->start('downstream_response');
 
         /** @var Response $response */
