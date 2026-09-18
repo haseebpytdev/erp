@@ -191,21 +191,22 @@ final class BookingWorkspaceShellPresenter
             $html = $style.$html;
         }
 
+        $assetVersion = rawurlencode((string) config('et_erp_release.version', 'ERP-11.3'));
         $script = '<script src="'
             .e(route('system.erp-assets.booking-focus'))
             .'?v=11.3.98" defer data-et-booking-focus-js="ERP-11.3.98"></script>';
 
         $stepOneStyle = '<link rel="stylesheet" href="'
             .e(route('system.erp-assets.general-progressive-step1-css'))
-            .'?v=11.3.138" data-et-general-progressive-css="ERP-11.3.138">';
+            .'?v='.$assetVersion.'" data-et-general-progressive-css="'.$assetVersion.'">';
 
         $stepOneScript = '<script src="'
             .e(route('system.erp-assets.general-progressive-step1-js'))
-            .'?v=11.3.138" defer data-et-general-progressive-js="ERP-11.3.138"></script>';
+            .'?v='.$assetVersion.'" defer data-et-general-progressive-js="'.$assetVersion.'"></script>';
 
         if (
             str_contains($html, 'et-general-progressive-step1-11390')
-            && ! str_contains($html, 'data-et-general-progressive-css="ERP-11.3.138"')
+            && ! str_contains($html, 'data-et-general-progressive-css="'.$assetVersion.'"')
             && stripos($html, '</head>') !== false
         ) {
             $html = preg_replace(

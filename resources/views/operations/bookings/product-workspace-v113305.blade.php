@@ -6,7 +6,5 @@
  <header class="et-product-workspace-head"><div><h1>{{ ucfirst($product) }} Workspace</h1><p>{{ $booking['booking_reference'] ?? $booking['booking_no'] ?? ('Booking #'.$bookingId) }} · {{ $customer['name'] ?? '—' }} · {{ $lock['status'] }}</p></div><nav><a href="{{ url('/operations/bookings/'.$bookingId) }}">← Back to Booking</a><a href="{{ route('bookings.review.show',['booking'=>$bookingId]) }}">Review Booking →</a></nav></header>
  <section class="et-product-runtime-card"><h2>{{ $product === 'other-services' ? 'Other Services' : ucfirst($product) }}</h2>@if($product === 'other-services')<p>Operational workspace not configured yet.</p>@else<div data-etgp-dedicated-product-host><div data-etgp-dedicated-product-body></div></div>@endif</section>
 </main>
-<link rel="stylesheet" href="{{ route('system.erp-assets.general-progressive-step1-css') }}?v={{ rawurlencode(config('et_erp_release.version', 'ERP-11.3')) }}">
-<script src="{{ route('system.erp-assets.general-progressive-step1-js') }}?v={{ rawurlencode(config('et_erp_release.version', 'ERP-11.3')) }}" defer></script>
 <script>document.addEventListener('DOMContentLoaded',function(){var root=document.querySelector('[data-etgp-dedicated-product="1"]');if(root&&window.etgpMountDedicatedProduct113305)window.etgpMountDedicatedProduct113305(root);});</script>
 @endsection

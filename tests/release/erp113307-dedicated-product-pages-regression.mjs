@@ -7,6 +7,7 @@ const controller = read('app/Http/Controllers/Operations/ProductWorkspaceControl
 const view = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
 const runtime = read('public/erp11390/general-progressive-step1.js');
 const bookingFocus = read('public/erp11335/booking-focus.js');
+const bookingCss = read('public/erp-theme/modules/booking.css');
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 const metadata = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
 let pass = 0;
@@ -28,6 +29,12 @@ ok(runtime.includes('window.etgpMountDedicatedProduct113305'), 'dedicated mount 
 ok(runtime.includes("etBookingWorkspaceContext113305.setRoot(root,root.dataset.bookingReference||'')"), 'context initializes from dedicated root');
 ok(runtime.includes('resolved>0') && runtime.includes('state.root'), 'context falls back to dedicated root booking ID when URL authority is unavailable');
 ok(runtime.includes('products(?:\\/(?:air|hotel|transport|visa|other-services))?'), 'booking ID resolver accepts every dedicated product URL');
+ok(runtime.includes('resolved>0') && runtime.includes("root.dataset&&root.dataset.bookingId"), 'dedicated booking ID fallback remains safe');
+ok(runtime.includes('etgpRunNativeBuild11390') && runtime.includes('data-etgp-dedicated-product="1"'), 'native build is skipped only on dedicated product pages');
+ok(runtime.includes('window.etgpMountDedicatedProduct113305=function(root)'), 'dedicated mount entry point remains available');
+ok(!view.includes('general-progressive-step1-css') && !view.includes('general-progressive-step1-js'), 'dedicated Blade no longer duplicates progressive assets');
+ok(presenter.includes('$assetVersion') && presenter.includes("config('et_erp_release.version"), 'progressive assets use release metadata authority');
+ok((bookingCss.match(/\.et-product-workspace-head nav/g)||[]).length===1 && bookingCss.includes('gap:12px'), 'Back and Review actions have explicit theme spacing');
 ok(runtime.includes('etgpSeedInitialBookingLock113162()'), 'dedicated mount seeds existing lock authority');
 ok(runtime.includes("fetch(api.getApiBase()+'/'+String(id)+'/air-product'"), 'passenger loading remains structured and server-backed');
 ok(presenter.includes("products(?:/(?:air|hotel|transport|visa|other-services))?"), 'focused presenter recognizes dedicated product paths');
@@ -40,7 +47,7 @@ ok(!controller.includes('DB::table(\'booking_services\')->insert') && !controlle
 ok(presenter.includes('data-et-booking-products-launcher="1"') && presenter.includes('margin:18px 0'), 'main Booking launcher is normal in-document content');
 const launcher = presenter.slice(presenter.indexOf('data-et-booking-products-launcher="1"') - 120, presenter.indexOf('data-et-booking-products-launcher="1"') + 900);
 ok(!launcher.includes('position:fixed') && !launcher.includes('position:absolute'), 'main Booking launcher is not a floating overlay');
-ok(view.includes("config('et_erp_release.version") && !view.includes('?v=11.3.305'), 'dedicated assets use current release metadata rather than a stale hard-coded version');
+ok(!view.includes('general-progressive-step1-css') && !view.includes('general-progressive-step1-js'), 'dedicated view leaves progressive asset ownership to the presenter');
 ok(controller.includes('string $product') && controller.includes('in_array($product, self::PRODUCTS, true)'), 'route product parameter is received and strictly validated by the controller');
 ok(view.includes('data-etgp-booking-context="1"') && view.includes('etgp-toolbar'), 'dedicated pages reuse the native progressive Booking header authority');
 ok(view.includes('Client Preview') && view.includes('Booking Register'), 'focused Booking header keeps native actions');

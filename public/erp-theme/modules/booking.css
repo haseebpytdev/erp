@@ -455,3 +455,5 @@ html.et-booking-focus-prepaint.et-general-progressive-step1-11390:not(.etgp-step
 /* Booking-specific focused lock presentation. */
 html.et-booking-focus-prepaint [data-et-server-booking-lock]{width:100%!important;max-width:none!important;margin:8px 0!important;}
 @media(max-width:899px){.et-booking-focus-fallback-standalone{margin:8px 0 0!important;}}
+/* Dedicated product workspace actions share the focused Booking spacing. */
+.et-product-workspace-head nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}

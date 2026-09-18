@@ -5701,14 +5701,18 @@ window.etgpMountDedicatedProduct113305=function(root){
   return true;
 };
 
+var etgpRunNativeBuild11390=function(){
+  if(document.querySelector('[data-etgp-dedicated-product="1"]'))return;
+  build();
+};
 if(document.readyState==='loading'){
   document.addEventListener(
     'DOMContentLoaded',
-    build,
+    etgpRunNativeBuild11390,
     {once:true}
   );
 }else{
-  build();
+  etgpRunNativeBuild11390();
 }
 
 })();
