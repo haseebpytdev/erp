@@ -209,6 +209,10 @@ final class BookingWorkspaceShellPresenter
             .e(route('system.erp-assets.booking-focus'))
             .'?v=11.3.98" defer data-et-booking-focus-js="ERP-11.3.98"></script>';
 
+        if ($isProductsWorkspacePath) {
+            $script = '<script src="'.e(route('system.erp-assets.dedicated-product-core')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-core="'.$assetVersion.'"></script>'.$script;
+        }
+
         $stepOneStyle = '<link rel="stylesheet" href="'
             .e(route('system.erp-assets.general-progressive-step1-css'))
             .'?v='.$assetVersion.'" data-et-general-progressive-css="'.$assetVersion.'">';

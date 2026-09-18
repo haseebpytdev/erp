@@ -246,7 +246,8 @@ class ApplyErpReleaseMetadata
         $module = $this->uiModule($path);
         $role = $this->uiRole($path, $routeName);
         $marker = e($version);
-        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($version).'&module='.rawurlencode($module).'&role='.rawurlencode($role));
+        $dedicated = preg_match('#^operations/bookings/\d+/products/(?:air|hotel|transport|visa|other-services)$#', $path) === 1;
+        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($version).'&module='.rawurlencode($module).'&role='.rawurlencode($role).($dedicated ? '&dedicated=1' : ''));
         $scriptUrl = e(route('system.erp-assets.erp-professional-js').'?v='.rawurlencode($version).'&module='.rawurlencode($module).'&role='.rawurlencode($role));
         $assets = '<link rel="stylesheet" href="'.$styleUrl.'" data-et-professional-ui="'.$marker.'">'
             .'<script src="'.$scriptUrl.'" defer data-et-professional-ui-script="'.$marker.'"></script>';

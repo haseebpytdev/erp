@@ -48,6 +48,9 @@ final class ErpProfessionalUiAssetController extends Controller
         if ($role === 'register') {
             $freshTheme[] = base_path('public/erp-theme/modules/registers.css');
         }
+        if (request()->boolean('dedicated')) {
+            $freshTheme[] = base_path('public/erp-theme/modules/dedicated-product.css');
+        }
 
         foreach ($freshTheme as $path) abort_unless(is_file($path), 404);
 
@@ -97,6 +100,13 @@ final class ErpProfessionalUiAssetController extends Controller
             .$moduleScripts,
             'application/javascript; charset=UTF-8'
         );
+    }
+
+    public function dedicatedCore(): Response
+    {
+        $path = base_path('public/erp-theme/js/dedicated-product-core.js');
+        abort_unless(is_file($path), 404);
+        return $this->textAsset(file_get_contents($path), 'application/javascript; charset=UTF-8');
     }
 
     private function textAsset(string $content, string $contentType): Response
