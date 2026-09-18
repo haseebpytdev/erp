@@ -20,9 +20,10 @@ final class DedicatedProductEarlyTiming
         $timing->start('early_total');
         try {
             $response = $next($request);
-            return $timing->finishResponse($response);
         } finally {
             $timing->stop('early_total');
         }
+
+        return $timing->finishResponse($response);
     }
 }

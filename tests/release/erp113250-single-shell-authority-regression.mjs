@@ -70,6 +70,8 @@ ok(freshFocusedShell.includes('grid-template-columns:minmax(0,1fr)') && freshFoc
 ok(freshShellJs.includes('server-rendered DOM remains authoritative') && freshFocusedShellJs.includes('no DOM reconstruction'), 'fresh shell JavaScript contains interaction only');
 ok(freshShellJs.includes("dataset.etThemeShell='fresh-v1'") && freshShellJs.includes("addEventListener('click'"), 'fresh shell marks the theme and delegates native navigation clicks');
 ok(earlyTiming.includes('early_total') && earlyTiming.includes('finishResponse'), 'dedicated early timing wraps the full downstream response');
+ok(earlyTiming.indexOf("$timing->stop('early_total')") < earlyTiming.indexOf('$timing->finishResponse($response)'), 'early-total stops before final Server-Timing emission');
+ok((releaseMiddleware.match(/stop\('release_pre'\)/g) || []).length === 1, 'release-pre has one definitive stop');
 ok(controller.includes("/operations/bookings/{booking}/products/{product}") || focusedMiddleware.includes('DedicatedProductTimingContext'), 'dedicated product timing remains route-scoped');
 ok(roleMiddleware.includes("measure('role_access'") && roleMiddleware.includes("measure('role_policy'"), 'role access and policy timings are instrumented');
 ok(releaseMiddleware.includes("release_pre") && releaseMiddleware.includes("release_downstream") && releaseMiddleware.includes("release_response"), 'release metadata response timing is instrumented');

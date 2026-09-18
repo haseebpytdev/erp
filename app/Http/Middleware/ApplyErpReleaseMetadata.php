@@ -34,7 +34,6 @@ class ApplyErpReleaseMetadata
         /** @var Response $response */
         $response = $next($request);
         $timing?->stop('release_downstream');
-        $timing?->stop('release_pre');
         $timing?->start('release_response');
 
         // ERP-11.3.10: remove only superseded overlay files after the
