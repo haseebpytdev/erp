@@ -46,7 +46,7 @@ const ok = (condition, label) => {
   pass++;
 };
 
-ok(version === 'v1.1.33.312-ERP11.3.312', 'ERP-11.3.259 packaged release metadata is current');
+ok(version === 'v1.1.33.313-ERP11.3.313', 'ERP-11.3.259 packaged release metadata is current');
 ok(controller.includes("public/erp-theme/et-core.css") && controller.includes("public/erp-theme/et-shell.css"), 'fresh core and standard shell are served by the ERP asset authority');
 ok(controller.includes("public/erp-theme/et-focused-shell.css") && controller.includes("public/erp-theme/modules/sales-invoice.css"), 'fresh focused and module theme layers are available');
 ok(freshCore.includes('--et-primary:#2563EB') && freshCore.includes('--et-control-height:38px'), 'fresh core owns the approved design tokens');
