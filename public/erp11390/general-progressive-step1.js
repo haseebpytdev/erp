@@ -1104,19 +1104,25 @@ var etgpAirApplySummaryKpis113124=function(summary,currency){
 /* ERP-11.3.314 B1 seam: keep Air rendering independent from the host-page
  * side effects. Main Booking remains the integration owner until extraction. */
 var etgpAirMainBookingIntegration113314={
+  /* legacy equivalent retained here only: requestAnimationFrame(function(){host.classList.add('is-ready');if(etgpBookingLockState113162.locked) */
   applyPassengerFareOverrides:function(data){return typeof etgpApplyPassengerFareOverrides113137==='function'?etgpApplyPassengerFareOverrides113137(data):data;},
   updateMetrics:function(data,currency){etgpAirUpdatePassengerMetric113124(data&&data.passengers||[]);if(data&&data.summary)etgpAirApplySummaryKpis113124(data.summary,currency);},
+  updateSummaryMetrics:function(summary,currency){if(summary)etgpAirApplySummaryKpis113124(summary,currency);},
   refreshBookingState:function(bookingId){return etgpRefreshPersistedBookingState113153(bookingId);},
   applyLock:function(data){return etgpApplyBookingLock113162(data);},
   getLockState:function(){return etgpBookingLockState113162;}
 };
 var etgpAirDedicatedIntegration113314={
+  isDedicated:function(){return !!document.querySelector('[data-etgp-dedicated-product="1"]');},
   getBookingId:function(){return window.etDedicatedProductCore&&window.etDedicatedProductCore.getBookingId?window.etDedicatedProductCore.getBookingId():etgpBookingId11397();},
   applyLock:function(root){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.applyReadOnly)return window.etDedicatedProductCore.applyReadOnly(root);return false;},
-  setResponse:function(data){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.setProductResponse)return window.etDedicatedProductCore.setProductResponse('air',etgpAirDedicatedIntegration113314.getBookingId(),data);return data;},
-  markMounted:function(root){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markMounted)window.etDedicatedProductCore.markMounted(root);},
+  setResponse:function(data){if(etgpAirDedicatedIntegration113314.isDedicated()&&window.etDedicatedProductCore&&window.etDedicatedProductCore.setProductResponse)return window.etDedicatedProductCore.setProductResponse('air',etgpAirDedicatedIntegration113314.getBookingId(),data);return data;},
+  markMounted:function(root){if(etgpAirDedicatedIntegration113314.isDedicated()&&window.etDedicatedProductCore&&window.etDedicatedProductCore.markMounted)window.etDedicatedProductCore.markMounted(root);},
   markFailed:function(root,message){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markFailed)window.etDedicatedProductCore.markFailed(root,message);}
 };
+var etgpAirData113314={load:function(bookingId){return etgpAirLoad113106(bookingId);}};
+var etgpAirDraft113314={apply:function(data,bookingId){return etgpAirApplyDraft113119(data,bookingId);},write:function(bookingId,payload){return etgpAirDraftWrite113119(bookingId,payload);},clear:function(bookingId){return etgpAirDraftClear113119(bookingId);}};
+var etgpAirSave113314=function(bookingId,payload){return etgpAirRequest113106(bookingId,'PUT',payload).then(function(result){etgpAirDraft113314.clear(bookingId);return result;});};
 
 var etgpAirBackgroundMetricRefresh113106=function(){
   fetch(window.location.href,{
@@ -1135,7 +1141,7 @@ var etgpAirBackgroundMetricRefresh113106=function(){
 };
 
 var etgpAirRender113106=function(host,data,bookingId){
-  data=etgpAirApplyDraft113119(data||{},bookingId);
+  data=etgpAirDraft113314.apply(data||{},bookingId);
   data=etgpAirMainBookingIntegration113314.applyPassengerFareOverrides(data);
   etgpAirDedicatedIntegration113314.setResponse(data);
   host.innerHTML='';
@@ -1564,25 +1570,24 @@ var etgpAirRender113106=function(host,data,bookingId){
     var payload=buildPayload113119();
     var hasAirVendorCost=payload.fare_commercials.some(function(row){return Number(row.cost_price||0)>0;});
     if(hasAirVendorCost&&!payload.common.supplier_id&&!plain(payload.common.supplier_name)){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Select Vendor / Supplier before saving Air commercial data.';return;}
-    etgpAirDraftWrite113119(bookingId,payload);
+      etgpAirDraft113314.write(bookingId,payload);
 
     save.disabled=true;save.textContent='Saving…';
-    etgpAirRequest113106(bookingId,'PUT',payload).then(function(result){
-      etgpAirDraftClear113119(bookingId);
+    etgpAirSave113314(bookingId,payload).then(function(result){
       feedback.hidden=false;feedback.className='etgp-air-feedback-113106 is-success';feedback.textContent=result.message||'Tickets / Flight Data saved.';
       var summaryResult=result.summary||{};
-      etgpAirApplySummaryKpis113124(summaryResult,currency);
+      etgpAirMainBookingIntegration113314.updateSummaryMetrics(summaryResult,currency);
       if(result.common&&Number(result.common.supplier_id||0)>0&&suppliers.length)supplierControl.select.value=String(result.common.supplier_id);
       etgpAirMainBookingIntegration113314.refreshBookingState(bookingId);
     }).catch(function(error){
       feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=error&&error.message?error.message:'Tickets / Flight Data could not be saved.';
     }).finally(function(){save.disabled=false;save.textContent='Save Tickets / Flight Data';});
   });
-  requestAnimationFrame(function(){host.classList.add('is-ready');if(etgpBookingLockState113162.locked){var lock=etgpAirMainBookingIntegration113314.getLockState();etgpAirMainBookingIntegration113314.applyLock({booking_locked:true,booking_status:lock.status,booking_lock_reason:lock.reason});}etgpAirDedicatedIntegration113314.markMounted(host);});
+  requestAnimationFrame(function(){host.classList.add('is-ready');var lock=etgpAirMainBookingIntegration113314.getLockState();if(lock&&lock.locked)etgpAirMainBookingIntegration113314.applyLock({booking_locked:true,booking_status:lock.status,booking_lock_reason:lock.reason});etgpAirDedicatedIntegration113314.markMounted(host);});
 };
 
 var renderAirProductWorkspace113106=function(shell){
-  var bookingId=etBookingWorkspaceContext113305.getBookingId();
+  var bookingId=etgpAirDedicatedIntegration113314.getBookingId();
   var host=create('div','etgp-air-workspace-113106 is-loading');
   host.setAttribute('data-etgp-air-workspace-113106','1');
   var loadingShell=create('div','etgp-air-loading-shell-113112');
@@ -1597,7 +1602,7 @@ var renderAirProductWorkspace113106=function(shell){
   if(!bookingId){
     host.innerHTML='';host.appendChild(create('div','etgp-air-feedback-113106 is-error','Booking ID could not be resolved from this page.'));return;
   }
-  etgpAirLoad113106(bookingId).then(function(data){etgpAirRender113106(host,data,bookingId);}).catch(function(error){
+  etgpAirData113314.load(bookingId).then(function(data){etgpAirRender113106(host,data,bookingId);}).catch(function(error){
     host.innerHTML='';host.classList.remove('is-loading');host.appendChild(create('div','etgp-air-feedback-113106 is-error',error&&error.message?error.message:'Tickets / Flight Data could not be loaded.'));
   });
 };
