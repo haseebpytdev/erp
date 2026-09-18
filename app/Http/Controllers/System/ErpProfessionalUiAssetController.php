@@ -50,6 +50,9 @@ final class ErpProfessionalUiAssetController extends Controller
         }
         if (request()->boolean('dedicated')) {
             $freshTheme[] = base_path('public/erp-theme/modules/dedicated-product.css');
+            if (preg_match('#^operations/bookings/\d+/products/air$#', trim(strtolower(request()->path()), '/')) === 1) {
+                $freshTheme[] = base_path('public/erp-theme/css/products/air.css');
+            }
         }
 
         foreach ($freshTheme as $path) abort_unless(is_file($path), 404);

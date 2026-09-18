@@ -594,11 +594,11 @@ var renderAirProductWorkspace113106=function(shell){
     host.innerHTML='';host.appendChild(create('div','etgp-air-feedback-113106 is-error','Booking ID could not be resolved from this page.'));return;
   }
   etgpAirData113314.load(bookingId).then(function(data){etgpAirRender113106(host,data,bookingId);}).catch(function(error){
+    var failedRoot=core.getBookingRoot();if(failedRoot)failedRoot.removeAttribute('data-etgp-air-mounted');
     integration.markFailed(host,error&&error.message?error.message:'Tickets / Flight Data could not be loaded.');
     host.classList.remove('is-loading');host.appendChild(create('div','etgp-air-feedback-113106 is-error',error&&error.message?error.message:'Tickets / Flight Data could not be loaded.'));
   });
 };
 
 
-var dedicatedRoot=core.getBookingRoot();var dedicatedHost=dedicatedRoot&&dedicatedRoot.querySelector('[data-etgp-dedicated-product-body]');if(dedicatedHost&&dedicatedRoot.getAttribute('data-etgp-air-mounted')!=='1'){renderAirProductWorkspace113106(dedicatedHost);} })(window,document);
-
+var dedicatedRoot=core.getBookingRoot();var dedicatedHost=dedicatedRoot&&dedicatedRoot.querySelector('[data-etgp-dedicated-product-body]');if(dedicatedHost&&dedicatedRoot.getAttribute('data-etgp-air-mounted')!=='1'){dedicatedRoot.setAttribute('data-etgp-air-mounted','1');renderAirProductWorkspace113106(dedicatedHost);} })(window,document);

@@ -50,6 +50,7 @@ const focusedShellJs = freshFocusedShellJs;
 const salesInvoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
 const dedicatedCore = read('public/erp-theme/js/dedicated-product-core.js');
 const dedicatedAir = read('public/erp-theme/js/products/air.js');
+const dedicatedAirCss = read('public/erp-theme/css/products/air.css');
 const dedicatedCss = read('public/erp-theme/modules/dedicated-product.css');
 const productView = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
 const assetController = controller;
@@ -171,6 +172,10 @@ ok(assetController.includes('dedicatedAir') && routes.includes("system.erp-asset
 ok(presenter.includes('! preg_match') && presenter.includes('general-progressive-step1-js'), 'dedicated Air asset selection excludes the general progressive runtime');
 ok(productView.includes("$isAirProduct ? ''") && productView.includes('!$isAirProduct'), 'Air product view does not mount the general progressive runtime');
 ok(dedicatedAir.includes('core.markMounted(core.getBookingRoot())') && dedicatedAir.includes('core.markFailed(core.getBookingRoot(),message)'), 'dedicated Air lifecycle bridges target the dedicated booking root');
+ok(dedicatedAir.includes("data-etgp-air-mounted") && dedicatedAir.includes("setAttribute('data-etgp-air-mounted','1')") && dedicatedAir.includes("removeAttribute('data-etgp-air-mounted')"), 'dedicated Air has a deterministic single-mount guard with retry reset');
+ok(dedicatedAirCss.includes('.etgp-air-workspace-113106') && dedicatedAirCss.includes('.etgp-air-segment-row-113106') && dedicatedAirCss.includes('.etgp-air-common-grid-113106') && dedicatedAirCss.includes('.etgp-air-ticket-table-113106') && dedicatedAirCss.includes('.etgp-air-fare-table-113108') && dedicatedAirCss.includes('.etgp-air-summary-113108') && dedicatedAirCss.includes('.etgp-air-feedback-113106') && dedicatedAirCss.includes('.etgp-air-loading-shell-113112'), 'dedicated Air CSS owns workspace, editor, ticket, commercial, summary, feedback, and loading selectors');
+ok(dedicatedAirCss.includes('@media(max-width:640px)') && dedicatedAirCss.includes('@media(max-width:430px)'), 'dedicated Air CSS preserves responsive rules');
+ok(assetController.includes('public/erp-theme/css/products/air.css') && assetController.includes("products/air$"), 'dedicated Air receives its extracted CSS without the progressive stylesheet');
 ok(productController.includes('schema_has_bookings') && productController.includes('booking_query'), 'controller timing covers schema and booking lookup stages');
 ok(productController.includes('layout_resolve') && productController.includes('customer_resolve') && productController.includes('lock_from_row'), 'controller timing covers layout, customer, and lock stages');
 ok(productController.includes('view_object_create') && productController.includes('controller_total'), 'controller timing distinguishes view object creation from total duration');

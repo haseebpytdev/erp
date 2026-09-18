@@ -1,0 +1,941 @@
+
+
+/* ======================================================================
+ * ERP-11.3.106 — GENERAL Tickets / Flight Data controlled product shell
+ * ====================================================================== */
+.etgp-air-workspace-113106{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:12px 14px 14px;
+  border-top:1px solid #e8eef5;
+}
+
+.etgp-air-loading-113106{
+  padding:14px;
+  border:1px dashed #ced9e7;
+  border-radius:8px;
+  background:#f8fbff;
+  color:#66758b;
+  font-size:11px;
+  font-weight:700;
+}
+
+.etgp-air-block-113106{
+  min-width:0;
+  padding:11px 12px 12px;
+  border:1px solid #e0e8f1;
+  border-radius:9px;
+  background:#fff;
+}
+
+.etgp-air-subhead-113106{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:9px;
+}
+
+.etgp-air-subhead-copy-113106{min-width:0}
+
+.etgp-air-subtitle-113106{
+  margin:0;
+  color:#17243a;
+  font-size:12px;
+  line-height:1.25;
+  font-weight:850;
+}
+
+.etgp-air-subnote-113106{
+  margin:2px 0 0;
+  color:#718096;
+  font-size:10px;
+  line-height:1.35;
+}
+
+.etgp-air-mini-button-113106,
+.etgp-air-remove-row-113106{
+  min-height:30px!important;
+  padding:5px 9px!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  white-space:nowrap;
+}
+
+.etgp-air-segments-113106{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+.etgp-air-segment-row-113106{
+  display:grid;
+  grid-template-columns:95px minmax(105px,1.15fr) 90px 72px 72px minmax(150px,1.35fr) minmax(150px,1.35fr) 90px 96px 34px;
+  align-items:end;
+  gap:6px;
+  padding:8px;
+  border:1px solid #e6edf5;
+  border-radius:8px;
+  background:#fbfdff;
+}
+
+.etgp-air-field-113106{min-width:0}
+
+.etgp-air-field-113106 .form-label{
+  display:block!important;
+  margin:0 0 3px!important;
+  color:#596a80!important;
+  font-size:9px!important;
+  line-height:1.1!important;
+  font-weight:800!important;
+}
+
+.etgp-air-field-113106 .form-control,
+.etgp-air-field-113106 .form-select,
+.etgp-air-ticket-table-113106 .form-control,
+.etgp-air-ticket-table-113106 .form-select{
+  width:100%!important;
+  min-height:32px!important;
+  height:32px!important;
+  padding:5px 7px!important;
+  border-radius:6px!important;
+  border-color:#d6e0eb!important;
+  font-size:10.5px!important;
+  line-height:1.2!important;
+  box-shadow:none!important;
+}
+
+.etgp-air-field-113106.is-total .form-control{
+  background:#f3f7fb!important;
+  color:#14253d!important;
+  font-weight:850!important;
+}
+
+.etgp-air-segment-actions-113106{
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  min-height:32px;
+}
+
+.etgp-air-remove-row-113106{
+  width:32px!important;
+  min-width:32px!important;
+  padding:0!important;
+  font-size:16px!important;
+  line-height:1!important;
+}
+
+.etgp-air-common-grid-113106{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;
+}
+
+.etgp-air-ticket-wrap-113106{
+  width:100%;
+  overflow-x:auto;
+}
+
+.etgp-air-ticket-table-113106{
+  width:100%;
+  min-width:760px;
+  margin:0!important;
+  table-layout:fixed;
+}
+
+.etgp-air-ticket-table-113106 th{
+  padding:6px 7px!important;
+  background:#f5f8fc!important;
+  color:#5b6b80!important;
+  border-bottom:1px solid #dde6f0!important;
+  font-size:9px!important;
+  font-weight:850!important;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+}
+
+.etgp-air-ticket-table-113106 td{
+  padding:6px 7px!important;
+  vertical-align:middle!important;
+  border-bottom:1px solid #edf1f6!important;
+  color:#28384d!important;
+  font-size:10.5px!important;
+}
+
+/* ERP-11.3.124 — fit all Passenger Ticket commercial columns in the normal
+   desktop card width. 11.3.123 forced min-width:1180px, which created the
+   horizontal scrollbar inside the already padded Air workspace. */
+.etgp-air-ticket-table-113106.etgp-air-ticket-table-113123{
+  width:100%!important;
+  min-width:0!important;
+  table-layout:fixed!important;
+}
+
+.etgp-air-ticket-table-113123 th:nth-child(1){width:15.5%}
+
+.etgp-air-ticket-table-113123 th:nth-child(2){width:6.5%}
+
+.etgp-air-ticket-table-113123 th:nth-child(3){width:17%}
+
+.etgp-air-ticket-table-113123 th:nth-child(4){width:5%}
+
+.etgp-air-ticket-table-113123 th:nth-child(5){width:7%}
+
+.etgp-air-ticket-table-113123 th:nth-child(6){width:7%}
+
+.etgp-air-ticket-table-113123 th:nth-child(7){width:10.5%}
+
+.etgp-air-ticket-table-113123 th:nth-child(8){width:10.5%}
+
+.etgp-air-ticket-table-113123 th:nth-child(9){width:10.5%}
+
+.etgp-air-ticket-table-113123 th:nth-child(10){width:10.5%}
+
+.etgp-air-ticket-table-113123 th,
+.etgp-air-ticket-table-113123 td{
+  min-width:0!important;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.etgp-air-ticket-table-113123 input.form-control{
+  width:100%!important;
+  min-width:0!important;
+  padding-left:7px!important;
+  padding-right:7px!important;
+}
+
+.etgp-air-ticket-money-113123{
+  text-align:right;
+  white-space:nowrap;
+  font-size:9.5px!important;
+}
+
+@media(min-width:901px){
+  .etgp-air-ticket-wrap-113106{overflow-x:hidden!important;}
+}
+
+@media(max-width:900px){
+  .etgp-air-ticket-wrap-113106{overflow-x:auto!important;}
+  .etgp-air-ticket-table-113106.etgp-air-ticket-table-113123{min-width:980px!important;}
+}
+
+.etgp-air-ticket-money-value-113123{
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-end;
+  min-height:29px;
+  width:100%;
+  padding:4px 6px;
+  border:1px solid #dfe7f1;
+  border-radius:7px;
+  background:#f7f9fc;
+  color:#24344a;
+  font-size:10px;
+  font-weight:850;
+  font-variant-numeric:tabular-nums;
+}
+
+.etgp-air-passenger-name-113106 strong{
+  color:#17243a;
+  font-size:10.5px;
+  font-weight:850;
+}
+
+.etgp-air-empty-113106{
+  padding:12px!important;
+  color:#748398!important;
+  text-align:center;
+}
+
+.etgp-air-commercial-grid-113106{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:12px;
+}
+
+.etgp-air-commercial-113106{height:100%}
+
+.etgp-air-price-grid-113106{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:7px;
+}
+
+.etgp-air-summary-113106{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.etgp-air-summary-item-113106{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-width:0;
+  padding:8px 10px;
+  border:1px solid #dfe8f2;
+  border-radius:8px;
+  background:#f8fbff;
+}
+
+.etgp-air-summary-item-113106 span{
+  color:#68778c;
+  font-size:9.5px;
+  font-weight:800;
+}
+
+.etgp-air-summary-item-113106 strong{
+  color:#17243a;
+  font-size:11px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.etgp-air-actions-113106{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+.etgp-air-save-113106{
+  min-height:34px!important;
+  padding:6px 12px!important;
+  font-size:10.5px!important;
+  font-weight:850!important;
+}
+
+.etgp-air-feedback-113106{
+  flex:1 1 auto;
+  min-width:0;
+  padding:7px 9px;
+  border-radius:7px;
+  font-size:10px;
+  font-weight:750;
+}
+
+.etgp-air-feedback-113106[hidden]{display:none!important}
+
+.etgp-air-feedback-113106.is-success{
+  border:1px solid #c9ead9;
+  background:#f1fbf6;
+  color:#137d4e;
+}
+
+.etgp-air-feedback-113106.is-error{
+  border:1px solid #f0c9c9;
+  background:#fff4f4;
+  color:#b42318;
+}
+
+.etgp-air-feedback-113106.is-warning{
+  border:1px solid #efdca8;
+  background:#fffaeb;
+  color:#8a6116;
+}
+
+
+@media(max-width:1180px){
+  .etgp-air-segment-row-113106{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+  }
+  .etgp-air-segment-actions-113106{justify-content:flex-start}
+  .etgp-air-price-grid-113106{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+@media(max-width:860px){
+  .etgp-air-common-grid-113106{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .etgp-air-commercial-grid-113106{grid-template-columns:minmax(0,1fr)}
+  .etgp-air-summary-113106{grid-template-columns:minmax(0,1fr)}
+}
+
+@media(max-width:640px){
+  .etgp-air-workspace-113106{padding:10px}
+  .etgp-air-subhead-113106{flex-direction:column;align-items:stretch}
+  .etgp-air-segment-row-113106,
+  .etgp-air-common-grid-113106,
+  .etgp-air-price-grid-113106{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .etgp-air-actions-113106{flex-direction:column;align-items:stretch}
+  .etgp-air-save-113106{width:100%}
+}
+
+@media(max-width:430px){
+  .etgp-air-segment-row-113106,
+  .etgp-air-common-grid-113106,
+  .etgp-air-price-grid-113106{grid-template-columns:minmax(0,1fr)}
+}
+
+.etgp-air-apply-commercials-113106{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:-2px 0 0;
+  padding:7px 9px;
+  border:1px solid #dfe8f2;
+  border-radius:7px;
+  background:#fbfdff;
+  color:#53657c;
+  font-size:10px;
+  font-weight:750;
+  cursor:pointer;
+}
+
+.etgp-air-apply-commercials-113106 input{
+  width:14px;
+  height:14px;
+  margin:0;
+  accent-color:#1769d2;
+}
+
+.etgp-air-commercial-113106.is-disabled{
+  background:#fafbfd;
+  opacity:.74;
+}
+
+
+/* ======================================================================
+ * ERP-11.3.107 — Air PNR/vendor + ADT/CHD/INF commercial matrix
+ * ====================================================================== */
+.etgp-air-segment-row-113107{
+  grid-template-columns:92px minmax(145px,1.3fr) 105px 72px 72px minmax(150px,1.25fr) minmax(150px,1.25fr) 34px!important;
+}
+
+.etgp-air-common-grid-113107{
+  grid-template-columns:minmax(165px,1.35fr) repeat(5,minmax(0,1fr))!important;
+}
+
+.etgp-air-ticket-status-113107{
+  display:inline-flex;
+  align-items:center;
+  min-height:27px;
+  padding:4px 8px;
+  border:1px solid #d8e3ef;
+  border-radius:999px;
+  background:#f5f8fc;
+  color:#53657c;
+  font-size:9.5px;
+  font-weight:850;
+  text-transform:capitalize;
+}
+
+.etgp-air-ticket-status-113107[data-status="ISSUED"]{
+  border-color:#bfe5d1;
+  background:#effaf4;
+  color:#148252;
+}
+
+.etgp-air-ticket-status-113107[data-status="VOID"],
+.etgp-air-ticket-status-113107[data-status="REFUNDED"],
+.etgp-air-ticket-status-113107[data-status="CANCELLED"]{
+  border-color:#efcaca;
+  background:#fff3f3;
+  color:#b42318;
+}
+
+.etgp-air-commercial-grid-113107{align-items:start}
+
+.etgp-air-fare-wrap-113107{
+  width:100%;
+  overflow-x:auto;
+}
+
+.etgp-air-fare-table-113107{
+  width:100%;
+  min-width:790px;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+
+.etgp-air-fare-table-113107 th{
+  padding:6px 5px;
+  border-bottom:1px solid #dfe7f0;
+  background:#f6f9fc;
+  color:#586a80;
+  font-size:8.5px;
+  line-height:1.15;
+  font-weight:850;
+  text-align:left;
+  text-transform:uppercase;
+  letter-spacing:.015em;
+  white-space:normal;
+}
+
+.etgp-air-fare-table-113107 td{
+  padding:6px 5px;
+  border-bottom:1px solid #edf2f7;
+  vertical-align:middle;
+}
+
+.etgp-air-fare-table-113107 th:nth-child(1){width:11%}
+
+.etgp-air-fare-table-113107 th:nth-child(2){width:6%}
+
+.etgp-air-fare-table-113107 th:nth-child(3){width:17%}
+
+.etgp-air-fare-table-113107 th:nth-child(4){width:14%}
+
+.etgp-air-fare-table-113107 th:nth-child(5){width:12%}
+
+.etgp-air-fare-table-113107 th:nth-child(6){width:14%}
+
+.etgp-air-fare-table-113107 th:nth-child(7){width:12%}
+
+.etgp-air-fare-table-113107 th:nth-child(8){width:14%}
+
+.etgp-air-fare-table-113107 .form-control,
+.etgp-air-fare-table-113107 .form-select{
+  width:100%!important;
+  height:31px!important;
+  min-height:31px!important;
+  padding:4px 6px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:6px!important;
+  background:#fff;
+  color:#213249;
+  font-size:9.5px!important;
+  box-shadow:none!important;
+}
+
+.etgp-air-fare-table-113107 .form-control.is-auto{
+  background:#f7f9fc!important;
+  color:#56677d!important;
+  font-weight:750!important;
+}
+
+.etgp-air-fare-table-113107 .form-control.is-total{
+  background:#eef4fa!important;
+  color:#14253d!important;
+  font-weight:900!important;
+}
+
+.etgp-air-fare-table-113107 .form-control.is-invalid{
+  border-color:#dc3545!important;
+  background:#fff5f5!important;
+}
+
+.etgp-air-fare-type-113107{
+  color:#17243a;
+  font-size:9.5px;
+  font-weight:900;
+}
+
+.etgp-air-fare-pax-113107{
+  color:#1769d2;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+}
+
+.etgp-air-fare-table-113107 tr.is-inactive{opacity:.48}
+
+.etgp-air-fare-table-113107 tr.is-inactive .form-control,
+.etgp-air-fare-table-113107 tr.is-inactive .form-select{background:#fafbfd!important}
+
+
+@media(max-width:1180px){
+  .etgp-air-segment-row-113107{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .etgp-air-common-grid-113107{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+
+@media(max-width:640px){
+  .etgp-air-segment-row-113107,
+  .etgp-air-common-grid-113107{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+
+@media(max-width:430px){
+  .etgp-air-segment-row-113107,
+  .etgp-air-common-grid-113107{grid-template-columns:minmax(0,1fr)!important}
+}
+
+
+/* ======================================================================
+ * ERP-11.3.108 — compact one-row ADT/CHD/INF PNR commercial matrix
+ * ====================================================================== */
+.etgp-air-commercial-113108{
+  width:100%;
+}
+
+.etgp-air-fare-wrap-113108{
+  width:100%;
+  overflow-x:auto;
+}
+
+.etgp-air-fare-table-113108{
+  width:100%;
+  min-width:1040px;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+
+.etgp-air-fare-table-113108 th{
+  padding:6px 5px;
+  border-bottom:1px solid #dfe7f0;
+  background:#f6f9fc;
+  color:#586a80;
+  font-size:8px;
+  line-height:1.12;
+  font-weight:850;
+  text-align:left;
+  text-transform:uppercase;
+  letter-spacing:.01em;
+  white-space:normal;
+}
+
+.etgp-air-fare-table-113108 td{
+  padding:6px 5px;
+  border-bottom:1px solid #edf2f7;
+  vertical-align:middle;
+}
+
+.etgp-air-fare-table-113108 th:nth-child(1){width:5.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(2){width:3.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(3){width:8.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(4){width:8.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(5){width:8.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(6){width:7.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(7){width:16%}
+
+.etgp-air-fare-table-113108 th:nth-child(8){width:16%}
+
+.etgp-air-fare-table-113108 th:nth-child(9){width:9%}
+
+.etgp-air-fare-table-113108 th:nth-child(10){width:17%}
+
+.etgp-air-fare-table-113108 .form-control,
+.etgp-air-fare-table-113108 .form-select{
+  width:100%!important;
+  height:30px!important;
+  min-height:30px!important;
+  padding:4px 5px!important;
+  border:1px solid #d6e0eb!important;
+  border-radius:6px!important;
+  background:#fff;
+  color:#213249;
+  font-size:9px!important;
+  box-shadow:none!important;
+}
+
+.etgp-air-fare-table-113108 .form-control.is-auto{
+  background:#f7f9fc!important;
+  color:#56677d!important;
+  font-weight:800!important;
+}
+
+.etgp-air-fare-table-113108 .form-control.is-invalid{
+  border-color:#dc3545!important;
+  background:#fff5f5!important;
+}
+
+.etgp-air-fare-type-113108{
+  color:#17243a;
+  font-size:9.5px;
+  font-weight:900;
+}
+
+.etgp-air-fare-pax-113108{
+  color:#1769d2;
+  font-size:10px;
+  font-weight:900;
+  text-align:center;
+}
+
+.etgp-air-minus-113108{
+  display:grid;
+  grid-template-columns:54px minmax(0,1fr);
+  gap:4px;
+  align-items:center;
+}
+
+.etgp-air-minus-113108 .form-select{
+  padding-left:4px!important;
+  padding-right:16px!important;
+  font-size:8.5px!important;
+}
+
+.etgp-air-answer-113108{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:1px;
+  min-height:30px;
+  padding:3px 6px;
+  border:1px solid #d6e0eb;
+  border-radius:6px;
+  background:#f7f9fc;
+  color:#52647b;
+  font-size:8px;
+  line-height:1.15;
+  white-space:nowrap;
+}
+
+.etgp-air-answer-113108 .customer,
+.etgp-air-answer-113108 .vendor{font-weight:750}
+
+.etgp-air-answer-113108 .margin{
+  color:#14253d;
+  font-weight:900;
+}
+
+.etgp-air-answer-113108 .margin.is-negative{color:#b42318}
+
+.etgp-air-fare-table-113108 tr.is-inactive{opacity:.48}
+
+.etgp-air-fare-table-113108 tr.is-inactive .form-control,
+.etgp-air-fare-table-113108 tr.is-inactive .form-select{background:#fafbfd!important}
+
+.etgp-air-summary-113108{margin-top:8px}
+
+
+@media(min-width:1080px){
+  .etgp-air-fare-table-113108{min-width:0}
+}
+
+
+
+/* ======================================================================
+ * ERP-11.3.110 — Basic-Rate minus basis + inline minus amounts + soft load
+ * ====================================================================== */
+.etgp-air-minus-113110{
+  grid-template-columns:44px minmax(46px,1fr) 54px!important;
+  gap:3px!important;
+}
+
+.etgp-air-minus-113110 .form-select{
+  padding-left:3px!important;
+  padding-right:13px!important;
+  font-size:8px!important;
+}
+
+.etgp-air-minus-113110 .form-control{
+  padding-left:4px!important;
+  padding-right:4px!important;
+}
+
+.etgp-air-minus-amount-113110{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  min-width:0;
+  height:28px;
+  padding:0 4px;
+  border:1px solid #d9e7f5;
+  border-radius:5px;
+  background:#f4f8fc;
+  color:#34516f;
+  font-size:7.8px;
+  font-weight:850;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.etgp-air-fare-table-113108 .form-control,
+.etgp-air-fare-table-113108 .form-select{
+  height:28px!important;
+  min-height:28px!important;
+  font-size:8.5px!important;
+}
+
+.etgp-air-fare-table-113108 th,
+.etgp-air-fare-table-113108 td{
+  padding-left:4px;
+  padding-right:4px;
+}
+
+.etgp-air-workspace-113106.is-loading{
+  min-height:150px;
+}
+
+.etgp-air-workspace-113106.is-loading .etgp-air-loading-113106{
+  min-height:78px;
+  display:flex;
+  align-items:center;
+  opacity:.78;
+}
+
+.etgp-air-workspace-113106.is-ready > .etgp-air-block-113106,
+.etgp-air-workspace-113106.is-ready > .etgp-air-summary-113106,
+.etgp-air-workspace-113106.is-ready > .etgp-air-actions-113106{
+  animation:etgpAirSoftReveal113110 .16s ease-out both;
+}
+
+@media(max-width:1079px){
+  .etgp-air-fare-wrap-113108{overflow-x:auto}
+}
+
+
+
+/* ======================================================================
+ * ERP-11.3.112 — PNR Fare commercial width balance + stable load skeleton
+ * ====================================================================== */
+.etgp-air-fare-table-113108 th:nth-child(1){width:4.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(2){width:3%}
+
+.etgp-air-fare-table-113108 th:nth-child(3){width:8.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(4){width:8.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(5){width:8.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(6){width:7.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(7){width:20.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(8){width:20.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(9){width:8.5%}
+
+.etgp-air-fare-table-113108 th:nth-child(10){width:10%}
+
+.etgp-air-answer-113108{
+  padding:3px 4px;
+  font-size:7.6px;
+  line-height:1.08;
+}
+
+.etgp-air-minus-113110{
+  grid-template-columns:42px minmax(44px,1fr) minmax(52px,64px)!important;
+}
+
+.etgp-air-minus-amount-113110{
+  justify-content:center;
+  padding-left:2px;
+  padding-right:2px;
+}
+
+@media(min-width:1180px){
+  .etgp-air-fare-table-113108{min-width:0!important}
+  .etgp-air-fare-wrap-113108{overflow-x:hidden}
+}
+
+
+/* Keep the Air product footprint stable while native data is fetched. */
+.etgp-air-workspace-113106.is-loading{
+  min-height:620px;
+}
+
+.etgp-air-loading-shell-113112{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  width:100%;
+}
+
+.etgp-air-loading-head-113112{
+  display:flex;
+  align-items:center;
+  min-height:34px;
+  padding:8px 11px;
+  border:1px dashed #ced9e7;
+  border-radius:8px;
+  background:#f8fbff;
+  color:#66758b;
+  font-size:10.5px;
+  font-weight:750;
+}
+
+.etgp-air-loading-card-113112{
+  position:relative;
+  overflow:hidden;
+  min-height:92px;
+  padding:12px;
+  border:1px solid #e0e8f1;
+  border-radius:9px;
+  background:#fff;
+}
+
+.etgp-air-loading-card-113112.is-itinerary{min-height:126px}
+
+.etgp-air-loading-card-113112.is-tickets{min-height:104px}
+
+.etgp-air-loading-card-113112.is-commercial{min-height:150px}
+
+.etgp-air-loading-card-113112 span,
+.etgp-air-loading-card-113112 i,
+.etgp-air-loading-summary-113112 i{
+  display:block;
+  border-radius:5px;
+  background:#eef3f8;
+}
+
+.etgp-air-loading-card-113112 span{width:180px;height:13px;margin-bottom:13px}
+
+.etgp-air-loading-card-113112 i{height:28px;margin-top:7px}
+
+.etgp-air-loading-card-113112 i:nth-of-type(2){width:86%}
+
+.etgp-air-loading-card-113112 i:nth-of-type(3){width:72%}
+
+.etgp-air-loading-summary-113112{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+
+.etgp-air-loading-summary-113112 i{height:46px;border:1px solid #e5ecf4;background:#f8fbff}
+
+.etgp-air-loading-card-113112::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent);
+  animation:etgpAirSkeleton113112 1.15s ease-in-out infinite;
+}
+
+@media(max-width:640px){
+  .etgp-air-workspace-113106.is-loading{min-height:560px}
+  .etgp-air-loading-summary-113112{grid-template-columns:1fr}
+  .etgp-air-loading-summary-113112 i{height:36px}
+}
+
+
+/* Final Air/Transport/Visa column-fit contract. */
+.etgp-air-fare-table-113108 th:nth-child(1){width:7%!important;white-space:nowrap!important}
+
+.etgp-air-fare-table-113108 th:nth-child(7),.etgp-air-fare-table-113108 th:nth-child(8){width:19.25%!important}
+
+
+/* ERP-11.3.161 controlled correction: one readable inner-product hierarchy. */
+.etgp-product-subsection-161 .etgp-air-subtitle-113106,
+.etgp-product-subsection-161 .etgp-hotel-title-113127,
+.etgp-product-subsection-161 .etgp-transport-title-113139,
+.etgp-product-subsection-161 .etgp-visa-title-113142{
+  color:#17243a!important;font-size:14px!important;font-weight:700!important;line-height:1.25!important;
+}
+
+.etgp-product-subsection-161 .etgp-air-subnote-113106,
+.etgp-product-subsection-161 .etgp-hotel-note-113127{
+  color:#68778c!important;font-size:12px!important;line-height:1.35!important;
+}
+
+.etgp-air-ticket-table-113106 th,.etgp-air-fare-table-113108 th,
+.etgp-hotel-grid-head-113127,.etgp-transport-grid-head-113139,.etgp-visa-grid-head-113142{
+  font-size:11.5px!important;font-weight:700!important;line-height:1.2!important;
+}
+
+.etgp-air-field-113106 .form-control,.etgp-air-field-113106 .form-select,
+.etgp-air-ticket-table-113106 .form-control,.etgp-air-ticket-table-113106 .form-select,
+.etgp-air-fare-table-113108 .form-control,.etgp-air-fare-table-113108 .form-select,
+.etgp-hotel-row-113127 .form-control,.etgp-hotel-row-113127 .form-select,
+.etgp-transport-row-113139 .form-control,.etgp-transport-row-113139 .form-select,
+.etgp-visa-main-row-113142 .form-control,.etgp-visa-main-row-113142 .form-select,
+.etgp-visa-detail-113142 .form-control,.etgp-visa-detail-113142 .form-select{
+  font-size:12.5px!important;line-height:1.2!important;
+}
+
+.etgp-air-answer-113108,.etgp-hotel-answer-113127,.etgp-transport-answer-113139,
+.etgp-visa-answer-113142,.etgp-visa-summary-item-113142 span,.etgp-visa-summary-item-113142 strong{
+  font-size:11.5px!important;font-weight:700!important;line-height:1.15!important;
+}
+
