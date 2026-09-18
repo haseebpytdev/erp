@@ -128,7 +128,7 @@ for (const key of ['today_sales','month_sales','receivables','payables','cash_ba
   ok(dashboardService.includes(`'${key}'`), `Dashboard service still supplies ${key}`);
 }
 ok(!/DB::|->insert\(|->update\(|->delete\(|->save\(/.test(css + js), 'Phase 1 browser assets cannot mutate data');
-ok(version === 'v1.1.33.313-ERP11.3.313', 'packaged release version is current');
+ok(version === 'v1.1.33.314-ERP11.3.314', 'packaged release version is current');
 const migrations = fs.readdirSync(new URL('../../database/migrations/', import.meta.url));
 ok(!migrations.some(file => file.includes('visual_match') || file.includes('phase1')), 'Phase 1 adds no migration');
 
