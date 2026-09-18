@@ -11,6 +11,19 @@ final class BookingWorkspaceShellPresenter
 
     public function transform(Request $request, Response $response): Response
     {
+        $timing = DedicatedProductTimingContext::fromRequest($request);
+        $timing?->start('presenter_transform_total');
+
+        try {
+            return $this->transformResponse($request, $response, $timing);
+        } finally {
+            $timing?->stop('presenter_transform_total');
+            $timing?->finishResponse($response);
+        }
+    }
+
+    private function transformResponse(Request $request, Response $response, ?DedicatedProductTimingContext $timing): Response
+    {
         if (
             ! method_exists($response, 'getContent')
             || ! method_exists($response, 'setContent')
@@ -129,7 +142,8 @@ final class BookingWorkspaceShellPresenter
         // briefly rendering editable controls while the summary request loads.
         $initialBookingLock = null;
         if (($isNativeBookingWorkspacePath || $isProductsWorkspacePath) && preg_match('#operations/bookings/(\d+)#', $path, $initialBookingMatch)) {
-            $initialBookingLock = $this->bookingLocks->resolve((int) $initialBookingMatch[1]);
+            $initialBookingLock = $timing?->measure('presenter_lock_resolve', fn (): array => $this->bookingLocks->resolve((int) $initialBookingMatch[1]))
+                ?? $this->bookingLocks->resolve((int) $initialBookingMatch[1]);
             $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $initialBookingLock['locked'] ? '1' : '0');
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));

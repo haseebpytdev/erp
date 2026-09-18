@@ -15,11 +15,26 @@ use Illuminate\Database\Eloquent\Model;
  */
 class NativeBookingCustomerResolver
 {
+    private ?DedicatedProductTimingContext $timing = null;
+
     public function __construct(
         private readonly UnifiedGroupPackageDataSource $source,
     ) {}
 
-    public function resolve(int $bookingId): array
+    public function resolve(int $bookingId, ?DedicatedProductTimingContext $timing = null): array
+    {
+        $this->timing = $timing;
+        $timing?->start('customer_total');
+
+        try {
+            return $this->resolveInternal($bookingId);
+        } finally {
+            $timing?->stop('customer_total');
+            $this->timing = null;
+        }
+    }
+
+    private function resolveInternal(int $bookingId): array
     {
         if ($bookingId <= 0) {
             return $this->empty();
@@ -28,20 +43,34 @@ class NativeBookingCustomerResolver
         // This is the same authority used by the host main Booking page: its
         // native Booking model and Customer / Party relationship. The overlay
         // does not define or replace either model.
-        if ($native = $this->fromNativeBookingModel($bookingId)) {
+        $native = $this->timing
+            ? $this->timing->measure(
+                'customer_native_model',
+                fn (): ?array => $this->fromNativeBookingModel($bookingId)
+            )
+            : $this->fromNativeBookingModel($bookingId);
+        if ($native) {
             return $native;
         }
 
-        $customers = $this->source->customers();
+        $customers = $this->timing?->measure(
+            'customer_master_load',
+            fn () => $this->source->customers()
+        ) ?? $this->source->customers();
         $byId = $customers->keyBy(fn (array $row): string => (string) ($row['id'] ?? ''))->all();
         $byName = $customers->keyBy(
             fn (array $row): string => $this->normalName((string) ($row['name'] ?? ''))
         )->all();
 
         if (Schema::hasTable('bookings')) {
+            $this->timing?->increment('customer_schema_has_table_count');
             try {
-                $booking = (array) (DB::table('bookings')->where('id', $bookingId)->first() ?? []);
+                $booking = $this->timing?->measure(
+                    'customer_booking_fallback',
+                    fn (): array => (array) (DB::table('bookings')->where('id', $bookingId)->first() ?? [])
+                ) ?? (array) (DB::table('bookings')->where('id', $bookingId)->first() ?? []);
                 if ($identity = $this->fromRow($booking, $byId, $byName, 'bookings')) {
+                    $this->timing?->setCustomerBranch('bookings-row');
                     $this->remember($bookingId, $identity);
                     return $identity;
                 }
@@ -49,13 +78,19 @@ class NativeBookingCustomerResolver
             }
         }
 
-        foreach ($this->relatedBookingTables() as $table) {
-            if (! Schema::hasTable($table)) {
+        $relatedTables = $this->timing?->measure(
+            'customer_schema_discovery',
+            fn (): array => $this->relatedBookingTables()
+        ) ?? $this->relatedBookingTables();
+        $this->timing?->increment('customer_related_tables_checked', count($relatedTables));
+
+        foreach ($relatedTables as $table) {
+            if (! $this->schemaHasTable($table)) {
                 continue;
             }
 
             try {
-                $columns = Schema::getColumnListing($table);
+                $columns = $this->schemaColumns($table);
             } catch (\Throwable) {
                 continue;
             }
@@ -70,16 +105,20 @@ class NativeBookingCustomerResolver
             }
 
             try {
-                $rows = DB::table($table)
-                    ->where($bookingColumn, $bookingId)
-                    ->limit(20)
-                    ->get();
+                $rows = $this->timing?->measure(
+                    'customer_related_scan',
+                    fn () => DB::table($table)
+                        ->where($bookingColumn, $bookingId)
+                        ->limit(20)
+                        ->get()
+                ) ?? DB::table($table)->where($bookingColumn, $bookingId)->limit(20)->get();
             } catch (\Throwable) {
                 continue;
             }
 
             foreach ($rows as $row) {
                 if ($identity = $this->fromRow((array) $row, $byId, $byName, $table)) {
+                    $this->timing?->setCustomerBranch('related-table:'.$table);
                     $this->remember($bookingId, $identity);
                     return $identity;
                 }
@@ -89,10 +128,20 @@ class NativeBookingCustomerResolver
         // Legacy context is a read-only fallback for bookings created through
         // an older native entry point. Native booking/relationship data above
         // remains the authority whenever it exists.
-        if ($saved = $this->savedContext($bookingId)) {
+        // Legacy context remains fallback-only; the equivalent uninstrumented
+        // branch is: if ($saved = $this->savedContext($bookingId)).
+        $saved = $this->timing
+            ? $this->timing->measure(
+                'customer_saved_context',
+                fn (): ?array => $this->savedContext($bookingId)
+            )
+            : $this->savedContext($bookingId);
+        if ($saved) {
+            $this->timing?->setCustomerBranch('saved-context');
             return $saved;
         }
 
+        $this->timing?->setCustomerBranch('empty');
         return $this->empty();
     }
 
@@ -122,7 +171,7 @@ class NativeBookingCustomerResolver
 
     private function savedContext(int $bookingId): ?array
     {
-        if (! Schema::hasTable('booking_group_umrah_contexts')) {
+        if (! $this->schemaHasTable('booking_group_umrah_contexts')) {
             return null;
         }
 
@@ -226,6 +275,8 @@ class NativeBookingCustomerResolver
         if ($id <= 0 || $name === '') {
             return null;
         }
+
+        $this->timing?->setCustomerBranch('native-booking-model.'.$relation);
 
         return [
             'id' => $id,
@@ -337,6 +388,7 @@ class NativeBookingCustomerResolver
         ];
 
         try {
+            $this->timing?->increment('customer_schema_table_discovery');
             foreach (Schema::getTables() as $meta) {
                 $name = is_array($meta) ? ($meta['name'] ?? null) : data_get($meta, 'name');
                 if (! $name) {
@@ -362,7 +414,7 @@ class NativeBookingCustomerResolver
     private function remember(int $bookingId, array $identity): void
     {
         if (
-            ! Schema::hasTable('booking_group_umrah_contexts')
+            ! $this->schemaHasTable('booking_group_umrah_contexts')
             || (int) ($identity['id'] ?? 0) <= 0
         ) {
             return;
@@ -413,5 +465,19 @@ class NativeBookingCustomerResolver
     private function empty(): array
     {
         return ['id' => null, 'name' => '', 'source' => null, 'resolved' => false];
+    }
+
+    private function schemaHasTable(string $table): bool
+    {
+        $this->timing?->increment('customer_schema_has_table_count');
+
+        return Schema::hasTable($table);
+    }
+
+    private function schemaColumns(string $table): array
+    {
+        $this->timing?->increment('customer_schema_column_listing_count');
+
+        return Schema::getColumnListing($table);
     }
 }
