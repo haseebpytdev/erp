@@ -26,7 +26,7 @@ const destructiveTokens = [
   'TRUNCATE TABLE',
 ];
 
-assert('VERSION_IS_245_RELEASE', version === 'v1.1.33.311-ERP11.3.311');
+assert('VERSION_IS_245_RELEASE', version === 'v1.1.33.312-ERP11.3.312');
 assert('EXECUTION_REMAINS_DISABLED', service.includes("public const EXECUTION_ENABLED = false;"));
 assert('NO_DESTRUCTIVE_DB_OPERATION_ADDED', destructiveTokens.every((token) => !service.includes(token)));
 assert('SERVICE_COST_ALLOCATIONS_IS_CLEAR', clearBlock.includes("'service_cost_allocations',"));
