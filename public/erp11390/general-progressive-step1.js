@@ -1101,6 +1101,23 @@ var etgpAirApplySummaryKpis113124=function(summary,currency){
   etgpAirUpdateTicketMetric113106(summary.ticket_count||0);
 };
 
+/* ERP-11.3.314 B1 seam: keep Air rendering independent from the host-page
+ * side effects. Main Booking remains the integration owner until extraction. */
+var etgpAirMainBookingIntegration113314={
+  applyPassengerFareOverrides:function(data){return typeof etgpApplyPassengerFareOverrides113137==='function'?etgpApplyPassengerFareOverrides113137(data):data;},
+  updateMetrics:function(data,currency){etgpAirUpdatePassengerMetric113124(data&&data.passengers||[]);if(data&&data.summary)etgpAirApplySummaryKpis113124(data.summary,currency);},
+  refreshBookingState:function(bookingId){return etgpRefreshPersistedBookingState113153(bookingId);},
+  applyLock:function(data){return etgpApplyBookingLock113162(data);},
+  getLockState:function(){return etgpBookingLockState113162;}
+};
+var etgpAirDedicatedIntegration113314={
+  getBookingId:function(){return window.etDedicatedProductCore&&window.etDedicatedProductCore.getBookingId?window.etDedicatedProductCore.getBookingId():etgpBookingId11397();},
+  applyLock:function(root){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.applyReadOnly)return window.etDedicatedProductCore.applyReadOnly(root);return false;},
+  setResponse:function(data){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.setProductResponse)return window.etDedicatedProductCore.setProductResponse('air',etgpAirDedicatedIntegration113314.getBookingId(),data);return data;},
+  markMounted:function(root){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markMounted)window.etDedicatedProductCore.markMounted(root);},
+  markFailed:function(root,message){if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markFailed)window.etDedicatedProductCore.markFailed(root,message);}
+};
+
 var etgpAirBackgroundMetricRefresh113106=function(){
   fetch(window.location.href,{
     method:'GET',credentials:'same-origin',
@@ -1119,9 +1136,8 @@ var etgpAirBackgroundMetricRefresh113106=function(){
 
 var etgpAirRender113106=function(host,data,bookingId){
   data=etgpAirApplyDraft113119(data||{},bookingId);
-  if(typeof etgpApplyPassengerFareOverrides113137==='function'){
-    data=etgpApplyPassengerFareOverrides113137(data);
-  }
+  data=etgpAirMainBookingIntegration113314.applyPassengerFareOverrides(data);
+  etgpAirDedicatedIntegration113314.setResponse(data);
   host.innerHTML='';
   host.classList.remove('is-loading');
   host.classList.remove('is-ready');
@@ -1131,10 +1147,7 @@ var etgpAirRender113106=function(host,data,bookingId){
      and saved customer sale. Do not leave the top KPI row dependent on the
      legacy native metric DOM, which can concatenate ticket/service counts or
      omit Booking Value after the controlled GENERAL workspace is rendered. */
-  etgpAirUpdatePassengerMetric113124(data.passengers||[]);
-  if(data.summary){
-    etgpAirApplySummaryKpis113124(data.summary,(data.booking&&data.booking.currency)||'PKR');
-  }
+  etgpAirMainBookingIntegration113314.updateMetrics(data,(data.booking&&data.booking.currency)||'PKR');
   if(capabilities.booking_services===false||capabilities.air_ticket_details===false||capabilities.booking_itinerary_segments===false){
     host.appendChild(create('div','etgp-air-feedback-113106 is-error','Required native Air Ticket stores are not available on this installation.'));
     return;
@@ -1560,12 +1573,12 @@ var etgpAirRender113106=function(host,data,bookingId){
       var summaryResult=result.summary||{};
       etgpAirApplySummaryKpis113124(summaryResult,currency);
       if(result.common&&Number(result.common.supplier_id||0)>0&&suppliers.length)supplierControl.select.value=String(result.common.supplier_id);
-      etgpRefreshPersistedBookingState113153(bookingId);
+      etgpAirMainBookingIntegration113314.refreshBookingState(bookingId);
     }).catch(function(error){
       feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=error&&error.message?error.message:'Tickets / Flight Data could not be saved.';
     }).finally(function(){save.disabled=false;save.textContent='Save Tickets / Flight Data';});
   });
-  requestAnimationFrame(function(){host.classList.add('is-ready');if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});});
+  requestAnimationFrame(function(){host.classList.add('is-ready');if(etgpBookingLockState113162.locked){var lock=etgpAirMainBookingIntegration113314.getLockState();etgpAirMainBookingIntegration113314.applyLock({booking_locked:true,booking_status:lock.status,booking_lock_reason:lock.reason});}etgpAirDedicatedIntegration113314.markMounted(host);});
 };
 
 var renderAirProductWorkspace113106=function(shell){

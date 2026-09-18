@@ -120,6 +120,9 @@ ok(!dedicatedCore.includes('refreshBookingState:function(){return core.requestJs
 ok((dedicatedCore.match(/getPassengerData:function/g)||[]).length===1, 'dedicated core has one passenger snapshot getter');
 ok(dedicatedCore.includes("return root()?Promise.resolve([])") && dedicatedCore.includes('cached.passengers'), 'dedicated root passenger loading is independent and can reuse a seeded product response');
 ok(dedicatedCore.includes('data-et-dedicated-lock-disabled') && dedicatedCore.includes("el.getAttribute('data-et-dedicated-lock-disabled')==='1'"), 'read-only enforcement marks and selectively restores only lock-disabled controls');
+ok(freshProgressiveRuntime.includes('etgpAirMainBookingIntegration113314') && freshProgressiveRuntime.includes('etgpAirDedicatedIntegration113314'), 'Air renderer has explicit main-booking and dedicated integration seams');
+ok(freshProgressiveRuntime.includes('applyPassengerFareOverrides:function') && freshProgressiveRuntime.includes('refreshBookingState:function') && freshProgressiveRuntime.includes('applyLock:function'), 'Air integration adapter isolates KPI, refresh, fare, and lock side effects');
+ok(freshProgressiveRuntime.includes('etgpAirDedicatedIntegration113314.setResponse(data)') && freshProgressiveRuntime.includes('markMounted(host)'), 'dedicated integration seam receives response and mount lifecycle without changing renderer ownership');
 ok(!dedicatedCore.includes('else{el.disabled=false'), 'unlocked dedicated controls are not globally re-enabled');
 ok(!dedicatedCore.includes('useState') && !dedicatedCore.includes('bookingStore') && !dedicatedCore.includes('productCustomerTotals'), 'dedicated product core does not introduce duplicate state or commercial authority');
 ok(assetController.includes('dedicated-product-core.js') && presenter.includes('data-et-dedicated-product-core'), 'dedicated pages receive the shared core asset from existing ERP asset authority');
