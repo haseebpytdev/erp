@@ -345,7 +345,11 @@ ok(dedicatedAir.includes('core.setActiveRoot&&core.setActiveRoot(dedicatedRoot)'
 ok(dedicatedCoreRuntime.includes('setActiveRoot:function') && dedicatedCoreRuntime.includes('activeRoot'), 'dedicated core supports a minimal active-root seam');
 ok(dedicatedAir.includes('etgpAirData113314.load(bookingId)') && dedicatedAir.includes("'/system/erp-bookings/'+bookingId+'/air-product'"), 'each Air mount preserves the existing GET authority');
 ok(dedicatedAir.includes("'etgp-air-product-draft-v113119:'"), 'Air draft key remains unchanged');
-ok(dedicatedAir.includes('getState:function(){return {saveInFlight:airSaveInFlight,dirty:airDirty};}'), 'Air exposes narrow save/dirty lifecycle state');
+ok(dedicatedAir.includes('getState:function(){return {saveInFlight:airLifecycle.saveInFlight,dirty:airLifecycle.dirty,draftPending:airLifecycle.draftPending,bookingId:airLifecycle.bookingId};}'), 'Air exposes current-mount lifecycle state');
+ok(dedicatedAir.includes('resetAirLifecycle') && dedicatedAir.includes('draftPending:!!draft'), 'Air initializes dirty state from the existing recovery draft key');
+ok(dedicatedAir.includes('airLifecycle.saveInFlight=true') && dedicatedAir.includes('airLifecycle.saveInFlight=false'), 'Air save-in-flight state is scoped to the active mount');
+ok(dedicatedAir.includes('airLifecycle.dirty=false') && dedicatedAir.includes('airLifecycle.draftPending=false'), 'Successful Air save clears current-mount lifecycle state');
+ok(dedicatedAir.includes('if(airLifecycle.saveInFlight)return false'), 'Air refuses replacement mount during an active save');
 ok(dedicatedAir.includes('general-progressive-step1') === false, 'dedicated Air module remains independent of general progressive runtime');
 
 const protectedHashes = new Map([

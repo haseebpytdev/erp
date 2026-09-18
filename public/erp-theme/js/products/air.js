@@ -1,4 +1,11 @@
-(function(window,document){'use strict';var core=window.etDedicatedProductCore;if(!core)return;var create=core.create;var plain=core.plain;var norm=core.norm;var airSaveInFlight=false;var airDirty=false;
+(function(window,document){'use strict';var core=window.etDedicatedProductCore;if(!core)return;var create=core.create;var plain=core.plain;var norm=core.norm;
+var airLifecycle={root:null,bookingId:0,saveInFlight:false,dirty:false,draftPending:false};
+var resetAirLifecycle=function(root,bookingId){
+  var draft=etgpAirDraftRead113119(bookingId);
+  airLifecycle={root:root,bookingId:Number(bookingId||0),saveInFlight:false,dirty:!!draft,draftPending:!!draft};
+};
+var isActiveAirLifecycle=function(bookingId){return airLifecycle.root===core.getBookingRoot()&&Number(airLifecycle.bookingId)===Number(bookingId||0);};
+
 var etgpAirMoney113106=function(value){
   var n=Number(String(value===undefined||value===null?'0':value).replace(/[^0-9.\-]/g,''));
   return Number.isFinite(n)?n:0;
@@ -543,7 +550,7 @@ var etgpAirRender113106=function(host,data,bookingId){
 
   var draftTimer113119=null;
   var persistDraft113119=function(){
-    airDirty=true;
+    if(isActiveAirLifecycle(bookingId)){airLifecycle.dirty=true;airLifecycle.draftPending=true;}
     clearTimeout(draftTimer113119);
     draftTimer113119=setTimeout(function(){try{etgpAirDraftWrite113119(bookingId,buildPayload113119());}catch(e){}},180);
   };
@@ -563,16 +570,16 @@ var etgpAirRender113106=function(host,data,bookingId){
     if(hasAirVendorCost&&!payload.common.supplier_id&&!plain(payload.common.supplier_name)){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Select Vendor / Supplier before saving Air commercial data.';return;}
       etgpAirDraft113314.write(bookingId,payload);
 
-    save.disabled=true;save.textContent='Saving…';airSaveInFlight=true;
+    save.disabled=true;save.textContent='Saving…';if(isActiveAirLifecycle(bookingId))airLifecycle.saveInFlight=true;
     etgpAirSave113314(bookingId,payload).then(function(result){
       feedback.hidden=false;feedback.className='etgp-air-feedback-113106 is-success';feedback.textContent=result.message||'Tickets / Flight Data saved.';
       var summaryResult=result.summary||{};
       integration.updateSummaryMetrics(summaryResult,currency);
       if(result.common&&Number(result.common.supplier_id||0)>0&&suppliers.length)supplierControl.select.value=String(result.common.supplier_id);
-      airDirty=false;integration.refreshBookingState(bookingId);
+      if(isActiveAirLifecycle(bookingId)){airLifecycle.dirty=false;airLifecycle.draftPending=false;}integration.refreshBookingState(bookingId);
     }).catch(function(error){
       feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=error&&error.message?error.message:'Tickets / Flight Data could not be saved.';
-    }).finally(function(){airSaveInFlight=false;save.disabled=false;save.textContent='Save Tickets / Flight Data';});
+    }).finally(function(){if(isActiveAirLifecycle(bookingId))airLifecycle.saveInFlight=false;save.disabled=false;save.textContent='Save Tickets / Flight Data';});
   });
   requestAnimationFrame(function(){host.classList.add('is-ready');var lock=integration.getLockState();if(lock&&lock.locked)integration.applyLock(host,lock);integration.markMounted(host);});
 };
@@ -606,14 +613,16 @@ var mountAir=function(candidate){
   var dedicatedRoot=candidate&&candidate.querySelector?candidate:core.getBookingRoot&&core.getBookingRoot();
   if(!dedicatedRoot||String(dedicatedRoot.getAttribute('data-etgp-product-key')||'').toLowerCase()!=='air')return false;
   if(dedicatedRoot.getAttribute('data-etgp-air-mounted')==='1')return false;
+  if(airLifecycle.saveInFlight)return false;
   var dedicatedHost=dedicatedRoot.querySelector('[data-etgp-dedicated-product-body]');
   if(!dedicatedHost)return false;
   core.setActiveRoot&&core.setActiveRoot(dedicatedRoot);
+  resetAirLifecycle(dedicatedRoot,core.getBookingId());
   dedicatedRoot.setAttribute('data-etgp-air-mounted','1');
   renderAirProductWorkspace113106(dedicatedHost);
   return true;
 };
-window.etDedicatedAirProduct={mount:mountAir,getState:function(){return {saveInFlight:airSaveInFlight,dirty:airDirty};}};
+window.etDedicatedAirProduct={mount:mountAir,getState:function(){return {saveInFlight:airLifecycle.saveInFlight,dirty:airLifecycle.dirty,draftPending:airLifecycle.draftPending,bookingId:airLifecycle.bookingId};}};
 /* Keep the established initial page-load behavior while allowing C2 to mount a replacement root. */
 var initialRoot=core.getBookingRoot&&core.getBookingRoot();
 if(initialRoot&&String(initialRoot.getAttribute('data-etgp-product-key')||'').toLowerCase()==='air')mountAir(initialRoot);
