@@ -50,6 +50,7 @@ const focusedShellJs = freshFocusedShellJs;
 const salesInvoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
 const dedicatedCore = read('public/erp-theme/js/dedicated-product-core.js');
 const dedicatedAir = read('public/erp-theme/js/products/air.js');
+const dedicatedCoreRuntime = dedicatedCore;
 const dedicatedAirCss = read('public/erp-theme/css/products/air.css');
 const dedicatedCss = read('public/erp-theme/modules/dedicated-product.css');
 const productView = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
@@ -338,6 +339,14 @@ ok(presenter.includes('str_contains($html, \'data-et-booking-focus-shell="ERP-11
 ok(presenter.includes("addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75')"), 'Booking focus marker is emitted on semantic html markup');
 ok(!presenter.includes('<style data-et-booking-focus-shell='), 'Booking focus marker is not carried by an inline style block');
 ok(presenter.includes('BookingEditLockResolver') && !presenter.includes('SalesInvoiceService'), 'Booking lifecycle authority remains unchanged');
+ok(dedicatedAir.includes('window.etDedicatedAirProduct={mount:mountAir'), 'Air exposes an explicit reusable mount API');
+ok(dedicatedAir.includes('mountAir(initialRoot)') && dedicatedAir.includes('data-etgp-air-mounted'), 'Air initial auto-mount and duplicate guard remain active');
+ok(dedicatedAir.includes('core.setActiveRoot&&core.setActiveRoot(dedicatedRoot)'), 'Air mount uses the supplied current root');
+ok(dedicatedCoreRuntime.includes('setActiveRoot:function') && dedicatedCoreRuntime.includes('activeRoot'), 'dedicated core supports a minimal active-root seam');
+ok(dedicatedAir.includes('etgpAirData113314.load(bookingId)') && dedicatedAir.includes("'/system/erp-bookings/'+bookingId+'/air-product'"), 'each Air mount preserves the existing GET authority');
+ok(dedicatedAir.includes("'etgp-air-product-draft-v113119:'"), 'Air draft key remains unchanged');
+ok(dedicatedAir.includes('getState:function(){return {saveInFlight:airSaveInFlight,dirty:airDirty};}'), 'Air exposes narrow save/dirty lifecycle state');
+ok(dedicatedAir.includes('general-progressive-step1') === false, 'dedicated Air module remains independent of general progressive runtime');
 
 const protectedHashes = new Map([
   ['app/Services/System/DayOneSequenceResetService.php', '65D0A210D36F5A4DEDF53D2D3EFD00DD660BCDBFFB51FE9841605A3ACB8F0FEF'],

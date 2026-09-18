@@ -2,13 +2,20 @@
   'use strict';
   var registry=Object.create(null);
   var responseCache=Object.create(null),promiseCache=Object.create(null),passengerSnapshot=[];
-  var root=function(){return document.querySelector('[data-etgp-dedicated-product="1"]');};
+  var activeRoot=null;
+  var root=function(){
+    if(activeRoot&&activeRoot.isConnected!==false)return activeRoot;
+    activeRoot=null;
+    return document.querySelector('[data-etgp-dedicated-product="1"]');
+  };
   var context=function(){return window.etBookingWorkspaceContext||null;};
   var keyFor=function(product,booking){return String(booking||0)+'::'+String(product||'').toLowerCase();};
   var directRootValue=function(name){var r=root();return r&&r.dataset?String(r.dataset[name]||''):'';};
   var create=function(tag,className,text){var el=document.createElement(tag||'div');if(className)el.className=className;if(text!==undefined)el.textContent=String(text);return el;};
   var core={
     getBookingRoot:root,
+    setActiveRoot:function(next){if(!next||!next.querySelector)return false;activeRoot=next;return true;},
+    clearActiveRoot:function(expected){if(!expected||activeRoot===expected)activeRoot=null;return true;},
     getProductMount:function(){var r=root();return r&&r.querySelector('[data-etgp-dedicated-product-body]');},
     getBookingId:function(){var direct=Number(directRootValue('bookingId')||0);if(direct>0)return direct;var c=context();return c&&typeof c.getBookingId==='function'?Number(c.getBookingId()||0)||0:0;},
     getBookingReference:function(){var direct=directRootValue('bookingReference');if(direct)return direct;var c=context();return c&&typeof c.getBookingReference==='function'?c.getBookingReference():'Booking';},
