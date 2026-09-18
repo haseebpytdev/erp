@@ -105,7 +105,7 @@ class NativeBookingCustomerResolver
             }
 
             try {
-                $rows = $this->timing?->measure(
+                $rows = $this->timing?->measureAccumulating(
                     'customer_related_scan',
                     fn () => DB::table($table)
                         ->where($bookingColumn, $bookingId)

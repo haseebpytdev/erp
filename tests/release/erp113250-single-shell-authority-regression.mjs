@@ -87,7 +87,7 @@ ok(productTiming.includes('operations/bookings/\\d+/products/(?:air|hotel|transp
 ok(productTiming.includes('DB::listen') && productTiming.includes('db_count'), 'dedicated timing counts request-scoped database queries');
 ok(productController.includes('schema_has_bookings') && productController.includes('booking_query'), 'controller timing covers schema and booking lookup stages');
 ok(productController.includes('layout_resolve') && productController.includes('customer_resolve') && productController.includes('lock_from_row'), 'controller timing covers layout, customer, and lock stages');
-ok(productController.includes('view_prepare') && productController.includes('controller_total'), 'controller timing covers view preparation and total duration');
+ok(productController.includes('view_object_create') && productController.includes('controller_total'), 'controller timing distinguishes view object creation from total duration');
 ok(customerResolver.includes('customer_native_model') && customerResolver.includes('customer_master_load'), 'customer timing covers native and master resolution stages');
 ok(customerResolver.includes('customer_schema_discovery') && customerResolver.includes('customer_related_scan'), 'customer timing covers schema discovery and related-table scans');
 ok(customerResolver.includes('customer_saved_context') && customerResolver.includes('setCustomerBranch'), 'customer resolver reports branch detail without changing authority');
@@ -96,6 +96,11 @@ ok(focusedMiddleware.includes('DedicatedProductTimingContext::forRequest'), 'dia
 ok(!productTiming.includes('DB::table') && !productTiming.includes('insert(') && !productTiming.includes('update('), 'diagnostic context introduces no database writes');
 ok(!productTiming.includes('<style') && !productTiming.includes('<script'), 'diagnostic context adds no rendered UI markup');
 ok(productTiming.includes('X-ET-Customer-Branch') && productTiming.includes('X-ET-DB-Count'), 'safe branch and query-count headers are exposed without identity data');
+ok(focusedMiddleware.includes("start('downstream_response')") && focusedMiddleware.includes("stop('downstream_response')"), 'downstream response timing surrounds the full next middleware interval');
+ok(focusedMiddleware.includes("stop('product_pipeline_total')") && focusedMiddleware.includes('finishResponse'), 'pipeline timing is finalized after presenter completion');
+ok(productTiming.includes('measureAccumulating') && customerResolver.includes('measureAccumulating'), 'repeated customer related scans accumulate instead of overwrite');
+ok(productTiming.includes("addMeasuredDuration('db_total'") && !productTiming.includes("start('db_total')"), 'db-total represents accumulated query execution time');
+ok(productTiming.includes("'view_object_create' => 'view-object'") && productTiming.includes("'downstream_response' => 'downstream'"), 'Server-Timing labels expose unambiguous pipeline stages');
 ok(metadata.includes("return 'register'"), 'register pages receive a dedicated presentation role');
 ok(metadata.includes("return 'focused'"), 'focused workspaces receive a dedicated presentation role');
 ok(read('public/erp-theme/modules/registers.css').includes('data-et-ui-role="register"'), 'register CSS targets the role marker');

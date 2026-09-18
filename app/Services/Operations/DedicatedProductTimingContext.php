@@ -26,6 +26,7 @@ final class DedicatedProductTimingContext
     private function __construct()
     {
         $this->startedAt = hrtime(true) / 1_000_000;
+        $this->start('product_pipeline_total');
     }
 
     public static function forRequest(Request $request): ?self
@@ -79,6 +80,25 @@ final class DedicatedProductTimingContext
         unset($this->marks[$name]);
     }
 
+    public function addMeasuredDuration(string $name, float $milliseconds): void
+    {
+        $this->durations[$name] = round(
+            ($this->durations[$name] ?? 0) + max(0, $milliseconds),
+            3
+        );
+    }
+
+    public function measureAccumulating(string $name, callable $callback): mixed
+    {
+        $started = hrtime(true) / 1_000_000;
+
+        try {
+            return $callback();
+        } finally {
+            $this->addMeasuredDuration($name, (hrtime(true) / 1_000_000) - $started);
+        }
+    }
+
     public function measure(string $name, callable $callback): mixed
     {
         $this->start($name);
@@ -110,12 +130,14 @@ final class DedicatedProductTimingContext
         $serverTiming = [];
         foreach ([
             'controller_total' => 'controller',
+            'downstream_response' => 'downstream',
+            'product_pipeline_total' => 'pipeline-total',
             'schema_has_bookings' => 'schema',
             'booking_query' => 'booking-query',
             'layout_resolve' => 'layout',
             'customer_resolve' => 'customer',
             'lock_from_row' => 'lock-row',
-            'view_prepare' => 'view-prep',
+            'view_object_create' => 'view-object',
             'presenter_lock_resolve' => 'presenter-lock',
             'presenter_transform_total' => 'presenter',
             'db_total' => 'db-total',
@@ -141,11 +163,9 @@ final class DedicatedProductTimingContext
         }
 
         $this->listenerAttached = true;
-        $this->start('db_total');
-
         DB::listen(function (QueryExecuted $query): void {
             $this->increment('db_count');
-            $this->addDuration('db_total', ($this->durations['db_total'] ?? 0) + (float) $query->time);
+            $this->addMeasuredDuration('db_total', (float) $query->time);
         });
     }
 }

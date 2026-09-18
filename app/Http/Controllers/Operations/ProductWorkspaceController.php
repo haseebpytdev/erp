@@ -42,7 +42,7 @@ final class ProductWorkspaceController extends Controller
             ? $timing->measure('lock_from_row', fn (): array => $locks->fromRow($booking))
             : $locks->fromRow($booking);
 
-        $timing?->start('view_prepare');
+        $timing?->start('view_object_create');
         $view = view('operations.bookings.product-workspace-v113305', [
             'layoutMeta' => $layoutMeta,
             'bookingId' => (int) $row->id,
@@ -52,7 +52,7 @@ final class ProductWorkspaceController extends Controller
             'product' => $product,
             'selectedProducts' => [],
         ]);
-        $timing?->stop('view_prepare');
+        $timing?->stop('view_object_create');
         $timing?->stop('controller_total');
 
         return $view;

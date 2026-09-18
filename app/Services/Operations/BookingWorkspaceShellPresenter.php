@@ -18,7 +18,6 @@ final class BookingWorkspaceShellPresenter
             return $this->transformResponse($request, $response, $timing);
         } finally {
             $timing?->stop('presenter_transform_total');
-            $timing?->finishResponse($response);
         }
     }
 
