@@ -115,6 +115,12 @@ ok(dedicatedCore.includes('setProductResponse') && dedicatedCore.includes('getPr
 ok(dedicatedCore.includes('setPassengerData') && dedicatedCore.includes('getPassengerData') && !dedicatedCore.includes('localStorage.setItem(\'passenger'), 'dedicated core provides an in-memory passenger snapshot without persistent passenger caching');
 ok(dedicatedCore.includes('readDraft') && dedicatedCore.includes('writeDraft') && dedicatedCore.includes('clearDraft') && dedicatedCore.includes('et-dedicated-draft:'), 'dedicated core provides booking/product-scoped draft helpers');
 ok(dedicatedCore.includes('refreshBookingState'), 'dedicated core exposes a narrow booking refresh hook instead of main-page KPI rebuilding');
+ok(dedicatedCore.includes('requestText:function') && dedicatedCore.includes('refreshBookingState:function(){return core.requestText'), 'HTML refresh uses a text-only request helper rather than JSON parsing');
+ok(!dedicatedCore.includes('refreshBookingState:function(){return core.requestJson'), 'refresh booking state does not pass HTML through requestJson');
+ok((dedicatedCore.match(/getPassengerData:function/g)||[]).length===1, 'dedicated core has one passenger snapshot getter');
+ok(dedicatedCore.includes("return root()?Promise.resolve([])") && dedicatedCore.includes('cached.passengers'), 'dedicated root passenger loading is independent and can reuse a seeded product response');
+ok(dedicatedCore.includes('data-et-dedicated-lock-disabled') && dedicatedCore.includes("el.getAttribute('data-et-dedicated-lock-disabled')==='1'"), 'read-only enforcement marks and selectively restores only lock-disabled controls');
+ok(!dedicatedCore.includes('else{el.disabled=false'), 'unlocked dedicated controls are not globally re-enabled');
 ok(!dedicatedCore.includes('useState') && !dedicatedCore.includes('bookingStore') && !dedicatedCore.includes('productCustomerTotals'), 'dedicated product core does not introduce duplicate state or commercial authority');
 ok(assetController.includes('dedicated-product-core.js') && presenter.includes('data-et-dedicated-product-core'), 'dedicated pages receive the shared core asset from existing ERP asset authority');
 ok(releaseMiddleware.includes("dedicated=1") && assetController.includes('dedicated-product.css'), 'dedicated pages receive only the dedicated compact stylesheet in addition to normal theme layers');
