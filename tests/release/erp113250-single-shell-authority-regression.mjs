@@ -170,12 +170,21 @@ ok(dedicatedCore.includes('n.hidden=true') && dedicatedCore.includes('data-et-de
 ok(freshProgressiveRuntime.includes('etDedicatedProductCore.markMounted') && freshProgressiveRuntime.includes('etDedicatedProductCore.markFailed'), 'current product renderers notify the compatibility loading bridge without moving renderer ownership');
 ok(assetController.includes('dedicatedAir') && routes.includes("system.erp-assets.products-air") && presenter.includes('data-et-dedicated-product-air'), 'dedicated Air receives its dedicated module asset');
 ok(presenter.includes('! preg_match') && presenter.includes('general-progressive-step1-js'), 'dedicated Air asset selection excludes the general progressive runtime');
+ok(assetController.includes("request()->query('product', '')") && !assetController.includes("request()->path()"), 'dedicated CSS asset selection uses an explicit product query, not the asset request path');
+ok(releaseMiddleware.includes("$dedicatedProduct = ''") && releaseMiddleware.includes("'&product='.rawurlencode($dedicatedProduct)"), 'dedicated CSS URLs carry the originating product key');
+const cssAssetSelection = ({dedicated, product}) => dedicated && String(product || '').toLowerCase() === 'air';
+for (const [product, expected] of [['air', true], ['hotel', false], ['transport', false], ['visa', false]]) {
+  ok(cssAssetSelection({dedicated: true, product}) === expected, `dedicated=1 + product=${product} selects Air CSS=${expected}`);
+}
+ok(cssAssetSelection({dedicated: false, product: 'air'}) === false, 'dedicated=0 + product=air does not select Air CSS');
+const dedicatedAirCssUrl = 'erp-professional-css?v=release&module=operations&role=focused&dedicated=1&product=air';
+ok(dedicatedAirCssUrl.includes('dedicated=1') && dedicatedAirCssUrl.includes('product=air'), 'generated Dedicated Air CSS URL carries dedicated and product query state');
 ok(productView.includes("$isAirProduct ? ''") && productView.includes('!$isAirProduct'), 'Air product view does not mount the general progressive runtime');
 ok(dedicatedAir.includes('core.markMounted(core.getBookingRoot())') && dedicatedAir.includes('core.markFailed(core.getBookingRoot(),message)'), 'dedicated Air lifecycle bridges target the dedicated booking root');
 ok(dedicatedAir.includes("data-etgp-air-mounted") && dedicatedAir.includes("setAttribute('data-etgp-air-mounted','1')") && dedicatedAir.includes("removeAttribute('data-etgp-air-mounted')"), 'dedicated Air has a deterministic single-mount guard with retry reset');
 ok(dedicatedAirCss.includes('.etgp-air-workspace-113106') && dedicatedAirCss.includes('.etgp-air-segment-row-113106') && dedicatedAirCss.includes('.etgp-air-common-grid-113106') && dedicatedAirCss.includes('.etgp-air-ticket-table-113106') && dedicatedAirCss.includes('.etgp-air-fare-table-113108') && dedicatedAirCss.includes('.etgp-air-summary-113108') && dedicatedAirCss.includes('.etgp-air-feedback-113106') && dedicatedAirCss.includes('.etgp-air-loading-shell-113112'), 'dedicated Air CSS owns workspace, editor, ticket, commercial, summary, feedback, and loading selectors');
 ok(dedicatedAirCss.includes('@media(max-width:640px)') && dedicatedAirCss.includes('@media(max-width:430px)'), 'dedicated Air CSS preserves responsive rules');
-ok(assetController.includes('public/erp-theme/css/products/air.css') && assetController.includes("products/air$"), 'dedicated Air receives its extracted CSS without the progressive stylesheet');
+ok(assetController.includes('public/erp-theme/css/products/air.css') && assetController.includes("request()->query('product', '')") && !assetController.includes("request()->path()"), 'dedicated Air receives its extracted CSS through the explicit asset product contract');
 ok(productController.includes('schema_has_bookings') && productController.includes('booking_query'), 'controller timing covers schema and booking lookup stages');
 ok(productController.includes('layout_resolve') && productController.includes('customer_resolve') && productController.includes('lock_from_row'), 'controller timing covers layout, customer, and lock stages');
 ok(productController.includes('view_object_create') && productController.includes('controller_total'), 'controller timing distinguishes view object creation from total duration');
