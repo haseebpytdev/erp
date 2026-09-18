@@ -41,6 +41,7 @@ const mrViews = [
 const bookingTheme = read('public/erp-theme/modules/booking.css');
 const freshShellJs = read('public/erp-theme/js/shell.js');
 const freshFocusedShellJs = read('public/erp-theme/js/focused-shell.js');
+const freshProgressiveRuntime = read('public/erp11390/general-progressive-step1.js');
 const focusedShellJs = freshFocusedShellJs;
 const salesInvoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
 const dedicatedCore = read('public/erp-theme/js/dedicated-product-core.js');
@@ -105,10 +106,12 @@ ok(productTiming.includes('DB::listen') && productTiming.includes('db_count'), '
 ok(dedicatedCore.includes('window.etDedicatedProductCore') && dedicatedCore.includes('getBookingId') && dedicatedCore.includes('getProductKey'), 'dedicated product core exposes shared booking and product identity APIs');
 ok(dedicatedCore.includes('getLockState') && dedicatedCore.includes('loadPassengerData') && dedicatedCore.includes('requestJson'), 'dedicated product core reuses lock, passenger, and request contracts');
 ok(dedicatedCore.includes('registerProduct') && dedicatedCore.includes('getRegisteredProduct'), 'dedicated product core provides a product mount registry without a second booking store');
+ok(dedicatedCore.includes('markMounted') && dedicatedCore.includes('markFailed') && dedicatedCore.includes('data-et-dedicated-loading'), 'dedicated product core provides a narrow loading success/failure bridge');
 ok(!dedicatedCore.includes('useState') && !dedicatedCore.includes('bookingStore') && !dedicatedCore.includes('productCustomerTotals'), 'dedicated product core does not introduce duplicate state or commercial authority');
 ok(assetController.includes('dedicated-product-core.js') && presenter.includes('data-et-dedicated-product-core'), 'dedicated pages receive the shared core asset from existing ERP asset authority');
 ok(releaseMiddleware.includes("dedicated=1") && assetController.includes('dedicated-product.css'), 'dedicated pages receive only the dedicated compact stylesheet in addition to normal theme layers');
 ok(productView.includes('data-et-dedicated-product-header="1"') && productView.includes('et-dedicated-product-loading'), 'dedicated product view renders a compact smart header and loading shell');
+ok(freshFocusedShell.includes('html.et-booking-products-prepaint .page-header{display:none!important;}') && presenter.includes("et-booking-products-prepaint"), 'dedicated route rendering authority suppresses the generic outer Dashboard header only on product pages');
 ok(productView.includes('booking_reference') && productView.includes('customer') && productView.includes('branch_name'), 'dedicated smart header preserves server-rendered booking context');
 ok(productView.includes('productLabel') && productView.includes('lock[\'status\']') && productView.includes('Back to Booking'), 'dedicated smart header identifies product, lifecycle, and booking return action');
 ok(productView.includes('Review Booking') && productView.includes('Client Preview') && !productView.includes('Sales Invoice') && !productView.includes('Dashboard'), 'dedicated smart header keeps approved actions without generic Dashboard or Sales Invoice identity');
@@ -117,6 +120,9 @@ ok(presenter.includes('et-general-progressive-step1-11390') || productView.inclu
 ok(dedicatedCss.includes('.et-dedicated-product-header') && dedicatedCss.includes('.et-dedicated-product-loading'), 'dedicated stylesheet is limited to smart header and loading presentation');
 ok(dedicatedCss.length < 12000 && !dedicatedCss.includes('.et-product-air') && !dedicatedCss.includes('.et-product-hotel'), 'dedicated stylesheet does not duplicate product editor renderer CSS');
 ok(productView.includes('data-booking-id') && productView.includes('data-etgp-product-key'), 'dedicated mount retains existing booking and product data attributes');
+ok(freshFocusedShell.includes('html.et-booking-products-prepaint .page-header'), 'generic header suppression is scoped to dedicated product routes');
+ok(dedicatedCore.includes('n.hidden=true') && dedicatedCore.includes('data-et-dedicated-failure'), 'loading shell hides after successful mount and remains visible with a failure fallback');
+ok(freshProgressiveRuntime.includes('etDedicatedProductCore.markMounted') && freshProgressiveRuntime.includes('etDedicatedProductCore.markFailed'), 'current product renderers notify the compatibility loading bridge without moving renderer ownership');
 ok(productController.includes('schema_has_bookings') && productController.includes('booking_query'), 'controller timing covers schema and booking lookup stages');
 ok(productController.includes('layout_resolve') && productController.includes('customer_resolve') && productController.includes('lock_from_row'), 'controller timing covers layout, customer, and lock stages');
 ok(productController.includes('view_object_create') && productController.includes('controller_total'), 'controller timing distinguishes view object creation from total duration');

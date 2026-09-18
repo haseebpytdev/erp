@@ -5693,10 +5693,17 @@ window.etgpMountDedicatedProduct113305=function(root){
   var host=root.querySelector('[data-etgp-dedicated-product-body]');
   if(!host)return false;
   root.dataset.etgpDedicatedMounted='1';
-  if(key==='air')renderAirProductWorkspace113106(host);
-  else if(key==='hotel')renderHotelProductWorkspace113127(host);
-  else if(key==='transport')renderTransportProductWorkspace113139(host);
-  else renderVisaProductWorkspace113142(host);
+  try{
+    if(key==='air')renderAirProductWorkspace113106(host);
+    else if(key==='hotel')renderHotelProductWorkspace113127(host);
+    else if(key==='transport')renderTransportProductWorkspace113139(host);
+    else renderVisaProductWorkspace113142(host);
+    if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markMounted)window.etDedicatedProductCore.markMounted(root);
+  }catch(error){
+    if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markFailed)window.etDedicatedProductCore.markFailed(root,'This product workspace could not be loaded. Please refresh and try again.');
+    if(window.console&&console.error)console.error(error);
+    return false;
+  }
   if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});
   return true;
 };
