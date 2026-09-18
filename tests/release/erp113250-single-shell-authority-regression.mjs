@@ -12,6 +12,7 @@ const shell = read('public/erp-ui/erp-shell-spacing.css');
 const base = read('public/erp-ui/erp-professional.css');
 const register = read('public/erp-ui/erp-booking-register-reference.css');
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const routes = read('routes/erp103179.php');
 const productController = read('app/Http/Controllers/Operations/ProductWorkspaceController.php');
 const customerResolver = read('app/Services/Operations/NativeBookingCustomerResolver.php');
 const productTiming = read('app/Services/Operations/DedicatedProductTimingContext.php');
@@ -48,6 +49,7 @@ const etgpDedicatedAdapterBody = source => source.slice(source.indexOf('var etgp
 const focusedShellJs = freshFocusedShellJs;
 const salesInvoiceFocus = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
 const dedicatedCore = read('public/erp-theme/js/dedicated-product-core.js');
+const dedicatedAir = read('public/erp-theme/js/products/air.js');
 const dedicatedCss = read('public/erp-theme/modules/dedicated-product.css');
 const productView = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
 const assetController = controller;
@@ -117,6 +119,10 @@ ok(dedicatedCore.includes('create:function') || dedicatedCore.includes('create:c
 ok(dedicatedCore.includes('setProductResponse') && dedicatedCore.includes('getProductPromise') && dedicatedCore.includes('setProductPromise') && dedicatedCore.includes('keyFor'), 'dedicated product response and promise caches are scoped by booking and product');
 ok(dedicatedCore.includes('setPassengerData') && dedicatedCore.includes('getPassengerData') && !dedicatedCore.includes('localStorage.setItem(\'passenger'), 'dedicated core provides an in-memory passenger snapshot without persistent passenger caching');
 ok(dedicatedCore.includes('readDraft') && dedicatedCore.includes('writeDraft') && dedicatedCore.includes('clearDraft') && dedicatedCore.includes('et-dedicated-draft:'), 'dedicated core provides booking/product-scoped draft helpers');
+ok(dedicatedAir.includes('etgp-air-product-draft-v113119:') && dedicatedAir.includes("/air-product"), 'dedicated Air preserves the existing endpoint and draft key contract');
+ok(dedicatedAir.includes('setProductPromise') && dedicatedAir.includes('getProductPromise') && dedicatedAir.includes('setProductResponse'), 'dedicated Air uses the core promise and response cache');
+ok(dedicatedAir.includes("core.setProductPromise(product,bookingId,null)") && dedicatedAir.includes('catch(function(error)'), 'rejected dedicated Air loads clear the cached promise for retry');
+ok(!dedicatedAir.includes('etBookingWorkspaceContext113305') && !dedicatedAir.includes('etgpBookingLockState113162') && !dedicatedAir.includes('etgpApplyBookingLock113162') && !dedicatedAir.includes('etgpRefreshPersistedBookingState113153') && !dedicatedAir.includes('etgpAirApplySummaryKpis113124') && !dedicatedAir.includes('etgpAirUpdatePassengerMetric113124') && !dedicatedAir.includes('etgpApplyPassengerFareOverrides113137'), 'dedicated Air has no legacy progressive or Main Booking globals');
 ok(dedicatedCore.includes('refreshBookingState'), 'dedicated core exposes a narrow booking refresh hook instead of main-page KPI rebuilding');
 ok(dedicatedCore.includes('requestText:function') && dedicatedCore.includes('refreshBookingState:function(){return core.requestText'), 'HTML refresh uses a text-only request helper rather than JSON parsing');
 ok(!dedicatedCore.includes('refreshBookingState:function(){return core.requestJson'), 'refresh booking state does not pass HTML through requestJson');
@@ -157,6 +163,9 @@ ok(!freshFocusedShell.includes('html.et-booking-products-prepaint .page-header')
 ok(!freshFocusedShell.includes('aside.sidebar{display:none') && !freshFocusedShell.includes('nav.nav{display:none') && !freshFocusedShell.includes('a.nav-item{display:none'), 'dedicated topbar suppression does not hide sidebar navigation');
 ok(dedicatedCore.includes('n.hidden=true') && dedicatedCore.includes('data-et-dedicated-failure'), 'loading shell hides after successful mount and remains visible with a failure fallback');
 ok(freshProgressiveRuntime.includes('etDedicatedProductCore.markMounted') && freshProgressiveRuntime.includes('etDedicatedProductCore.markFailed'), 'current product renderers notify the compatibility loading bridge without moving renderer ownership');
+ok(assetController.includes('dedicatedAir') && routes.includes("system.erp-assets.products-air") && presenter.includes('data-et-dedicated-product-air'), 'dedicated Air receives its dedicated module asset');
+ok(presenter.includes('! preg_match') && presenter.includes('general-progressive-step1-js'), 'dedicated Air asset selection excludes the general progressive runtime');
+ok(productView.includes("$isAirProduct ? ''") && productView.includes('!$isAirProduct'), 'Air product view does not mount the general progressive runtime');
 ok(productController.includes('schema_has_bookings') && productController.includes('booking_query'), 'controller timing covers schema and booking lookup stages');
 ok(productController.includes('layout_resolve') && productController.includes('customer_resolve') && productController.includes('lock_from_row'), 'controller timing covers layout, customer, and lock stages');
 ok(productController.includes('view_object_create') && productController.includes('controller_total'), 'controller timing distinguishes view object creation from total duration');

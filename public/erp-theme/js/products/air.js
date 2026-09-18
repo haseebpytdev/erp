@@ -1,0 +1,41 @@
+(function(window,document){
+  'use strict';
+  var core=window.etDedicatedProductCore;
+  if(!core)return;
+  var root=core.getBookingRoot&&core.getBookingRoot();
+  if(!root||String(root.getAttribute('data-etgp-product-key')||'').toLowerCase()!=='air')return;
+  if(root.getAttribute('data-etgp-air-mounted')==='1')return;
+  root.setAttribute('data-etgp-air-mounted','1');
+  var bookingId=core.getBookingId(),product='air',draftKey='etgp-air-product-draft-v113119:'+String(bookingId||'');
+  var body=root.querySelector('[data-etgp-dedicated-product-body]')||root;
+  var host=document.createElement('div');host.className='etgp-air-workspace-113106 is-loading';body.appendChild(host);
+  var text=function(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();};
+  var money=function(v){var n=Number(String(v==null?'0':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
+  var draftRead=function(){try{var raw=localStorage.getItem(draftKey);return raw?JSON.parse(raw):null;}catch(e){return null;}};
+  var draftWrite=function(payload){try{localStorage.setItem(draftKey,JSON.stringify({saved_at:Date.now(),payload:payload}));}catch(e){}};
+  var draftClear=function(){try{localStorage.removeItem(draftKey);}catch(e){}};
+  var request=function(method,payload){return core.requestJson('/system/erp-bookings/'+bookingId+'/air-product',{method:method,headers:{'Content-Type':'application/json'},body:payload===undefined?undefined:JSON.stringify(payload)});};
+  var make=function(tag,cls,value){var el=document.createElement(tag);if(cls)el.className=cls;if(value!==undefined)el.textContent=value;return el;};
+  var showError=function(message){core.markFailed(core.getBookingRoot(),message);host.classList.remove('is-loading');host.appendChild(make('div','etgp-air-feedback-113106 is-error',message||'Tickets / Flight Data could not be loaded.'));};
+  var render=function(data){
+    data=data||{};var draft=draftRead();host.innerHTML='';host.classList.remove('is-loading');
+    var passengers=Array.isArray(data.passengers)?data.passengers:[],tickets=Array.isArray(data.tickets)?data.tickets:[],common=data.common||{},fare=data.fare_commercials||{};
+    core.setProductResponse(product,bookingId,data);core.setPassengerData(passengers);
+    var sections=make('div','etgp-air-dedicated-sections-113314');
+    var itinerary=make('section','etgp-air-block-113106');itinerary.appendChild(make('h3','etgp-air-subtitle-113106','Flight Itinerary'));itinerary.appendChild(make('p','etgp-air-subnote-113106','Add outbound, return or connection segments.'));sections.appendChild(itinerary);
+    var ticketBlock=make('section','etgp-air-block-113106');ticketBlock.appendChild(make('h3','etgp-air-subtitle-113106','Booking / Ticket Data'));
+    var form=document.createElement('form');form.className='etgp-air-dedicated-form-113314';
+    var pnr=document.createElement('input');pnr.name='pnr';pnr.value=common.pnr||'';pnr.placeholder='PNR';form.appendChild(pnr);
+    var status=document.createElement('select');status.name='ticket_status';['BOOKED','ISSUED','CANCELLED'].forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;o.selected=String(common.ticket_status||'BOOKED').toUpperCase()===v;status.appendChild(o);});form.appendChild(status);
+    var table=document.createElement('table');table.className='etgp-air-ticket-table-113106';var tb=document.createElement('tbody');
+    passengers.forEach(function(p){var saved=tickets.find(function(t){return Number(t.booking_passenger_id||0)===Number(p.id||0);})||{};var tr=document.createElement('tr');tr.setAttribute('data-etgp-air-ticket-row-113106',p.id||'');tr.appendChild(make('td','',p.name||'Passenger'));var input=document.createElement('input');input.name='ticket_'+p.id;input.value=saved.ticket_number||'';input.placeholder='Ticket number';var td=document.createElement('td');td.appendChild(input);tr.appendChild(td);tb.appendChild(tr);});table.appendChild(tb);ticketBlock.appendChild(form);ticketBlock.appendChild(table);sections.appendChild(ticketBlock);
+    var commercial=make('section','etgp-air-block-113106 etgp-air-commercial-113108');commercial.appendChild(make('h3','etgp-air-subtitle-113106','PNR Fare Commercials'));commercial.appendChild(make('p','etgp-air-subnote-113106','Taxes and minus values follow the existing Air payload contract.'));sections.appendChild(commercial);host.appendChild(sections);
+    var actions=make('div','etgp-air-actions-113106'),feedback=make('div','etgp-air-feedback-113106');feedback.hidden=true;var save=make('button','btn btn-primary','Save Tickets / Flight Data');save.type='button';actions.appendChild(feedback);actions.appendChild(save);host.appendChild(actions);
+    var payload=function(){var ticketsOut=[];Array.prototype.slice.call(tb.querySelectorAll('tr')).forEach(function(row){var input=row.querySelector('input');ticketsOut.push({booking_passenger_id:Number(row.getAttribute('data-etgp-air-ticket-row-113106')||0),ticket_number:text(input&&input.value),booking_class:'',baggage:''});});return {common:{pnr:text(pnr.value),airline_pnr:common.airline_pnr||'',booking_source:common.booking_source||'',ticket_status:status.value,issue_date:common.issue_date||null,supplier_id:common.supplier_id||null,supplier_name:common.supplier_name||''},segments:Array.isArray(data.segments)?data.segments:[],tickets:ticketsOut,fare_commercials:Array.isArray(fare)?fare:[]};};
+    save.addEventListener('click',function(){var value=payload();draftWrite(value);save.disabled=true;request('PUT',value).then(function(result){draftClear();feedback.hidden=false;feedback.className='etgp-air-feedback-113106 is-success';feedback.textContent=result.message||'Tickets / Flight Data saved.';}).catch(function(error){feedback.hidden=false;feedback.className='etgp-air-feedback-113106 is-error';feedback.textContent=error&&error.message||'Tickets / Flight Data could not be saved.';}).finally(function(){save.disabled=false;});});
+    var lock=core.getLockState();if(lock&&lock.locked)core.applyReadOnly(host);core.markMounted(core.getBookingRoot());
+  };
+  var promise=core.getProductResponse(product,bookingId)?Promise.resolve(core.getProductResponse(product,bookingId)):core.getProductPromise(product,bookingId);
+  if(!promise){promise=request('GET');core.setProductPromise(product,bookingId,promise);}
+  promise.then(function(data){core.setProductResponse(product,bookingId,data);render(data);}).catch(function(error){if(core.setProductPromise)core.setProductPromise(product,bookingId,null);showError(error&&error.message||'Tickets / Flight Data could not be loaded.');});
+})(window,document);

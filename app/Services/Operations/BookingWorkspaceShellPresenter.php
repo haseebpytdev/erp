@@ -211,6 +211,9 @@ final class BookingWorkspaceShellPresenter
 
         if ($isProductsWorkspacePath) {
             $script = '<script src="'.e(route('system.erp-assets.dedicated-product-core')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-core="'.$assetVersion.'"></script>'.$script;
+            if (preg_match('#^operations/bookings/\d+/products/air$#', $path) === 1) {
+                $script .= '<script src="'.e(route('system.erp-assets.products-air')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-air="'.$assetVersion.'"></script>';
+            }
         }
 
         $stepOneStyle = '<link rel="stylesheet" href="'
@@ -223,6 +226,7 @@ final class BookingWorkspaceShellPresenter
 
         if (
             str_contains($html, 'et-general-progressive-step1-11390')
+            && ! preg_match('#^operations/bookings/\d+/products/air$#', $path)
             && ! str_contains($html, 'data-et-general-progressive-css="'.$assetVersion.'"')
             && stripos($html, '</head>') !== false
         ) {
@@ -240,7 +244,7 @@ final class BookingWorkspaceShellPresenter
         ) {
             $scripts = $script;
 
-            if (str_contains($html, 'et-general-progressive-step1-11390')) {
+            if (str_contains($html, 'et-general-progressive-step1-11390') && ! preg_match('#^operations/bookings/\d+/products/air$#', $path)) {
                 $scripts .= "\n".$stepOneScript;
             }
 

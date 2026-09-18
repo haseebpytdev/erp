@@ -202,6 +202,9 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::get('/system/erp-assets/dedicated-product-core.js', [ErpProfessionalUiAssetController::class, 'dedicatedCore'])
         ->name('system.erp-assets.dedicated-product-core');
 
+    Route::get('/system/erp-assets/products-air.js', [ErpProfessionalUiAssetController::class, 'dedicatedAir'])
+        ->name('system.erp-assets.products-air');
+
     // ERP-11.3.102 GENERAL Passenger quick-add: direct JSON lookup/master-update/booking-snapshot bridge; no native Saved Passenger DOM dependency
     // lookup + booking snapshot write, independent of unstable native editor DOM.
     Route::get(
