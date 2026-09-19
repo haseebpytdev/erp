@@ -120,6 +120,13 @@ final class ErpProfessionalUiAssetController extends Controller
         return $this->textAsset(file_get_contents($path), 'application/javascript; charset=UTF-8');
     }
 
+    public function dedicatedNavigation(): Response
+    {
+        $path = base_path('public/erp-theme/js/dedicated-product-navigation.js');
+        abort_unless(is_file($path), 404);
+        return $this->textAsset(file_get_contents($path), 'application/javascript; charset=UTF-8');
+    }
+
     private function textAsset(string $content, string $contentType): Response
     {
         return response(

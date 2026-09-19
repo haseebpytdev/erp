@@ -285,6 +285,13 @@ HTML;
             }
         }
 
+        if (($isNativeBookingWorkspacePath || preg_match('#^operations/bookings/\d+/products/air$#', $path) === 1)
+            && str_contains($html, 'data-et-booking-products-launcher="1"')
+        ) {
+            $navigationScript = '<script src="'.e(route('system.erp-assets.dedicated-product-navigation')).'?v='.rawurlencode($assetVersion). '" defer data-et-dedicated-product-navigation="'.$assetVersion.'"></script>';
+            $html = preg_replace('/<\/body>/i', $navigationScript."\n</body>", $html, 1) ?? $html;
+        }
+
         $response->setContent($html);
 
         return $response;

@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+const navigation = read('public/erp-theme/js/dedicated-product-navigation.js');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const routes = read('routes/erp103179.php');
+const assetController = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
+const partial = read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
+let pass = 0;
+const ok = (condition, label) => { assert.ok(condition, label); pass++; };
+
+ok(navigation.includes('[data-et-booking-products-launcher="1"]') && navigation.includes('operations\\/bookings\\/(\\d+)\\/products\\/air'), 'Air launcher is scoped to the current Booking products launcher');
+ok(navigation.includes('event.preventDefault()') && navigation.includes('event.button!==0') && navigation.includes('event.metaKey') && navigation.includes('event.ctrlKey') && navigation.includes('event.shiftKey') && navigation.includes('event.altKey'), 'eligible primary clicks are intercepted while modified clicks remain native');
+ok(navigation.includes("/products/air/fragment") && navigation.includes("Accept:'text/html'") && navigation.includes("'X-Requested-With':'XMLHttpRequest'") && navigation.includes("credentials:'same-origin'"), 'fragment fetch contract is exact');
+ok(navigation.includes('AbortController') && navigation.includes('if(navigation)return'), 'concurrent navigation is guarded and abortable');
+ok(navigation.includes("querySelectorAll('[data-etgp-dedicated-product=\"1\"]')") && navigation.includes("data-etgp-product-key") && navigation.includes('data-booking-id'), 'fragment markup and booking identity are validated before mutation');
+ok(navigation.includes('target.innerHTML=') && navigation.includes('target=launcher.closest(\'main\')'), 'only the proven native main workspace target is replaced');
+ok(navigation.includes('window.etDedicatedAirProduct.mount(mountedRoot)'), 'replacement root mounts through the accepted Air seam');
+ok(navigation.includes('history.pushState') && navigation.includes('normalAirUrl') && !navigation.includes('fragmentUrl);\n    window.history.pushState'), 'successful history uses the normal Air URL');
+ok(navigation.includes('window.location.assign(normalAirUrl)') && navigation.includes('fallback'), 'all fast-path failures fall back to the normal Air URL');
+ok(navigation.includes('saveInFlight') && navigation.includes('draftPending') && navigation.includes('window.confirm'), 'save, dirty, and draft navigation guards are present');
+ok(navigation.includes('assetPromises') && navigation.includes('data-et-fast-nav-asset') && navigation.includes('dedicated-product-core') && navigation.includes('products-air'), 'required assets are deduplicated and loaded in core-before-Air order');
+ok(!navigation.includes('general-progressive-step1.js') && !navigation.includes('general-progressive-step1.css'), 'general progressive Air assets are not loaded by the fast path');
+ok(routes.includes("system.erp-assets.dedicated-product-navigation") && assetController.includes('dedicatedNavigation'), 'navigation module uses authenticated ERP asset delivery');
+ok(presenter.includes('data-et-dedicated-product-navigation') && presenter.includes('data-et-booking-products-launcher="1"'), 'navigation module is injected only with the native Booking products launcher');
+ok(partial.includes('data-etgp-dedicated-product-body'), 'fragment target retains the dedicated product host contract');
+console.log(`PASS ${pass} Air fast-navigation contract assertions`);
