@@ -1,4 +1,15 @@
-ERP-11.3.313 DIRECT UPLOAD - TEMPORARY DEDICATED PRODUCT SERVER TIMING DIAGNOSTIC
+ERP-11.3.316 DIRECT UPLOAD - DEDICATED AIR RUNTIME AND FAST NAVIGATION
+
+Active release: v1.1.33.316-ERP11.3.316
+
+Deployment is a manual cPanel upload/extract. This release has no migration.
+After extraction, clear Application Cache and perform Ctrl+F5 / a hard refresh.
+
+Focused live UAT (not yet production-verified):
+- Final Booking → Air: test cold and warm clicks; confirm Air workspace appears with no blank page.
+- Network: confirm the Air fragment request, no full Air document on the successful path, one Air product API GET, and no general-progressive-step1.js/.css.
+- Navigation safety: confirm the normal Air URL after success, native modified clicks, native Hotel/Transport/Visa links, and normal fallback/deep-link behavior.
+- State safety: confirm dirty/draft confirmation, save-in-flight guard, and browser back/forward behavior.
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 

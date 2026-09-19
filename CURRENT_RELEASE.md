@@ -1,14 +1,23 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.313
-APPLICATION_VERSION=v1.1.33.315-ERP11.3.315
+CURRENT_VERSION=ERP-11.3.316
+APPLICATION_VERSION=v1.1.33.316-ERP11.3.316
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.313
+LAST_PACKAGED_RELEASE=ERP-11.3.316
 ```
+
+ERP-11.3.316 release preparation: the dedicated Air runtime remains isolated
+from general progressive assets and uses a reusable Air mount lifecycle plus a
+shared fragment endpoint. Final Booking → Air fast navigation replaces only the
+controlled main workspace on success, while the normal href/deep-link fallback
+remains available. Dedicated assets are versioned and deduplicated, and
+dirty/draft/save-in-flight guards protect navigation. Hotel, Transport and Visa
+remain on their existing runtime/navigation; Air formulas and APIs are
+unchanged. No migration is included and live production UAT is pending.
 
 `CURRENT` is now the sole editable development authority. Future changes are
 made and tested in this directory without creating versioned source copies or

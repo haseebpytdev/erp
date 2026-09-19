@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.315-ERP11.3.315',
-    'release' => 'ERP-11.3.313',
-    'package' => 'ERP-11.3.313 Temporary Dedicated Product Server Timing Diagnostic',
-    'package_detail' => 'ERP-11.3.313 temporarily exposes request-scoped Server-Timing diagnostics for dedicated product document TTFB measurement; no optimization is included.',
+    'version' => 'v1.1.33.316-ERP11.3.316',
+    'release' => 'ERP-11.3.316',
+    'package' => 'ERP-11.3.316 Dedicated Air Runtime and Fast Navigation',
+    'package_detail' => 'ERP-11.3.316 keeps the dedicated Air workspace isolated from general progressive assets, adds reusable Air mount lifecycle and fragment fast navigation with versioned/deduplicated assets, preserves the normal Air URL fallback, and makes no Air formula/API or Hotel/Transport/Visa behavioral changes; no migration is included.',
 ];
 
