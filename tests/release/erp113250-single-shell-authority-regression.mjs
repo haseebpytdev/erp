@@ -53,7 +53,7 @@ const dedicatedAir = read('public/erp-theme/js/products/air.js');
 const dedicatedCoreRuntime = dedicatedCore;
 const dedicatedAirCss = read('public/erp-theme/css/products/air.css');
 const dedicatedCss = read('public/erp-theme/modules/dedicated-product.css');
-const productView = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
+const productView = read('resources/views/operations/bookings/product-workspace-v113305.blade.php') + read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
 const assetController = controller;
 const version = read('VERSION.txt').trim();
 

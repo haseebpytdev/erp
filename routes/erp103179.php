@@ -309,6 +309,10 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])
         ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.products.show');
 
+    Route::get('/operations/bookings/{booking}/products/air/fragment', [ProductWorkspaceController::class, 'fragment'])
+        ->whereNumber('booking')
+        ->middleware([DedicatedProductEarlyTiming::class, EnforceErpRoleScopedAccess::class])
+        ->name('bookings.products.air.fragment');
     Route::get('/operations/bookings/{booking}/products/{product}', [ProductWorkspaceController::class, 'show'])
         ->whereNumber('booking')->whereIn('product', ['air', 'hotel', 'transport', 'visa', 'other-services'])
         ->middleware([DedicatedProductEarlyTiming::class, EnforceErpRoleScopedAccess::class])->name('bookings.products.workspace');

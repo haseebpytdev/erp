@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+const routes = read('routes/erp103179.php');
+const controller = read('app/Http/Controllers/Operations/ProductWorkspaceController.php');
+const fullView = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
+const partial = read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
+const air = read('public/erp-theme/js/products/air.js');
+const core = read('public/erp-theme/js/dedicated-product-core.js');
+let pass = 0;
+const ok = (condition, label) => { assert.ok(condition, label); pass++; };
+
+ok(routes.includes("'/operations/bookings/{booking}/products/air/fragment'") && routes.includes("->name('bookings.products.air.fragment')"), 'Air fragment route exists');
+ok(routes.includes('DedicatedProductEarlyTiming::class') && routes.includes('EnforceErpRoleScopedAccess::class'), 'fragment retains timing and role-scoped middleware');
+ok(controller.includes('public function fragment') && controller.includes("'air', $layout, $customer, $locks"), 'fragment uses the shared workspace preparation authority');
+ok(controller.includes('workspaceData(') && controller.includes('BookingEditLockResolver') && controller.includes('NativeBookingCustomerResolver'), 'fragment shares booking, customer, and lock authorities');
+for (const token of ['data-etgp-dedicated-product="1"', 'data-etgp-product-key="{{ $product }}"', 'data-booking-id="{{ $bookingId }}"', 'data-booking-reference=', 'data-currency=', 'data-etgp-booking-locked=', 'data-etgp-booking-status=', 'data-etgp-selected-products=', 'data-et-dedicated-product-header="1"', 'data-etgp-dedicated-product-host', 'data-etgp-dedicated-product-body', 'data-et-dedicated-loading']) ok(partial.includes(token), `fragment preserves ${token}`);
+for (const token of ['<!DOCTYPE', '<html', '<head ', '<head>', '<body', 'general-progressive-step1.js', 'general-progressive-step1.css', '<script', 'products-air.js', 'dedicated-product-core.js']) ok(!partial.toLowerCase().includes(token.toLowerCase()), `fragment excludes ${token}`);
+ok(partial.includes('GENERAL / MULTI-SERVICE') && partial.includes('Booking Register') && partial.includes('Client Preview') && partial.includes('Workspace'), 'fragment retains dedicated Air header/context');
+ok(!partial.includes('<h2>{{ $productLabel }}</h2>'), 'duplicate standalone product heading remains absent');
+ok(fullView.includes("@include('operations.bookings.partials.product-workspace-v113305')") && fullView.includes('@extends($layoutMeta'), 'full-page view still uses the native layout and shared markup');
+ok(controller.includes("view('operations.bookings.product-workspace-v113305'") && controller.includes("view('operations.bookings.partials.product-workspace-v113305'"), 'full and fragment views remain separate response contracts');
+ok(!controller.includes('air-product') && !partial.includes('air-product'), 'fragment does not preload Air product data');
+ok(air.includes("'/system/erp-bookings/'+bookingId+'/air-product'") && core.includes('setActiveRoot'), 'Air data and C1 mount authorities remain client-owned');
+ok(routes.includes("'/operations/bookings/{booking}/products/{product}'") && routes.includes("whereIn('product', ['air', 'hotel', 'transport', 'visa', 'other-services'])"), 'existing full product route remains present and constrained');
+console.log(`PASS ${pass} Air fragment contract assertions`);

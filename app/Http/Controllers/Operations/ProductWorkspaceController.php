@@ -18,6 +18,22 @@ final class ProductWorkspaceController extends Controller
 
     public function show(Request $request, int $booking, string $product, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): View
     {
+        $data = $this->workspaceData($request, $booking, $product, $layout, $customer, $locks);
+        $timing = DedicatedProductTimingContext::forRequest($request);
+        $timing?->start('view_object_create');
+        $view = view('operations.bookings.product-workspace-v113305', $data);
+        $timing?->stop('view_object_create');
+        return $view;
+    }
+
+    public function fragment(Request $request, int $booking, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): View
+    {
+        $data = $this->workspaceData($request, $booking, 'air', $layout, $customer, $locks);
+        return view('operations.bookings.partials.product-workspace-v113305', $data);
+    }
+
+    private function workspaceData(Request $request, int $booking, string $product, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): array
+    {
         $timing = DedicatedProductTimingContext::forRequest($request);
         $timing?->start('controller_total');
 
@@ -42,8 +58,9 @@ final class ProductWorkspaceController extends Controller
             ? $timing->measure('lock_from_row', fn (): array => $locks->fromRow($booking))
             : $locks->fromRow($booking);
 
-        $timing?->start('view_object_create');
-        $view = view('operations.bookings.product-workspace-v113305', [
+        $timing?->stop('controller_total');
+
+        return [
             'layoutMeta' => $layoutMeta,
             'bookingId' => (int) $row->id,
             'booking' => $booking,
@@ -51,10 +68,6 @@ final class ProductWorkspaceController extends Controller
             'lock' => $lock,
             'product' => $product,
             'selectedProducts' => [],
-        ]);
-        $timing?->stop('view_object_create');
-        $timing?->stop('controller_total');
-
-        return $view;
+        ];
     }
 }

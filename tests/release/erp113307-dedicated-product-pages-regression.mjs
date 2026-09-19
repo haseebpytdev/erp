@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 const routes = read('routes/erp103179.php');
 const controller = read('app/Http/Controllers/Operations/ProductWorkspaceController.php');
-const view = read('resources/views/operations/bookings/product-workspace-v113305.blade.php');
+const view = read('resources/views/operations/bookings/product-workspace-v113305.blade.php') + read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
 const runtime = read('public/erp11390/general-progressive-step1.js');
 const bookingFocus = read('public/erp11335/booking-focus.js');
 const bookingCss = read('public/erp-theme/modules/booking.css');
