@@ -18,7 +18,7 @@ final class ProductWorkspaceController extends Controller
 
     public function show(Request $request, int $booking, string $product, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): View
     {
-        $data = $this->workspaceData($request, $booking, $product, $layout, $customer, $locks);
+        $data = $this->workspaceData($request, $booking, $product, $layout, $customer, $locks, true);
         $timing = DedicatedProductTimingContext::forRequest($request);
         $timing?->start('view_object_create');
         $view = view('operations.bookings.product-workspace-v113305', $data);
@@ -28,11 +28,11 @@ final class ProductWorkspaceController extends Controller
 
     public function fragment(Request $request, int $booking, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): View
     {
-        $data = $this->workspaceData($request, $booking, 'air', $layout, $customer, $locks);
+        $data = $this->workspaceData($request, $booking, 'air', $layout, $customer, $locks, false);
         return view('operations.bookings.partials.product-workspace-v113305', $data);
     }
 
-    private function workspaceData(Request $request, int $booking, string $product, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): array
+    private function workspaceData(Request $request, int $booking, string $product, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks, bool $resolveLayout): array
     {
         $timing = DedicatedProductTimingContext::forRequest($request);
         $timing?->start('controller_total');
@@ -48,9 +48,11 @@ final class ProductWorkspaceController extends Controller
         abort_unless($row, 404);
         $booking = (array) $row;
 
-        $layoutMeta = $timing
-            ? $timing->measure('layout_resolve', fn (): array => $layout->resolve())
-            : $layout->resolve();
+        $layoutMeta = $resolveLayout
+            ? ($timing
+                ? $timing->measure('layout_resolve', fn (): array => $layout->resolve())
+                : $layout->resolve())
+            : [];
         $customerIdentity = $timing
             ? $timing->measure('customer_resolve', fn (): array => $customer->resolve((int) $row->id, $timing))
             : $customer->resolve((int) $row->id);
