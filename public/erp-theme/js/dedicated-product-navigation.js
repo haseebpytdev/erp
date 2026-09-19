@@ -9,6 +9,9 @@
   if(!target)return;
   var navigation=null,assetPromises=Object.create(null);
   var normalAirUrl=airLink.href;
+  var committedAirUrl=normalAirUrl;
+  var navigationScript=document.querySelector('script[data-et-dedicated-product-navigation]');
+  var navigationVersion=navigationScript&&navigationScript.getAttribute('data-et-dedicated-product-navigation')||'';
   var bookingMatch=normalAirUrl.match(/\/operations\/bookings\/(\d+)\/products\/air$/);
   if(!bookingMatch)return;
   var bookingId=bookingMatch[1];
@@ -26,9 +29,9 @@
     return assetPromises[marker];
   };
   var ensureAssets=function(){
-    var version='';
+    var version=navigationVersion;
     var existing=document.querySelector('[data-et-dedicated-product-core]');
-    if(existing)version=existing.getAttribute('data-et-dedicated-product-core')||'';
+    if(!version&&existing)version=existing.getAttribute('data-et-dedicated-product-core')||'';
     var css='/system/erp-assets/erp-professional.css?module=operations&role=focused&dedicated=1&product=air'+(version?'&v='+encodeURIComponent(version):'');
     return Promise.all([stylesheet(css,'dedicated-air-css')])
       .then(function(){return script('/system/erp-assets/dedicated-product-core.js'+(version?'?v='+encodeURIComponent(version):''),'dedicated-product-core',function(){return !!window.etDedicatedProductCore;});})
@@ -54,10 +57,10 @@
     navigation={controller:new AbortController()};airLink.setAttribute('data-et-fast-nav-loading','1');
     var controller=navigation.controller;
     Promise.all([ensureAssets(),fetch(fragmentUrl,{credentials:'same-origin',headers:{Accept:'text/html','X-Requested-With':'XMLHttpRequest'},signal:controller.signal}).then(function(response){if(!response.ok)throw new Error('Fragment request failed.');return response.text();})])
-      .then(function(results){var root=validFragment(results[1]);if(!root)throw new Error('Invalid Air fragment.');target.innerHTML='';target.appendChild(document.importNode(root,true));var mountedRoot=target.querySelector('[data-etgp-dedicated-product="1"]');if(!window.etDedicatedAirProduct||window.etDedicatedAirProduct.mount(mountedRoot)!==true)throw new Error('Air mount failed.');window.history.pushState({etAirFast:true},'',normalAirUrl);})
+      .then(function(results){var root=validFragment(results[1]);if(!root)throw new Error('Invalid Air fragment.');target.innerHTML='';target.appendChild(document.importNode(root,true));var mountedRoot=target.querySelector('[data-etgp-dedicated-product="1"]');if(!window.etDedicatedAirProduct||window.etDedicatedAirProduct.mount(mountedRoot)!==true)throw new Error('Air mount failed.');var review=document.querySelector('[data-et-booking-review-entry="1"]');if(review)review.remove();committedAirUrl=normalAirUrl;window.history.pushState({etAirFast:true},'',normalAirUrl);})
       .catch(function(){fallback();})
       .finally(function(){airLink.removeAttribute('data-et-fast-nav-loading');navigation=null;});
   };
   airLink.addEventListener('click',navigate);
-  window.addEventListener('popstate',function(){var api=window.etDedicatedAirProduct;if(api&&api.getState){var state=api.getState();if(state.saveInFlight||(state.dirty||state.draftPending)&&!window.confirm('Air data has unsaved changes. Leave this workspace?')){window.history.pushState(window.history.state,'',window.location.href);return;}}window.location.assign(window.location.href);});
+  window.addEventListener('popstate',function(){var api=window.etDedicatedAirProduct;if(api&&api.getState){var state=api.getState();if(state.saveInFlight||(state.dirty||state.draftPending)&&!window.confirm('Air data has unsaved changes. Leave this workspace?')){window.history.replaceState(window.history.state,'',committedAirUrl);return;}}window.location.assign(window.location.href);});
 })(window,document);

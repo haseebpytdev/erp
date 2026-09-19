@@ -14,6 +14,9 @@ ok(navigation.includes('[data-et-booking-products-launcher="1"]') && navigation.
 ok(navigation.includes('event.preventDefault()') && navigation.includes('event.button!==0') && navigation.includes('event.metaKey') && navigation.includes('event.ctrlKey') && navigation.includes('event.shiftKey') && navigation.includes('event.altKey'), 'eligible primary clicks are intercepted while modified clicks remain native');
 ok(navigation.includes("/products/air/fragment") && navigation.includes("Accept:'text/html'") && navigation.includes("'X-Requested-With':'XMLHttpRequest'") && navigation.includes("credentials:'same-origin'"), 'fragment fetch contract is exact');
 ok(navigation.includes('AbortController') && navigation.includes('if(navigation)return'), 'concurrent navigation is guarded and abortable');
+ok(navigation.includes('data-et-dedicated-product-navigation') && navigation.includes('navigationVersion'), 'asset version comes from the navigation script marker');
+ok(navigation.includes('committedAirUrl') && navigation.includes('replaceState(window.history.state,\'\',committedAirUrl)'), 'blocked popstate restores the committed Air URL');
+ok(navigation.includes("document.querySelector('[data-et-booking-review-entry=\"1\"]')") && navigation.includes('review.remove()'), 'native floating Review action is removed only after successful commit');
 ok(navigation.includes("querySelectorAll('[data-etgp-dedicated-product=\"1\"]')") && navigation.includes("data-etgp-product-key") && navigation.includes('data-booking-id'), 'fragment markup and booking identity are validated before mutation');
 ok(navigation.includes('target.innerHTML=') && navigation.includes('target=launcher.closest(\'main\')'), 'only the proven native main workspace target is replaced');
 ok(navigation.includes('window.etDedicatedAirProduct.mount(mountedRoot)'), 'replacement root mounts through the accepted Air seam');
