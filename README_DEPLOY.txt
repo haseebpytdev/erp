@@ -1,6 +1,6 @@
-ERP-11.3.321 DIRECT UPLOAD - SHARED SHELL SELECTOR CONTAINMENT FIX
+ERP-11.3.322 DIRECT UPLOAD - COMMERCIAL SUMMARY AUTHORITY CORRECTION
 
-Active release: v1.1.33.321-ERP11.3.321
+Active release: v1.1.33.322-ERP11.3.322
 
 Deployment is a manual cPanel upload/extract. This release has no migration.
 After extraction, clear Application Cache and perform Ctrl+F5 / a hard refresh.
