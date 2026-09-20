@@ -8,6 +8,8 @@
   var target=launcher.closest('main');
   if(!target)return;
   var navigation=null,assetPromises=Object.create(null);
+  var productPrepaintClass='et-booking-products-prepaint';
+  var navigationProductPrepaintWasPresent=false;
   var normalAirUrl=airLink.href;
   var committedAirUrl=normalAirUrl;
   var navigationScript=document.querySelector('script[data-et-dedicated-product-navigation]');
@@ -47,17 +49,31 @@
     if(!root.querySelector('[data-etgp-dedicated-product-host]')||!root.querySelector('[data-etgp-dedicated-product-body]'))return null;
     return root;
   };
-  var fallback=function(){if(navigation&&navigation.controller)navigation.controller.abort();window.location.assign(normalAirUrl);};
+  var rollbackProductPrepaint=function(){
+    if(!navigationProductPrepaintWasPresent&&document.documentElement&&document.documentElement.classList){
+      document.documentElement.classList.remove(productPrepaintClass);
+    }
+  };
+  var fallback=function(){
+    rollbackProductPrepaint();
+    if(navigation&&navigation.controller)navigation.controller.abort();
+    window.location.assign(normalAirUrl);
+  };
   var navigate=function(event){
     if(event.button!==0||event.defaultPrevented||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||airLink.target==='_blank'||airLink.hasAttribute('download'))return;
     event.preventDefault();
     if(navigation)return;
+    navigationProductPrepaintWasPresent=!!(
+      document.documentElement
+      && document.documentElement.classList
+      && document.documentElement.classList.contains(productPrepaintClass)
+    );
     var state=window.etDedicatedAirProduct&&window.etDedicatedAirProduct.getState?window.etDedicatedAirProduct.getState():null;
     if(state&&(state.saveInFlight||state.dirty||state.draftPending)){if(!window.confirm('Air data has unsaved changes. Continue to Air workspace?'))return;}
     navigation={controller:new AbortController()};airLink.setAttribute('data-et-fast-nav-loading','1');
     var controller=navigation.controller;
     Promise.all([ensureAssets(),fetch(fragmentUrl,{credentials:'same-origin',headers:{Accept:'text/html','X-Requested-With':'XMLHttpRequest'},signal:controller.signal}).then(function(response){if(!response.ok)throw new Error('Fragment request failed.');return response.text();})])
-      .then(function(results){var root=validFragment(results[1]);if(!root)throw new Error('Invalid Air fragment.');target.innerHTML='';target.appendChild(document.importNode(root,true));var mountedRoot=target.querySelector('[data-etgp-dedicated-product="1"]');if(!window.etDedicatedAirProduct||window.etDedicatedAirProduct.mount(mountedRoot)!==true)throw new Error('Air mount failed.');var review=document.querySelector('[data-et-booking-review-entry="1"]');if(review)review.remove();committedAirUrl=normalAirUrl;window.history.pushState({etAirFast:true},'',normalAirUrl);})
+      .then(function(results){var root=validFragment(results[1]);if(!root)throw new Error('Invalid Air fragment.');target.innerHTML='';target.appendChild(document.importNode(root,true));if(document.documentElement&&document.documentElement.classList)document.documentElement.classList.add(productPrepaintClass);var mountedRoot=target.querySelector('[data-etgp-dedicated-product="1"]');if(!window.etDedicatedAirProduct||window.etDedicatedAirProduct.mount(mountedRoot)!==true)throw new Error('Air mount failed.');var review=document.querySelector('[data-et-booking-review-entry="1"]');if(review)review.remove();committedAirUrl=normalAirUrl;window.history.pushState({etAirFast:true},'',normalAirUrl);})
       .catch(function(){fallback();})
       .finally(function(){airLink.removeAttribute('data-et-fast-nav-loading');navigation=null;});
   };
