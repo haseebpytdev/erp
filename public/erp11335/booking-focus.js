@@ -2,7 +2,10 @@
 'use strict';
 
 var html=document.documentElement;
-if(!html.classList.contains('et-booking-focus-prepaint'))return;
+
+window.etBookingFocus=window.etBookingFocus||{};
+var etBookingFocusMountPresentation=function(root){
+if(!html.classList.contains('et-booking-focus-prepaint')&&!root)return false;
 
 document.body.classList.add('et-booking-focus-mode');
 
@@ -11,7 +14,7 @@ document.body.classList.add('et-booking-focus-mode');
  * marker, but it gives all focused booking products one stable hook for future
  * UI work and avoids route-specific DOM guessing.
  */
-var focusRoot=document.querySelector(
+var focusRoot=root||document.querySelector(
   '#gp-booking,.et-air-workspace-103172,[data-booking-workspace],'
   +'.page-wrapper > .page-body > .container-xl,'
   +'.page-wrapper > .page-body > .container,'
@@ -56,10 +59,10 @@ if(existingMenu){
    * Unified Group Umrah still owns its drawer behavior.
    * Air now uses this shared Menu exactly like native bookings.
    */
-  return;
+  return true;
 }
 
-if(!sidebar)return;
+if(!sidebar)return false;
 
 var overlay=document.createElement('div');
 overlay.className='et-booking-focus-overlay';
@@ -381,6 +384,12 @@ document.addEventListener('keydown',function(e){
 window.addEventListener('pageshow',function(){
   closeMenu();
 });
+return true;
+};
+window.etBookingFocus.mountPresentation=etBookingFocusMountPresentation;
+if(html.classList.contains('et-booking-focus-prepaint')){
+  etBookingFocusMountPresentation(document.querySelector('[data-booking-workspace],main'));
+}
 })();
 
 

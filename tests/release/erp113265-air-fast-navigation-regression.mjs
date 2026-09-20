@@ -3,6 +3,7 @@ import fs from 'node:fs';
 
 const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 const navigation = read('public/erp-theme/js/dedicated-product-navigation.js');
+const bookingFocus = read('public/erp11335/booking-focus.js');
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 const routes = read('routes/erp103179.php');
 const assetController = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
@@ -28,4 +29,7 @@ ok(!navigation.includes('general-progressive-step1.js') && !navigation.includes(
 ok(routes.includes("system.erp-assets.dedicated-product-navigation") && assetController.includes('dedicatedNavigation'), 'navigation module uses authenticated ERP asset delivery');
 ok(presenter.includes('data-et-dedicated-product-navigation') && presenter.includes('data-et-booking-products-launcher="1"'), 'navigation module is injected only with the native Booking products launcher');
 ok(partial.includes('data-etgp-dedicated-product-body'), 'fragment target retains the dedicated product host contract');
+ok(bookingFocus.includes('window.etBookingFocus=window.etBookingFocus||{}') && bookingFocus.includes('mountPresentation') && bookingFocus.includes('etBookingFocusMountPresentation'), 'booking-focus exposes the reusable presentation seam');
+ok(bookingFocus.includes('window.etBookingFocus.mountPresentation=etBookingFocusMountPresentation') && bookingFocus.includes('etBookingFocusMountPresentation(document.querySelector'), 'initial document execution uses the same presentation seam');
+ok(bookingFocus.includes("if(existingMenu)") && bookingFocus.includes('return true;'), 'presentation seam is idempotent when the current Menu already exists');
 console.log(`PASS ${pass} Air fast-navigation contract assertions`);

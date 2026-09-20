@@ -10,6 +10,7 @@
   var navigation=null,assetPromises=Object.create(null);
   var productPrepaintClass='et-booking-products-prepaint';
   var navigationProductPrepaintWasPresent=false;
+  var visualState=null;
   var normalAirUrl=airLink.href;
   var committedAirUrl=normalAirUrl;
   var navigationScript=document.querySelector('script[data-et-dedicated-product-navigation]');
@@ -49,12 +50,30 @@
     if(!root.querySelector('[data-etgp-dedicated-product-host]')||!root.querySelector('[data-etgp-dedicated-product-body]'))return null;
     return root;
   };
+  var captureVisualState=function(){
+    var root=document.documentElement,classes={};
+    ['et-booking-products-prepaint','et-general-progressive-step1-11390','etgp-step1-live-11390','etgp-step1-ready-11390','etgp-step1-fallback-11390'].forEach(function(name){classes[name]=!!(root&&root.classList&&root.classList.contains(name));});
+    var stylesheet=document.querySelector('link[data-et-general-progressive-css]');
+    if(!stylesheet)stylesheet=Array.prototype.find.call(document.querySelectorAll('link[rel="stylesheet"]'),function(link){return /general-progressive-step1\.css/i.test(String(link.href||link.getAttribute('href')||''));});
+    return {classes:classes,stylesheet:stylesheet,stylesheetDisabled:stylesheet?!!stylesheet.disabled:false};
+  };
+  var restoreVisualState=function(state){
+    if(!state||!document.documentElement||!document.documentElement.classList)return;
+    Object.keys(state.classes).forEach(function(name){document.documentElement.classList.toggle(name,state.classes[name]);});
+    if(state.stylesheet)state.stylesheet.disabled=state.stylesheetDisabled;
+  };
+  var retireGeneralVisualState=function(state){
+    var root=document.documentElement;
+    ['et-general-progressive-step1-11390','etgp-step1-live-11390','etgp-step1-ready-11390','etgp-step1-fallback-11390'].forEach(function(name){root.classList.remove(name);});
+    if(state&&state.stylesheet)state.stylesheet.disabled=true;
+  };
   var rollbackProductPrepaint=function(){
     if(!navigationProductPrepaintWasPresent&&document.documentElement&&document.documentElement.classList){
       document.documentElement.classList.remove(productPrepaintClass);
     }
   };
   var fallback=function(){
+    restoreVisualState(visualState);
     rollbackProductPrepaint();
     if(navigation&&navigation.controller)navigation.controller.abort();
     window.location.assign(normalAirUrl);
@@ -68,12 +87,25 @@
       && document.documentElement.classList
       && document.documentElement.classList.contains(productPrepaintClass)
     );
+    visualState=captureVisualState();
     var state=window.etDedicatedAirProduct&&window.etDedicatedAirProduct.getState?window.etDedicatedAirProduct.getState():null;
     if(state&&(state.saveInFlight||state.dirty||state.draftPending)){if(!window.confirm('Air data has unsaved changes. Continue to Air workspace?'))return;}
     navigation={controller:new AbortController()};airLink.setAttribute('data-et-fast-nav-loading','1');
     var controller=navigation.controller;
     Promise.all([ensureAssets(),fetch(fragmentUrl,{credentials:'same-origin',headers:{Accept:'text/html','X-Requested-With':'XMLHttpRequest'},signal:controller.signal}).then(function(response){if(!response.ok)throw new Error('Fragment request failed.');return response.text();})])
-      .then(function(results){var root=validFragment(results[1]);if(!root)throw new Error('Invalid Air fragment.');target.innerHTML='';target.appendChild(document.importNode(root,true));if(document.documentElement&&document.documentElement.classList)document.documentElement.classList.add(productPrepaintClass);var mountedRoot=target.querySelector('[data-etgp-dedicated-product="1"]');if(!window.etDedicatedAirProduct||window.etDedicatedAirProduct.mount(mountedRoot)!==true)throw new Error('Air mount failed.');var review=document.querySelector('[data-et-booking-review-entry="1"]');if(review)review.remove();committedAirUrl=normalAirUrl;window.history.pushState({etAirFast:true},'',normalAirUrl);})
+      .then(function(results){
+        var root=validFragment(results[1]);
+        if(!root)throw new Error('Invalid Air fragment.');
+        target.innerHTML='';
+        target.appendChild(document.importNode(root,true));
+        if(document.documentElement&&document.documentElement.classList)document.documentElement.classList.add(productPrepaintClass);
+        var mountedRoot=target.querySelector('[data-etgp-dedicated-product="1"]');
+        retireGeneralVisualState(visualState);
+        if(!window.etBookingFocus||typeof window.etBookingFocus.mountPresentation!=='function'||window.etBookingFocus.mountPresentation(mountedRoot)!==true)throw new Error('Booking focus presentation failed.');
+        if(!window.etDedicatedAirProduct||window.etDedicatedAirProduct.mount(mountedRoot)!==true)throw new Error('Air mount failed.');
+        var review=document.querySelector('[data-et-booking-review-entry="1"]');if(review)review.remove();
+        committedAirUrl=normalAirUrl;window.history.pushState({etAirFast:true},'',normalAirUrl);
+      })
       .catch(function(){fallback();})
       .finally(function(){airLink.removeAttribute('data-et-fast-nav-loading');navigation=null;});
   };
