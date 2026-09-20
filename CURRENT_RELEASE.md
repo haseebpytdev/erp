@@ -1,16 +1,16 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.319
-APPLICATION_VERSION=v1.1.33.319-ERP11.3.319
+CURRENT_VERSION=ERP-11.3.320
+APPLICATION_VERSION=v1.1.33.320-ERP11.3.320
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.319
+LAST_PACKAGED_RELEASE=ERP-11.3.320
 ```
 
-ERP-11.3.319 is a narrow Air fast-navigation root ownership fix. It preserves
+ERP-11.3.320 is a narrow Air fast-navigation root ownership fix. It preserves
 the dedicated-product presentation state during successful Booking → Air
 fragment navigation and rolls transaction-owned state back on failure. The
 dedicated Air runtime remains isolated from general progressive assets; Air
