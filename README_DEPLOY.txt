@@ -1,6 +1,6 @@
-ERP-11.3.322 DIRECT UPLOAD - COMMERCIAL SUMMARY AUTHORITY CORRECTION
+ERP-11.3.323 DIRECT UPLOAD - COMMERCIAL RESOLVER IMPORT HOTFIX
 
-Active release: v1.1.33.322-ERP11.3.322
+Active release: v1.1.33.323-ERP11.3.323
 
 Deployment is a manual cPanel upload/extract. This release has no migration.
 After extraction, clear Application Cache and perform Ctrl+F5 / a hard refresh.
