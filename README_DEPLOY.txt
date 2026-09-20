@@ -1,6 +1,6 @@
-ERP-11.3.323 DIRECT UPLOAD - COMMERCIAL RESOLVER IMPORT HOTFIX
+ERP-11.3.324 DIRECT UPLOAD - BOOKING KPI AUTHORITY CORRECTION
 
-Active release: v1.1.33.323-ERP11.3.323
+Active release: v1.1.33.324-ERP11.3.324
 
 Deployment is a manual cPanel upload/extract. This release has no migration.
 After extraction, clear Application Cache and perform Ctrl+F5 / a hard refresh.
