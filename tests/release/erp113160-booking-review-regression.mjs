@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const read=p=>fs.readFileSync(new URL('../../'+p,import.meta.url),'utf8');
 const controller=read('app/Http/Controllers/Operations/GeneralBookingReviewController.php');
 const commercialResolver=read('app/Services/Operations/BookingCommercialCompletenessResolver.php');
+const commercialSummaryResolver=read('app/Services/Operations/GeneralBookingCommercialSummaryResolver.php');
 const airController=read('app/Http/Controllers/Operations/GeneralBookingAirProductController.php');
 const hotelController=read('app/Http/Controllers/Operations/GeneralBookingHotelProductController.php');
 const transportController=read('app/Http/Controllers/Operations/GeneralBookingTransportProductController.php');
@@ -62,6 +63,6 @@ lacks(view,'<ul class="br-checks">','redundant completion text list is removed c
 has(view,"{{ $completion['done'] }} of {{ $completion['total'] }} Completed · {{ $completion['percent'] }}%",'aggregate completion indicator remains');
 has(view,'background:#fff','color UI uses white cards');has(view,'#1769d2','color UI uses primary blue');has(view,'#21a078','Hotel uses teal accent');has(view,'#7758c8','Transport uses purple accent');has(view,'#e8872e','Visa uses orange accent');
 has(controller,'array_slice($rows,0,3)','long service summaries are bounded');
-has(controller,"'vendor_cost_total'",'vendor total is centralized server-side');has(controller,"'gross_margin'",'margin is centralized server-side');
-has(controller,"'agent_commission'",'agent commission uses booking authority');has(controller,"'salesperson_commission'",'salesperson commission uses booking authority');
+has(commercialSummaryResolver,"'vendor_cost_total'",'vendor total is centralized server-side');has(commercialSummaryResolver,"'gross_margin'",'margin is centralized server-side');
+has(commercialSummaryResolver,"'agent_commission'",'agent commission uses booking authority');has(commercialSummaryResolver,"'salesperson_commission'",'salesperson commission uses booking authority');
 console.log(`ERP-11.3.160 Booking Review regression checks passed: ${checks}`);

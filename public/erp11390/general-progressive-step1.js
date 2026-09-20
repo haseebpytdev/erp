@@ -768,16 +768,18 @@ var etgpServerSelectedProducts113180=[];
    show unsaved local totals inside their own workspace, but only this endpoint
    is allowed to refresh the top Booking Value / Travel Status cards. */
 var etgpOperationalSummarySequence113153=0;
+var etgpOperationalSummaryInFlight113153={};
 var etgpBookingLockState113162={locked:false,status:'DRAFT',reason:''};
 var etgpBookingCommercialAuthority113302={bookingValue:null,supplierCost:null,currency:'PKR'};
 var etgpBookingCommercialDisplay113302=function(data){
   data=data||{};
   var products=Object.assign({},data.product_customer_totals||{});
-  var rawBookingValue=data.persisted_booking_value,rawSupplierCost=data.supplier_cost;
+  var rawBookingValue=data.final_booking_value!==undefined?data.final_booking_value:data.persisted_booking_value,rawSupplierCost=data.supplier_cost_total!==undefined?data.supplier_cost_total:data.supplier_cost;
   var validRaw=function(value){return value!==null&&value!==undefined&&value!=='';};
   var bookingValue=validRaw(rawBookingValue)?Number(rawBookingValue):NaN,supplierCost=validRaw(rawSupplierCost)?Number(rawSupplierCost):NaN;
   var validBooking=Number.isFinite(bookingValue),validSupplier=Number.isFinite(supplierCost);
-  return {products:products,bookingValue:validBooking?bookingValue:null,supplierCost:validSupplier?supplierCost:null,margin:validBooking&&validSupplier?bookingValue-supplierCost:null};
+  var rawMargin=data.gross_margin,margin=validRaw(rawMargin)?Number(rawMargin):(validBooking&&validSupplier?bookingValue-supplierCost:NaN);
+  return {products:products,bookingValue:validBooking?bookingValue:null,supplierCost:validSupplier?supplierCost:null,margin:Number.isFinite(margin)?margin:null};
 };
 var etgpRenderBookingCommercialSummary113302=function(root){
   if(!root)return;
@@ -828,13 +830,16 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
   }
   var url='/system/erp-bookings/'+bookingId+'/operational-summary';
   if(selected.length)url+='?selected_products='+encodeURIComponent(selected.join(','));
-  return fetch(url,{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
+  var requestKey=String(bookingId)+'|'+selected.join(',');
+  if(etgpOperationalSummaryInFlight113153[requestKey])return etgpOperationalSummaryInFlight113153[requestKey];
+  var request=fetch(url,{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
     .then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error('Booking summary could not be refreshed.');return data;});})
     .then(function(data){
       if(etgpDedicatedAirActive113318())return null;
       if(sequence!==etgpOperationalSummarySequence113153)return data;
       var commercial=etgpBookingCommercialDisplay113302(data);
-      var amount=Math.max(0,Number(data.booking_value||0));
+      var amount=Number(data.final_booking_value);
+      if(!Number.isFinite(amount))amount=Math.max(0,Number(data.booking_value||0));
       var currency=String(data.currency||'PKR').trim().toUpperCase()||'PKR';
       etgpProductCustomerTotals113127=Object.assign({},data.product_customer_totals||{});
       etgpProductCurrency113127=currency;
@@ -843,7 +848,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       var serverSelected=Array.isArray(data.selected_products)?data.selected_products.map(function(key){return String(key||'').toLowerCase();}):[];
       var selectionChanged=serverSelected.join(',')!==etgpServerSelectedProducts113180.join(',');
       etgpServerSelectedProducts113180=serverSelected;
-      etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),'Derived from saved product customer totals');
+      etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),'Resolved from saved booking commercial authority');
       var blockers=Array.isArray(data.readiness_blockers)?data.readiness_blockers:[];
       etgpAirSetKpi113124('Travel Status',data.travel_status||'PendingTravel',blockers.length?blockers[0]:'All selected travel services are ready');
       etgpApplyBookingLock113162(data);
@@ -852,7 +857,9 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
         if(root){var reference=root.dataset.bookingReference||'';var pax=passengerCount(root.querySelector('.etgp-passenger-card')||root);renderProducts(root,reference,pax);}
       }
       return data;
-    }).catch(function(){return null;});
+    }).catch(function(){return null;}).finally(function(){delete etgpOperationalSummaryInFlight113153[requestKey];});
+  etgpOperationalSummaryInFlight113153[requestKey]=request;
+  return request;
 };
 window.etgpRefreshPersistedBookingState113153=etgpRefreshPersistedBookingState113153;
 var etgpApplyBookingLock113162=function(data){
@@ -5357,6 +5364,15 @@ var build=function(){
     root,
     paxCount,
     loadSelected(reference).length
+  );
+
+  /* The main Booking mount owns one explicit operational-summary refresh so
+     the initial KPI/commercial card uses persisted server authority. The
+     in-flight map prevents product rendering or lifecycle refreshes from
+     issuing a duplicate request for the same booking. */
+  etgpRefreshPersistedBookingState113153(
+    etgpBookingId11397(),
+    loadSelected(reference)
   );
 
   if(!/\/operations\/bookings\/\d+\/products\/?$/i.test(String(window.location.pathname||''))){

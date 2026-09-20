@@ -14,7 +14,7 @@ use Throwable;
 
 final class GeneralBookingOperationalSummaryController extends Controller
 {
-    public function show(Request $request, int $booking, BookingTravelReadinessResolver $readiness, BookingEditLockResolver $locks, NativeSalesInvoiceInspector $invoices): JsonResponse
+    public function show(Request $request, int $booking, BookingTravelReadinessResolver $readiness, BookingEditLockResolver $locks, NativeSalesInvoiceInspector $invoices, GeneralBookingCommercialSummaryResolver $commercial): JsonResponse
     {
         abort_unless(Schema::hasTable('bookings'), 404);
         $bookingRow = DB::table('bookings')->where('id', $booking)->first();
@@ -25,33 +25,26 @@ final class GeneralBookingOperationalSummaryController extends Controller
         $transport = $this->snapshot(fn () => app(GeneralBookingTransportProductController::class)->show($request, $booking)->getData(true));
         $visa = $this->snapshot(fn () => app(GeneralBookingVisaProductController::class)->show($request, $booking)->getData(true));
 
-        $totals = [
-            'air' => $this->customerTotal($air),
-            'hotel' => $this->customerTotal($hotel),
-            'transport' => $this->customerTotal($transport),
-            'visa' => $this->customerTotal($visa),
-        ];
+        $summary = $commercial->resolve((array) $bookingRow, $air, $hotel, $transport, $visa);
         $selected = $this->selectedProducts($request, $booking, $air, $hotel, $transport, $visa);
         $state = $readiness->resolve((array) $bookingRow, $selected, $air, $hotel, $transport, $visa);
-        $currency = strtoupper(trim((string) (($air['capabilities']['booking_currency'] ?? null) ?: ($hotel['booking']['currency'] ?? null) ?: 'PKR')));
-        // Booking-level amounts are authoritative persisted values. Product
-        // snapshots remain a breakdown only; never derive the booking total
-        // by summing product customer totals here.
-        $bookingValue = isset($bookingRow->booking_value) && $bookingRow->booking_value !== null
-            ? (float) $bookingRow->booking_value : null;
-        $supplierCost = isset($bookingRow->supplier_cost) && $bookingRow->supplier_cost !== null
-            ? (float) $bookingRow->supplier_cost : null;
         $lock = $locks->fromRow((array) $bookingRow);
         $invoice = $invoices->find($booking);
 
         return response()->json([
             'ok' => true,
             'booking_id' => $booking,
-            'currency' => $currency ?: 'PKR',
-            'product_customer_totals' => $totals,
-            'booking_value' => array_sum($totals),
-            'persisted_booking_value' => $bookingValue,
-            'supplier_cost' => $supplierCost,
+            'currency' => $summary['currency'],
+            'product_customer_totals' => $summary['product_customer_totals'],
+            'product_supplier_totals' => $summary['product_supplier_totals'],
+            'gross_customer_total' => $summary['gross_customer_total'],
+            'gross_supplier_total' => $summary['gross_supplier_total'],
+            'booking_value' => $summary['gross_customer_total'],
+            'persisted_booking_value' => $summary['persisted_booking_value'],
+            'supplier_cost' => $summary['persisted_supplier_cost'],
+            'final_booking_value' => $summary['final_booking_value'],
+            'supplier_cost_total' => $summary['supplier_cost_total'],
+            'gross_margin' => $summary['gross_margin'],
             'selected_products' => $selected,
             'travel_status' => $lock['travel_status'],
             'travel_eligible' => $state['ready'],
@@ -73,11 +66,6 @@ final class GeneralBookingOperationalSummaryController extends Controller
             report($e);
             return [];
         }
-    }
-
-    private function customerTotal(array $snapshot): float
-    {
-        return max(0, (float) ($snapshot['summary']['customer_total'] ?? 0));
     }
 
     private function selectedProducts(Request $request, int $booking, array $air, array $hotel, array $transport, array $visa): array
