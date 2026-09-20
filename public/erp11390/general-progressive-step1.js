@@ -11,6 +11,18 @@ if(
   return;
 }
 
+/* Dedicated Air fast-navigation boundary. */
+var etgpDedicatedAirActive113318=function(){
+  var root=document.querySelector(
+    '[data-etgp-dedicated-product="1"][data-etgp-product-key="air"]'
+  );
+  return !!(
+    root
+    && document.documentElement
+    && document.documentElement.classList.contains('et-booking-products-prepaint')
+  );
+};
+
 var VERSION='ERP-11.3.142';
 
 
@@ -20,6 +32,7 @@ var VERSION='ERP-11.3.142';
  */
 var nativeRevealFallback11390=window.setTimeout(
   function(){
+    if(etgpDedicatedAirActive113318())return;
     if(
       !html.classList.contains(
         'etgp-step1-ready-11390'
@@ -804,6 +817,7 @@ var etgpSeedInitialBookingLock113162=function(){
 };
 window.etgpSeedInitialBookingLock113162=etgpSeedInitialBookingLock113162;
 var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
+  if(etgpDedicatedAirActive113318())return Promise.resolve(null);
   bookingId=Number(bookingId||0);if(!bookingId)return Promise.resolve(null);
   var sequence=++etgpOperationalSummarySequence113153;
   var selected=Array.isArray(selectedProducts)?selectedProducts:null;
@@ -817,6 +831,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
   return fetch(url,{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
     .then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error('Booking summary could not be refreshed.');return data;});})
     .then(function(data){
+      if(etgpDedicatedAirActive113318())return null;
       if(sequence!==etgpOperationalSummarySequence113153)return data;
       var commercial=etgpBookingCommercialDisplay113302(data);
       var amount=Math.max(0,Number(data.booking_value||0));
@@ -841,6 +856,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
 };
 window.etgpRefreshPersistedBookingState113153=etgpRefreshPersistedBookingState113153;
 var etgpApplyBookingLock113162=function(data){
+  if(etgpDedicatedAirActive113318())return;
   var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('main');
   if(!root)return;
   var invoice=data&&data.sales_invoice||null;
@@ -895,6 +911,7 @@ var etgpApplyBookingLock113162=function(data){
   Array.prototype.slice.call(root.querySelectorAll('[data-etgp-product-buttons] button,[data-etgp-product-buttons] [role="button"]')).forEach(function(el){el.disabled=true;el.setAttribute('aria-disabled','true');el.setAttribute('data-etgp-lock-disabled','1');el.style.pointerEvents='none';el.classList.add('etgp-static-product-indicator-113164');});
 };
 document.addEventListener('et:booking-product-saved',function(event){
+  if(etgpDedicatedAirActive113318())return;
   var detail=event&&event.detail||{};
   etgpRefreshPersistedBookingState113153(detail.bookingId||etgpBookingId11397(),detail.selectedProducts);
 });
@@ -1052,15 +1069,18 @@ var etgpAirSetKpi113124=function(labelWanted,valueText,noteText){
    value and immediately restore it if any other writer mutates the card. */
 var etgpTicketKpiState113126={desired:'—',note:'',observer:null};
 var etgpTicketKpiApply113126=function(){
+  if(etgpDedicatedAirActive113318())return;
   etgpAirSetKpi113124('Tickets',etgpTicketKpiState113126.desired,etgpTicketKpiState113126.note);
 };
 var etgpTicketKpiGuard113126=function(){
+  if(etgpDedicatedAirActive113318())return;
   var grid=document.querySelector('[data-etgp-kpis]');
   if(!grid)return;
   if(etgpTicketKpiState113126.observer){try{etgpTicketKpiState113126.observer.disconnect();}catch(e){}}
   etgpTicketKpiApply113126();
   var busy=false;
   etgpTicketKpiState113126.observer=new MutationObserver(function(){
+    if(etgpDedicatedAirActive113318())return;
     if(busy)return;
     var card=Array.prototype.slice.call(document.querySelectorAll('.etgp-kpi')).find(function(item){
       return norm(item.querySelector('.etgp-kpi-label')&&item.querySelector('.etgp-kpi-label').textContent||'')==='tickets';
@@ -1135,6 +1155,7 @@ var etgpAirDraft113314={apply:function(data,bookingId){return etgpAirApplyDraft1
 var etgpAirSave113314=function(bookingId,payload){return etgpAirRequest113106(bookingId,'PUT',payload).then(function(result){etgpAirDraft113314.clear(bookingId);return result;});};
 
 var etgpAirBackgroundMetricRefresh113106=function(){
+  if(etgpDedicatedAirActive113318())return Promise.resolve(null);
   fetch(window.location.href,{
     method:'GET',credentials:'same-origin',
     headers:{'X-Requested-With':'XMLHttpRequest','Accept':'text/html,application/xhtml+xml'}
@@ -1142,7 +1163,7 @@ var etgpAirBackgroundMetricRefresh113106=function(){
     if(!response.ok)return null;
     return response.text();
   }).then(function(htmlText){
-    if(!htmlText)return;
+    if(etgpDedicatedAirActive113318()||!htmlText)return;
     var fresh=new DOMParser().parseFromString(htmlText,'text/html');
     if(typeof window.etGeneralProgressiveStep1Sync11390==='function'){
       window.etGeneralProgressiveStep1Sync11390(fresh,['metrics']);
@@ -3558,6 +3579,7 @@ var requestReuseAutoLoad=function(passengerCard){
   passengerCard.dataset.etgpReuseAutoLoad='done';
   passengerCard.dataset.etgpReuseLoading='1';
   window.setTimeout(function(){
+    if(etgpDedicatedAirActive113318())return;
     try{searchButton.click();}catch(e){}
   },40);
 };
@@ -4233,6 +4255,7 @@ var etgpBuildQuickPassenger11397=function(passengerCard,editorHost){
   });
 
   document.addEventListener('click',function(event){
+    if(etgpDedicatedAirActive113318())return;
     if(!panel.contains(event.target))hideSuggestions();
   });
 
@@ -4733,11 +4756,14 @@ var etgpBuildQuickPassenger11397=function(passengerCard,editorHost){
   };
 
   var reconcileQuickPassenger113105=function(data,attempt){
+    if(etgpDedicatedAirActive113318())return;
     var delays=[180,420,900,1600,2600];
     attempt=attempt||0;
     if(attempt>=delays.length)return;
     window.setTimeout(function(){
+      if(etgpDedicatedAirActive113318())return;
       fetchFreshBookingDoc113102().then(function(doc){
+        if(etgpDedicatedAirActive113318())return;
         if(!freshDocHasPassenger113105(doc,data)){
           reconcileQuickPassenger113105(data,attempt+1);
           return;
@@ -5541,6 +5567,7 @@ var etgpBookingPassengerIdForVisibleRow113137=function(row){
 };
 
 var etgpForceAirProductRerender113137=function(){
+  if(etgpDedicatedAirActive113318())return;
   var root=document.querySelector('.etgp-step1');
   var passengerCard=document.querySelector('.etgp-passenger-card');
   if(!root||!passengerCard)return;
@@ -5552,6 +5579,7 @@ var etgpForceAirProductRerender113137=function(){
 };
 
 var etgpPersistPassengerFare113137=function(row,fareType){
+  if(etgpDedicatedAirActive113318())return Promise.resolve(null);
   var bookingId=etgpBookingId11397();
   var passengerId=etgpBookingPassengerIdForVisibleRow113137(row);
   fareType=etgpNormalizeFare113137(fareType);
@@ -5586,31 +5614,34 @@ var etgpSchedulePassengerFareAirSync113137=(function(){
   return function(forcePoll){
     clearTimeout(timer);
     timer=setTimeout(function(){
+      if(etgpDedicatedAirActive113318())return;
       var current=etgpPassengerFareSignature113137();
       if(!current)return;
       if(!last){last=current;return;}
       if(current===last){
-        if(forcePoll===true)window.setTimeout(function(){etgpSchedulePassengerFareAirSync113137(false);},220);
+        if(forcePoll===true)window.setTimeout(function(){if(!etgpDedicatedAirActive113318())etgpSchedulePassengerFareAirSync113137(false);},220);
         return;
       }
       last=current;
       if(running)return;
       running=true;
-      etgpForceAirProductRerender113137();
+      if(!etgpDedicatedAirActive113318())etgpForceAirProductRerender113137();
       window.setTimeout(function(){running=false;},350);
     },80);
   };
 })();
 
 var etgpBindPassengerFareAirSync113137=function(){
+  if(etgpDedicatedAirActive113318())return;
   var card=document.querySelector('.etgp-passenger-card');
   if(!card||card.dataset.etgpFareAirSync113137==='1')return;
   card.dataset.etgpFareAirSync113137='1';
   etgpSchedulePassengerFareAirSync113137(false);
-  var observer=new MutationObserver(function(){etgpSchedulePassengerFareAirSync113137(false);});
+  var observer=new MutationObserver(function(){if(!etgpDedicatedAirActive113318())etgpSchedulePassengerFareAirSync113137(false);});
   observer.observe(card,{subtree:true,childList:true,characterData:true});
 
   card.addEventListener('click',function(event){
+    if(etgpDedicatedAirActive113318())return;
     var button=event.target&&event.target.closest?event.target.closest('button,input[type="submit"]'):null;
     if(!button||norm(button.textContent||button.value||'')!=='apply')return;
     var row=button.closest('tr');
@@ -5624,12 +5655,12 @@ var etgpBindPassengerFareAirSync113137=function(){
        Air from that authoritative state. keepalive also survives a native form
        navigation on installed bases that still submit Apply traditionally. */
     etgpPersistPassengerFare113137(row,fare).then(function(){
-      window.setTimeout(etgpForceAirProductRerender113137,60);
-      window.setTimeout(etgpForceAirProductRerender113137,450);
+      window.setTimeout(function(){if(!etgpDedicatedAirActive113318())etgpForceAirProductRerender113137();},60);
+      window.setTimeout(function(){if(!etgpDedicatedAirActive113318())etgpForceAirProductRerender113137();},450);
     }).catch(function(){
       // Native Apply remains authoritative if this companion bridge cannot run;
       // delayed GETs retain the ERP-11.3.136 fallback behavior.
-      [450,1100].forEach(function(delay){window.setTimeout(etgpForceAirProductRerender113137,delay);});
+      [450,1100].forEach(function(delay){window.setTimeout(function(){if(!etgpDedicatedAirActive113318())etgpForceAirProductRerender113137();},delay);});
     });
   },true);
 };
@@ -5638,6 +5669,7 @@ window.etGeneralProgressiveStep1Sync11390=function(
   freshDoc,
   keys
 ){
+  if(etgpDedicatedAirActive113318())return false;
   if(
     !document.documentElement.classList.contains(
       'etgp-step1-live-11390'
@@ -5740,6 +5772,7 @@ window.etgpMountDedicatedProduct113305=function(root){
 };
 
 var etgpRunNativeBuild11390=function(){
+  if(etgpDedicatedAirActive113318())return;
   if(document.querySelector('[data-etgp-dedicated-product="1"]'))return;
   build();
 };
