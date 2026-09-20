@@ -3,10 +3,12 @@ import fs from 'node:fs';
 
 const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 const shell = read('public/erp-ui/erp-shell-spacing.css');
+const freshShell = read('public/erp-theme/et-shell.css');
 const professionalJs = read('public/erp-ui/erp-professional.js');
 const finalizeJs = read('public/erp-ui/erp-professional-finalize.js');
 const dashboardCss = read('public/erp-ui/erp-professional.css');
 const version = read('VERSION.txt').trim();
+const freshFirstChildSelector = 'body.et-ui-professional main > :first-child:not(.topbar):not(.top-bar):not(.app-header):not(.main-header):not(.navbar-horizontal):not(.et-ui-utility-topbar)';
 
 let pass = 0;
 const ok = (condition, label) => {
@@ -33,6 +35,11 @@ ok(
   shell.includes('main>.et-ui-utility-topbar+*') && shell.includes('margin-top:var(--et-shell-gutter-y)!important'),
   'shell adjacent-sibling top rhythm remains authoritative'
 );
+ok(!freshShell.includes('main>\n:first-child:not(.topbar)'), 'fresh shell has no malformed descendant first-child selector');
+ok(freshShell.includes(freshFirstChildSelector + '{'), 'fresh shell uses one immediate first-child spacing selector');
+ok(freshShell.includes(freshFirstChildSelector + '{\n  margin-top:var(--et-shell-gutter-y)!important;') || freshShell.includes(freshFirstChildSelector + '{\r\n  margin-top:var(--et-shell-gutter-y)!important;'), 'fresh shell preserves page-entry margin authority');
+ok(freshShell.includes('body.et-ui-professional main>.et-ui-utility-topbar+*'), 'fresh shell preserves utility-topbar sibling spacing');
+ok(!freshShell.includes('.etgp-air-workspace-113106{margin-top:'), 'no Air-specific margin workaround is introduced');
 ok(shell.includes('html.et-booking-focus-prepaint .app-shell{\n  grid-template-columns:minmax(0,1fr)!important;'), 'booking focus remains one-column');
 ok(!professionalJs.includes('style.gridTemplateColumns') && !finalizeJs.includes('style.gridTemplateColumns'), 'no JavaScript shell sizing is introduced');
 ok(!dashboardCss.includes('[data-et-dashboard-header="true"]{\n  grid-template-columns'), 'no Dashboard-specific grid workaround exists');

@@ -137,13 +137,7 @@ body.et-ui-professional main>.et-ui-utility-topbar+*{
 }
 
 
-body.et-ui-professional main>
-:first-child:not(.topbar)
-:not(.top-bar)
-:not(.app-header)
-:not(.main-header)
-:not(.navbar-horizontal)
-:not(.et-ui-utility-topbar){
+body.et-ui-professional main > :first-child:not(.topbar):not(.top-bar):not(.app-header):not(.main-header):not(.navbar-horizontal):not(.et-ui-utility-topbar){
   margin-top:var(--et-shell-gutter-y)!important;
 }
 
