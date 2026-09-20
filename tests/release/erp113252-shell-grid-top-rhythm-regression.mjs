@@ -9,6 +9,7 @@ const finalizeJs = read('public/erp-ui/erp-professional-finalize.js');
 const dashboardCss = read('public/erp-ui/erp-professional.css');
 const version = read('VERSION.txt').trim();
 const freshFirstChildSelector = 'body.et-ui-professional main > :first-child:not(.topbar):not(.top-bar):not(.app-header):not(.main-header):not(.navbar-horizontal):not(.et-ui-utility-topbar)';
+const freshWidthSelector = 'body.et-ui-professional main > :not(.topbar):not(.top-bar):not(.app-header):not(.main-header):not(.navbar-horizontal):not(.et-ui-utility-topbar):not(script):not(style)';
 
 let pass = 0;
 const ok = (condition, label) => {
@@ -36,7 +37,10 @@ ok(
   'shell adjacent-sibling top rhythm remains authoritative'
 );
 ok(!freshShell.includes('main>\n:first-child:not(.topbar)'), 'fresh shell has no malformed descendant first-child selector');
+ok(!freshShell.includes('main>\n:not(.topbar)'), 'fresh shell has no malformed descendant width selector');
 ok(freshShell.includes(freshFirstChildSelector + '{'), 'fresh shell uses one immediate first-child spacing selector');
+ok(freshShell.includes(freshWidthSelector + '{'), 'fresh shell uses one immediate-child width selector');
+ok(freshShell.includes(freshWidthSelector + '{\n  max-width:none!important;') || freshShell.includes(freshWidthSelector + '{\r\n  max-width:none!important;'), 'fresh shell preserves max-width authority');
 ok(freshShell.includes(freshFirstChildSelector + '{\n  margin-top:var(--et-shell-gutter-y)!important;') || freshShell.includes(freshFirstChildSelector + '{\r\n  margin-top:var(--et-shell-gutter-y)!important;'), 'fresh shell preserves page-entry margin authority');
 ok(freshShell.includes('body.et-ui-professional main>.et-ui-utility-topbar+*'), 'fresh shell preserves utility-topbar sibling spacing');
 ok(!freshShell.includes('.etgp-air-workspace-113106{margin-top:'), 'no Air-specific margin workaround is introduced');

@@ -147,15 +147,7 @@ body.et-ui-professional main > :first-child:not(.topbar):not(.top-bar):not(.app-
  * This removes the "container inside another container" appearance
  * visible in the New Booking recording.
  */
-body.et-ui-professional main>
-:not(.topbar)
-:not(.top-bar)
-:not(.app-header)
-:not(.main-header)
-:not(.navbar-horizontal)
-:not(.et-ui-utility-topbar)
-:not(script)
-:not(style){
+body.et-ui-professional main > :not(.topbar):not(.top-bar):not(.app-header):not(.main-header):not(.navbar-horizontal):not(.et-ui-utility-topbar):not(script):not(style){
   max-width:none!important;
 }
 
