@@ -4,6 +4,50 @@
 var html=document.documentElement;
 
 window.etBookingFocus=window.etBookingFocus||{};
+var etBookingFocusState={
+  sidebar:null,
+  overlay:null,
+  menu:null,
+  toolbar:null,
+  eventsBound:false,
+  unifiedMenu:false
+};
+var etBookingFocusClose=function(){
+  var sidebar=etBookingFocusState.sidebar;
+  var overlay=etBookingFocusState.overlay;
+  var menu=etBookingFocusState.menu;
+  if(sidebar){
+    sidebar.classList.remove('et-booking-focus-sidebar-open');
+    sidebar.style.setProperty('display','none','important');
+  }
+  if(overlay){
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden','true');
+  }
+  document.body.classList.remove('et-booking-focus-menu-open');
+  if(menu)menu.setAttribute('aria-expanded','false');
+};
+var etBookingFocusOpen=function(){
+  var sidebar=etBookingFocusState.sidebar;
+  var overlay=etBookingFocusState.overlay;
+  var menu=etBookingFocusState.menu;
+  if(!sidebar||!overlay)return;
+  sidebar.style.width=sidebar.getAttribute('data-et-booking-focus-width')||'240px';
+  sidebar.style.setProperty('display','block','important');
+  sidebar.classList.add('et-booking-focus-sidebar-open');
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden','false');
+  document.body.classList.add('et-booking-focus-menu-open');
+  if(menu)menu.setAttribute('aria-expanded','true');
+};
+var etBookingFocusToggle=function(event){
+  if(event){event.preventDefault();event.stopPropagation();}
+  var sidebar=etBookingFocusState.sidebar;
+  if(sidebar&&sidebar.classList.contains('et-booking-focus-sidebar-open'))etBookingFocusClose();
+  else etBookingFocusOpen();
+};
+/* Preserve the established seam name for static/runtime consumers. */
+var toggleMenu=etBookingFocusToggle;
 var etBookingFocusMountPresentation=function(root){
 if(!html.classList.contains('et-booking-focus-prepaint')&&!root)return false;
 
@@ -52,6 +96,7 @@ if(sidebar){
   );
   sidebar.style.setProperty('display','none','important');
 }
+etBookingFocusState.sidebar=sidebar;
 
 var existingMenu=document.querySelector('#gp-focus-menu');
 if(existingMenu){
@@ -59,61 +104,47 @@ if(existingMenu){
    * Unified Group Umrah still owns its drawer behavior.
    * Air now uses this shared Menu exactly like native bookings.
    */
+  etBookingFocusState.unifiedMenu=true;
   return true;
 }
 
 if(!sidebar)return false;
-
-var overlay=document.createElement('div');
-overlay.className='et-booking-focus-overlay';
+var overlay=document.querySelector('.et-booking-focus-overlay');
+if(!overlay){
+  overlay=document.createElement('div');
+  overlay.className='et-booking-focus-overlay';
+  document.body.appendChild(overlay);
+}
+overlay.setAttribute('data-et-booking-focus-owned','1');
 overlay.setAttribute('aria-hidden','true');
-document.body.appendChild(overlay);
+etBookingFocusState.overlay=overlay;
 
-var menu=null;
-var menuIsOpen=function(){
-  return sidebar.classList.contains('et-booking-focus-sidebar-open');
-};
-
-var closeMenu=function(){
-  sidebar.classList.remove('et-booking-focus-sidebar-open');
-  sidebar.style.setProperty('display','none','important');
-  overlay.classList.remove('open');
-  overlay.setAttribute('aria-hidden','true');
-  document.body.classList.remove('et-booking-focus-menu-open');
-  if(menu)menu.setAttribute('aria-expanded','false');
-};
-
-var openMenu=function(){
-  sidebar.style.width=sidebar.getAttribute('data-et-booking-focus-width')||'240px';
-  sidebar.style.setProperty('display','block','important');
-  sidebar.classList.add('et-booking-focus-sidebar-open');
-  overlay.classList.add('open');
-  overlay.setAttribute('aria-hidden','false');
-  document.body.classList.add('et-booking-focus-menu-open');
-  if(menu)menu.setAttribute('aria-expanded','true');
-};
-
-var toggleMenu=function(event){
-  if(event){
-    event.preventDefault();
-    event.stopPropagation();
-  }
-  if(menuIsOpen())closeMenu();
-  else openMenu();
-};
-
-var toolbar=document.createElement('div');
-toolbar.className='et-booking-focus-fallback';
+var toolbar=document.querySelector('[data-et-booking-focus-toolbar="1"]');
+if(!toolbar||!toolbar.parentNode){
+  toolbar=document.createElement('div');
+  toolbar.className='et-booking-focus-fallback';
+}
+toolbar.classList.add('et-booking-focus-fallback');
+toolbar.setAttribute('data-et-booking-focus-toolbar','1');
 toolbar.setAttribute('data-et-booking-focus-fallback','ERP-11.3.55');
 
-menu=document.createElement('button');
-menu.type='button';
-menu.className='et-booking-focus-btn';
-menu.textContent='☰ Menu';
-menu.setAttribute('aria-expanded','false');
-menu.setAttribute('aria-label','Open booking menu');
-menu.addEventListener('click',toggleMenu);
-toolbar.appendChild(menu);
+var menu=toolbar.querySelector('[data-et-booking-focus-menu="1"]');
+if(!menu){
+  menu=document.createElement('button');
+  menu.type='button';
+  menu.className='et-booking-focus-btn';
+  menu.textContent='☰ Menu';
+  menu.setAttribute('aria-expanded','false');
+  menu.setAttribute('aria-label','Open booking menu');
+  toolbar.appendChild(menu);
+}
+menu.setAttribute('data-et-booking-focus-menu','1');
+if(menu.getAttribute('data-et-booking-focus-bound')!=='1'){
+  menu.addEventListener('click',etBookingFocusToggle);
+  menu.setAttribute('data-et-booking-focus-bound','1');
+}
+etBookingFocusState.menu=menu;
+etBookingFocusState.toolbar=toolbar;
 
 var registerLink=Array.prototype.slice.call(sidebar.querySelectorAll('a[href]')).find(function(a){
   var t=norm(a.textContent);
@@ -374,16 +405,20 @@ requestAnimationFrame(normalizeNestedGroupPackageShell);
  * The unified semantic booking core at the end of this asset owns these panels
  * for AIR/GENERAL/VISA/HOTEL/native product workspaces.
  */
-overlay.addEventListener('click',function(event){
-  event.preventDefault();
-  closeMenu();
-});
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'&&menuIsOpen())closeMenu();
-});
-window.addEventListener('pageshow',function(){
-  closeMenu();
-});
+if(!etBookingFocusState.eventsBound){
+  etBookingFocusState.eventsBound=true;
+  overlay.addEventListener('click',function(event){
+    event.preventDefault();
+    etBookingFocusClose();
+  });
+  document.addEventListener('keydown',function(e){
+    var sidebar=etBookingFocusState.sidebar;
+    if(e.key==='Escape'&&sidebar&&sidebar.classList.contains('et-booking-focus-sidebar-open'))etBookingFocusClose();
+  });
+  window.addEventListener('pageshow',function(){
+    etBookingFocusClose();
+  });
+}
 return true;
 };
 window.etBookingFocus.mountPresentation=etBookingFocusMountPresentation;
