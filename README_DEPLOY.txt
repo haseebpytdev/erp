@@ -1,12 +1,12 @@
-ERP-11.3.316 DIRECT UPLOAD - DEDICATED AIR RUNTIME AND FAST NAVIGATION
+ERP-11.3.317 DIRECT UPLOAD - AIR FAST-NAVIGATION VISUAL PARITY HOTFIX
 
-Active release: v1.1.33.316-ERP11.3.316
+Active release: v1.1.33.317-ERP11.3.317
 
 Deployment is a manual cPanel upload/extract. This release has no migration.
 After extraction, clear Application Cache and perform Ctrl+F5 / a hard refresh.
 
 Focused live UAT (not yet production-verified):
-- Final Booking → Air: test cold and warm clicks; confirm Air workspace appears with no blank page.
+- Final Booking → Air: test cold and warm clicks; confirm the Air workspace is fully styled immediately without refresh.
 - Network: confirm the Air fragment request, no full Air document on the successful path, one Air product API GET, and no general-progressive-step1.js/.css.
 - Navigation safety: confirm the normal Air URL after success, native modified clicks, native Hotel/Transport/Visa links, and normal fallback/deep-link behavior.
 - State safety: confirm dirty/draft confirmation, save-in-flight guard, and browser back/forward behavior.

@@ -19,7 +19,7 @@ ok(!finalizer.includes("link.classList.remove('et-ui-current')") && !finalizer.i
 ok(shellCss.includes('a[data-et-native-active="true"]'), 'CSS renders the annotated native current destination');
 ok(shellCss.includes(':has(.nav [data-et-native-active="true"])'), 'parent row is prevented from looking like a second active destination');
 ok(cashLinks.includes("$receiptActive") && cashLinks.includes("$paymentActive") && cashLinks.includes("$expenseActive") && cashLinks.includes("$contraActive"), 'cash voucher middleware remains query-aware native authority');
-ok(version === 'v1.1.33.316-ERP11.3.316', 'packaged release version is current');
+ok(version === 'v1.1.33.317-ERP11.3.317', 'packaged release version is current');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
