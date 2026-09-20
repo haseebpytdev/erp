@@ -38,10 +38,11 @@ final class GeneralBookingAirProductController extends Controller
         $bookingRow = $this->assertBooking($booking);
         $airReconciliation = $this->reconcileRemovedPassengerAirRows($booking);
         $passengers = $this->bookingPassengers($booking);
-        $service = $this->findAirService($booking);
-        $tickets = $service
-            ? $this->ticketRows((int) $service['id'], $passengers)
-            : [];
+        $services = $this->findAirServices($booking);
+        $groups = $this->ticketGroupsSnapshot($booking, $services, $passengers);
+        $service = $services[0] ?? null;
+        $tickets = $groups[0]['tickets'] ?? [];
+        $summary = $this->aggregateTicketGroupSummary($groups);
 
         return response()->json([
             'ok' => true,
@@ -54,7 +55,8 @@ final class GeneralBookingAirProductController extends Controller
             'common' => $this->commonSnapshot($tickets, (array) ($service['row'] ?? [])),
             'fare_commercials' => $this->fareCommercialsSnapshot($tickets),
             'tickets' => $tickets,
-            'summary' => $this->summary($tickets, (int) ($service['id'] ?? 0)),
+            'ticket_groups' => $groups,
+            'summary' => $summary,
             'air_reconciliation_blockers' => $airReconciliation['blockers'],
             'capabilities' => [
                 'booking_services' => Schema::hasTable('booking_services'),
@@ -68,6 +70,15 @@ final class GeneralBookingAirProductController extends Controller
     public function store(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
+
+        if ($request->has('ticket_groups') || $request->has('deleted_group_service_ids')) {
+            return $this->storeTicketGroups($request, $booking, $bookingRow);
+        }
+        if (count($this->findAirServices($booking)) > 1) {
+            throw ValidationException::withMessages([
+                'air' => 'This booking contains multiple Air Ticket Groups. Reload the Air Workspace before saving.',
+            ]);
+        }
 
         $data = $request->validate([
             'common' => ['nullable', 'array'],
@@ -193,6 +204,7 @@ final class GeneralBookingAirProductController extends Controller
                     (array) ($data['segments'] ?? []),
                     trim((string) ($common['pnr'] ?? '')),
                     strtoupper((string) ($common['ticket_status'] ?? 'BOOKED')),
+                    (int) $service['id'],
                 );
 
                 $nativeStage = 'Passenger Tickets / PNR Commercials';
@@ -410,6 +422,8 @@ final class GeneralBookingAirProductController extends Controller
 
                 return [
                     'id' => (int) ($data['id'] ?? 0),
+                    'client_key' => 'segment-'.(int) ($data['id'] ?? 0),
+                    'booking_service_id' => (int) ($data['booking_service_id'] ?? 0),
                     'master_id' => (int) ($this->valueFrom($data, $columns, ['passenger_id', 'master_passenger_id', 'traveller_id', 'traveler_id']) ?? 0),
                     'source_table' => $table,
                     'name' => $name !== '' ? $name : 'Passenger '.(int) ($data['id'] ?? 0),
@@ -464,7 +478,188 @@ final class GeneralBookingAirProductController extends Controller
             ->all();
     }
 
-    private function syncItinerary(int $booking, array $segments, string $pnr, string $ticketStatus): void
+    /** @return list<array{id:int,row:array<string,mixed>}> */
+    private function findAirServices(int $booking): array
+    {
+        if (! Schema::hasTable('booking_services')) return [];
+        $master = $this->resolveAirProductService();
+        $masterId = (int) ($master['id'] ?? 0);
+        $columns = $this->physicalColumnListing('booking_services');
+        if (! in_array('booking_id', $columns, true)) return [];
+        $rows = DB::table('booking_services')->where('booking_id', $booking)->get();
+        $matches = [];
+        foreach ($rows as $row) {
+            $data = (array) $row;
+            $haystack = strtolower(implode(' ', array_map('strval', array_intersect_key($data, array_flip([
+                'service_name', 'name', 'title', 'description', 'details', 'service_type', 'product_type',
+            ])) )));
+            $isAir = ($masterId > 0 && (int) ($data['product_service_id'] ?? 0) === $masterId)
+                || str_contains($haystack, 'air') || str_contains($haystack, 'flight') || str_contains($haystack, 'ticket');
+            if ($isAir) $matches[] = ['id' => (int) ($data['id'] ?? 0), 'row' => $data];
+        }
+        usort($matches, static fn (array $a, array $b): int => $a['id'] <=> $b['id']);
+        return $matches;
+    }
+
+    /** @param list<array{id:int,row:array<string,mixed>}> $services */
+    private function ticketGroupsSnapshot(int $booking, array $services, array $passengers): array
+    {
+        $itinerary = $this->itineraryRows($booking);
+        $hasLink = Schema::hasTable('booking_itinerary_segments')
+            && in_array('booking_service_id', $this->physicalColumnListing('booking_itinerary_segments'), true);
+        $groups = [];
+        foreach ($services as $index => $service) {
+            $serviceId = (int) $service['id'];
+            $tickets = $this->ticketRows($serviceId, $passengers);
+            $segments = array_values(array_filter($itinerary, static function (array $segment) use ($hasLink, $serviceId, $index): bool {
+                return ! $hasLink
+                    ? $index === 0
+                    : ((int) ($segment['booking_service_id'] ?? 0) === $serviceId
+                        || ($index === 0 && (int) ($segment['booking_service_id'] ?? 0) === 0));
+            }));
+            $common = $this->commonSnapshot($tickets, $service['row']);
+            $groups[] = [
+                'service_id' => $serviceId,
+                'client_key' => 'group-'.$serviceId,
+                'common' => $common,
+                'segment_ids' => array_values(array_filter(array_map(static fn (array $s): int => (int) ($s['id'] ?? 0), $segments))),
+                'segment_keys' => array_values(array_map(static fn (array $s): string => (string) ($s['client_key'] ?? ('segment-'.(int) ($s['id'] ?? 0))), $segments)),
+                'tickets' => $tickets,
+                'fare_commercials' => $this->fareCommercialsSnapshot($tickets),
+                'summary' => $this->summary($tickets, $serviceId),
+            ];
+        }
+        return $groups;
+    }
+
+    private function aggregateTicketGroupSummary(array $groups): array
+    {
+        $summary = ['ticket_count' => 0, 'customer_total' => 0.0, 'supplier_total' => 0.0, 'gross_margin' => 0.0];
+        foreach ($groups as $group) {
+            $row = (array) ($group['summary'] ?? []);
+            $summary['ticket_count'] += (int) ($row['ticket_count'] ?? 0);
+            $summary['customer_total'] += (float) ($row['customer_total'] ?? 0);
+            $summary['supplier_total'] += (float) ($row['supplier_total'] ?? 0);
+        }
+        $summary['customer_total'] = round($summary['customer_total'], 2);
+        $summary['supplier_total'] = round($summary['supplier_total'], 2);
+        $summary['gross_margin'] = round($summary['customer_total'] - $summary['supplier_total'], 2);
+        return $summary;
+    }
+
+    private function storeTicketGroups(Request $request, int $booking, object $bookingRow): JsonResponse
+    {
+        $payload = $request->all();
+        $groups = array_values((array) ($payload['ticket_groups'] ?? []));
+        $existingServices = $this->findAirServices($booking);
+        $existingIds = array_values(array_map(static fn (array $s): int => (int) $s['id'], $existingServices));
+        if (! $groups && $existingIds) throw ValidationException::withMessages(['ticket_groups' => 'At least one Air Ticket Group is required.']);
+        $passengers = $this->bookingPassengers($booking);
+        $allowed = array_fill_keys(array_map(static fn (array $p): int => (int) $p['id'], $passengers), true);
+        $segments = array_values((array) ($payload['segments'] ?? []));
+        $segmentKeys = [];
+        foreach ($segments as $i => &$segment) {
+            $segment['client_key'] = (string) ($segment['client_key'] ?? ('segment-'.($i + 1)));
+            if (isset($segmentKeys[$segment['client_key']])) throw ValidationException::withMessages(["segments.$i.client_key" => 'Each itinerary segment needs a unique client key.']);
+            $segmentKeys[$segment['client_key']] = true;
+        }
+        unset($segment);
+        $claimed = [];
+        $stage = 'Air Ticket Groups';
+        try {
+            $result = DB::transaction(function () use ($booking, $bookingRow, $passengers, $allowed, $segments, $groups, $existingIds, &$claimed, &$stage): array {
+                $saved = [];
+                foreach ($groups as $index => $group) {
+                    $group = (array) $group;
+                    $common = (array) ($group['common'] ?? []);
+                    $serviceId = (int) ($group['service_id'] ?? 0);
+                    if ($serviceId > 0 && ! in_array($serviceId, $existingIds, true)) throw ValidationException::withMessages(["ticket_groups.$index.service_id" => 'The Air Ticket Group does not belong to this booking.']);
+                    $service = $serviceId > 0 ? ['id' => $serviceId, 'row' => (array) (DB::table('booking_services')->where('id', $serviceId)->first() ?? [])] : $this->ensureAirService($booking, $bookingRow);
+                    $serviceId = (int) $service['id'];
+                    $keys = array_values(array_filter(array_map('strval', (array) ($group['segment_keys'] ?? []))));
+                    if (! $keys) throw ValidationException::withMessages(["ticket_groups.$index.segment_keys" => 'Each Ticket Group must own at least one itinerary segment.']);
+                    foreach ($keys as $key) {
+                        if (isset($claimed[$key])) throw ValidationException::withMessages(["ticket_groups.$index.segment_keys" => 'An itinerary segment cannot belong to more than one Ticket Group.']);
+                        $claimed[$key] = $serviceId;
+                    }
+                    if (trim((string) ($common['pnr'] ?? '')) === '') throw ValidationException::withMessages(["ticket_groups.$index.common.pnr" => 'Each Ticket Group requires a PNR/reference.']);
+                    if ((int) ($common['supplier_id'] ?? 0) <= 0) throw ValidationException::withMessages(["ticket_groups.$index.common.supplier_id" => 'Each Ticket Group requires a Vendor / Supplier.']);
+                    $ticketPayloads = array_values((array) ($group['tickets'] ?? []));
+                    $seenPassengers = [];
+                    foreach ($ticketPayloads as $ticketIndex => $ticket) {
+                        $pid = (int) ($ticket['booking_passenger_id'] ?? 0);
+                        if (! isset($allowed[$pid])) throw ValidationException::withMessages(["ticket_groups.$index.tickets.$ticketIndex.booking_passenger_id" => 'The selected passenger does not belong to this booking.']);
+                        if (isset($seenPassengers[$pid])) throw ValidationException::withMessages(["ticket_groups.$index.tickets.$ticketIndex.booking_passenger_id" => 'A passenger may appear only once inside one Ticket Group.']);
+                        $seenPassengers[$pid] = true;
+                    }
+                    $fare = $this->normalizeFareCommercials((array) ($group['fare_commercials'] ?? []), $passengers);
+                    $this->syncAirServiceContext($serviceId, $common);
+                    $stage = 'Passenger Tickets / PNR Commercials';
+                    $this->syncTickets($serviceId, $booking, $bookingRow, $passengers, $ticketPayloads, $common, $fare);
+                    $fresh = $this->ticketRows($serviceId, $passengers);
+                    $this->passengerLinks->syncAirFromNative($booking, $serviceId);
+                    $this->syncAirServiceCommercialSnapshot($serviceId, $this->summary($fresh, $serviceId));
+                    $saved[] = ['service_id' => $serviceId, 'client_key' => (string) ($group['client_key'] ?? ('group-'.$serviceId)), 'common' => $this->commonSnapshot($fresh, (array) (DB::table('booking_services')->where('id', $serviceId)->first() ?? [])), 'tickets' => $fresh, 'fare_commercials' => $this->fareCommercialsSnapshot($fresh), 'summary' => $this->summary($fresh, $serviceId), 'segment_keys' => $keys];
+                }
+                $this->syncGroupedItinerary($booking, $segments, $claimed, $groups);
+                $deleted = array_values(array_filter(array_map('intval', (array) request()->input('deleted_group_service_ids', []))));
+                foreach ($deleted as $deleteId) {
+                    if (! in_array($deleteId, $existingIds, true) || in_array($deleteId, array_column($saved, 'service_id'), true)) continue;
+                    $this->assertGroupDeletionSafe($deleteId);
+                    DB::table('air_ticket_details')->where('booking_service_id', $deleteId)->delete();
+                    DB::table('booking_services')->where('id', $deleteId)->delete();
+                }
+                return $saved;
+            });
+        } catch (ValidationException $e) { throw $e; }
+        catch (Throwable $e) { report($e); throw ValidationException::withMessages(['air' => 'Air Ticket Groups could not be saved while writing '.$stage.'.']); }
+        $groups = $this->ticketGroupsSnapshot($booking, $this->findAirServices($booking), $passengers);
+        return response()->json(['ok' => true, 'message' => 'Air Ticket Groups saved.', 'ticket_groups' => $groups, 'segments' => $this->itineraryRows($booking), 'itinerary' => $this->itineraryRows($booking), 'summary' => $this->aggregateTicketGroupSummary($groups), 'common' => $groups[0]['common'] ?? [], 'tickets' => $groups[0]['tickets'] ?? [], 'fare_commercials' => $groups[0]['fare_commercials'] ?? []]);
+    }
+
+    private function syncGroupedItinerary(int $booking, array $segments, array $claimed, array $groups): void
+    {
+        $table = 'booking_itinerary_segments';
+        $columns = $this->physicalColumnListing($table);
+        if (! in_array('booking_service_id', $columns, true)) throw ValidationException::withMessages(['segments' => 'The itinerary store has no durable Ticket Group link. Run the pending migration before saving multiple Air Ticket Groups.']);
+        DB::table($table)->where('booking_id', $booking)->delete();
+        $serviceByKey = [];
+        foreach ($groups as $group) foreach ((array) ($group['segment_keys'] ?? []) as $key) $serviceByKey[(string) $key] = (int) ($group['service_id'] ?? 0);
+        foreach ($segments as $index => $segment) {
+            $key = (string) ($segment['client_key'] ?? ('segment-'.($index + 1)));
+            $serviceId = (int) ($claimed[$key] ?? $serviceByKey[$key] ?? 0);
+            if ($serviceId <= 0) throw ValidationException::withMessages(["segments.$index" => 'Every itinerary segment must belong to exactly one Ticket Group.']);
+            $insert = [];
+            $this->put($insert, $columns, ['booking_id'], $booking);
+            $this->put($insert, $columns, ['booking_service_id'], $serviceId);
+            $this->put($insert, $columns, ['segment_type', 'type'], $this->segmentType((string) ($segment['segment_type'] ?? 'outbound')));
+            $this->put($insert, $columns, ['from_code', 'origin_code', 'from', 'origin'], strtoupper(trim((string) ($segment['from'] ?? ''))));
+            $this->put($insert, $columns, ['to_code', 'destination_code', 'to', 'destination'], strtoupper(trim((string) ($segment['to'] ?? ''))));
+            $this->put($insert, $columns, ['airline_id', 'carrier_id'], (int) ($segment['airline_id'] ?? 0) ?: null);
+            $this->put($insert, $columns, ['airline_code', 'carrier_code'], $segment['airline_code'] ?? null);
+            $this->put($insert, $columns, ['airline_name', 'airline', 'carrier_name'], $segment['airline'] ?? null);
+            $this->put($insert, $columns, ['flight_number', 'flight_no'], $segment['flight_number'] ?? null);
+            $this->put($insert, $columns, ['departure_at', 'departure_datetime', 'depart_at'], $segment['departure_at'] ?? null);
+            $this->put($insert, $columns, ['arrival_at', 'arrival_datetime', 'arrive_at'], $segment['arrival_at'] ?? null);
+            $this->put($insert, $columns, ['sort_order', 'sequence', 'sequence_no'], ($index + 1) * 10);
+            if (in_array('created_at', $columns, true)) $insert['created_at'] = now();
+            if (in_array('updated_at', $columns, true)) $insert['updated_at'] = now();
+            DB::table($table)->insert($this->fillRequiredByPrototype($table, $insert, $this->prototypeFor($table), ['booking_id' => $booking, 'booking_service_id' => $serviceId]));
+        }
+    }
+
+    private function assertGroupDeletionSafe(int $serviceId): void
+    {
+        if (! Schema::hasTable('air_ticket_details')) return;
+        $columns = $this->physicalColumnListing('air_ticket_details');
+        $status = $this->firstColumn($columns, ['ticket_status', 'status']);
+        if (! $status) return;
+        $terminal = ['ISSUED', 'REFUNDED', 'VOID', 'CANCELLED', 'POSTED', 'PAID', 'SETTLED', 'CLOSED'];
+        $found = DB::table('air_ticket_details')->where('booking_service_id', $serviceId)->pluck($status)->map(static fn ($v): string => strtoupper(trim((string) $v)))->first(static fn (string $v): bool => in_array($v, $terminal, true));
+        if ($found) throw ValidationException::withMessages(['ticket_groups' => 'Persisted Ticket Group contains terminal ticket history and cannot be deleted.']);
+    }
+
+    private function syncItinerary(int $booking, array $segments, string $pnr, string $ticketStatus, int $serviceId = 0): void
     {
         $table = 'booking_itinerary_segments';
         $columns = Schema::getColumnListing($table);
@@ -499,6 +694,7 @@ final class GeneralBookingAirProductController extends Controller
 
             $insert = [];
             $this->put($insert, $columns, ['booking_id'], $booking);
+            if ($serviceId > 0) $this->put($insert, $columns, ['booking_service_id'], $serviceId);
             $this->put($insert, $columns, ['segment_type', 'type'], $this->segmentType((string) ($segment['segment_type'] ?? 'outbound')));
             $this->put($insert, $columns, ['from_code', 'origin_code', 'from', 'origin'], $from);
             $this->put($insert, $columns, ['to_code', 'destination_code', 'to', 'destination'], $to);

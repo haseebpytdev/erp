@@ -27,8 +27,20 @@ final class BookingTravelReadinessResolver
                 $blockers[] = 'Flight PNR/reference is missing.';
             }
             $passengers = (array) ($air['passengers'] ?? []);
+            $groups = (array) ($air['ticket_groups'] ?? []);
+            if ($groups) {
+                foreach ($groups as $groupIndex => $group) {
+                    $group = (array) $group;
+                    $groupSegments = (array) ($group['segment_ids'] ?? ($group['segments'] ?? []));
+                    $groupCommon = (array) ($group['common'] ?? []);
+                    $groupTickets = (array) ($group['tickets'] ?? []);
+                    if (! $groupSegments) $blockers[] = 'Air Ticket Group #'.($groupIndex + 1).' has no assigned itinerary segment.';
+                    if ($this->firstString($groupCommon, ['pnr', 'airline_pnr', 'reference', 'booking_reference']) === '') $blockers[] = 'Air Ticket Group #'.($groupIndex + 1).' PNR/reference is missing.';
+                    if (($passengers && count($groupTickets) < count($passengers)) || ! $groupTickets || ! $this->ticketsIssued($groupTickets)) $blockers[] = 'Required passenger tickets are not issued for Air Ticket Group #'.($groupIndex + 1).'.';
+                }
+            }
             $tickets = (array) ($air['tickets'] ?? []);
-            if (($passengers && count($tickets) < count($passengers)) || ! $tickets || ! $this->ticketsIssued($tickets)) {
+            if (! $groups && (($passengers && count($tickets) < count($passengers)) || ! $tickets || ! $this->ticketsIssued($tickets))) {
                 $blockers[] = 'Required passenger tickets are not issued.';
             }
         }
