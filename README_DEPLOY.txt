@@ -1,6 +1,6 @@
-ERP-11.3.320 DIRECT UPLOAD - AIR FAST-NAVIGATION ROOT OWNERSHIP FIX
+ERP-11.3.321 DIRECT UPLOAD - SHARED SHELL SELECTOR CONTAINMENT FIX
 
-Active release: v1.1.33.320-ERP11.3.320
+Active release: v1.1.33.321-ERP11.3.321
 
 Deployment is a manual cPanel upload/extract. This release has no migration.
 After extraction, clear Application Cache and perform Ctrl+F5 / a hard refresh.

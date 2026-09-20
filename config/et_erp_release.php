@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.320-ERP11.3.320',
-    'release' => 'ERP-11.3.320',
-    'package' => 'ERP-11.3.320 Air Fast-Navigation Root Ownership Fix',
-    'package_detail' => 'ERP-11.3.320 corrects Booking to Air fast navigation by replacing the old Booking shell main with a direct-equivalent main.main > section.content > Air product workspace hierarchy, restoring direct/refreshed Air width and gutter parity. It also excludes generic full-document Passengers navigation injection from the Air fragment response while preserving transactional rollback on failure. No Air business-formula or API changes, no Hotel/Transport/Visa behavior changes, no database schema changes and no migration are included.',
+    'version' => 'v1.1.33.321-ERP11.3.321',
+    'release' => 'ERP-11.3.321',
+    'package' => 'ERP-11.3.321 Shared Shell Selector Containment Fix',
+    'package_detail' => 'ERP-11.3.321 corrects two shared shell CSS selectors whose whitespace-separated :not() clauses unintentionally became descendant selectors. The correction confines first-page vertical rhythm and page-canvas width authority to the intended immediate children of main, preventing nested dedicated-product elements from receiving shell-level spacing or width rules. This restores Booking-to-Air fast-navigation geometry parity with refreshed Air while preserving shared shell behavior for Air, Hotel, Transport, Visa, Other Services, Products Hub and the main Booking workspace. No product business logic, API, persistence, database schema or migration changes are included.',
 ];
 
