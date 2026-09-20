@@ -7,7 +7,7 @@
   if(!airLink)return;
   var target=launcher.closest('main');
   if(!target)return;
-  var navigation=null,assetPromises=Object.create(null);
+  var navigation=null,assetPromises=Object.create(null),transaction=null;
   var productPrepaintClass='et-booking-products-prepaint';
   var navigationProductPrepaintWasPresent=false;
   var visualState=null;
@@ -73,6 +73,10 @@
     }
   };
   var fallback=function(){
+    if(transaction&&transaction.parent&&transaction.original&&transaction.mountedRoot&&transaction.mountedRoot.parentNode===transaction.parent){
+      transaction.parent.replaceChild(transaction.original,transaction.mountedRoot);
+    }
+    transaction=null;
     restoreVisualState(visualState);
     rollbackProductPrepaint();
     if(navigation&&navigation.controller)navigation.controller.abort();
@@ -96,15 +100,17 @@
       .then(function(results){
         var root=validFragment(results[1]);
         if(!root)throw new Error('Invalid Air fragment.');
-        target.innerHTML='';
-        target.appendChild(document.importNode(root,true));
+        var parent=target.parentNode;
+        if(!parent)throw new Error('Booking host is no longer attached.');
+        var mountedRoot=document.importNode(root,true);
+        transaction={parent:parent,original:target,mountedRoot:mountedRoot};
+        parent.replaceChild(mountedRoot,target);
         if(document.documentElement&&document.documentElement.classList)document.documentElement.classList.add(productPrepaintClass);
-        var mountedRoot=target.querySelector('[data-etgp-dedicated-product="1"]');
         retireGeneralVisualState(visualState);
         if(!window.etBookingFocus||typeof window.etBookingFocus.mountPresentation!=='function'||window.etBookingFocus.mountPresentation(mountedRoot)!==true)throw new Error('Booking focus presentation failed.');
         if(!window.etDedicatedAirProduct||window.etDedicatedAirProduct.mount(mountedRoot)!==true)throw new Error('Air mount failed.');
         var review=document.querySelector('[data-et-booking-review-entry="1"]');if(review)review.remove();
-        committedAirUrl=normalAirUrl;window.history.pushState({etAirFast:true},'',normalAirUrl);
+        committedAirUrl=normalAirUrl;window.history.pushState({etAirFast:true},'',normalAirUrl);transaction=null;
       })
       .catch(function(){fallback();})
       .finally(function(){airLink.removeAttribute('data-et-fast-nav-loading');navigation=null;});
