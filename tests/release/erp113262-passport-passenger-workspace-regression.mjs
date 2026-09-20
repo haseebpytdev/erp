@@ -160,6 +160,42 @@ ok(populatedCommercialDisplay.bookingValue === 999 && populatedCommercialDisplay
 const zeroCommercialDisplay = commercialContext.window.etgpBookingCommercialDisplay113302({ final_booking_value: 0, supplier_cost_total: 0, gross_margin: 0 });
 ok(zeroCommercialDisplay.bookingValue === 0 && zeroCommercialDisplay.supplierCost === 0 && zeroCommercialDisplay.margin === 0, 'actual commercial authority runtime preserves genuine numeric zero values');
 ok(commercialDisplay.bookingValue !== commercialDisplay.products.air + commercialDisplay.products.hotel, 'actual commercial authority runtime never derives Final Booking Value from product totals');
+
+/* Execute the refresh transaction with deferred responses to cover the
+ * same-key join race and genuinely newer-request stale protection. */
+const refreshStart = progressive.indexOf('var etgpRefreshPersistedBookingState113153=');
+const refreshEnd = progressive.indexOf('window.etgpRefreshPersistedBookingState113153=', refreshStart);
+const pending = [];
+let fetchCount = 0;
+const applied = [];
+const refreshContext = {
+  window: {}, document: { querySelector: () => null },
+  etgpOperationalSummaryInFlight113153: {}, etgpOperationalSummarySequence113153: 0,
+  etgpServerSelectedProducts113180: [],
+  etgpDedicatedAirActive113318: () => false,
+  etgpBookingCommercialDisplay113302: data => ({ products: data.product_customer_totals || {}, bookingValue: data.final_booking_value, supplierCost: data.supplier_cost_total, margin: data.gross_margin }),
+  etgpRenderBookingCommercialSummary113302: () => { applied.push('commercial'); },
+  etgpAirSetKpi113124: (name, value) => { applied.push(`${name}:${value}`); },
+  etgpApplyBookingLock113162: () => {}, renderProducts: () => {}, passengerCount: () => 0,
+  fetch: url => { fetchCount++; let resolve; const promise = new Promise(r => { resolve = r; }); pending.push({ url, resolve }); return promise; },
+};
+vm.runInNewContext(`${progressive.slice(refreshStart, refreshEnd)};window.etgpRefreshPersistedBookingState113153=etgpRefreshPersistedBookingState113153;`, refreshContext);
+const sameA = refreshContext.window.etgpRefreshPersistedBookingState113153(36, ['air']);
+const sameB = refreshContext.window.etgpRefreshPersistedBookingState113153(36, ['air']);
+ok(fetchCount === 1 && sameA === sameB, 'same-key refresh callers share one in-flight fetch');
+pending[0].resolve({ ok: true, json: async () => ({ ok: true, final_booking_value: 825000, supplier_cost_total: 647500, gross_margin: 177500, product_customer_totals: { air: 825000 } }) });
+await sameB;
+ok(applied.includes('commercial') && applied.some(value => value.startsWith('Booking Value:PKR 825,000')), 'same-key response still applies commercial authority and KPI');
+ok(refreshContext.etgpOperationalSummarySequence113153 === 1, 'same-key join does not advance latest-request sequence');
+const oldRequest = refreshContext.window.etgpRefreshPersistedBookingState113153(36, ['air']);
+const newRequest = refreshContext.window.etgpRefreshPersistedBookingState113153(36, ['hotel']);
+ok(refreshContext.etgpOperationalSummarySequence113153 === 3, 'genuinely different request advances latest-request sequence');
+pending[2].resolve({ ok: true, json: async () => ({ ok: true, final_booking_value: 50, supplier_cost_total: 10, gross_margin: 40, product_customer_totals: { hotel: 50 } }) });
+await newRequest;
+const appliedAfterNew = applied.length;
+pending[1].resolve({ ok: true, json: async () => ({ ok: true, final_booking_value: 999, supplier_cost_total: 1, gross_margin: 998, product_customer_totals: { air: 999 } }) });
+await oldRequest;
+ok(applied.length === appliedAfterNew, 'stale older response cannot overwrite newer commercial state');
 ok(progressive.includes('etgp-booking-commercial-row') && progressive.includes("['air','Air']") && progressive.includes("['hotel','Hotel']") && progressive.includes("['transport','Transport']") && progressive.includes("['visa','Visa']"), 'commercial summary presents product rows without duplicating product editors');
 ok(bookingPresenter.includes("data-et-booking-locked") && bookingPresenter.includes("data-et-booking-status") && bookingPresenter.includes("data-et-booking-lock-reason"), 'server presenter emits initial booking lock attributes');
 ok(progressive.includes("data-et-booking-locked") && progressive.includes("data-et-booking-status") && progressive.includes("etgpSeedInitialBookingLock113162"), 'initial locked page exposes and seeds the server lifecycle authority');

@@ -821,7 +821,6 @@ window.etgpSeedInitialBookingLock113162=etgpSeedInitialBookingLock113162;
 var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
   if(etgpDedicatedAirActive113318())return Promise.resolve(null);
   bookingId=Number(bookingId||0);if(!bookingId)return Promise.resolve(null);
-  var sequence=++etgpOperationalSummarySequence113153;
   var selected=Array.isArray(selectedProducts)?selectedProducts:null;
   if(!selected){
     var marker=document.querySelector('[data-etgp-product-buttons]'),owner=marker;
@@ -832,6 +831,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
   if(selected.length)url+='?selected_products='+encodeURIComponent(selected.join(','));
   var requestKey=String(bookingId)+'|'+selected.join(',');
   if(etgpOperationalSummaryInFlight113153[requestKey])return etgpOperationalSummaryInFlight113153[requestKey];
+  var sequence=++etgpOperationalSummarySequence113153;
   var request=fetch(url,{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
     .then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error('Booking summary could not be refreshed.');return data;});})
     .then(function(data){
@@ -857,7 +857,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
         if(root){var reference=root.dataset.bookingReference||'';var pax=passengerCount(root.querySelector('.etgp-passenger-card')||root);renderProducts(root,reference,pax);}
       }
       return data;
-    }).catch(function(){return null;}).finally(function(){delete etgpOperationalSummaryInFlight113153[requestKey];});
+    }).catch(function(){return null;}).finally(function(){if(etgpOperationalSummaryInFlight113153[requestKey]===request)delete etgpOperationalSummaryInFlight113153[requestKey];});
   etgpOperationalSummaryInFlight113153[requestKey]=request;
   return request;
 };
