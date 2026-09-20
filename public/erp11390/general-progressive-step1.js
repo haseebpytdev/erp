@@ -845,6 +845,16 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       etgpProductCurrency113127=currency;
       etgpBookingCommercialAuthority113302={products:commercial.products,bookingValue:commercial.bookingValue,supplierCost:commercial.supplierCost,margin:commercial.margin,currency:currency};
       etgpRenderBookingCommercialSummary113302(document.querySelector('.etgp-step1'));
+      var passengerCountAuthority=Number(data.passenger_count);
+      if(Number.isFinite(passengerCountAuthority)&&passengerCountAuthority>=0){
+        var fareMix=data.passenger_fare_mix||{};
+        var adultCount=Math.max(0,Number(fareMix.ADULT||0));
+        var childCount=Math.max(0,Number(fareMix.CHILD||0));
+        var infantCount=Math.max(0,Number(fareMix.INFANT||0));
+        etgpAirSetKpi113124('Passengers',String(Math.floor(passengerCountAuthority)),'Adult '+Math.floor(adultCount)+' · Child '+Math.floor(childCount)+' · Infant '+Math.floor(infantCount));
+      }
+      var ticketCountAuthority=Number(data.air_ticket_count);
+      if(Number.isFinite(ticketCountAuthority)&&ticketCountAuthority>=0)etgpAirUpdateTicketMetric113106(Math.floor(ticketCountAuthority));
       var serverSelected=Array.isArray(data.selected_products)?data.selected_products.map(function(key){return String(key||'').toLowerCase();}):[];
       var selectionChanged=serverSelected.join(',')!==etgpServerSelectedProducts113180.join(',');
       etgpServerSelectedProducts113180=serverSelected;

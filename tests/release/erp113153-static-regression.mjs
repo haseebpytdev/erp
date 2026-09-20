@@ -29,6 +29,13 @@ has(summary, "'supplier_cost' => $summary['persisted_supplier_cost']", 'Supplier
 has(summary, "'final_booking_value' => $summary['final_booking_value']", 'Resolved final booking value is exposed');
 has(summary, "'supplier_cost_total' => $summary['supplier_cost_total']", 'Resolved supplier cost is exposed');
 has(summary, "'gross_margin' => $summary['gross_margin']", 'Resolved gross margin is exposed');
+has(summary, "'passenger_count' => count($airPassengers)", 'Passenger KPI authority comes from Air snapshot passengers');
+has(summary, "'passenger_fare_mix' => $passengerFareMix", 'Passenger fare mix authority is exposed');
+has(summary, "'air_ticket_count' => max(0, (int) ($air['summary']['ticket_count'] ?? 0))", 'Ticket KPI authority comes from Air summary ticket_count');
+has(summary, 'private function passengerFareMix', 'Passenger fare mix uses one backend authority helper');
+has(summary, "str_contains($fare, 'INF')", 'Passenger fare mix classifies Infant fares authoritatively');
+has(summary, "str_contains($fare, 'CH')", 'Passenger fare mix classifies Child fares authoritatively');
+has(summary, "else $mix['ADULT']++", 'Passenger fare mix defaults remaining fares to Adult');
 has(review, '$commercialSummary->resolve(', 'Booking Review uses shared commercial resolver');
 has(review, 'use App\\Services\\Operations\\GeneralBookingCommercialSummaryResolver;', 'Booking Review imports shared commercial resolver');
 has(commercialResolver, "['supplier_total', 'vendor_total']", 'Air supplier authority prefers supplier_total');

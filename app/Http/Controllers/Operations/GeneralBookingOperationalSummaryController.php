@@ -27,6 +27,8 @@ final class GeneralBookingOperationalSummaryController extends Controller
         $visa = $this->snapshot(fn () => app(GeneralBookingVisaProductController::class)->show($request, $booking)->getData(true));
 
         $summary = $commercial->resolve((array) $bookingRow, $air, $hotel, $transport, $visa);
+        $airPassengers = array_values((array) ($air['passengers'] ?? []));
+        $passengerFareMix = $this->passengerFareMix($airPassengers);
         $selected = $this->selectedProducts($request, $booking, $air, $hotel, $transport, $visa);
         $state = $readiness->resolve((array) $bookingRow, $selected, $air, $hotel, $transport, $visa);
         $lock = $locks->fromRow((array) $bookingRow);
@@ -35,6 +37,9 @@ final class GeneralBookingOperationalSummaryController extends Controller
         return response()->json([
             'ok' => true,
             'booking_id' => $booking,
+            'passenger_count' => count($airPassengers),
+            'passenger_fare_mix' => $passengerFareMix,
+            'air_ticket_count' => max(0, (int) ($air['summary']['ticket_count'] ?? 0)),
             'currency' => $summary['currency'],
             'product_customer_totals' => $summary['product_customer_totals'],
             'product_supplier_totals' => $summary['product_supplier_totals'],
@@ -67,6 +72,18 @@ final class GeneralBookingOperationalSummaryController extends Controller
             report($e);
             return [];
         }
+    }
+
+    private function passengerFareMix(array $passengers): array
+    {
+        $mix = ['ADULT' => 0, 'CHILD' => 0, 'INFANT' => 0];
+        foreach ($passengers as $passenger) {
+            $fare = strtoupper((string) (($passenger['fare_type'] ?? $passenger['passenger_type'] ?? $passenger['age_type'] ?? 'ADULT')));
+            if (str_contains($fare, 'INF')) $mix['INFANT']++;
+            elseif (str_contains($fare, 'CH')) $mix['CHILD']++;
+            else $mix['ADULT']++;
+        }
+        return $mix;
     }
 
     private function selectedProducts(Request $request, int $booking, array $air, array $hotel, array $transport, array $visa): array
