@@ -73,8 +73,8 @@
     }
   };
   var fallback=function(){
-    if(transaction&&transaction.parent&&transaction.original&&transaction.mountedRoot&&transaction.mountedRoot.parentNode===transaction.parent){
-      transaction.parent.replaceChild(transaction.original,transaction.mountedRoot);
+    if(transaction&&transaction.parent&&transaction.original&&transaction.mountedShellMain&&transaction.mountedShellMain.parentNode===transaction.parent){
+      transaction.parent.replaceChild(transaction.original,transaction.mountedShellMain);
     }
     transaction=null;
     restoreVisualState(visualState);
@@ -103,8 +103,14 @@
         var parent=target.parentNode;
         if(!parent)throw new Error('Booking host is no longer attached.');
         var mountedRoot=document.importNode(root,true);
-        transaction={parent:parent,original:target,mountedRoot:mountedRoot};
-        parent.replaceChild(mountedRoot,target);
+        var mountedShellMain=document.createElement('main');
+        mountedShellMain.setAttribute('class','main');
+        var mountedContent=document.createElement('section');
+        mountedContent.setAttribute('class','content');
+        mountedContent.appendChild(mountedRoot);
+        mountedShellMain.appendChild(mountedContent);
+        transaction={parent:parent,original:target,mountedShellMain:mountedShellMain,mountedContent:mountedContent,mountedRoot:mountedRoot};
+        parent.replaceChild(mountedShellMain,target);
         if(document.documentElement&&document.documentElement.classList)document.documentElement.classList.add(productPrepaintClass);
         retireGeneralVisualState(visualState);
         if(!window.etBookingFocus||typeof window.etBookingFocus.mountPresentation!=='function'||window.etBookingFocus.mountPresentation(mountedRoot)!==true)throw new Error('Booking focus presentation failed.');

@@ -8,6 +8,7 @@ const fullView = read('resources/views/operations/bookings/product-workspace-v11
 const partial = read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
 const air = read('public/erp-theme/js/products/air.js');
 const core = read('public/erp-theme/js/dedicated-product-core.js');
+const passengerLinks = read('app/Http/Middleware/PresentPassengerOperationsLink.php');
 let pass = 0;
 const ok = (condition, label) => { assert.ok(condition, label); pass++; };
 
@@ -26,4 +27,5 @@ ok(controller.includes("view('operations.bookings.product-workspace-v113305'") &
 ok(!controller.includes('air-product') && !partial.includes('air-product'), 'fragment does not preload Air product data');
 ok(air.includes("'/system/erp-bookings/'+bookingId+'/air-product'") && core.includes('setActiveRoot'), 'Air data and C1 mount authorities remain client-owned');
 ok(routes.includes("'/operations/bookings/{booking}/products/{product}'") && routes.includes("whereIn('product', ['air', 'hotel', 'transport', 'visa', 'other-services'])"), 'existing full product route remains present and constrained');
+ok(passengerLinks.includes("routeIs('bookings.products.air.fragment')") && passengerLinks.includes("stop('passenger_links_response')"), 'Air fragment bypasses generic full-document passenger navigation while preserving timing cleanup');
 console.log(`PASS ${pass} Air fragment contract assertions`);

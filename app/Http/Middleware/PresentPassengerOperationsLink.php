@@ -19,6 +19,10 @@ final class PresentPassengerOperationsLink
         $response = $next($request);
         $timing?->stop('passenger_links');
         $timing?->start('passenger_links_response');
+        if ($request->routeIs('bookings.products.air.fragment')) {
+            $timing?->stop('passenger_links_response');
+            return $response;
+        }
         if (! method_exists($response, 'getContent') || ! method_exists($response, 'setContent') || ! $this->policy->moduleAllowed($request->user(), 'passenger operations')) { $timing?->stop('passenger_links_response'); return $response; }
         $html = (string) $response->getContent();
         if ($html === '' || str_contains($html, 'data-et-passengers-nav')) { $timing?->stop('passenger_links_response'); return $response; }
