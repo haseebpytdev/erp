@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\BookingTravelReadinessResolver;
 use App\Services\Operations\BookingEditLockResolver;
+use App\Services\Operations\GeneralBookingCommercialSummaryResolver;
 use App\Services\Operations\NativeSalesInvoiceInspector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

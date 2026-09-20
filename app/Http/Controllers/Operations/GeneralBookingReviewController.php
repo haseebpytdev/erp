@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\BookingTravelReadinessResolver;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
+use App\Services\Operations\GeneralBookingCommercialSummaryResolver;
 use App\Services\Operations\GroupUmrahEditAuthority;
 use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Operations\NativeSalesInvoiceInspector;

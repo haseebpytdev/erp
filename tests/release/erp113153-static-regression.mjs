@@ -22,6 +22,7 @@ const voucher = read('resources/views/operations/bookings/general-client-voucher
 has(routes, '/operational-summary', 'central operational summary route exists');
 has(commercialResolver, "compact('air', 'hotel', 'transport', 'visa')", 'commercial resolver consumes all product snapshots');
 has(summary, '$commercial->resolve(', 'operational summary uses shared commercial resolver');
+has(summary, 'use App\\Services\\Operations\\GeneralBookingCommercialSummaryResolver;', 'operational summary imports shared commercial resolver');
 has(summary, "'booking_value' => $summary['gross_customer_total']", 'Booking Value preserves the operational product-total authority');
 has(summary, "'persisted_booking_value' => $summary['persisted_booking_value']", 'Persisted booking commercial value is exposed separately');
 has(summary, "'supplier_cost' => $summary['persisted_supplier_cost']", 'Supplier Cost preserves raw persisted authority');
@@ -29,6 +30,7 @@ has(summary, "'final_booking_value' => $summary['final_booking_value']", 'Resolv
 has(summary, "'supplier_cost_total' => $summary['supplier_cost_total']", 'Resolved supplier cost is exposed');
 has(summary, "'gross_margin' => $summary['gross_margin']", 'Resolved gross margin is exposed');
 has(review, '$commercialSummary->resolve(', 'Booking Review uses shared commercial resolver');
+has(review, 'use App\\Services\\Operations\\GeneralBookingCommercialSummaryResolver;', 'Booking Review imports shared commercial resolver');
 has(commercialResolver, "['supplier_total', 'vendor_total']", 'Air supplier authority prefers supplier_total');
 has(commercialResolver, "['vendor_total', 'supplier_total']", 'non-Air supplier authority prefers vendor_total');
 has(commercialResolver, "'gross_margin' => round($final - $supplierTotal, 2)", 'margin is presentation-only final less supplier');
