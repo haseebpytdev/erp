@@ -28,10 +28,13 @@ function harness() {
   const passengerCard = { dataset: {}, listeners: {}, querySelector: selector => selector === 'form' ? reuseForm : null, querySelectorAll: selector => selector === 'form' ? [reuseForm] : [], addEventListener(type, fn) { (this.listeners[type] ??= []).push(fn); } };
   const executableSource = source.replace(
     'var etgpRunNativeBuild11390=',
-    'window.__etgpTestHooks={ticketGuard:etgpTicketKpiGuard113126,bindFare:etgpBindPassengerFareAirSync113137,reuse:requestReuseAutoLoad,forceRerender:etgpForceAirProductRerender113137,persistFare:etgpPersistPassengerFare113137};\nvar etgpRunNativeBuild11390='
+    'window.__etgpTestHooks={ticketGuard:etgpTicketKpiGuard113126,bindFare:etgpBindPassengerFareAirSync113137,reuse:requestReuseAutoLoad,forceRerender:etgpForceAirProductRerender113137,persistFare:etgpPersistPassengerFare113137,buildQuick:etgpBuildQuickPassenger11397};\nvar etgpRunNativeBuild11390='
   );
+  const reconcileToken = 'var reconcileQuickPassenger113105=function(data,attempt){';
+  const reconcileTokenCount = (source.match(new RegExp(reconcileToken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+  if (reconcileTokenCount !== 1) throw new Error(`Expected exactly one reconciliation token, found ${reconcileTokenCount}`);
   const instrumentedSource = executableSource.replace(
-    'var reconcileQuickPassenger113105=function(data,attempt){',
+    reconcileToken,
     'var reconcileQuickPassenger113105=window.__etgpTestReconcile113105=function(data,attempt){'
   );
   const document = {
@@ -48,7 +51,7 @@ function harness() {
       return null;
     },
     querySelectorAll(selector) { return selector === '.etgp-kpi' ? [kpiCard] : []; },
-    createElement() { return { classList: new ClassList(), style: {}, setAttribute() {}, appendChild() {}, querySelector() { return null; }, querySelectorAll() { return []; } }; },
+    createElement() { return { classList: new ClassList(), style: {}, dataset: {}, children: [], textContent: '', value: '', setAttribute() {}, appendChild(child) { this.children.push(child); }, addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; }, closest() { return null; }, remove() {} }; },
   };
   const window = {
     location: { pathname: '/operations/bookings/31/products/air' },
@@ -149,5 +152,24 @@ delayed.airRoot.present = true;
 delayed.html.classList.add('et-booking-products-prepaint');
 delayed.context.window.__etgpTestHooks.forceRerender();
 equal(delayed.fetches.length, 0, 'delayed progressive rerender is inert for dedicated Air');
+
+const reconcile = harness();
+const quickCard = { querySelectorAll: () => [], querySelector: () => null };
+const quickHost = { appendChild() {} };
+reconcile.context.window.__etgpTestHooks.buildQuick(quickCard, quickHost);
+check(typeof reconcile.context.window.__etgpTestReconcile113105 === 'function', 'real reconciliation function is exposed only in the test VM');
+reconcile.context.window.__etgpTestReconcile113105({ passenger: { id: 1 } }, 0);
+check(reconcile.timers.some(timer => timer.ms === 180), 'native reconciliation schedules its timer');
+reconcile.airRoot.present = true;
+reconcile.html.classList.add('et-booking-products-prepaint');
+reconcile.timers.find(timer => timer.ms === 180)?.fn();
+equal(reconcile.fetches.length, 0, 'dedicated Air reconciliation performs no GET');
+
+const reconcileEntry = harness();
+reconcileEntry.context.window.__etgpTestHooks.buildQuick(quickCard, quickHost);
+reconcileEntry.airRoot.present = true;
+reconcileEntry.html.classList.add('et-booking-products-prepaint');
+reconcileEntry.context.window.__etgpTestReconcile113105({ passenger: { id: 1 } }, 0);
+equal(reconcileEntry.timers.length, 1, 'entry guard schedules no reconciliation timer');
 
 console.log(`PASS ${assertions} progressive dedicated-Air isolation assertions`);
