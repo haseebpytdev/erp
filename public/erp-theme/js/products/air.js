@@ -662,7 +662,7 @@ var renderAirProductWorkspace113106=function(shell){
   if(!bookingId){
     host.innerHTML='';host.appendChild(create('div','etgp-air-feedback-113106 is-error','Booking ID could not be resolved from this page.'));return;
   }
-  etgpAirData113314.load(bookingId).then(function(data){etgpAirRender113106(host,data,bookingId);}).catch(function(error){
+  etgpAirData113314.load(bookingId).then(function(data){if(Array.isArray(data&&data.ticket_groups)&&data.ticket_groups.length===0){data=Object.assign({},data,{ticket_groups:[{service_id:null,client_key:'group-new-'+bookingId,segment_keys:[],segment_ids:[],common:{},tickets:[],fare_commercials:{}}]});}etgpAirRender113106(host,data,bookingId);}).catch(function(error){
     var failedRoot=core.getBookingRoot();if(failedRoot)failedRoot.removeAttribute('data-etgp-air-mounted');
     integration.markFailed(host,error&&error.message?error.message:'Tickets / Flight Data could not be loaded.');
     host.classList.remove('is-loading');host.appendChild(create('div','etgp-air-feedback-113106 is-error',error&&error.message?error.message:'Tickets / Flight Data could not be loaded.'));

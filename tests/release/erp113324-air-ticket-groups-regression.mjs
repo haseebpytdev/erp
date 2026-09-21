@@ -37,6 +37,8 @@ ok(js.includes('etgp-air-group-editor-main-113324') && js.includes('etgp-air-gro
 ok(js.includes('page.appendChild(totals);') && js.indexOf('page.appendChild(totals);')>js.indexOf('groupMain.appendChild(commercialColumn);'), 'group summary remains outside the two-column main');
 ok(css.includes('etgp-air-multi-group-totals-113324'), 'page-level multi-group totals use scoped Air CSS');
 ok(!js.includes('etgpAirRender113106(groupHost'), 'group editor rendering does not recursively remount the page');
+ok(js.includes("Array.isArray(data&&data.ticket_groups)&&data.ticket_groups.length===0") && js.includes("group-new-'+bookingId"), 'empty ticket_groups bootstraps an unsaved starter group');
+ok(js.includes("if(Array.isArray(data&&data.ticket_groups)&&data.ticket_groups.length===0)") && js.includes('service_id:null'), 'zero-group bootstrap preserves backend service creation authority');
 
 /* Execute the production draft-normalization helper in a minimal VM. The
    source is loaded unchanged; only a test-only export is injected so the
@@ -59,5 +61,5 @@ assert.equal(staleLegacy.applied, false);
 const foreign = normalizeDraft({ ticket_groups: serverGroups }, { ticket_groups: [{ service_id: 101 }, { service_id: 999 }] });
 assert.equal(foreign.applied, false);
 const behavioralAssertions = 3;
-const sourceStaticAssertions = 28;
+const sourceStaticAssertions = 30;
 console.log(`ERP-11.3.324 Air multi-ticket-group regression: PASS (${behavioralAssertions + sourceStaticAssertions} assertions; behavioral=${behavioralAssertions}; source-static=${sourceStaticAssertions})`);
