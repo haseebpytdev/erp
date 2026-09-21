@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.328-ERP11.3.328',
-    'release' => 'ERP-11.3.328',
-    'package' => 'ERP-11.3.328 Air Workspace UI Consolidation',
-    'package_detail' => 'ERP-11.3.328 finalizes the GENERAL Air multi-ticket-group workspace presentation. Flight Itinerary rows now use balanced field and action geometry, Applies To Flight Segments uses compact explicit assignment controls, and each Ticket Group follows the full-width sequence Booking / Ticket Data -> PNR Fare Commercials -> Passenger Tickets -> PNR totals. The PNR Fare Commercials matrix uses the available Ticket Group width without the ERP-11.3.327 internal horizontal-scroll presentation. Segment ownership, zero-group bootstrap, draft recovery, save lifecycle, commercial formulas, passenger/ticket KPI behavior, locking and Travel Readiness remain unchanged. No backend API, persistence, route or database-schema behavior is changed. ERP-11.3.328 introduces no new database migration.',
+    'version' => 'v1.1.33.329-ERP11.3.329',
+    'release' => 'ERP-11.3.329',
+    'package' => 'ERP-11.3.329 Air Itinerary Type Width Correction',
+    'package_detail' => 'ERP-11.3.329 corrects the Flight Itinerary Type control width discovered during ERP-11.3.328 production visual UAT. The scoped desktop Type column is widened from 82px to 108px so Outbound, Return and Connection remain fully readable while the existing itinerary row geometry, contained Remove action and responsive breakpoints are preserved. Air JavaScript, Ticket Group ownership, segment persistence, commercial formulas, draft/save lifecycle, locking and Travel Readiness remain unchanged. ERP-11.3.329 introduces no new database migration.',
 ];
 
