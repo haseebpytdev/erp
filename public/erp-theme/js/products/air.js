@@ -95,6 +95,27 @@ var etgpAirDraftWrite113119=function(bookingId,payload){
   try{localStorage.setItem(etgpAirDraftKey113119(bookingId),JSON.stringify({saved_at:Date.now(),payload:payload}));}catch(e){}
 };
 var etgpAirDraftClear113119=function(bookingId){try{localStorage.removeItem(etgpAirDraftKey113119(bookingId));}catch(e){}};
+var normalizeAirDraftAgainstServer113119=function(serverData,draftPayload){
+  var server=Object.assign({},serverData||{}),serverGroups=Array.isArray(server.ticket_groups)?server.ticket_groups:[],draft=Object.assign({},draftPayload||{}),draftGroups=Array.isArray(draft.ticket_groups)?draft.ticket_groups:[];
+  var serverIds=serverGroups.map(function(group){return Number(group&&group.service_id||0);}).filter(function(id){return id>0;});
+  if(!draftGroups.length){
+    if(serverGroups.length>1)return {applied:false,data:server,reason:'legacy-draft-cannot-collapse-multi-group-server'};
+    if(serverGroups.length===1){
+      draftGroups=[Object.assign({},serverGroups[0],{common:draft.common||serverGroups[0].common||{},tickets:Array.isArray(draft.tickets)?draft.tickets:serverGroups[0].tickets||[],fare_commercials:draft.fare_commercials||serverGroups[0].fare_commercials||{},segment_keys:Array.isArray(draft.segments)?draft.segments.map(function(segment){return String(segment.client_key||('segment-'+segment.id));}):serverGroups[0].segment_keys||[]})];
+    } else if(!Array.isArray(draft.segments))return {applied:false,data:server,reason:'draft-has-no-group-state'};
+  }
+  var draftIds=draftGroups.map(function(group){return Number(group&&group.service_id||0);}).filter(function(id){return id>0;});
+  if(draftIds.some(function(id){return serverIds.indexOf(id)<0;}))return {applied:false,data:server,reason:'draft-references-foreign-service'};
+  if(serverIds.length>1 && (draftIds.length!==serverIds.length || serverIds.some(function(id){return draftIds.indexOf(id)<0;})))return {applied:false,data:server,reason:'draft-persisted-group-set-mismatch'};
+  var byId={};serverGroups.forEach(function(group){byId[Number(group.service_id||0)]=group;});
+  var restored=draftGroups.map(function(group){var id=Number(group&&group.service_id||0);return id>0?Object.assign({},byId[id],group):group;});
+  var merged=Object.assign({},server,{ticket_groups:restored});
+  if(Array.isArray(draft.segments))merged.segments=draft.segments;
+  if(Array.isArray(draft.itinerary))merged.itinerary=draft.itinerary;
+  var activeIds=restored.map(function(group){return Number(group&&group.service_id||0);}).filter(function(id){return id>0;});
+  merged._etgpDeletedGroupServiceIds113119=Array.isArray(draft.deleted_group_service_ids)?draft.deleted_group_service_ids.map(Number).filter(function(id){return serverIds.indexOf(id)>=0&&activeIds.indexOf(id)<0;}):[];
+  return {applied:true,data:merged};
+};
 var etgpAirApplyDraft113119=function(data,bookingId){
   var draft=etgpAirDraftRead113119(bookingId);
   if(!draft||!draft.payload)return data;
@@ -103,16 +124,10 @@ var etgpAirApplyDraft113119=function(data,bookingId){
      passenger-ticket or commercial rows, because those native rows are the
      authority used by Sales Invoice passenger-link validation. */
   merged._etgpDraftAvailable113119=true;
-  var draftPayload=draft.payload||{};
-  var serverGroups=Array.isArray(merged.ticket_groups)?merged.ticket_groups:[];
-  var draftGroups=Array.isArray(draftPayload.ticket_groups)?draftPayload.ticket_groups:[];
-  if(draftGroups.length){
-    var unsaved=draftGroups.filter(function(group){return !Number(group&&group.service_id||0);});
-    if(serverGroups.length){merged.ticket_groups=serverGroups.concat(unsaved);}
-    else{merged.ticket_groups=draftGroups;merged.segments=Array.isArray(draftPayload.segments)?draftPayload.segments:merged.segments;}
-    merged._etgpDeletedGroupServiceIds113119=Array.isArray(draftPayload.deleted_group_service_ids)?draftPayload.deleted_group_service_ids.slice():[];
-  }
-  return merged;
+  var normalized=normalizeAirDraftAgainstServer113119(merged,draft.payload||{});
+  if(!normalized.applied){merged._etgpDraftIgnored113119=normalized.reason;return merged;}
+  normalized.data._etgpDraftAvailable113119=true;
+  return normalized.data;
 };
 
 var etgpAirLoad113106=function(bookingId){
@@ -560,7 +575,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 
     var farePayload=Object.keys(fareControls).map(function(fareType){
       var c=fareControls[fareType];
-      return {fare_type:fareType,sale_price:etgpAirMoney113106(c.sale.value),cost_price:etgpAirMoney113106(c.cost.value),basic_rate:etgpAirMoney113106(c.basic.value),vendor_minus_type:c.vendorMinusType.value,vendor_minus_value:etgpAirMoney113106(c.vendorMinus.value),customer_minus_type:c.customerMinusType.value,customer_minus_value:etgpAirMoney113106(c.customerMinus.value),vendor_other_cost:etgpAirMoney113106(c.other.value)};
+      return {fare_type:fareType,pax_count:c.count,sale_price:etgpAirMoney113106(c.sale.value),cost_price:etgpAirMoney113106(c.cost.value),basic_rate:etgpAirMoney113106(c.basic.value),vendor_minus_type:c.vendorMinusType.value,vendor_minus_value:etgpAirMoney113106(c.vendorMinus.value),customer_minus_type:c.customerMinusType.value,customer_minus_value:etgpAirMoney113106(c.customerMinus.value),vendor_other_cost:etgpAirMoney113106(c.other.value)};
     });
     var supplierData=supplierPayload();
     var payload={
@@ -621,7 +636,7 @@ var etgpAirRender113106=function(host,data,bookingId){
   var groups=Array.isArray(data&&data.ticket_groups)?data.ticket_groups:[];
   if(!groups.length){renderTicketGroupEditor113106(host,data,bookingId);return;}
   host.innerHTML='';
-  var pageState={segments:Array.isArray(data.itinerary)?data.itinerary:[],groups:groups,deletedGroupServiceIds:Array.isArray(data._etgpDeletedGroupServiceIds113119)?data._etgpDeletedGroupServiceIds113119.slice():[]};
+  var pageState={segments:Array.isArray(data.itinerary)?data.itinerary:[],groups:groups,deletedGroupServiceIds:Array.isArray(data._etgpDeletedGroupServiceIds113119)?data._etgpDeletedGroupServiceIds113119.slice():(Array.isArray(data._etgpDeletedGroupServiceIds)?data._etgpDeletedGroupServiceIds.slice():[])};
   var page=create('div','etgp-air-multi-group-page-113324');
   var itineraryHost=create('div','etgp-air-page-itinerary-113324');
   var groupsBlock=create('section','etgp-air-ticket-groups-113324');
@@ -636,7 +651,7 @@ var etgpAirRender113106=function(host,data,bookingId){
     var segmentChooser=create('div','etgp-air-group-segments-113324');segmentChooser.appendChild(create('strong','', 'Applies To Segments'));
     pageState.segments.forEach(function(segment){var key=String(segment.client_key||('segment-'+segment.id));var label=create('label','etgp-air-group-segment-option-113324');var check=create('input','');check.type='checkbox';check.value=key;check.checked=(group.segment_keys||[]).indexOf(key)!==-1;check.setAttribute('data-etgp-air-segment-owner',key);check.addEventListener('change',function(){pageState.groups.forEach(function(other){if(other!==group){other.segment_keys=(other.segment_keys||[]).filter(function(item){return item!==key;});}});if(check.checked){group.segment_keys=Array.isArray(group.segment_keys)?group.segment_keys.filter(function(item){return item!==key;}):[];group.segment_keys.push(key);}else{group.segment_keys=(group.segment_keys||[]).filter(function(item){return item!==key;});}groupsBlock.querySelectorAll('input[data-etgp-air-segment-owner="'+key+'"]').forEach(function(other){if(other!==check)other.checked=false;});});label.appendChild(check);label.appendChild(create('span','',String(segment.from||'')+' → '+String(segment.to||'')));segmentChooser.appendChild(label);});
     card.appendChild(segmentChooser);
-    var actions=create('div','etgp-air-ticket-group-actions-113324');var duplicate=create('button','btn btn-outline-secondary etgp-air-mini-button-113106','Duplicate Group');duplicate.type='button';duplicate.addEventListener('click',function(){syncEditors();var copy=JSON.parse(JSON.stringify(pageState.groups[index]||group));copy.service_id=null;copy.client_key='group-'+Date.now();copy.segment_keys=[];copy.segment_ids=[];copy.common=Object.assign({},copy.common,{pnr:'',airline_pnr:'',issue_date:''});copy.tickets=(copy.tickets||[]).map(function(ticket){return Object.assign({},ticket,{ticket_number:''});});pageState.groups.push(copy);data.ticket_groups=pageState.groups;etgpAirRender113106(host,data,bookingId);});var remove=create('button','btn btn-outline-danger etgp-air-mini-button-113106','Delete');remove.type='button';remove.addEventListener('click',function(){syncEditors();var current=pageState.groups.findIndex(function(item){return item.client_key===group.client_key||(item.service_id&&item.service_id===group.service_id);});if(current<0)return;if(group.service_id&&pageState.deletedGroupServiceIds.indexOf(Number(group.service_id))===-1)pageState.deletedGroupServiceIds.push(Number(group.service_id));pageState.groups.splice(current,1);data.ticket_groups=pageState.groups;data._etgpDeletedGroupServiceIds=pageState.deletedGroupServiceIds;etgpAirRender113106(host,data,bookingId);});actions.appendChild(duplicate);actions.appendChild(remove);card.appendChild(actions);
+    var actions=create('div','etgp-air-ticket-group-actions-113324');var duplicate=create('button','btn btn-outline-secondary etgp-air-mini-button-113106','Duplicate Group');duplicate.type='button';duplicate.addEventListener('click',function(){syncEditors();var copy=JSON.parse(JSON.stringify(pageState.groups[index]||group));copy.service_id=null;copy.client_key='group-'+Date.now();copy.segment_keys=[];copy.segment_ids=[];copy.common=Object.assign({},copy.common,{pnr:'',airline_pnr:'',issue_date:''});copy.tickets=(copy.tickets||[]).map(function(ticket){return Object.assign({},ticket,{ticket_number:''});});pageState.groups.push(copy);data.ticket_groups=pageState.groups;data._etgpDeletedGroupServiceIds=pageState.deletedGroupServiceIds;etgpAirRender113106(host,data,bookingId);});var remove=create('button','btn btn-outline-danger etgp-air-mini-button-113106','Delete');remove.type='button';remove.addEventListener('click',function(){syncEditors();var current=pageState.groups.findIndex(function(item){return item.client_key===group.client_key||(item.service_id&&item.service_id===group.service_id);});if(current<0)return;if(group.service_id&&pageState.deletedGroupServiceIds.indexOf(Number(group.service_id))===-1)pageState.deletedGroupServiceIds.push(Number(group.service_id));pageState.groups.splice(current,1);data.ticket_groups=pageState.groups;data._etgpDeletedGroupServiceIds=pageState.deletedGroupServiceIds;etgpAirRender113106(host,data,bookingId);});actions.appendChild(duplicate);actions.appendChild(remove);card.appendChild(actions);
     var editorHost=create('div','etgp-air-ticket-group-editor-113324');card.appendChild(editorHost);groupsBlock.appendChild(card);editorHosts.push(editorHost);
     var groupSegments=pageState.segments.filter(function(segment){var key=String(segment.client_key||('segment-'+segment.id));return (group.segment_keys||[]).indexOf(key)!==-1||((group.segment_ids||[]).map(Number).indexOf(Number(segment.id))!==-1);});
     var groupData=Object.assign({},data,{ticket_groups:[group],itinerary:groupSegments,_etgpRenderGroupOnly:true,_etgpGroupIndex:index,_etgpAllGroups:pageState.groups,_etgpAllSegments:pageState.segments,_etgpDeletedGroupServiceIds:pageState.deletedGroupServiceIds});

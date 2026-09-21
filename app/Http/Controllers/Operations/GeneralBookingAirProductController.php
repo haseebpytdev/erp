@@ -422,8 +422,6 @@ final class GeneralBookingAirProductController extends Controller
 
                 return [
                     'id' => (int) ($data['id'] ?? 0),
-                    'client_key' => 'segment-'.(int) ($data['id'] ?? 0),
-                    'booking_service_id' => (int) ($data['booking_service_id'] ?? 0),
                     'master_id' => (int) ($this->valueFrom($data, $columns, ['passenger_id', 'master_passenger_id', 'traveller_id', 'traveler_id']) ?? 0),
                     'source_table' => $table,
                     'name' => $name !== '' ? $name : 'Passenger '.(int) ($data['id'] ?? 0),
@@ -461,8 +459,13 @@ final class GeneralBookingAirProductController extends Controller
             ->get()
             ->map(function (object $row) use ($columns): array {
                 $data = (array) $row;
+                $id = (int) ($data['id'] ?? 0);
                 return [
-                    'id' => (int) ($data['id'] ?? 0),
+                    'id' => $id,
+                    'client_key' => 'segment-'.$id,
+                    'booking_service_id' => in_array('booking_service_id', $columns, true)
+                        ? (int) ($data['booking_service_id'] ?? 0)
+                        : 0,
                     'segment_type' => strtolower($this->stringFrom($data, $columns, ['segment_type', 'type']) ?: 'outbound'),
                     'airline_id' => (int) ($this->valueFrom($data, $columns, ['airline_id', 'carrier_id']) ?? 0),
                     'airline_code' => strtoupper($this->stringFrom($data, $columns, ['airline_code', 'carrier_code'])),

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 
 const read = file => fs.readFileSync(file, 'utf8');
 const air = read('app/Http/Controllers/Operations/GeneralBookingAirProductController.php');
@@ -31,4 +32,27 @@ ok(js.includes('fareCommercials') && js.includes('etgpAirDraft113314'), 'dedicat
 ok(css.includes('etgp-air-ticket-group-editor-113324') && css.includes('etgp-air-group-segments-113324'), 'multi-group editor uses scoped responsive Air CSS');
 ok(css.includes('etgp-air-multi-group-totals-113324'), 'page-level multi-group totals use scoped Air CSS');
 ok(!js.includes('etgpAirRender113106(groupHost'), 'group editor rendering does not recursively remount the page');
-console.log('ERP-11.3.324 Air multi-ticket-group regression: PASS (23 assertions)');
+
+/* Execute the production draft-normalization helper in a minimal VM. The
+   source is loaded unchanged; only a test-only export is injected so the
+   helper can be exercised without reimplementing its algorithm. */
+const helperWindow = { etDedicatedProductCore: { create() {}, plain() {}, norm() {} } };
+const helperContext = vm.createContext({ window: helperWindow, document: {}, console });
+const helperSource = js.replace('window.etDedicatedAirProduct={mount:mountAir,getState:function(){return {saveInFlight:airLifecycle.saveInFlight,dirty:airLifecycle.dirty,draftPending:airLifecycle.draftPending,bookingId:airLifecycle.bookingId};}};', '$& window.__normalizeAirDraftAgainstServer113119=normalizeAirDraftAgainstServer113119;');
+vm.runInContext(helperSource, helperContext);
+const normalizeDraft = helperWindow.__normalizeAirDraftAgainstServer113119;
+const serverGroups = [
+  { service_id: 101, client_key: 'group-101', segment_keys: ['segment-41'] },
+  { service_id: 102, client_key: 'group-102', segment_keys: ['segment-42'] },
+];
+const compatible = normalizeDraft({ ticket_groups: serverGroups }, { ticket_groups: [...serverGroups, { service_id: null, client_key: 'group-3', segment_keys: ['segment-43'] }], segments: [{ id: 41 }, { id: 42 }, { id: 43 }] });
+assert.equal(compatible.applied, true);
+assert.equal(compatible.data.ticket_groups.length, 3);
+assert.equal(compatible.data.ticket_groups[2].service_id, null);
+const staleLegacy = normalizeDraft({ ticket_groups: serverGroups }, { common: { pnr: 'OLD' }, tickets: [], fare_commercials: {} });
+assert.equal(staleLegacy.applied, false);
+const foreign = normalizeDraft({ ticket_groups: serverGroups }, { ticket_groups: [{ service_id: 101 }, { service_id: 999 }] });
+assert.equal(foreign.applied, false);
+const behavioralAssertions = 3;
+const sourceStaticAssertions = 23;
+console.log(`ERP-11.3.324 Air multi-ticket-group regression: PASS (${behavioralAssertions + sourceStaticAssertions} assertions; behavioral=${behavioralAssertions}; source-static=${sourceStaticAssertions})`);
