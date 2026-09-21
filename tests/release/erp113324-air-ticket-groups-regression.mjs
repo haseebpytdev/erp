@@ -64,5 +64,5 @@ assert.equal(staleLegacy.applied, false);
 const foreign = normalizeDraft({ ticket_groups: serverGroups }, { ticket_groups: [{ service_id: 101 }, { service_id: 999 }] });
 assert.equal(foreign.applied, false);
 const behavioralAssertions = 3;
-const sourceStaticAssertions = 30;
+const sourceStaticAssertions = 33;
 console.log(`ERP-11.3.324 Air multi-ticket-group regression: PASS (${behavioralAssertions + sourceStaticAssertions} assertions; behavioral=${behavioralAssertions}; source-static=${sourceStaticAssertions})`);
