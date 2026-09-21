@@ -950,9 +950,10 @@
 
 /* ERP-11.3.324 multi-group editor: each native Air service owns one
    responsive editor while the page-level totals remain a single summary. */
-.etgp-air-ticket-group-editor-113324{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.42fr);gap:16px;margin:12px 0;padding:14px;border:1px solid #dbe3ee;border-radius:10px;background:#fff}
-.etgp-air-ticket-group-editor-113324 .etgp-air-group-editor-main-113324{min-width:0}
+.etgp-air-ticket-group-editor-113324{display:block;width:100%;margin:12px 0;padding:14px;border:1px solid #dbe3ee;border-radius:10px;background:#fff}
+.etgp-air-group-editor-main-113324{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.42fr);gap:16px;min-width:0}
+.etgp-air-group-ticket-column-113324,.etgp-air-group-commercial-column-113324{min-width:0}
 .etgp-air-group-segments-113324{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px;padding:10px;border:1px solid #edf1f6;border-radius:8px;background:#f8fafc}
 .etgp-air-group-segments-113324 label{display:flex;gap:6px;align-items:center;font-size:12px;color:#334155}
 .etgp-air-multi-group-totals-113324{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0;padding:12px;border:1px solid #cfd9e8;border-radius:10px;background:#f5f8fc}
-@media (max-width:760px){.etgp-air-ticket-group-editor-113324{grid-template-columns:1fr}.etgp-air-group-segments-113324{grid-template-columns:1fr}}
+@media (max-width:760px){.etgp-air-group-editor-main-113324{grid-template-columns:1fr}.etgp-air-group-segments-113324{grid-template-columns:1fr}}

@@ -29,7 +29,12 @@ ok(migration.includes('Intentionally non-destructive') && !migration.includes('d
 ok(readiness.includes('ticket_groups') && readiness.includes('Air Ticket Group #'), 'travel readiness evaluates every group');
 ok(migration.includes('booking_service_id') && migration.includes('nullable'), 'segment link migration is additive and nullable');
 ok(js.includes('fareCommercials') && js.includes('etgpAirDraft113314'), 'dedicated Air renderer and draft authority remain intact');
-ok(css.includes('etgp-air-ticket-group-editor-113324') && css.includes('etgp-air-group-segments-113324'), 'multi-group editor uses scoped responsive Air CSS');
+ok(/\.etgp-air-group-editor-main-113324\{[^}]*display:grid;[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(250px,\.42fr\)/.test(css), 'two-column grid targets the inner group editor main');
+ok(/\.etgp-air-ticket-group-editor-113324\{[^}]*display:block;[^}]*width:100%/.test(css) && !/\.etgp-air-ticket-group-editor-113324\{[^}]*grid-template-columns/.test(css), 'outer group editor remains full-width block layout');
+ok(css.includes('.etgp-air-group-ticket-column-113324,.etgp-air-group-commercial-column-113324'), 'ticket and commercial columns own the two-column children');
+ok(/@media \(max-width:760px\)\{\.etgp-air-group-editor-main-113324\{grid-template-columns:1fr\}/.test(css), 'inner group editor main stacks responsively');
+ok(js.includes('etgp-air-group-editor-main-113324') && js.includes('etgp-air-group-ticket-column-113324') && js.includes('etgp-air-group-commercial-column-113324'), 'DOM declares common, inner main and ticket/commercial columns');
+ok(js.includes('page.appendChild(totals);') && js.indexOf('page.appendChild(totals);')>js.indexOf('groupMain.appendChild(commercialColumn);'), 'group summary remains outside the two-column main');
 ok(css.includes('etgp-air-multi-group-totals-113324'), 'page-level multi-group totals use scoped Air CSS');
 ok(!js.includes('etgpAirRender113106(groupHost'), 'group editor rendering does not recursively remount the page');
 
@@ -54,5 +59,5 @@ assert.equal(staleLegacy.applied, false);
 const foreign = normalizeDraft({ ticket_groups: serverGroups }, { ticket_groups: [{ service_id: 101 }, { service_id: 999 }] });
 assert.equal(foreign.applied, false);
 const behavioralAssertions = 3;
-const sourceStaticAssertions = 23;
+const sourceStaticAssertions = 28;
 console.log(`ERP-11.3.324 Air multi-ticket-group regression: PASS (${behavioralAssertions + sourceStaticAssertions} assertions; behavioral=${behavioralAssertions}; source-static=${sourceStaticAssertions})`);
