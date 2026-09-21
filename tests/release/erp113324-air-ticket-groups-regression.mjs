@@ -17,6 +17,13 @@ ok(air.includes('assertGroupDeletionSafe') && air.includes('terminal'), 'termina
 ok(air.includes('aggregateTicketGroupSummary'), 'Air totals aggregate across all groups');
 ok(air.includes('deleted_group_service_ids'), 'explicit persisted group deletion contract exists');
 ok(air.includes('multiple Air Ticket Groups. Reload the Air Workspace before saving.'), 'legacy single-group saves fail closed for multi-group bookings');
+ok(air.includes('ensureAirService($booking, $bookingRow, true)'), 'new groups use an explicit force-new native service path');
+ok(air.includes('resolvedServiceIds'), 'resolved native service IDs are unique per submitted group');
+ok(air.includes('booking_service_passengers'), 'group deletion removes generic service passenger links');
+ok(js.includes("data-etgp-air-group-editor") && js.includes('groupHost'), 'every group mounts an independent editor host');
+ok(js.includes('renderGroupOnly') && js.includes('_etgpAllGroups'), 'group editors serialize all groups while editing one group');
+ok(js.includes('data-etgp-air-segment-owner'), 'frontend segment ownership is exclusive');
+ok(migration.includes('Intentionally non-destructive') && !migration.includes('dropColumn'), 'migration rollback is fail-safe and non-destructive');
 ok(readiness.includes('ticket_groups') && readiness.includes('Air Ticket Group #'), 'travel readiness evaluates every group');
 ok(migration.includes('booking_service_id') && migration.includes('nullable'), 'segment link migration is additive and nullable');
 ok(js.includes('fareCommercials') && js.includes('etgpAirDraft113314'), 'dedicated Air renderer and draft authority remain intact');

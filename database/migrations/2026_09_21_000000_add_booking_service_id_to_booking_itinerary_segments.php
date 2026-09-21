@@ -18,11 +18,9 @@ return new class extends Migration {
 
     public function down(): void
     {
-        if (Schema::hasTable('booking_itinerary_segments') && Schema::hasColumn('booking_itinerary_segments', 'booking_service_id')) {
-            Schema::table('booking_itinerary_segments', function (Blueprint $table): void {
-                $table->dropIndex(['booking_service_id']);
-                $table->dropColumn('booking_service_id');
-            });
-        }
+        // Intentionally non-destructive: the host schema may already have
+        // booking_service_id when this unshipped migration is rolled back.
+        // Schema state alone cannot prove ownership, so never drop a column
+        // or index that may pre-date this migration.
     }
 };

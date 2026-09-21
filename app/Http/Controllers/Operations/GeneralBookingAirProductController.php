@@ -565,17 +565,21 @@ final class GeneralBookingAirProductController extends Controller
         }
         unset($segment);
         $claimed = [];
+        $deletedGroupServiceIds = array_values(array_filter(array_map('intval', (array) ($payload['deleted_group_service_ids'] ?? []))));
         $stage = 'Air Ticket Groups';
         try {
-            $result = DB::transaction(function () use ($booking, $bookingRow, $passengers, $allowed, $segments, $groups, $existingIds, &$claimed, &$stage): array {
+            $result = DB::transaction(function () use ($booking, $bookingRow, $passengers, $allowed, $segments, $groups, $existingIds, $deletedGroupServiceIds, &$claimed, &$stage): array {
                 $saved = [];
+                $resolvedServiceIds = [];
                 foreach ($groups as $index => $group) {
                     $group = (array) $group;
                     $common = (array) ($group['common'] ?? []);
                     $serviceId = (int) ($group['service_id'] ?? 0);
                     if ($serviceId > 0 && ! in_array($serviceId, $existingIds, true)) throw ValidationException::withMessages(["ticket_groups.$index.service_id" => 'The Air Ticket Group does not belong to this booking.']);
-                    $service = $serviceId > 0 ? ['id' => $serviceId, 'row' => (array) (DB::table('booking_services')->where('id', $serviceId)->first() ?? [])] : $this->ensureAirService($booking, $bookingRow);
+                    $service = $serviceId > 0 ? ['id' => $serviceId, 'row' => (array) (DB::table('booking_services')->where('id', $serviceId)->first() ?? [])] : $this->ensureAirService($booking, $bookingRow, true);
                     $serviceId = (int) $service['id'];
+                    if (isset($resolvedServiceIds[$serviceId])) throw ValidationException::withMessages(["ticket_groups.$index.service_id" => 'Each Ticket Group must resolve to a unique native Air service.']);
+                    $resolvedServiceIds[$serviceId] = true;
                     $keys = array_values(array_filter(array_map('strval', (array) ($group['segment_keys'] ?? []))));
                     if (! $keys) throw ValidationException::withMessages(["ticket_groups.$index.segment_keys" => 'Each Ticket Group must own at least one itinerary segment.']);
                     foreach ($keys as $key) {
@@ -602,11 +606,11 @@ final class GeneralBookingAirProductController extends Controller
                     $saved[] = ['service_id' => $serviceId, 'client_key' => (string) ($group['client_key'] ?? ('group-'.$serviceId)), 'common' => $this->commonSnapshot($fresh, (array) (DB::table('booking_services')->where('id', $serviceId)->first() ?? [])), 'tickets' => $fresh, 'fare_commercials' => $this->fareCommercialsSnapshot($fresh), 'summary' => $this->summary($fresh, $serviceId), 'segment_keys' => $keys];
                 }
                 $this->syncGroupedItinerary($booking, $segments, $claimed, $groups);
-                $deleted = array_values(array_filter(array_map('intval', (array) request()->input('deleted_group_service_ids', []))));
-                foreach ($deleted as $deleteId) {
+                foreach ($deletedGroupServiceIds as $deleteId) {
                     if (! in_array($deleteId, $existingIds, true) || in_array($deleteId, array_column($saved, 'service_id'), true)) continue;
                     $this->assertGroupDeletionSafe($deleteId);
                     DB::table('air_ticket_details')->where('booking_service_id', $deleteId)->delete();
+                    if (Schema::hasTable('booking_service_passengers')) DB::table('booking_service_passengers')->where('booking_service_id', $deleteId)->delete();
                     DB::table('booking_services')->where('id', $deleteId)->delete();
                 }
                 return $saved;
@@ -768,9 +772,9 @@ final class GeneralBookingAirProductController extends Controller
     }
 
     /** @return array{id:int,row:array<string,mixed>} */
-    private function ensureAirService(int $booking, object $bookingRow): array
+    private function ensureAirService(int $booking, object $bookingRow, bool $forceNew = false): array
     {
-        $existing = $this->findAirService($booking);
+        $existing = $forceNew ? null : $this->findAirService($booking);
         if ($existing) {
             return $existing;
         }
