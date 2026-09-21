@@ -1,30 +1,26 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.326
-APPLICATION_VERSION=v1.1.33.326-ERP11.3.326
+CURRENT_VERSION=ERP-11.3.327
+APPLICATION_VERSION=v1.1.33.327-ERP11.3.327
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.326
+LAST_PACKAGED_RELEASE=ERP-11.3.327
 ```
 
-ERP-11.3.326 Air Empty-Booking Ticket Group Bootstrap corrects the Air
-multi-ticket-group bootstrap for fresh GENERAL Air bookings. When the current
-Air product API returns a valid ticket_groups: [] contract, the Air workspace
-opens directly in the multi-ticket-group interface with one unsaved starter
-Ticket Group instead of falling back to the legacy single-PNR editor. The
-starter group has service_id=null and creates no database state during page
-render; native Air service creation remains backend-authoritative through the
-existing final multi-group Save flow. Existing one-group and multi-group
-bookings remain supported, legacy responses where ticket_groups is absent
-retain their compatibility path, and draft recovery remains preserved. No
-backend persistence logic, commercial formulas, CSS, API contract, database
-schema, new migration, routes, ticket-counting rules, locking or
-travel-readiness logic are changed. The booking_service_id migration
-introduced by ERP-11.3.325 remains part of the cumulative source baseline and
-is not a new .326 migration.
+ERP-11.3.327 Air Ticket Group Commercial Matrix Layout corrects the PNR Fare
+Commercials presentation inside Air Ticket Groups. The existing ten-column
+fare commercial matrix retains a readable minimum width inside the multi-group
+commercial column and uses controlled internal horizontal scrolling instead of
+collapsing labels, minus controls and Answer values into an unusable narrow
+layout. The Ticket Group two-column structure, Passenger Tickets layout,
+responsive stacking, zero-group bootstrap, draft recovery, save lifecycle and
+all existing Air commercial formulas remain unchanged. No backend persistence
+logic, API contract, database schema, migration, routes, ticket-counting rules,
+locking or Travel Readiness logic are changed. ERP-11.3.327 introduces no new
+database migration.
 `CURRENT` is now the sole editable development authority. Future changes are
 made and tested in this directory without creating versioned source copies or
 automatic ZIP archives.
