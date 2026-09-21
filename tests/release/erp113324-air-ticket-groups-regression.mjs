@@ -35,7 +35,7 @@ ok(css.includes('.etgp-air-group-ticket-column-113324,.etgp-air-group-commercial
 ok(/\.etgp-air-group-commercial-column-113324\{[^}]*width:100%;[^}]*overflow:visible/.test(css), 'commercial column is full width without clipping its controls');
 ok(css.includes('.etgp-air-group-commercial-column-113324 .etgp-air-fare-wrap-113108') && css.includes('overflow-x:hidden'), 'commercial matrix has no internal scrollbar policy');
 ok(/\.etgp-air-group-commercial-column-113324 \.etgp-air-fare-table-113108\{[^}]*width:100%;[^}]*min-width:0!important[^}]*table-layout:fixed/.test(css), 'commercial matrix fits the full Ticket Group width');
-ok(/\.etgp-air-page-itinerary-113324 \.etgp-air-segment-row-113106\{[^}]*minmax\(86px,auto\)/.test(css), 'itinerary Remove action has a readable action column');
+ok(/\.etgp-air-page-itinerary-113324 \.etgp-air-segment-row-113106\{[^}]*108px[^}]*minmax\(86px,auto\)/.test(css), 'itinerary Type and Remove actions have readable columns');
 ok(js.includes('Applies To Flight Segments') && css.includes('etgp-air-group-segments-113324 input[type=checkbox]'), 'segment assignment uses explicit compact checkbox styling');
 ok(/\.etgp-air-group-segments-113324 label\{[^}]*border-radius:999px/.test(css), 'segment assignment uses compact selectable cards');
 ok(js.includes('etgp-air-group-editor-main-113324') && js.includes('etgp-air-group-ticket-column-113324') && js.includes('etgp-air-group-commercial-column-113324'), 'DOM declares common, inner main and ticket/commercial columns');

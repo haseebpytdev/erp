@@ -963,7 +963,7 @@
 @media (max-width:760px){.etgp-air-group-editor-main-113324{display:block}.etgp-air-group-segments-113324{grid-template-columns:1fr}}
 
 /* ERP-11.3.327 — full-width Ticket Group sections and readable itinerary rows. */
-.etgp-air-page-itinerary-113324 .etgp-air-segment-row-113106{grid-template-columns:82px minmax(120px,1.15fr) 90px 80px 80px minmax(150px,1.35fr) minmax(150px,1.35fr) minmax(86px,auto)}
+.etgp-air-page-itinerary-113324 .etgp-air-segment-row-113106{grid-template-columns:108px minmax(120px,1.15fr) 90px 80px 80px minmax(150px,1.35fr) minmax(150px,1.35fr) minmax(86px,auto)}
 .etgp-air-page-itinerary-113324 .etgp-air-remove-row-113106{width:auto!important;min-width:86px!important;padding:5px 9px!important;font-size:10px!important;line-height:1.2!important}
 .etgp-air-group-segments-113324{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding:9px}
 .etgp-air-group-segments-113324 strong{width:100%;font-size:11px}
