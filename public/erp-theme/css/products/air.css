@@ -951,7 +951,13 @@
 /* ERP-11.3.324 multi-group editor: each native Air service owns one
    responsive editor while the page-level totals remain a single summary. */
 .etgp-air-ticket-group-editor-113324{display:block;width:100%;margin:12px 0;padding:14px;border:1px solid #dbe3ee;border-radius:10px;background:#fff}
-.etgp-air-group-editor-main-113324{display:block;width:100%;min-width:0}
+.etgp-air-multi-group-page-113324{display:flex;flex-direction:column;gap:12px}
+.etgp-air-multi-group-page-113324 > .etgp-air-page-itinerary-113324,
+.etgp-air-multi-group-page-113324 > .etgp-air-ticket-groups-113324,
+.etgp-air-multi-group-page-113324 > .etgp-air-multi-group-totals-113324,
+.etgp-air-multi-group-page-113324 > .etgp-air-feedback-113106{margin:0}
+.etgp-air-group-editor-main-113324{display:flex;flex-direction:column;gap:12px;width:100%;min-width:0}
+.etgp-air-group-editor-main-113324 > .etgp-air-block-113106{margin:0}
 .etgp-air-group-ticket-column-113324,.etgp-air-group-commercial-column-113324{min-width:0}
 .etgp-air-group-commercial-column-113324{width:100%;overflow:visible}
 .etgp-air-group-commercial-column-113324 .etgp-air-fare-wrap-113108{max-width:100%;overflow-x:hidden}

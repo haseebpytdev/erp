@@ -29,7 +29,7 @@ ok(migration.includes('Intentionally non-destructive') && !migration.includes('d
 ok(readiness.includes('ticket_groups') && readiness.includes('Air Ticket Group #'), 'travel readiness evaluates every group');
 ok(migration.includes('booking_service_id') && migration.includes('nullable'), 'segment link migration is additive and nullable');
 ok(js.includes('fareCommercials') && js.includes('etgpAirDraft113314'), 'dedicated Air renderer and draft authority remain intact');
-ok(/\.etgp-air-group-editor-main-113324\{[^}]*display:block;[^}]*width:100%/.test(css), 'ticket group sections use a full-width controlled flow');
+ok(/\.etgp-air-group-editor-main-113324\{[^}]*display:flex;[^}]*flex-direction:column;[^}]*gap:12px[^}]*width:100%/.test(css), 'ticket group sections use a full-width controlled flow');
 ok(/\.etgp-air-ticket-group-editor-113324\{[^}]*display:block;[^}]*width:100%/.test(css) && !/\.etgp-air-ticket-group-editor-113324\{[^}]*grid-template-columns/.test(css), 'outer group editor remains full-width block layout');
 ok(css.includes('.etgp-air-group-ticket-column-113324,.etgp-air-group-commercial-column-113324'), 'ticket and commercial columns own the two-column children');
 ok(/\.etgp-air-group-commercial-column-113324\{[^}]*width:100%;[^}]*overflow:visible/.test(css), 'commercial column is full width without clipping its controls');
@@ -45,6 +45,9 @@ ok(css.includes('etgp-air-multi-group-totals-113324'), 'page-level multi-group t
 ok(!js.includes('etgpAirRender113106(groupHost'), 'group editor rendering does not recursively remount the page');
 ok(js.includes("Array.isArray(data&&data.ticket_groups)&&data.ticket_groups.length===0") && js.includes("group-new-'+bookingId"), 'empty ticket_groups bootstraps an unsaved starter group');
 ok(js.includes("if(Array.isArray(data&&data.ticket_groups)&&data.ticket_groups.length===0)") && js.includes('service_id:null'), 'zero-group bootstrap preserves backend service creation authority');
+ok(js.includes('etgpAirDefaultSegmentType113329') && js.includes("segment_type:etgpAirDefaultSegmentType113329(segmentCounter)") && js.includes("segment_type:etgpAirDefaultSegmentType113329(existingCount)"), 'new itinerary segments share the outbound/return/connection default rule');
+ok(js.includes('box.appendChild(customer);box.appendChild(vendor);return {box:box,customer:customer,vendor:vendor};') && !js.includes('answerMargin'), 'fare Answer renders Customer and Vendor only while totals retain margin authority');
+ok(css.includes('.etgp-air-multi-group-page-113324{display:flex;flex-direction:column;gap:12px}') && css.includes('.etgp-air-group-editor-main-113324{display:flex;flex-direction:column;gap:12px'), 'multi-group page and group editor use explicit vertical rhythm');
 
 /* Execute the production draft-normalization helper in a minimal VM. The
    source is loaded unchanged; only a test-only export is injected so the
@@ -67,5 +70,5 @@ assert.equal(staleLegacy.applied, false);
 const foreign = normalizeDraft({ ticket_groups: serverGroups }, { ticket_groups: [{ service_id: 101 }, { service_id: 999 }] });
 assert.equal(foreign.applied, false);
 const behavioralAssertions = 3;
-const sourceStaticAssertions = 36;
+const sourceStaticAssertions = 39;
 console.log(`ERP-11.3.324 Air multi-ticket-group regression: PASS (${behavioralAssertions + sourceStaticAssertions} assertions; behavioral=${behavioralAssertions}; source-static=${sourceStaticAssertions})`);

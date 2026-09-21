@@ -44,6 +44,10 @@ var etgpAirSelect113106=function(label,value,options){
   return {unit:unit,select:select};
 };
 
+var etgpAirDefaultSegmentType113329=function(existingCount){
+  return existingCount===0?'outbound':existingCount===1?'return':'connection';
+};
+
 var etgpAirSubhead113106=function(title,note){
   var head=create('div','etgp-air-subhead-113106 etgp-product-subsection-161');
   var copy=create('div','etgp-air-subhead-copy-113106');
@@ -310,7 +314,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 
   var itineraryRows=Array.isArray(data.itinerary)?data.itinerary:[];
   if(itineraryRows.length){itineraryRows.forEach(segmentRow);}else{segmentRow({segment_type:'outbound'});}
-  addSegment.addEventListener('click',function(){segmentRow({segment_type:'connection'});});
+  addSegment.addEventListener('click',function(){segmentRow({segment_type:etgpAirDefaultSegmentType113329(segmentCounter)});});
   if(!renderGroupOnly)host.appendChild(itinerary);
 
   /* Booking / ticket common data: vendor owns this PNR. */
@@ -464,8 +468,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
     var box=create('div','etgp-air-answer-113108');
     var customer=create('span','customer','C 0.00');
     var vendor=create('span','vendor','V 0.00');
-    var margin=create('strong','margin','M 0.00');
-    box.appendChild(customer);box.appendChild(vendor);box.appendChild(margin);return {box:box,customer:customer,vendor:vendor,margin:margin};
+    box.appendChild(customer);box.appendChild(vendor);return {box:box,customer:customer,vendor:vendor};
   };
 
   ['ADULT','CHILD','INFANT'].forEach(function(fareType){
@@ -488,7 +491,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
       var td=control.tagName==='TD'?control:create('td','');if(control.tagName!=='TD')td.appendChild(control);tr.appendChild(td);
     });
     commercialBody.appendChild(tr);
-    fareControls[fareType]={count:count,sale:sale,cost:cost,basic:basic,taxes:taxes,vendorMinusType:vendorMinus.select,vendorMinus:vendorMinus.input,vendorMinusAmount:vendorMinus.amount,customerMinusType:customerMinus.select,customerMinus:customerMinus.input,customerMinusAmount:customerMinus.amount,other:other,answerCustomer:answer.customer,answerVendor:answer.vendor,answerMargin:answer.margin};
+    fareControls[fareType]={count:count,sale:sale,cost:cost,basic:basic,taxes:taxes,vendorMinusType:vendorMinus.select,vendorMinus:vendorMinus.input,vendorMinusAmount:vendorMinus.amount,customerMinusType:customerMinus.select,customerMinus:customerMinus.input,customerMinusAmount:customerMinus.amount,other:other,answerCustomer:answer.customer,answerVendor:answer.vendor};
   });
 
   if(renderGroupOnly){var groupMain=create('div','etgp-air-group-editor-main-113324');var ticketColumn=create('div','etgp-air-group-ticket-column-113324');var commercialColumn=create('div','etgp-air-group-commercial-column-113324');ticketColumn.appendChild(ticketsBlock);commercialColumn.appendChild(commercial);groupMain.appendChild(commercialColumn);groupMain.appendChild(ticketColumn);host.appendChild(groupMain);}else{host.appendChild(commercial);}
@@ -525,8 +528,6 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
       var marginRowTotal=customerRowTotal-vendorRowTotal;
       c.answerCustomer.textContent='C '+customerRowTotal.toFixed(2);
       c.answerVendor.textContent='V '+vendorRowTotal.toFixed(2);
-      c.answerMargin.textContent='M '+marginRowTotal.toFixed(2);
-      c.answerMargin.classList.toggle('is-negative',marginRowTotal<0);
       var vendorOtherAllocation=count>0?other/count:0;
       ticketCommercialCells.filter(function(cell){return cell.fareType===fareType;}).forEach(function(cell){
         cell.sale.textContent=sale.toFixed(2);
@@ -636,7 +637,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 var renderPageItinerary113324=function(container,pageState,data,rerender){
   var section=create('section','etgp-air-block-113106 etgp-air-page-itinerary-113324');var head=etgpAirSubhead113106('Flight Itinerary','Add outbound, return or connection segments.');var add=create('button','btn btn-outline-primary etgp-air-mini-button-113106','+ Add Flight Segment');add.type='button';head.appendChild(add);section.appendChild(head);var list=create('div','etgp-air-segments-113106');section.appendChild(list);var airlines=Array.isArray(data.airlines)?data.airlines:[];var counter=0;
   var row=function(segment){segment=segment||{};if(!segment.client_key)segment.client_key='segment-new-'+Date.now()+'-'+(++counter);var r=create('div','etgp-air-segment-row-113106');r.setAttribute('data-etgp-air-segment-113106','1');var type=etgpAirSelect113106('Type',segment.segment_type||'outbound',[{value:'outbound',label:'Outbound'},{value:'return',label:'Return'},{value:'connection',label:'Connection'}]);var airline=airlines.length?etgpAirSelect113106('Airline',String(segment.airline_id||''),[{value:'',label:'Select airline'}].concat(airlines.map(function(x){return {value:x.id,label:x.label||x.name||x.code};}))):etgpAirInput113106('Airline','text',segment.airline||segment.airline_code||'','Airline');var flight=etgpAirInput113106('Flight No.','text',segment.flight_number||'','Flight No.');var from=etgpAirInput113106('From','text',segment.from||'','LHE');var to=etgpAirInput113106('To','text',segment.to||'','JED');var departure=etgpAirInput113106('Departure','datetime-local',segment.departure_at||'','');var arrival=etgpAirInput113106('Arrival','datetime-local',segment.arrival_at||'','');[type.unit,airline.unit,flight.unit,from.unit,to.unit,departure.unit,arrival.unit].forEach(function(x){r.appendChild(x);});var remove=create('button','btn btn-outline-danger etgp-air-remove-row-113106','Remove');remove.type='button';remove.addEventListener('click',function(){pageState.segments=pageState.segments.filter(function(x){return x.client_key!==segment.client_key;});pageState.groups.forEach(function(g){g.segment_keys=(g.segment_keys||[]).filter(function(k){return k!==segment.client_key;});});rerender();});r.appendChild(remove);var sync=function(){segment.segment_type=type.select.value;segment.flight_number=flight.input.value;segment.from=from.input.value.toUpperCase();segment.to=to.input.value.toUpperCase();segment.departure_at=departure.input.value||null;segment.arrival_at=arrival.input.value||null;if(airlines.length){var opt=airline.select.options[airline.select.selectedIndex];segment.airline_id=Number(airline.select.value||0)||null;segment.airline=opt?opt.textContent:'';}else segment.airline=airline.input.value;};[type.select,airline.select||airline.input,flight.input,from.input,to.input,departure.input,arrival.input].forEach(function(x){x.addEventListener('input',sync);x.addEventListener('change',sync);});list.appendChild(r);};
-  pageState.segments.forEach(row);add.addEventListener('click',function(){pageState.segments.push({id:0,client_key:'segment-new-'+Date.now()+'-'+(counter+1),segment_type:'connection',from:'',to:'',airline:'',airline_code:'',flight_number:'',departure_at:null,arrival_at:null});rerender();});container.appendChild(section);return section;
+  pageState.segments.forEach(row);add.addEventListener('click',function(){var existingCount=pageState.segments.length;pageState.segments.push({id:0,client_key:'segment-new-'+Date.now()+'-'+(counter+1),segment_type:etgpAirDefaultSegmentType113329(existingCount),from:'',to:'',airline:'',airline_code:'',flight_number:'',departure_at:null,arrival_at:null});rerender();});container.appendChild(section);return section;
 };
 var etgpAirRender113106=function(host,data,bookingId){
   data=etgpAirDraft113314.apply(data||{},bookingId);var groups=Array.isArray(data&&data.ticket_groups)?data.ticket_groups:[];if(!groups.length){renderTicketGroupEditor113106(host,data,bookingId);return;}host.innerHTML='';var pageState={segments:Array.isArray(data.segments)?data.segments:(Array.isArray(data.itinerary)?data.itinerary:[]),groups:groups,deletedGroupServiceIds:Array.isArray(data._etgpDeletedGroupServiceIds113119)?data._etgpDeletedGroupServiceIds113119.slice():(Array.isArray(data._etgpDeletedGroupServiceIds)?data._etgpDeletedGroupServiceIds.slice():[])};var integration=etgpAirHostIntegration113314();var render=function(){host.innerHTML='';var page=create('div','etgp-air-multi-group-page-113324');var itineraryHost=create('div','etgp-air-page-itinerary-113324');var groupsBlock=create('section','etgp-air-ticket-groups-113324');var groupsHead=etgpAirSubhead113106('Air Ticket Groups','Each group has its own Vendor, PNR, passenger tickets and commercials.');var addGroup=create('button','btn btn-outline-primary etgp-air-mini-button-113106','+ Add Ticket Group');addGroup.type='button';groupsHead.appendChild(addGroup);groupsBlock.appendChild(groupsHead);var editorHosts=[];var syncEditors=function(){editorHosts.forEach(function(e,i){var built=e._etgpBuildPayload113126?e._etgpBuildPayload113126():null;if(built)pageState.groups[i]=Object.assign({},pageState.groups[i],built,{service_id:pageState.groups[i].service_id||null,client_key:pageState.groups[i].client_key,segment_keys:pageState.groups[i].segment_keys||[]});});};
