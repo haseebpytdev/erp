@@ -942,10 +942,11 @@
 /* ERP-11.3.324 Air Ticket Groups: scoped cards preserve the existing Air
    visual system while making native service boundaries explicit. */
 .etgp-air-ticket-groups-113324{margin:0 0 16px;padding:14px;border:1px solid #dbe3ee;border-radius:10px;background:#fff}
-.etgp-air-ticket-group-card-113324{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:10px 0;border-top:1px solid #edf1f6}
+.etgp-air-ticket-group-card-113324{display:block;width:100%;padding:10px 0;border-top:1px solid #edf1f6}
+.etgp-air-ticket-group-header-113324{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
 .etgp-air-ticket-group-card-113324 h4{margin:0;font-size:13px;color:#17243a}
 .etgp-air-ticket-group-meta-113324{font-size:12px;color:#68778c}
-@media (max-width:760px){.etgp-air-ticket-group-card-113324{grid-template-columns:1fr}.etgp-air-ticket-group-card-113324 button{width:max-content}}
+@media (max-width:760px){.etgp-air-ticket-group-header-113324{align-items:flex-start;flex-wrap:wrap}.etgp-air-ticket-group-card-113324 button{width:max-content}}
 
 /* ERP-11.3.324 multi-group editor: each native Air service owns one
    responsive editor while the page-level totals remain a single summary. */
