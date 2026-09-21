@@ -1,6 +1,12 @@
-ERP-11.3.325 DIRECT UPLOAD - AIR MULTI-TICKET GROUPS
+ERP-11.3.326 DIRECT UPLOAD - ZERO-TICKET-GROUP AIR BOOTSTRAP
 
-Active release: v1.1.33.325-ERP11.3.325
+Active release: v1.1.33.326-ERP11.3.326
+
+ERP-11.3.326 correction: when the operational-summary response contains
+ticket_groups: [], a Draft GENERAL Air booking opens directly in the native
+multi-ticket-group workspace with one unsaved starter group. No database or
+service is created until the normal final Save succeeds. Legacy responses
+that omit ticket_groups retain their compatibility path.
 
 THIS RELEASE HAS ONE REQUIRED ADDITIVE MIGRATION.
 Migration: 2026_09_21_000000_add_booking_service_id_to_booking_itinerary_segments.php
@@ -8,14 +14,14 @@ Migration: 2026_09_21_000000_add_booking_service_id_to_booking_itinerary_segment
 Deployment order:
 1. Stop Air multi-ticket-group data entry during deployment.
 2. Take/confirm a fresh database backup before migration.
-3. Upload/extract the authoritative ERP-11.3.325 ZIP through cPanel over the existing ERP application.
+3. Upload/extract the authoritative ERP-11.3.326 ZIP through cPanel over the existing ERP application.
 4. Open System Health & Updates and run Safe Database Upgrade.
 5. Migration must complete successfully before staff use multi-ticket-group Air saving.
 6. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
 7. If migration fails, HOLD deployment; do not use multi-ticket-group Air saving or improvise manual database edits.
 8. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
 
-Focused ERP-11.3.325 production UAT (not yet production-verified):
+Focused ERP-11.3.326 production UAT (not yet production-verified):
 - Use a safe Draft GENERAL Air booking.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
 - Multi-ticket groups: verify at least two Ticket Groups can exist, each with an independent Vendor / Supplier, independent PNR, independent Airline PNR / GDS Source where applicable, independent segment assignment, passenger ticket numbers and PNR Fare Commercials.

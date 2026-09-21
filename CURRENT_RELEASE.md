@@ -1,16 +1,16 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.325
-APPLICATION_VERSION=v1.1.33.325-ERP11.3.325
+CURRENT_VERSION=ERP-11.3.326
+APPLICATION_VERSION=v1.1.33.326-ERP11.3.326
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.325
+LAST_PACKAGED_RELEASE=ERP-11.3.326
 ```
 
-ERP-11.3.325 adds native multi-ticket-group support to the GENERAL Air booking workspace. One Air booking can contain multiple Ticket Groups with independent native Vendor / Supplier, PNR, tickets, commercials and itinerary-segment ownership, while retaining one booking-level itinerary and aggregate Air totals. Draft recovery, locking, validation, save lifecycle, service-ID reconciliation, Travel Readiness and legacy single-group compatibility are preserved; commercial formulas are unchanged. One additive nullable indexed booking_service_id migration is required, and no destructive migration is introduced.
+ERP-11.3.326 corrects Air bootstrap behavior for valid bookings whose operational summary contains ticket_groups as an empty array. These bookings now open directly in the native multi-ticket-group workspace with one unsaved starter group, while legacy responses that omit ticket_groups retain their compatibility path. No backend persistence, commercial formulas, API contracts, migration, locking or other product behavior changes are included.
 `CURRENT` is now the sole editable development authority. Future changes are
 made and tested in this directory without creating versioned source copies or
 automatic ZIP archives.
