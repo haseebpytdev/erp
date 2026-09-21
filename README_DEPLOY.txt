@@ -15,7 +15,7 @@ changed. ERP-11.3.327 introduces no new database migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .325 should already have it applied. Before .326 Air UAT,
+current live .326 already has it applied. Before .327 Air UAT,
 confirm System Health reports the database schema is up to date. Take a fresh
 database backup before deployment, but do not treat this as a new migration
 requirement or manually modify the database.
@@ -24,7 +24,7 @@ Deployment order:
 1. Stop Air multi-ticket-group data entry during deployment.
 2. Take/confirm a fresh database backup before deployment.
 3. Upload/extract the authoritative ERP-11.3.327 ZIP through cPanel over the existing ERP application.
-4. Open System Health & Updates and confirm the database schema is up to date; no new .326 migration is required.
+4. Open System Health & Updates and confirm the database schema is up to date; no new .327 migration is required.
 5. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
 6. If the schema is not current, HOLD deployment and resolve through the established migration process; do not improvise manual database edits.
 7. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
@@ -47,7 +47,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Confirm the database schema is up to date; ERP-11.3.326 introduces no new migration.
+3. Confirm the database schema is up to date; ERP-11.3.327 introduces no new migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking
