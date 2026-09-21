@@ -30,7 +30,7 @@ const ok = (condition, label) => {
 };
 
 ok(
-  version === 'v1.1.33.324-ERP11.3.324',
+  version === 'v1.1.33.325-ERP11.3.325',
   'ERP-11.3.259 release metadata is current'
 );
 

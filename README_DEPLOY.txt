@@ -1,9 +1,19 @@
-ERP-11.3.324 DIRECT UPLOAD - BOOKING KPI AUTHORITY CORRECTION
+ERP-11.3.325 DIRECT UPLOAD - AIR MULTI-TICKET GROUPS
 
-Active release: v1.1.33.324-ERP11.3.324
+Active release: v1.1.33.325-ERP11.3.325
 
-Deployment is a manual cPanel upload/extract. This release has no migration.
-After extraction, clear Application Cache and perform Ctrl+F5 / a hard refresh.
+THIS RELEASE HAS ONE REQUIRED ADDITIVE MIGRATION.
+Migration: 2026_09_21_000000_add_booking_service_id_to_booking_itinerary_segments.php
+
+Deployment order:
+1. Stop Air multi-ticket-group data entry during deployment.
+2. Take/confirm a fresh database backup before migration.
+3. Upload/extract the authoritative ERP-11.3.325 ZIP through cPanel over the existing ERP application.
+4. Open System Health & Updates and run Safe Database Upgrade.
+5. Migration must complete successfully before staff use multi-ticket-group Air saving.
+6. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
+7. If migration fails, HOLD deployment; do not use multi-ticket-group Air saving or improvise manual database edits.
+8. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
 
 Focused live UAT (not yet production-verified):
 - Final Booking → Air: test cold and warm clicks; confirm the Air workspace is fully styled immediately without refresh.
@@ -16,7 +26,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Do not run Safe Database Upgrade; this release has no migration.
+3. Run Safe Database Upgrade and confirm the required migration completes.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking
