@@ -6,6 +6,7 @@ const air = read('app/Http/Controllers/Operations/GeneralBookingAirProductContro
 const readiness = read('app/Services/Operations/BookingTravelReadinessResolver.php');
 const migration = read('database/migrations/2026_09_21_000000_add_booking_service_id_to_booking_itinerary_segments.php');
 const js = read('public/erp-theme/js/products/air.js');
+const css = read('public/erp-theme/css/products/air.css');
 const ok = (value, message) => assert.ok(value, message);
 
 ok(air.includes("'ticket_groups'") && air.includes('ticketGroupsSnapshot'), 'Air GET exposes native Ticket Groups');
@@ -20,11 +21,14 @@ ok(air.includes('multiple Air Ticket Groups. Reload the Air Workspace before sav
 ok(air.includes('ensureAirService($booking, $bookingRow, true)'), 'new groups use an explicit force-new native service path');
 ok(air.includes('resolvedServiceIds'), 'resolved native service IDs are unique per submitted group');
 ok(air.includes('booking_service_passengers'), 'group deletion removes generic service passenger links');
-ok(js.includes("data-etgp-air-group-editor") && js.includes('groupHost'), 'every group mounts an independent editor host');
+ok(js.includes("data-etgp-air-group-editor") && js.includes('editorHost'), 'every group mounts an independent editor host');
 ok(js.includes('renderGroupOnly') && js.includes('_etgpAllGroups'), 'group editors serialize all groups while editing one group');
 ok(js.includes('data-etgp-air-segment-owner'), 'frontend segment ownership is exclusive');
 ok(migration.includes('Intentionally non-destructive') && !migration.includes('dropColumn'), 'migration rollback is fail-safe and non-destructive');
 ok(readiness.includes('ticket_groups') && readiness.includes('Air Ticket Group #'), 'travel readiness evaluates every group');
 ok(migration.includes('booking_service_id') && migration.includes('nullable'), 'segment link migration is additive and nullable');
 ok(js.includes('fareCommercials') && js.includes('etgpAirDraft113314'), 'dedicated Air renderer and draft authority remain intact');
-console.log('ERP-11.3.324 Air multi-ticket-group regression: PASS (11 assertions)');
+ok(css.includes('etgp-air-ticket-group-editor-113324') && css.includes('etgp-air-group-segments-113324'), 'multi-group editor uses scoped responsive Air CSS');
+ok(css.includes('etgp-air-multi-group-totals-113324'), 'page-level multi-group totals use scoped Air CSS');
+ok(!js.includes('etgpAirRender113106(groupHost'), 'group editor rendering does not recursively remount the page');
+console.log('ERP-11.3.324 Air multi-ticket-group regression: PASS (23 assertions)');
