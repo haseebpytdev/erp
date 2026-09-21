@@ -1,21 +1,22 @@
-ERP-11.3.327 Air Ticket Group Commercial Matrix Layout
+ERP-11.3.328 Air Workspace UI Consolidation
 
-Active release: v1.1.33.327-ERP11.3.327
+Active release: v1.1.33.328-ERP11.3.328
 
-ERP-11.3.327 corrects the PNR Fare Commercials presentation inside Air Ticket
-Groups. The existing ten-column fare commercial matrix retains a readable
-minimum width inside the multi-group commercial column and uses controlled
-internal horizontal scrolling instead of collapsing labels, minus controls and
-Answer values into an unusable narrow layout. The Ticket Group two-column
-structure, Passenger Tickets layout, responsive stacking, zero-group bootstrap,
-draft recovery, save lifecycle and all existing Air commercial formulas remain
-unchanged. No backend persistence logic, API contract, database schema,
-migration, routes, ticket-counting rules, locking or Travel Readiness logic are
-changed. ERP-11.3.327 introduces no new database migration.
+ERP-11.3.328 finalizes the GENERAL Air multi-ticket-group workspace
+presentation. Flight Itinerary rows now use balanced field and action geometry,
+Applies To Flight Segments uses compact explicit assignment controls, and each
+Ticket Group follows the full-width sequence Booking / Ticket Data -> PNR Fare
+Commercials -> Passenger Tickets -> PNR totals. The PNR Fare Commercials
+matrix uses the available Ticket Group width without the ERP-11.3.327 internal
+horizontal-scroll presentation. Segment ownership, zero-group bootstrap,
+draft recovery, save lifecycle, commercial formulas, passenger/ticket KPI
+behavior, locking and Travel Readiness remain unchanged. No backend API,
+persistence, route or database-schema behavior is changed. ERP-11.3.328
+introduces no new database migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .326 already has it applied. Before .327 Air UAT,
+current live .327 already has it applied. Before .328 Air UAT,
 confirm System Health reports the database schema is up to date. Take a fresh
 database backup before deployment, but do not treat this as a new migration
 requirement or manually modify the database.
@@ -23,13 +24,13 @@ requirement or manually modify the database.
 Deployment order:
 1. Stop Air multi-ticket-group data entry during deployment.
 2. Take/confirm a fresh database backup before deployment.
-3. Upload/extract the authoritative ERP-11.3.327 ZIP through cPanel over the existing ERP application.
-4. Open System Health & Updates and confirm the database schema is up to date; no new .327 migration is required.
+3. Upload/extract the authoritative ERP-11.3.328 ZIP through cPanel over the existing ERP application.
+4. Open System Health & Updates and confirm the database schema is up to date; no new .328 migration is required.
 5. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
 6. If the schema is not current, HOLD deployment and resolve through the established migration process; do not improvise manual database edits.
 7. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
 
-Focused ERP-11.3.327 production UAT (not yet production-verified):
+Focused ERP-11.3.328 production UAT (not yet production-verified):
 - Use a safe Draft GENERAL Air booking.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
 - Multi-ticket groups: verify at least two Ticket Groups can exist, each with an independent Vendor / Supplier, independent PNR, independent Airline PNR / GDS Source where applicable, independent segment assignment, passenger ticket numbers and PNR Fare Commercials.

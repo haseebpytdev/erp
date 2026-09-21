@@ -1,26 +1,27 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_VERSION=ERP-11.3.327
-APPLICATION_VERSION=v1.1.33.327-ERP11.3.327
+CURRENT_VERSION=ERP-11.3.328
+APPLICATION_VERSION=v1.1.33.328-ERP11.3.328
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.327
+LAST_PACKAGED_RELEASE=ERP-11.3.328
 ```
 
-ERP-11.3.327 Air Ticket Group Commercial Matrix Layout corrects the PNR Fare
-Commercials presentation inside Air Ticket Groups. The existing ten-column
-fare commercial matrix retains a readable minimum width inside the multi-group
-commercial column and uses controlled internal horizontal scrolling instead of
-collapsing labels, minus controls and Answer values into an unusable narrow
-layout. The Ticket Group two-column structure, Passenger Tickets layout,
-responsive stacking, zero-group bootstrap, draft recovery, save lifecycle and
-all existing Air commercial formulas remain unchanged. No backend persistence
-logic, API contract, database schema, migration, routes, ticket-counting rules,
-locking or Travel Readiness logic are changed. ERP-11.3.327 introduces no new
-database migration.
+ERP-11.3.328 Air Workspace UI Consolidation finalizes the GENERAL Air
+multi-ticket-group workspace presentation. Flight Itinerary rows now use
+balanced field and action geometry, Applies To Flight Segments uses compact
+explicit assignment controls, and each Ticket Group follows the full-width
+sequence Booking / Ticket Data -> PNR Fare Commercials -> Passenger Tickets
+-> PNR totals. The PNR Fare Commercials matrix uses the available Ticket Group
+width without the ERP-11.3.327 internal horizontal-scroll presentation.
+Segment ownership, zero-group bootstrap, draft recovery, save lifecycle,
+commercial formulas, passenger/ticket KPI behavior, locking and Travel
+Readiness remain unchanged. No backend API, persistence, route or
+database-schema behavior is changed. ERP-11.3.328 introduces no new database
+migration.
 `CURRENT` is now the sole editable development authority. Future changes are
 made and tested in this directory without creating versioned source copies or
 automatic ZIP archives.
