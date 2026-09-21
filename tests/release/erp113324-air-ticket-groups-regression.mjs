@@ -32,6 +32,9 @@ ok(js.includes('fareCommercials') && js.includes('etgpAirDraft113314'), 'dedicat
 ok(/\.etgp-air-group-editor-main-113324\{[^}]*display:grid;[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(250px,\.42fr\)/.test(css), 'two-column grid targets the inner group editor main');
 ok(/\.etgp-air-ticket-group-editor-113324\{[^}]*display:block;[^}]*width:100%/.test(css) && !/\.etgp-air-ticket-group-editor-113324\{[^}]*grid-template-columns/.test(css), 'outer group editor remains full-width block layout');
 ok(css.includes('.etgp-air-group-ticket-column-113324,.etgp-air-group-commercial-column-113324'), 'ticket and commercial columns own the two-column children');
+ok(/\.etgp-air-group-commercial-column-113324\{[^}]*overflow:hidden/.test(css), 'commercial column clips page-level overflow');
+ok(css.includes('.etgp-air-group-commercial-column-113324 .etgp-air-fare-wrap-113108') && css.includes('overflow-x:auto'), 'commercial matrix owns controlled horizontal overflow');
+ok(/\.etgp-air-group-commercial-column-113324 \.etgp-air-fare-table-113108\{[^}]*min-width:1040px!important/.test(css), 'commercial matrix preserves readable minimum width inside its column');
 ok(/@media \(max-width:760px\)\{\.etgp-air-group-editor-main-113324\{grid-template-columns:1fr\}/.test(css), 'inner group editor main stacks responsively');
 ok(js.includes('etgp-air-group-editor-main-113324') && js.includes('etgp-air-group-ticket-column-113324') && js.includes('etgp-air-group-commercial-column-113324'), 'DOM declares common, inner main and ticket/commercial columns');
 ok(js.includes('page.appendChild(totals);') && js.indexOf('page.appendChild(totals);')>js.indexOf('groupMain.appendChild(commercialColumn);'), 'group summary remains outside the two-column main');
