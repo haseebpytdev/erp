@@ -33,6 +33,12 @@ Deployment order:
 Focused ERP-11.3.328 production UAT (not yet production-verified):
 - Use a safe Draft GENERAL Air booking.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
+- Flight Itinerary uses balanced field widths; Remove remains fully inside the segment row without overlapping Arrival or leaving the action cell.
+- Applies To Flight Segments uses compact readable assignment controls; route and flight-number labels are readable.
+- Segment selection remains exclusive: each segment belongs to exactly one Ticket Group.
+- Booking / Ticket Data is full width; PNR Fare Commercials is full width immediately after it, with no normal desktop/laptop internal horizontal scrollbar and all commercial columns readable without overlap.
+- Passenger Tickets is full width below PNR Fare Commercials; PNR Customer Total / PNR Vendor Total / Gross Margin remain below both tables.
+- There is no page-level horizontal overflow; zero-group bootstrap opens the Ticket Group workspace; save/reload and multi-group persistence remain unchanged.
 - Multi-ticket groups: verify at least two Ticket Groups can exist, each with an independent Vendor / Supplier, independent PNR, independent Airline PNR / GDS Source where applicable, independent segment assignment, passenger ticket numbers and PNR Fare Commercials.
 - Segment ownership: each itinerary segment belongs to exactly one Ticket Group; duplicate ownership is prevented; a group with zero assigned segments or an unowned submitted segment cannot save.
 - Commercials: aggregate Air Customer Total and Vendor Total include all groups; Gross Margin is correct; Customer Minus and Vendor Minus remain based on Basic Rate; V O Cost remains one fare-row total after passenger multiplication; commercial formulas are unchanged.
@@ -48,7 +54,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Confirm the database schema is up to date; ERP-11.3.327 introduces no new migration.
+3. Confirm the database schema is up to date; ERP-11.3.328 introduces no new migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking
