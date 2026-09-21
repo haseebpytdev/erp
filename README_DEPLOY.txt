@@ -15,11 +15,18 @@ Deployment order:
 7. If migration fails, HOLD deployment; do not use multi-ticket-group Air saving or improvise manual database edits.
 8. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
 
-Focused live UAT (not yet production-verified):
-- Final Booking → Air: test cold and warm clicks; confirm the Air workspace is fully styled immediately without refresh.
-- Network: confirm the Air fragment request, no full Air document on the successful path, one Air product API GET, and no general-progressive-step1.js/.css.
-- Navigation safety: confirm the normal Air URL after success, native modified clicks, native Hotel/Transport/Visa links, and normal fallback/deep-link behavior.
-- State safety: confirm dirty/draft confirmation, save-in-flight guard, and browser back/forward behavior.
+Focused ERP-11.3.325 production UAT (not yet production-verified):
+- Use a safe Draft GENERAL Air booking.
+- Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
+- Multi-ticket groups: verify at least two Ticket Groups can exist, each with an independent Vendor / Supplier, independent PNR, independent Airline PNR / GDS Source where applicable, independent segment assignment, passenger ticket numbers and PNR Fare Commercials.
+- Segment ownership: each itinerary segment belongs to exactly one Ticket Group; duplicate ownership is prevented; a group with zero assigned segments or an unowned submitted segment cannot save.
+- Commercials: aggregate Air Customer Total and Vendor Total include all groups; Gross Margin is correct; Customer Minus and Vendor Minus remain based on Basic Rate; V O Cost remains one fare-row total after passenger multiplication; commercial formulas are unchanged.
+- Save/reload: final page Save succeeds; refresh/reload preserves every group, itinerary ownership and persisted native service IDs; a second Save does not create duplicate Ticket Groups.
+- KPI acceptance example only: 7 unique passengers × 2 fully ticketed groups = Passenger KPI remains 7 and Air Ticket KPI becomes 14. Do not manufacture or alter live records solely to create this example.
+- Locking: Pending Approval, Approved and Travel Ready are read-only; itinerary controls, Add/Remove Segment, Add/Duplicate/Delete Group, group common/ticket/commercial controls and final Save are locked.
+- Travel readiness: every Ticket Group participates in readiness; missing group segment, missing group PNR or missing/unissued required passenger ticket blocks readiness.
+- Legacy single-group compatibility: an existing single-group Air booking still opens, saved values remain correct and single-group Save still works (legacy single-group path verified).
+- Network/navigation: confirm the Air fragment request, no full Air document on the successful path, one Air product API GET, no general-progressive-step1.js/.css, normal Air URL, modified clicks, native Hotel/Transport/Visa links, fallback/deep-link behavior, dirty/draft confirmation, save-in-flight guard and browser back/forward behavior.
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 
