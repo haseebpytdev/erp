@@ -1,25 +1,38 @@
-ERP-11.3.326 DIRECT UPLOAD - ZERO-TICKET-GROUP AIR BOOTSTRAP
+ERP-11.3.326 Air Empty-Booking Ticket Group Bootstrap
 
 Active release: v1.1.33.326-ERP11.3.326
 
-ERP-11.3.326 correction: when the operational-summary response contains
-ticket_groups: [], a Draft GENERAL Air booking opens directly in the native
-multi-ticket-group workspace with one unsaved starter group. No database or
-service is created until the normal final Save succeeds. Legacy responses
-that omit ticket_groups retain their compatibility path.
+ERP-11.3.326 corrects the Air multi-ticket-group bootstrap for fresh GENERAL
+Air bookings. When the current Air product API returns a valid ticket_groups:
+[] contract, the Air workspace opens directly in the multi-ticket-group
+interface with one unsaved starter Ticket Group instead of falling back to
+the legacy single-PNR editor. The starter group has service_id=null and
+creates no database state during page render. Native Air service creation
+remains backend-authoritative and occurs only through the existing final
+multi-group Save flow. Existing one-group and multi-group bookings remain
+supported, legacy responses where ticket_groups is absent retain their
+compatibility path, and draft recovery remains preserved. No backend
+persistence logic, commercial formulas, CSS, API contract, database schema,
+new migration, routes, ticket-counting rules, locking or travel-readiness
+logic are changed by ERP-11.3.326. The booking_service_id migration
+introduced by ERP-11.3.325 remains part of the cumulative source baseline and
+is not a new .326 migration.
 
-THIS RELEASE HAS ONE REQUIRED ADDITIVE MIGRATION.
-Migration: 2026_09_21_000000_add_booking_service_id_to_booking_itinerary_segments.php
+NEW_MIGRATION_REQUIRED=NO
+Existing booking_service_id migration remains part of cumulative source;
+current live .325 should already have it applied. Before .326 Air UAT,
+confirm System Health reports the database schema is up to date. Take a fresh
+database backup before deployment, but do not treat this as a new migration
+requirement or manually modify the database.
 
 Deployment order:
 1. Stop Air multi-ticket-group data entry during deployment.
-2. Take/confirm a fresh database backup before migration.
+2. Take/confirm a fresh database backup before deployment.
 3. Upload/extract the authoritative ERP-11.3.326 ZIP through cPanel over the existing ERP application.
-4. Open System Health & Updates and run Safe Database Upgrade.
-5. Migration must complete successfully before staff use multi-ticket-group Air saving.
-6. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
-7. If migration fails, HOLD deployment; do not use multi-ticket-group Air saving or improvise manual database edits.
-8. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
+4. Open System Health & Updates and confirm the database schema is up to date; no new .326 migration is required.
+5. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
+6. If the schema is not current, HOLD deployment and resolve through the established migration process; do not improvise manual database edits.
+7. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
 
 Focused ERP-11.3.326 production UAT (not yet production-verified):
 - Use a safe Draft GENERAL Air booking.
