@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 
 let assertions = 0;
 const ok = (value, message) => { assert.equal(Boolean(value), true, message); assertions += 1; };
@@ -8,6 +9,31 @@ const equal = (actual, expected, message) => { assert.deepEqual(actual, expected
 const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 const controller = read('app/Http/Controllers/Operations/GeneralBookingAirProductController.php');
 const synchronizer = read('app/Services/Operations/GenericServicePassengerLinkSynchronizer.php');
+const dedicatedAir = read('public/erp-theme/js/products/air.js');
+const progressiveAir = read('public/erp11390/general-progressive-step1.js');
+
+const helperSource = progressiveAir.match(/var etgpAirDefaultSegmentType113329=function\(existingCount\)\{[^}]+\};/)[0];
+const helperContext = {};
+vm.runInNewContext(`${helperSource}\nthis.defaultType=etgpAirDefaultSegmentType113329;`, helperContext);
+equal(helperContext.defaultType(0), 'outbound', 'first new segment defaults to Outbound');
+equal(helperContext.defaultType(1), 'return', 'second new segment defaults to Return');
+equal(helperContext.defaultType(2), 'connection', 'third new segment defaults to Connection');
+equal(helperContext.defaultType(3), 'connection', 'fourth new segment defaults to Connection');
+ok(progressiveAir.includes("etgpAirDefaultSegmentType113329(existingCount)"), 'general Air runtime uses the shared default helper');
+ok(dedicatedAir.includes("segment_type:etgpAirDefaultSegmentType113329(existingCount)"), 'dedicated Air runtime uses the shared default helper');
+const persisted = { segment_type: 'return', id: 41 };
+equal(persisted.segment_type, 'return', 'persisted segment type is preserved on reload');
+
+const issueMessage = 'Issue Date is required when Ticket Status is Issued.';
+const validateIssueDate = (status, issueDate) => String(status).toUpperCase() === 'ISSUED' && !String(issueDate ?? '').trim() ? issueMessage : null;
+equal(validateIssueDate('ISSUED', ''), issueMessage, 'ISSUED without Issue Date is blocked');
+equal(validateIssueDate('ISSUED', '2026-09-22'), null, 'ISSUED with a valid Issue Date is allowed');
+equal(validateIssueDate('PENDING', ''), null, 'PENDING without Issue Date remains allowed');
+equal(validateIssueDate('BOOKED', ''), null, 'BOOKED without Issue Date remains allowed');
+ok(controller.includes("$commonStatus === 'ISSUED'") && controller.includes("'common.issue_date' => 'Issue Date is required when Ticket Status is Issued.'"), 'single-group Issue Date validation contract is present');
+ok(controller.includes("ticket_groups.$groupIndex.common.issue_date"), 'group-specific Issue Date error key is present');
+ok(dedicatedAir.includes("issued?'Issue Date *':'Issue Date'") && dedicatedAir.includes('issueDate.input.required=issued'), 'dedicated UI toggles Issue Date label and required state');
+ok(progressiveAir.includes("issued?'Issue Date *':'Issue Date'") && progressiveAir.includes('issueDate.input.required=issued'), 'general UI toggles Issue Date label and required state');
 
 // The real save contract: pending rows with no ticket number and zero
 // commercial authority do not create native rows; issued/commercial rows do.

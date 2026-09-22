@@ -128,6 +128,13 @@ final class GeneralBookingAirProductController extends Controller
             'fare_commercials.*.supplier_discount_value' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $commonStatus = strtoupper((string) data_get($data, 'common.ticket_status', 'BOOKED'));
+        if ($commonStatus === 'ISSUED' && blank(data_get($data, 'common.issue_date'))) {
+            throw ValidationException::withMessages([
+                'common.issue_date' => 'Issue Date is required when Ticket Status is Issued.',
+            ]);
+        }
+
         if (! Schema::hasTable('booking_services') || ! Schema::hasTable('air_ticket_details')) {
             throw ValidationException::withMessages([
                 'air' => 'The native Air Ticket service store is not available on this ERP installation.',
@@ -336,7 +343,8 @@ final class GeneralBookingAirProductController extends Controller
             return ['blockers' => []];
         }
         $statusColumns = array_values(array_intersect(['status', 'ticket_status'], $columns));
-        if (! $statusColumns) {
+        $ticketEvidenceColumns = array_values(array_intersect(['ticket_number', 'ticket_no', 'e_ticket_number', 'eticket_number', 'document_number', 'document_no', 'issue_date', 'ticket_issue_date', 'issued_at'], $columns));
+        if (! $statusColumns && ! $ticketEvidenceColumns) {
             return ['blockers' => ['Legacy Air passenger rows have no status authority; automatic cleanup is blocked.']];
         }
 
@@ -351,7 +359,7 @@ final class GeneralBookingAirProductController extends Controller
             return ['blockers' => ['Legacy Air passenger rows could not be safely scoped to this booking.']];
         }
 
-        $rows = $query->get(array_merge(['id'], $statusColumns));
+        $rows = $query->get(array_merge(['id'], $statusColumns, $ticketEvidenceColumns));
         $terminal = ['issued', 'posted', 'paid', 'settled', 'closed', 'approved', 'completed', 'refunded', 'void', 'voided', 'cancelled', 'canceled'];
         $draftSafe = ['draft', 'booked', 'pending', 'active', 'new', 'open'];
         $blockers = [];
@@ -361,11 +369,12 @@ final class GeneralBookingAirProductController extends Controller
                 static fn (string $column): string => strtolower(trim((string) ($row->{$column} ?? ''))),
                 $statusColumns
             ), static fn (string $status): bool => $status !== ''));
+            $hasEvidence = (bool) collect($ticketEvidenceColumns)->first(static fn (string $column): bool => trim((string) ($row->{$column} ?? '')) !== '');
             $terminalState = collect($states)->first(static fn (string $status): bool => in_array($status, $terminal, true));
             $unknownState = collect($states)->first(static fn (string $status): bool => ! in_array($status, array_merge($terminal, $draftSafe), true));
-            if ($terminalState !== null) {
-                $blockers[] = 'Removed passenger has irreversible Air ticket data ('.strtoupper($terminalState).').';
-            } elseif ($unknownState !== null || count($states) !== count($statusColumns)) {
+            if ($hasEvidence || $terminalState !== null) {
+                $blockers[] = 'Removed passenger has irreversible Air ticket data ('.strtoupper((string) ($terminalState ?? 'ISSUANCE EVIDENCE')).').';
+            } elseif ($unknownState !== null || count($states) !== count($statusColumns) || ! $statusColumns) {
                 $blockers[] = 'Removed passenger has Air ticket data with an unknown or incomplete status; automatic cleanup is blocked.';
             } else {
                 $draftIds[] = (int) $row->id;
@@ -600,6 +609,15 @@ final class GeneralBookingAirProductController extends Controller
         ]);
         $payload = $request->all();
         $groups = array_values((array) ($payload['ticket_groups'] ?? []));
+        foreach ($groups as $groupIndex => $group) {
+            $groupCommon = (array) ($group['common'] ?? []);
+            if (strtoupper((string) ($groupCommon['ticket_status'] ?? 'BOOKED')) === 'ISSUED'
+                && blank($groupCommon['issue_date'] ?? null)) {
+                throw ValidationException::withMessages([
+                    "ticket_groups.$groupIndex.common.issue_date" => 'Issue Date is required when Ticket Status is Issued.',
+                ]);
+            }
+        }
         $existingServices = $this->findAirServices($booking);
         $existingIds = array_values(array_map(static fn (array $s): int => (int) $s['id'], $existingServices));
         if (! $groups && $existingIds) throw ValidationException::withMessages(['ticket_groups' => 'At least one Air Ticket Group is required.']);

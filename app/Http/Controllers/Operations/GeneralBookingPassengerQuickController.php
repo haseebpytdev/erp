@@ -388,6 +388,12 @@ final class GeneralBookingPassengerQuickController extends Controller
         array $row,
     ): ?int {
         $base = DB::table($table)->where('booking_id', $booking);
+        if (in_array('status', $columns, true)) {
+            $base->where(function ($query): void {
+                $query->whereNull('status')
+                    ->orWhereRaw('UPPER(status) <> ?', ['REMOVED']);
+            });
+        }
 
         $masterColumn = $this->firstColumn($columns, [
             'passenger_id', 'master_passenger_id', 'traveller_id', 'traveler_id',

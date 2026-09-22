@@ -1217,6 +1217,7 @@ var etgpAirBackgroundMetricRefresh113106=function(){
   }).catch(function(){});
 };
 
+var etgpAirDefaultSegmentType113329=function(existingCount){return existingCount===0?'outbound':existingCount===1?'return':'connection';};
 var etgpAirRender113106=function(host,data,bookingId){
   var integration=etgpAirHostIntegration113314();
   data=etgpAirDraft113314.apply(data||{},bookingId);
@@ -1353,7 +1354,7 @@ var etgpAirRender113106=function(host,data,bookingId){
 
   var itineraryRows=Array.isArray(data.itinerary)?data.itinerary:[];
   if(itineraryRows.length){itineraryRows.forEach(segmentRow);}else{segmentRow({segment_type:'outbound'});}
-  addSegment.addEventListener('click',function(){segmentRow({segment_type:'connection'});});
+  addSegment.addEventListener('click',function(){var existingCount=segmentList.querySelectorAll('[data-etgp-air-segment-113106]').length;segmentRow({segment_type:etgpAirDefaultSegmentType113329(existingCount)});});
   host.appendChild(itinerary);
 
   /* Booking / ticket common data: vendor owns this PNR. */
@@ -1384,6 +1385,9 @@ var etgpAirRender113106=function(host,data,bookingId){
     {value:'BOOKED',label:'Booked'},{value:'ISSUED',label:'Issued'},{value:'PENDING',label:'Pending'},{value:'VOID',label:'Void'},{value:'REFUNDED',label:'Refunded'},{value:'CANCELLED',label:'Cancelled'}
   ]);
   var issueDate=etgpAirInput113106('Issue Date','date',common.issue_date||'','');
+  var syncIssueDateRequirement=function(){var issued=String(ticketStatus.select.value||'').toUpperCase()==='ISSUED';var label=issueDate.unit.querySelector?issueDate.unit.querySelector('label'):null;if(label)label.textContent=issued?'Issue Date *':'Issue Date';issueDate.input.required=issued;if(issueDate.input.setCustomValidity)issueDate.input.setCustomValidity(issued&&!String(issueDate.input.value||'').trim()?'Issue Date is required when Ticket Status is Issued.':'');};
+  ticketStatus.select.addEventListener('change',syncIssueDateRequirement);
+  syncIssueDateRequirement();
   [supplierControl.unit,commonPnr.unit,airlinePnr.unit,bookingSource.unit,ticketStatus.unit,issueDate.unit].forEach(function(unit){commonGrid.appendChild(unit);});
   commonBlock.appendChild(commonGrid);
   host.appendChild(commonBlock);
@@ -1646,6 +1650,7 @@ var etgpAirRender113106=function(host,data,bookingId){
     if(invalidFare){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=invalidFare+' Basic Rate cannot be greater than Cost Price.';return;}
 
     var payload=buildPayload113119();
+    if(String(payload.common.ticket_status||'').toUpperCase()==='ISSUED'&&!String(payload.common.issue_date||'').trim()){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Issue Date is required when Ticket Status is Issued.';return;}
     var hasAirVendorCost=payload.fare_commercials.some(function(row){return Number(row.cost_price||0)>0;});
     if(hasAirVendorCost&&!payload.common.supplier_id&&!plain(payload.common.supplier_name)){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Select Vendor / Supplier before saving Air commercial data.';return;}
       etgpAirDraft113314.write(bookingId,payload);

@@ -360,6 +360,9 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
     {value:'BOOKED',label:'Booked'},{value:'ISSUED',label:'Issued'},{value:'PENDING',label:'Pending'},{value:'VOID',label:'Void'},{value:'REFUNDED',label:'Refunded'},{value:'CANCELLED',label:'Cancelled'}
   ]);
   var issueDate=etgpAirInput113106('Issue Date','date',common.issue_date||'','');
+  var syncIssueDateRequirement=function(){var issued=String(ticketStatus.select.value||'').toUpperCase()==='ISSUED';var label=issueDate.unit.querySelector?issueDate.unit.querySelector('label'):null;if(label)label.textContent=issued?'Issue Date *':'Issue Date';issueDate.input.required=issued;if(issueDate.input.setCustomValidity)issueDate.input.setCustomValidity(issued&&!String(issueDate.input.value||'').trim()?'Issue Date is required when Ticket Status is Issued.':'');};
+  ticketStatus.select.addEventListener('change',syncIssueDateRequirement);
+  syncIssueDateRequirement();
   [supplierControl.unit,commonPnr.unit,airlinePnr.unit,bookingSource.unit,ticketStatus.unit,issueDate.unit].forEach(function(unit){commonGrid.appendChild(unit);});
   commonBlock.appendChild(commonGrid);
   host.appendChild(commonBlock);
@@ -634,6 +637,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
     if(invalidFare){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=invalidFare+' Basic Rate cannot be greater than Cost Price.';return;}
 
     var payload=buildPayload113119();
+    if(String(payload.common.ticket_status||'').toUpperCase()==='ISSUED'&&!String(payload.common.issue_date||'').trim()){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Issue Date is required when Ticket Status is Issued.';return;}
     if(payload._etgpInvalidAirline){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Select an airline from the list.';return;}
     var hasAirVendorCost=payload.fare_commercials.some(function(row){return Number(row.cost_price||0)>0;});
     if(hasAirVendorCost&&!payload.common.supplier_id&&!plain(payload.common.supplier_name)){feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent='Select Vendor / Supplier before saving Air commercial data.';return;}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
+use App\Services\Operations\BookingEditLockResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -10,6 +11,11 @@ use Illuminate\Validation\ValidationException;
 
 final class GeneralBookingPassengerRemoveController extends Controller
 {
+    public function __construct(
+        private readonly BookingEditLockResolver $bookingLocks,
+    ) {
+    }
+
     public function __invoke(int $booking, int $passenger): JsonResponse
     {
         if (! Schema::hasTable('bookings') || ! DB::table('bookings')->where('id', $booking)->exists()) {
@@ -30,6 +36,14 @@ final class GeneralBookingPassengerRemoveController extends Controller
             ]);
         }
 
+        $bookingRow = DB::table('bookings')->where('id', $booking)->first();
+        $lock = $this->bookingLocks->fromRow((array) $bookingRow);
+        if ($lock['locked']) {
+            throw ValidationException::withMessages([
+                'passenger' => $lock['reason'] ?: 'This booking is locked and cannot be edited.',
+            ]);
+        }
+
         $row = DB::table($table)
             ->where('booking_id', $booking)
             ->where('id', $passenger)
@@ -45,10 +59,12 @@ final class GeneralBookingPassengerRemoveController extends Controller
             $deleted = DB::transaction(function () use ($table, $booking, $passenger): int {
                 $this->cleanupBookingPassengerDependencies($booking, $passenger);
 
-                return DB::table($table)
+                $deleted = DB::table($table)
                     ->where('booking_id', $booking)
                     ->where('id', $passenger)
                     ->delete();
+                $this->reconcileAirServiceSnapshots($booking);
+                return $deleted;
             });
         } catch (\Throwable $e) {
             report($e);
@@ -165,14 +181,55 @@ final class GeneralBookingPassengerRemoveController extends Controller
         }
     }
 
+    /** Rewrites only the persisted Air snapshot from remaining native rows. */
+    private function reconcileAirServiceSnapshots(int $booking): void
+    {
+        if (! Schema::hasTable('booking_services') || ! Schema::hasTable('air_ticket_details')) return;
+        $serviceColumns = Schema::getColumnListing('booking_services');
+        $ticketColumns = Schema::getColumnListing('air_ticket_details');
+        if (! in_array('id', $serviceColumns, true) || ! in_array('booking_id', $serviceColumns, true)
+            || ! in_array('booking_service_id', $ticketColumns, true)) return;
+        $services = DB::table('booking_services')->where('booking_id', $booking)->get(['id']);
+        foreach ($services as $service) {
+            $rows = DB::table('air_ticket_details')->where('booking_service_id', (int) $service->id)->get();
+            $customer = 0.0;
+            $supplier = 0.0;
+            foreach ($rows as $row) {
+                foreach (['customer_total', 'gross_sale', 'gross_selling_total', 'total_sale_value'] as $field) {
+                    if (in_array($field, $ticketColumns, true) && is_numeric($row->{$field} ?? null)) { $customer += max(0, (float) $row->{$field}); break; }
+                }
+                foreach (['supplier_total', 'supplier_gross_cost', 'gross_supplier_cost', 'supplier_cost_price'] as $field) {
+                    if (in_array($field, $ticketColumns, true) && is_numeric($row->{$field} ?? null)) { $supplier += max(0, (float) $row->{$field}); break; }
+                }
+            }
+            $update = [];
+            foreach (['line_total', 'customer_total', 'selling_total', 'sale_amount', 'total_amount'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($customer, 2);
+            foreach (['supplier_total', 'vendor_total', 'supplier_amount', 'cost_amount'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($supplier, 2);
+            foreach (['quantity', 'qty'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = count($rows);
+            if ($update) DB::table('booking_services')->where('id', (int) $service->id)->update($update);
+        }
+    }
+
     private function assertDraftDependencies(iterable $rows, string $label): void
     {
         $terminal = ['issued', 'posted', 'paid', 'settled', 'closed', 'approved', 'completed', 'refunded', 'void', 'voided', 'cancelled', 'canceled'];
         foreach ($rows as $row) {
             $status = strtolower((string) ($row->status ?? $row->ticket_status ?? ''));
-            if (in_array($status, $terminal, true)) {
+            $ticketEvidence = false;
+            foreach (['ticket_number', 'ticket_no', 'e_ticket_number', 'eticket_number', 'document_number', 'document_no', 'issue_date', 'ticket_issue_date', 'issued_at'] as $field) {
+                if (trim((string) ($row->{$field} ?? '')) !== '') {
+                    $ticketEvidence = true;
+                    break;
+                }
+            }
+            if ($ticketEvidence || in_array($status, $terminal, true)) {
                 throw ValidationException::withMessages([
                     'passenger' => $label.' is already issued or otherwise irreversible; remove is blocked.',
+                ]);
+            }
+            if (! in_array($status, ['draft', 'booked', 'pending', 'active', 'new', 'open'], true)) {
+                throw ValidationException::withMessages([
+                    'passenger' => $label.' has an unknown status; removal is blocked for safety.',
                 ]);
             }
         }
