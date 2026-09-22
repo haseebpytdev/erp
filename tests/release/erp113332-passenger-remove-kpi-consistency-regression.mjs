@@ -146,6 +146,15 @@ ok(removeController.includes("['unit_price', 'sale_price', 'selling_price']") &&
 ok(removeController.includes("whereIn('id', $affectedServiceIds)"), 'unrelated Hotel/Transport/Visa services cannot be updated');
 ok(removeController.includes('airCustomerTotalFromRow') && removeController.includes('airSupplierTotalFromRow'), 'Air snapshot reconciliation uses shared-style net authority helpers');
 ok(removeController.includes('foreach ($services as $service)'), 'multiple Air groups are reconciled independently');
+ok(removeController.includes('airNativeTicketCount') && removeController.includes('max(1, $ticketCount)'), 'snapshot quantity follows native ticket count max-one contract');
+ok(removeController.includes("['booking_passenger_id', 'passenger_id', 'traveller_id', 'traveler_id']"), 'native ticket count uses passenger identity aliases');
+ok(removeController.includes("['ticket_number', 'ticket_no', 'e_ticket_number', 'eticket_number', 'document_number', 'document_no']"), 'native ticket count uses established identifier aliases');
+ok(removeController.includes("if (in_array($alias, $columns, true)) return $this->airMoney"), 'commercial aliases resolve by first installed column');
+ok(removeController.includes('preg_replace') && removeController.includes('round((float) $value, 2)'), 'commercial money conversion matches normal Air authority');
+equal(Math.max(1, 0), 1, 'blank ticket rows produce snapshot quantity one');
+equal(Math.max(1, 1), 1, 'one ticketed passenger produces snapshot quantity one');
+equal(Math.max(1, 2), 2, 'two distinct ticketed passengers produce snapshot quantity two');
+equal(Math.max(1, 0), 1, 'zero remaining rows preserve established snapshot quantity contract');
 equal(Math.round((100000 + 100000) - 100000), 100000, 'removing one of two passengers leaves remaining Air customer total');
 equal(Math.round(0), 0, 'removing final passenger leaves zero ticket-derived totals');
 ok(removeController.includes('DB::transaction(function ()'), 'delete and summary reconciliation remain atomic');

@@ -202,11 +202,12 @@ final class GeneralBookingPassengerRemoveController extends Controller
                 $customer += $this->airCustomerTotalFromRow((array) $row, $ticketColumns);
                 $supplier += $this->airSupplierTotalFromRow((array) $row, $ticketColumns);
             }
+            $ticketCount = $this->airNativeTicketCount($rows, $ticketColumns);
+            $count = max(1, $ticketCount);
             $update = [];
             foreach (['line_total', 'customer_total', 'selling_total', 'sale_amount', 'total_amount'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($customer, 2);
             foreach (['supplier_total', 'vendor_total', 'supplier_amount', 'cost_amount'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($supplier, 2);
-            foreach (['quantity', 'qty'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = count($rows);
-            $count = max(1, count($rows));
+            foreach (['quantity', 'qty'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = $count;
             foreach (['unit_price', 'sale_price', 'selling_price'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($customer / $count, 2);
             if ($update) DB::table('booking_services')->where('id', (int) $service->id)->update($update);
         }
@@ -229,9 +230,38 @@ final class GeneralBookingPassengerRemoveController extends Controller
     private function airMoneyFromRow(array $row, array $columns, array $aliases): float
     {
         foreach ($aliases as $alias) {
-            if (in_array($alias, $columns, true) && is_numeric($row[$alias] ?? null)) return round((float) $row[$alias], 2);
+            if (in_array($alias, $columns, true)) return $this->airMoney($row[$alias] ?? null);
         }
         return 0.0;
+    }
+
+    private function airMoney(mixed $value): float
+    {
+        if (is_numeric($value)) return round((float) $value, 2);
+        $clean = preg_replace('/[^0-9.\-]/', '', (string) $value) ?? '';
+        return is_numeric($clean) ? round((float) $clean, 2) : 0.0;
+    }
+
+    private function airNativeTicketCount(iterable $rows, array $columns): int
+    {
+        $ticketAliases = array_values(array_filter(['ticket_number', 'ticket_no', 'e_ticket_number', 'eticket_number', 'document_number', 'document_no'], static fn (string $column): bool => in_array($column, $columns, true)));
+        if (! $ticketAliases) return 0;
+        $passengerColumn = null;
+        foreach (['booking_passenger_id', 'passenger_id', 'traveller_id', 'traveler_id'] as $candidate) {
+            if (in_array($candidate, $columns, true)) { $passengerColumn = $candidate; break; }
+        }
+        $seen = [];
+        foreach ($rows as $row) {
+            $data = (array) $row;
+            $identifier = '';
+            foreach ($ticketAliases as $alias) {
+                if (trim((string) ($data[$alias] ?? '')) !== '') { $identifier = trim((string) $data[$alias]); break; }
+            }
+            if ($identifier === '') continue;
+            $passenger = $passengerColumn ? (int) ($data[$passengerColumn] ?? 0) : 0;
+            $seen[$passenger > 0 ? 'p:'.$passenger : 'r:'.(int) ($data['id'] ?? 0)] = true;
+        }
+        return count($seen);
     }
 
     private function assertDraftDependencies(iterable $rows, string $label): void
