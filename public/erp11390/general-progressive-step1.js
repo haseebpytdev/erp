@@ -692,9 +692,7 @@ var passengerCount=function(panel){
         )===-1;
     });
 
-    if(rows.length>0){
-      return rows.length;
-    }
+    return rows.length;
   }
 
   var label=panel.querySelector(
@@ -715,6 +713,37 @@ var passengerCount=function(panel){
 
   return 0;
 };
+
+/* ERP-11.3.332 — the server-rendered booking-passenger table is authoritative
+ * when present, including the valid zero-row state. Keep the KPI and fare-mix
+ * note aligned with that same table during same-page reconciliation. */
+var etgpApplyPassengerTableKpi113332=function(panel){
+  if(!panel)return false;
+  var body=panel.querySelector('.passenger-table tbody')
+    ||panel.querySelector('.etgp-current-passenger-table tbody');
+  if(!body)return false;
+  var rows=Array.prototype.slice.call(body.querySelectorAll('tr')).filter(function(row){
+    var text=norm(row.textContent||'');
+    return text!==''
+      && !etgpPassengerRowIsRemoved113290(row)
+      && text.indexOf('no passenger')===-1
+      && text.indexOf('no booking passenger')===-1;
+  });
+  var mix={adult:0,child:0,infant:0};
+  rows.forEach(function(row){
+    var text=norm(row.textContent||'');
+    if(text.indexOf('infant')!==-1)mix.infant+=1;
+    else if(text.indexOf('child')!==-1)mix.child+=1;
+    else mix.adult+=1;
+  });
+  etgpAirSetKpi113124(
+    'Passengers',
+    String(rows.length),
+    'Adult '+mix.adult+' · Child '+mix.child+' · Infant '+mix.infant
+  );
+  return true;
+};
+window.etgpApplyPassengerTableKpi113332=etgpApplyPassengerTableKpi113332;
 
 var storageKey=function(reference){
   return 'et.general.step1.products.'
@@ -5738,6 +5767,9 @@ window.etGeneralProgressiveStep1Sync11390=function(
     refreshPassengerCard(
       freshPassengers,
       freshDoc
+    );
+    etgpApplyPassengerTableKpi113332(
+      document.querySelector('.etgp-passenger-card')
     );
   }
 

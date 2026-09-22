@@ -69,9 +69,18 @@
       try { data = await response.json(); } catch (_) {}
       if (!response.ok || data.ok !== true) throw new Error(responseMessage(data));
 
-      // Do not mutate the legacy booking DOM.  It has independent observers
-      // and save handlers; the server remains authoritative after DELETE.
-      options.reload();
+      // Reconcile the progressive Booking surface from a fresh server
+      // document. The legacy reload remains a narrow fallback for older
+      // pages where the authoritative same-page seam is unavailable.
+      if (typeof options.refresh === 'function') {
+        try {
+          await options.refresh();
+        } catch (_) {
+          if (typeof options.reload === 'function') options.reload();
+        }
+      } else if (typeof options.reload === 'function') {
+        options.reload();
+      }
       return { ok: true };
     } catch (error) {
       button.disabled = Boolean(options.isLocked());
@@ -163,6 +172,24 @@
             confirmRemoval: () => window.confirm('Remove this passenger from the booking? Passenger Master will not be deleted.'),
             isLocked: bookingLocked,
             feedback,
+            refresh: async () => {
+              const response = await fetch(window.location.href, {
+                method: 'GET',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: {
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'Accept': 'text/html,application/xhtml+xml'
+                }
+              });
+              const text = await response.text();
+              if (!response.ok) throw new Error('Passenger was removed, but the booking view could not be refreshed.');
+              const freshDoc = new DOMParser().parseFromString(text, 'text/html');
+              if (typeof window.etGeneralProgressiveStep1Sync11390 !== 'function'
+                || !window.etGeneralProgressiveStep1Sync11390(freshDoc, ['metrics', 'passengers'])) {
+                throw new Error('Progressive passenger synchronization is unavailable.');
+              }
+            },
             reload: () => location.reload(),
             request: () => fetch('/system/erp-bookings/' + bookingId + '/passengers/' + passengerId, {
               method: 'DELETE',
