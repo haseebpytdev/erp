@@ -46,6 +46,15 @@ class ErpRoleAccessPolicy
         }
 
         $module = $this->moduleForRequest($request);
+        /* Booking-side invoice creation is an operational bridge, not invoice management. */
+        if (
+            $module === 'sales_invoices'
+            && strtoupper($request->method()) === 'POST'
+            && str_contains('/'.$path.'/', '/sales/invoices/from-booking/')
+        ) {
+            return $this->moduleAllowed($user, 'bookings');
+        }
+
         if ($module !== null) {
             /* Known module routes always use their module permission, including
              * JSON/AJAX reads. The compatibility lookup applies only to routes
@@ -69,15 +78,6 @@ class ErpRoleAccessPolicy
         if ($module === null) {
             /* Unknown native routes are left to their own existing middleware. */
             return true;
-        }
-
-        /* Booking-side invoice creation is an operational bridge, not invoice management. */
-        if (
-            $module === 'sales_invoices'
-            && strtoupper($request->method()) === 'POST'
-            && str_contains('/'.$path.'/', '/sales/invoices/from-booking/')
-        ) {
-            return $this->moduleAllowed($user, 'bookings');
         }
 
         return $this->moduleAllowed(
