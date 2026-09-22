@@ -180,6 +180,18 @@ class ErpRoleAccessPolicy
         }
         $combined = $path.' '.$routeName;
 
+        /* Booking Product workspaces are Booking Operations, not Master Data.
+         * Resolve this explicit ownership before the broader /products master
+         * patterns are considered. */
+        if (
+            preg_match('#^/operations/bookings/[0-9]+/products(?:/|$)#', $path) === 1
+            || str_contains($routeName, 'bookings.products.')
+            || preg_match('#^/system/erp-bookings/[0-9]+/(?:air|hotel|transport|visa)-product(?:/|$)#', $path) === 1
+            || preg_match('#^/system/erp-bookings/[0-9]+/(?:operational-summary|invoice-summary)(?:/|$)#', $path) === 1
+        ) {
+            return 'bookings';
+        }
+
         foreach ($this->definitions() as $key => $definition) {
             foreach ($definition['paths'] as $needle) {
                 if (str_contains($combined, strtolower($needle))) {
@@ -215,7 +227,7 @@ class ErpRoleAccessPolicy
         }
 
         return match ($method) {
-            'GET', 'HEAD' => ['view', 'list', 'read', 'access', 'manage'],
+            'GET', 'HEAD' => ['view', 'list', 'read', 'access', 'create', 'add', 'edit', 'update', 'manage'],
             'POST' => ['create', 'add', 'prepare', 'process', 'manage', 'fulfill'],
             'PUT', 'PATCH' => ['edit', 'update', 'manage'],
             'DELETE' => ['delete', 'remove', 'manage'],

@@ -95,6 +95,13 @@ class EnforceErpRoleScopedAccess
 
         foreach ($hrefFragments as $fragment) {
             $escaped = addslashes($fragment);
+            if ($fragment === '/products') {
+                $cssSelectors[] = 'a[href="/products"],a[href^="/products?"]';
+                $cssSelectors[] = 'li:has(a[href="/products"]),li:has(a[href^="/products?"])';
+                $cssSelectors[] = '.nav-item:has(a[href="/products"]),.nav-item:has(a[href^="/products?"])';
+                $cssSelectors[] = '.menu-item:has(a[href="/products"]),.menu-item:has(a[href^="/products?"])';
+                continue;
+            }
             $cssSelectors[] = 'a[href*="'.$escaped.'"]';
             $cssSelectors[] = 'li:has(a[href*="'.$escaped.'"])';
             $cssSelectors[] = '.nav-item:has(a[href*="'.$escaped.'"])';
@@ -118,6 +125,7 @@ const policy=__POLICY__;
 const norm=v=>String(v||'').replace(/\s+/g,' ').trim().toLowerCase();
 const blockedLabels=new Set((policy.labels||[]).map(norm));
 const blockedHrefs=(policy.hrefs||[]).map(norm);
+const bookingProductsHref=href=>/^\/operations\/bookings\/\d+\/products(?:\/|$)/.test(href);
 
 function rowFor(node){
     if(!node)return null;
@@ -131,7 +139,7 @@ function hide(node){
 function sweep(){
     Array.from(document.querySelectorAll('a[href]')).forEach(a=>{
         const href=norm(a.getAttribute('href'));
-        if(blockedHrefs.some(part=>part&&href.includes(part)))hide(a);
+        if(blockedHrefs.some(part=>part&&href.includes(part)&&!(part==='/products'&&bookingProductsHref(href))))hide(a);
     });
     Array.from(document.querySelectorAll('a,button,span,div,p,strong')).forEach(node=>{
         if(node.children.length>4)return;

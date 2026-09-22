@@ -376,12 +376,6 @@ class ErpPermissionMatrixService
             'administer',
             'full access',
             'all access',
-            'create',
-            'edit',
-            'update',
-            'delete',
-            'approve',
-            'post',
         ];
 
         if ($phrases === []) {

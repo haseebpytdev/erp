@@ -44,6 +44,28 @@ var etgpAirSelect113106=function(label,value,options){
   return {unit:unit,select:select};
 };
 
+var etgpAirSearchableAirline113330=function(label,value,airlines,legacyValue){
+  var unit=create('div','etgp-air-field-113106 etgp-air-airline-combobox-113330');
+  var lab=create('label','form-label',label);var input=create('input','form-control etgp-air-airline-input-113330');
+  input.type='text';input.autocomplete='off';input.setAttribute('role','combobox');input.setAttribute('aria-expanded','false');
+  var popup=create('div','etgp-air-airline-options-113330');popup.hidden=true;popup.setAttribute('role','listbox');
+  var normalized=function(v){return String(v||'').replace(/[^a-z0-9]/gi,'').toLowerCase();};
+  var selected=null;var current=String(value||'');
+  var saved=airlines.find(function(item){return String(item.id||'')===current;});
+  if(!saved&&legacyValue){var legacy=normalized(legacyValue);saved=airlines.find(function(item){return legacy&&(normalized(item.code)===legacy||normalized(item.name)===legacy||normalized(item.label)===legacy);});}
+  var labelFor=function(item){return String(item.label||item.name||item.code||'Airline');};
+  if(saved){selected=saved;input.value=labelFor(saved);}else input.value='';
+  var matches=function(){var query=normalized(input.value);return airlines.filter(function(item){return !query||normalized(item.name).includes(query)||normalized(item.code).includes(query)||normalized(item.label).includes(query);});};
+  var close=function(){popup.hidden=true;input.setAttribute('aria-expanded','false');};
+  var emit=function(node,type){if(typeof Event==='function')node.dispatchEvent(new Event(type,{bubbles:true}));else node.dispatchEvent({type:type,bubbles:true});};
+  var choose=function(item){selected=item||null;input.value=item?labelFor(item):'';close();emit(input,'change');};
+  var render=function(){popup.innerHTML='';var list=matches();list.slice(0,40).forEach(function(item){var option=create('button','etgp-air-airline-option-113330',labelFor(item));option.type='button';option.setAttribute('role','option');option.addEventListener('click',function(){choose(item);});popup.appendChild(option);});popup.hidden=false;input.setAttribute('aria-expanded','true');};
+  input.addEventListener('input',function(){selected=null;render();});
+  input.addEventListener('keydown',function(event){var options=popup.querySelectorAll('[role="option"]');var active=Number(input.getAttribute('data-etgp-airline-active')||-1);if(event.key==='Escape'){close();return;}if(event.key==='ArrowDown'||event.key==='ArrowUp'){if(popup.hidden)render();active=event.key==='ArrowDown'?Math.min(active+1,options.length-1):Math.max(active-1,0);input.setAttribute('data-etgp-airline-active',String(active));options.forEach(function(option,index){option.classList.toggle('is-active',index===active);});if(event.preventDefault)event.preventDefault();return;}if(event.key==='Enter'&&active>=0&&options[active]){if(typeof options[active].click==='function')options[active].click();else options[active].dispatchEvent({type:'click'});if(event.preventDefault)event.preventDefault();}});
+  if(document&&document.addEventListener)document.addEventListener('click',function(event){if(event.target!==input&&event.target!==popup&&!popup.querySelectorAll('*').includes(event.target))close();});
+  unit.appendChild(lab);unit.appendChild(input);unit.appendChild(popup);return {unit:unit,input:input,select:null,getSelected:function(){return selected;},clear:function(){selected=null;input.value='';close();}};
+};
+
 var etgpAirDefaultSegmentType113329=function(existingCount){
   return existingCount===0?'outbound':existingCount===1?'return':'connection';
 };
@@ -259,15 +281,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 
     var airline;
     if(airlines.length){
-      var rowAirlineOptions=airlineOptions.slice();
-      var legacyName=String(segment.airline||segment.airline_code||'').trim();
-      if(!selectedAirlineId&&legacyName){
-        var legacyKey='legacy-'+segmentCounter;
-        airlineById[legacyKey]={id:0,code:String(segment.airline_code||''),name:legacyName,label:legacyName};
-        rowAirlineOptions.push({value:legacyKey,label:legacyName+' (saved)'});
-        selectedAirlineId=legacyKey;
-      }
-      airline=etgpAirSelect113106('Airline',selectedAirlineId,rowAirlineOptions);
+      airline=etgpAirSearchableAirline113330('Airline',selectedAirlineId,airlines,String(segment.airline_code||segment.airline||''));
     }else{
       airline=etgpAirInput113106('Airline','text',segment.airline||segment.airline_code||'','Airline Master unavailable');
     }
@@ -280,7 +294,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
       flight.unit.appendChild(list);
       var refreshFlightSuggestions=function(){
         list.innerHTML='';
-        var a=selectedAirlineData(airline.select);
+        var a=airline.getSelected();
         flightNumbers.filter(function(item){
           if(!a)return false;
           if(Number(item.airline_id||0)>0&&Number(item.airline_id||0)===Number(a.id||0))return true;
@@ -291,7 +305,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
           var option=document.createElement('option');option.value=String(item.flight_number||'');list.appendChild(option);
         });
       };
-      airline.select.addEventListener('change',refreshFlightSuggestions);
+      airline.input.addEventListener('change',refreshFlightSuggestions);
       refreshFlightSuggestions();
     }
 
@@ -565,7 +579,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
   var buildPayload113119=function(){
     var segments=Array.prototype.slice.call(segmentList.querySelectorAll('[data-etgp-air-segment-113106]')).map(function(row){
       var c=row._etgpAir,a={id:0,code:'',name:''};
-      if(airlines.length){var item=selectedAirlineData(c.airline.select);if(item)a={id:Number(item.id||0),code:String(item.code||''),name:String(item.name||item.label||'')};}
+      if(airlines.length){var item=c.airline.getSelected?c.airline.getSelected():null;if(item)a={id:Number(item.id||0),code:String(item.code||''),name:String(item.name||item.label||'')};}
       else a.name=plain(c.airline.input.value);
       return {segment_type:c.type.value,airline_id:a.id||null,airline_code:plain(a.code),airline:plain(a.name),flight_number:plain(c.flight.value).toUpperCase(),from:plain(c.from.value).toUpperCase(),to:plain(c.to.value).toUpperCase(),departure_at:c.departure.value||null,arrival_at:c.arrival.value||null};
     }).filter(function(segment){return segment.from||segment.to||segment.airline||segment.flight_number||segment.departure_at;});
@@ -636,7 +650,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 
 var renderPageItinerary113324=function(container,pageState,data,rerender){
   var section=create('section','etgp-air-block-113106 etgp-air-page-itinerary-113324');var head=etgpAirSubhead113106('Flight Itinerary','Add outbound, return or connection segments.');var add=create('button','btn btn-outline-primary etgp-air-mini-button-113106','+ Add Flight Segment');add.type='button';head.appendChild(add);section.appendChild(head);var list=create('div','etgp-air-segments-113106');section.appendChild(list);var airlines=Array.isArray(data.airlines)?data.airlines:[];var counter=0;
-  var row=function(segment){segment=segment||{};if(!segment.client_key)segment.client_key='segment-new-'+Date.now()+'-'+(++counter);var r=create('div','etgp-air-segment-row-113106');r.setAttribute('data-etgp-air-segment-113106','1');var type=etgpAirSelect113106('Type',segment.segment_type||'outbound',[{value:'outbound',label:'Outbound'},{value:'return',label:'Return'},{value:'connection',label:'Connection'}]);var airline=airlines.length?etgpAirSelect113106('Airline',String(segment.airline_id||''),[{value:'',label:'Select airline'}].concat(airlines.map(function(x){return {value:x.id,label:x.label||x.name||x.code};}))):etgpAirInput113106('Airline','text',segment.airline||segment.airline_code||'','Airline');var flight=etgpAirInput113106('Flight No.','text',segment.flight_number||'','Flight No.');var from=etgpAirInput113106('From','text',segment.from||'','LHE');var to=etgpAirInput113106('To','text',segment.to||'','JED');var departure=etgpAirInput113106('Departure','datetime-local',segment.departure_at||'','');var arrival=etgpAirInput113106('Arrival','datetime-local',segment.arrival_at||'','');[type.unit,airline.unit,flight.unit,from.unit,to.unit,departure.unit,arrival.unit].forEach(function(x){r.appendChild(x);});var remove=create('button','btn btn-outline-danger etgp-air-remove-row-113106','Remove');remove.type='button';remove.addEventListener('click',function(){pageState.segments=pageState.segments.filter(function(x){return x.client_key!==segment.client_key;});pageState.groups.forEach(function(g){g.segment_keys=(g.segment_keys||[]).filter(function(k){return k!==segment.client_key;});});rerender();});r.appendChild(remove);var sync=function(){segment.segment_type=type.select.value;segment.flight_number=flight.input.value;segment.from=from.input.value.toUpperCase();segment.to=to.input.value.toUpperCase();segment.departure_at=departure.input.value||null;segment.arrival_at=arrival.input.value||null;if(airlines.length){var opt=airline.select.options[airline.select.selectedIndex];segment.airline_id=Number(airline.select.value||0)||null;segment.airline=opt?opt.textContent:'';}else segment.airline=airline.input.value;};[type.select,airline.select||airline.input,flight.input,from.input,to.input,departure.input,arrival.input].forEach(function(x){x.addEventListener('input',sync);x.addEventListener('change',sync);});list.appendChild(r);};
+  var row=function(segment){segment=segment||{};if(!segment.client_key)segment.client_key='segment-new-'+Date.now()+'-'+(++counter);var r=create('div','etgp-air-segment-row-113106');r.setAttribute('data-etgp-air-segment-113106','1');var type=etgpAirSelect113106('Type',segment.segment_type||'outbound',[{value:'outbound',label:'Outbound'},{value:'return',label:'Return'},{value:'connection',label:'Connection'}]);var airline=airlines.length?etgpAirSearchableAirline113330('Airline',String(segment.airline_id||''),airlines,String(segment.airline_code||segment.airline||'')):etgpAirInput113106('Airline','text',segment.airline||segment.airline_code||'','Airline');var flight=etgpAirInput113106('Flight No.','text',segment.flight_number||'','Flight No.');var from=etgpAirInput113106('From','text',segment.from||'','LHE');var to=etgpAirInput113106('To','text',segment.to||'','JED');var departure=etgpAirInput113106('Departure','datetime-local',segment.departure_at||'','');var arrival=etgpAirInput113106('Arrival','datetime-local',segment.arrival_at||'','');[type.unit,airline.unit,flight.unit,from.unit,to.unit,departure.unit,arrival.unit].forEach(function(x){r.appendChild(x);});var remove=create('button','btn btn-outline-danger etgp-air-remove-row-113106','Remove');remove.type='button';remove.addEventListener('click',function(){pageState.segments=pageState.segments.filter(function(x){return x.client_key!==segment.client_key;});pageState.groups.forEach(function(g){g.segment_keys=(g.segment_keys||[]).filter(function(k){return k!==segment.client_key;});});rerender();});r.appendChild(remove);var sync=function(){segment.segment_type=type.select.value;segment.flight_number=flight.input.value;segment.from=from.input.value.toUpperCase();segment.to=to.input.value.toUpperCase();segment.departure_at=departure.input.value||null;segment.arrival_at=arrival.input.value||null;if(airlines.length){var item=airline.getSelected();segment.airline_id=item?Number(item.id||0)||null:null;segment.airline_code=item?String(item.code||''):'';segment.airline=item?String(item.name||item.label||''):'';}else segment.airline=airline.input.value;};[type.select,airline.input,flight.input,from.input,to.input,departure.input,arrival.input].forEach(function(x){x.addEventListener('input',sync);x.addEventListener('change',sync);});list.appendChild(r);};
   pageState.segments.forEach(row);add.addEventListener('click',function(){var existingCount=pageState.segments.length;pageState.segments.push({id:0,client_key:'segment-new-'+Date.now()+'-'+(counter+1),segment_type:etgpAirDefaultSegmentType113329(existingCount),from:'',to:'',airline:'',airline_code:'',flight_number:'',departure_at:null,arrival_at:null});rerender();});container.appendChild(section);return section;
 };
 var etgpAirRender113106=function(host,data,bookingId){

@@ -952,6 +952,7 @@
    responsive editor while the page-level totals remain a single summary. */
 .etgp-air-ticket-group-editor-113324{display:flex;flex-direction:column;gap:12px;width:100%;margin:12px 0;padding:14px;border:1px solid #dbe3ee;border-radius:10px;background:#fff}
 .etgp-air-ticket-group-editor-113324 > .etgp-air-summary-113108{margin:0}
+.etgp-air-airline-combobox-113330{position:relative}.etgp-air-airline-input-113330{width:100%}.etgp-air-airline-options-113330{position:absolute;left:0;right:0;top:100%;z-index:40;max-height:220px;overflow:auto;margin-top:3px;padding:3px;border:1px solid #cfdbea;border-radius:7px;background:#fff;box-shadow:0 8px 20px rgba(23,48,80,.14)}.etgp-air-airline-options-113330[hidden]{display:none}.etgp-air-airline-option-113330{display:block;width:100%;padding:6px 8px;border:0;background:#fff;text-align:left;font-size:11px;color:#25364d}.etgp-air-airline-option-113330:hover,.etgp-air-airline-option-113330.is-active{background:#edf5ff;color:#1769d2}
 .etgp-air-multi-group-page-113324{display:flex;flex-direction:column;gap:12px}
 .etgp-air-multi-group-page-113324 > .etgp-air-page-itinerary-113324,
 .etgp-air-multi-group-page-113324 > .etgp-air-ticket-groups-113324,
