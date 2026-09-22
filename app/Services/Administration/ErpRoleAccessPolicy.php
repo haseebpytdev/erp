@@ -45,6 +45,18 @@ class ErpRoleAccessPolicy
             return true;
         }
 
+        $module = $this->moduleForRequest($request);
+        if ($module !== null) {
+            /* Known module routes always use their module permission, including
+             * JSON/AJAX reads. The compatibility lookup applies only to routes
+             * which cannot be classified to a module. */
+            return $this->moduleAllowed(
+                $user,
+                $module,
+                $this->actionTerms($request)
+            );
+        }
+
         /* Read-only lookup endpoints remain available to permitted operations. */
         if (
             strtoupper($request->method()) === 'GET'
@@ -54,7 +66,6 @@ class ErpRoleAccessPolicy
             return true;
         }
 
-        $module = $this->moduleForRequest($request);
         if ($module === null) {
             /* Unknown native routes are left to their own existing middleware. */
             return true;
