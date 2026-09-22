@@ -57,13 +57,13 @@ final class GeneralBookingPassengerRemoveController extends Controller
 
         try {
             $deleted = DB::transaction(function () use ($table, $booking, $passenger): int {
-                $this->cleanupBookingPassengerDependencies($booking, $passenger);
+                $affectedAirServiceIds = $this->cleanupBookingPassengerDependencies($booking, $passenger);
 
                 $deleted = DB::table($table)
                     ->where('booking_id', $booking)
                     ->where('id', $passenger)
                     ->delete();
-                $this->reconcileAirServiceSnapshots($booking);
+                $this->reconcileAirServiceSnapshots($booking, $affectedAirServiceIds);
                 return $deleted;
             });
         } catch (\Throwable $e) {
@@ -107,7 +107,8 @@ final class GeneralBookingPassengerRemoveController extends Controller
         return null;
     }
 
-    private function cleanupBookingPassengerDependencies(int $booking, int $passenger): void
+    /** @return list<int> */
+    private function cleanupBookingPassengerDependencies(int $booking, int $passenger): array
     {
         if (Schema::hasTable('booking_visa_services')) {
             $rows = DB::table('booking_visa_services')
@@ -143,12 +144,13 @@ final class GeneralBookingPassengerRemoveController extends Controller
             $query->delete();
         }
 
-        $this->cleanupAirTicketDetails($booking, $passenger);
+        return $this->cleanupAirTicketDetails($booking, $passenger);
     }
 
-    private function cleanupAirTicketDetails(int $booking, int $passenger): void
+    /** @return list<int> */
+    private function cleanupAirTicketDetails(int $booking, int $passenger): array
     {
-        if (! Schema::hasTable('air_ticket_details')) return;
+        if (! Schema::hasTable('air_ticket_details')) return [];
         $columns = Schema::getColumnListing('air_ticket_details');
         if (! in_array('booking_passenger_id', $columns, true)) {
             if (collect(['passenger_id', 'traveller_id', 'traveler_id'])->contains(fn (string $column): bool => in_array($column, $columns, true))) {
@@ -156,7 +158,7 @@ final class GeneralBookingPassengerRemoveController extends Controller
                     'passenger' => 'Passenger ticket identity cannot be mapped safely to this booking snapshot.',
                 ]);
             }
-            return;
+            return [];
         }
 
         $passengerColumn = 'booking_passenger_id';
@@ -166,7 +168,7 @@ final class GeneralBookingPassengerRemoveController extends Controller
             $query->where('booking_id', $booking);
         } elseif (in_array('booking_service_id', $columns, true) && Schema::hasTable('booking_services')) {
             $serviceIds = DB::table('booking_services')->where('booking_id', $booking)->pluck('id')->all();
-            if (! $serviceIds) return;
+            if (! $serviceIds) return [];
             $query->whereIn('booking_service_id', $serviceIds);
         } else {
             throw ValidationException::withMessages([
@@ -176,38 +178,60 @@ final class GeneralBookingPassengerRemoveController extends Controller
 
         $rows = $query->get();
         $this->assertDraftDependencies($rows, 'Passenger ticket');
+        $affectedServiceIds = $rows->pluck('booking_service_id')->filter(static fn ($id): bool => (int) $id > 0)->map(static fn ($id): int => (int) $id)->unique()->values()->all();
         if ($rows->isNotEmpty() && in_array('id', $columns, true)) {
             DB::table('air_ticket_details')->whereIn('id', $rows->pluck('id')->all())->delete();
         }
+        return $affectedServiceIds;
     }
 
-    /** Rewrites only the persisted Air snapshot from remaining native rows. */
-    private function reconcileAirServiceSnapshots(int $booking): void
+    /** Rewrites only affected persisted Air snapshots from remaining native rows. */
+    private function reconcileAirServiceSnapshots(int $booking, array $affectedServiceIds): void
     {
-        if (! Schema::hasTable('booking_services') || ! Schema::hasTable('air_ticket_details')) return;
+        if (! $affectedServiceIds || ! Schema::hasTable('booking_services') || ! Schema::hasTable('air_ticket_details')) return;
         $serviceColumns = Schema::getColumnListing('booking_services');
         $ticketColumns = Schema::getColumnListing('air_ticket_details');
         if (! in_array('id', $serviceColumns, true) || ! in_array('booking_id', $serviceColumns, true)
             || ! in_array('booking_service_id', $ticketColumns, true)) return;
-        $services = DB::table('booking_services')->where('booking_id', $booking)->get(['id']);
+        $services = DB::table('booking_services')->where('booking_id', $booking)->whereIn('id', $affectedServiceIds)->get(['id']);
         foreach ($services as $service) {
             $rows = DB::table('air_ticket_details')->where('booking_service_id', (int) $service->id)->get();
             $customer = 0.0;
             $supplier = 0.0;
             foreach ($rows as $row) {
-                foreach (['customer_total', 'gross_sale', 'gross_selling_total', 'total_sale_value'] as $field) {
-                    if (in_array($field, $ticketColumns, true) && is_numeric($row->{$field} ?? null)) { $customer += max(0, (float) $row->{$field}); break; }
-                }
-                foreach (['supplier_total', 'supplier_gross_cost', 'gross_supplier_cost', 'supplier_cost_price'] as $field) {
-                    if (in_array($field, $ticketColumns, true) && is_numeric($row->{$field} ?? null)) { $supplier += max(0, (float) $row->{$field}); break; }
-                }
+                $customer += $this->airCustomerTotalFromRow((array) $row, $ticketColumns);
+                $supplier += $this->airSupplierTotalFromRow((array) $row, $ticketColumns);
             }
             $update = [];
             foreach (['line_total', 'customer_total', 'selling_total', 'sale_amount', 'total_amount'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($customer, 2);
             foreach (['supplier_total', 'vendor_total', 'supplier_amount', 'cost_amount'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($supplier, 2);
             foreach (['quantity', 'qty'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = count($rows);
+            $count = max(1, count($rows));
+            foreach (['unit_price', 'sale_price', 'selling_price'] as $field) if (in_array($field, $serviceColumns, true)) $update[$field] = round($customer / $count, 2);
             if ($update) DB::table('booking_services')->where('id', (int) $service->id)->update($update);
         }
+    }
+
+    private function airCustomerTotalFromRow(array $row, array $columns): float
+    {
+        $direct = $this->airMoneyFromRow($row, $columns, ['selling_total', 'customer_sale', 'customer_sell', 'customer_sale_amount', 'customer_sell_amount', 'sale_amount', 'sell_amount', 'selling_price', 'sale_price', 'customer_price', 'customer_total', 'receivable_amount']);
+        if ($direct !== 0.0) return $direct;
+        return max(0.0, $this->airMoneyFromRow($row, $columns, ['base_fare', 'basic_fare']) + $this->airMoneyFromRow($row, $columns, ['airline_taxes', 'taxes', 'tax_amount']) + $this->airMoneyFromRow($row, $columns, ['customer_service_fee', 'service_markup', 'service_charge', 'markup']) - $this->airMoneyFromRow($row, $columns, ['customer_discount_amount', 'discount_amount', 'discount']));
+    }
+
+    private function airSupplierTotalFromRow(array $row, array $columns): float
+    {
+        $direct = $this->airMoneyFromRow($row, $columns, ['net_supplier_cost', 'supplier_cost', 'supplier_cost_amount', 'net_cost', 'purchase_cost', 'purchase_price', 'supplier_total', 'cost_amount']);
+        if ($direct !== 0.0) return $direct;
+        return max(0.0, $this->airMoneyFromRow($row, $columns, ['supplier_base_fare', 'base_fare', 'basic_fare']) + $this->airMoneyFromRow($row, $columns, ['supplier_taxes', 'airline_taxes', 'taxes']) + $this->airMoneyFromRow($row, $columns, ['supplier_charges', 'supplier_charge', 'supplier_markup', 'supplier_other_charges', 'supplier_other_charge', 'supplier_other_cost', 'vendor_other_charges', 'vendor_other_charge', 'vendor_other_cost']));
+    }
+
+    private function airMoneyFromRow(array $row, array $columns, array $aliases): float
+    {
+        foreach ($aliases as $alias) {
+            if (in_array($alias, $columns, true) && is_numeric($row[$alias] ?? null)) return round((float) $row[$alias], 2);
+        }
+        return 0.0;
     }
 
     private function assertDraftDependencies(iterable $rows, string $label): void
