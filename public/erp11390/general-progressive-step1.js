@@ -5285,6 +5285,7 @@ var build=function(){
   root.appendChild(
     passengerCard
   );
+  etgpApplyPassengerTableKpi113332(passengerCard);
   etgpRenderBookingCommercialSummary113302(root);
 
   /* Add Product controls */

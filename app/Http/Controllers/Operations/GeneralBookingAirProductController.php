@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
 use App\Services\Operations\GenericServicePassengerLinkSynchronizer;
+use App\Services\Operations\ActiveBookingPassengerResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Database\QueryException;
@@ -31,6 +32,7 @@ final class GeneralBookingAirProductController extends Controller
 
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+        private readonly ActiveBookingPassengerResolver $activePassengers,
     ) {}
 
     public function show(Request $request, int $booking): JsonResponse
@@ -412,15 +414,13 @@ final class GeneralBookingAirProductController extends Controller
                 continue;
             }
 
-            $rows = DB::table($table)
-                ->where('booking_id', $booking)
-                ->orderBy($this->firstColumn($columns, ['passenger_index', 'sort_order', 'sequence', 'id']) ?? 'id')
-                ->get();
+            $resolvedTable = null;
+            $resolvedColumns = null;
+            $rows = $this->activePassengers->rows($booking, $resolvedTable, $resolvedColumns);
+            $table = $resolvedTable ?: $table;
+            $columns = $resolvedColumns ?: $columns;
 
-            return $rows->filter(function (object $row) use ($columns): bool {
-                $status = strtoupper(trim($this->stringFrom((array) $row, $columns, ['status'])));
-                return $status !== 'REMOVED';
-            })->map(function (object $row) use ($columns, $table): array {
+            return $rows->sortBy($this->firstColumn($columns, ['passenger_index', 'sort_order', 'sequence', 'id']) ?? 'id')->map(function (object $row) use ($columns, $table): array {
                 $data = (array) $row;
                 $name = $this->stringFrom($data, $columns, ['name', 'passenger_name', 'full_name']);
                 if ($name === '') {
