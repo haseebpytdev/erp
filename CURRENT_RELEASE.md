@@ -1,11 +1,11 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.330
-CURRENT_LIVE_RELEASE=ERP-11.3.329
-CURRENT_VERSION=ERP-11.3.330
-APPLICATION_VERSION=v1.1.33.330-ERP11.3.330
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.331
+CURRENT_LIVE_RELEASE=ERP-11.3.330
+CURRENT_VERSION=ERP-11.3.331
+APPLICATION_VERSION=v1.1.33.331-ERP11.3.331
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
@@ -15,7 +15,8 @@ PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
 LAST_PACKAGED_RELEASE=ERP-11.3.330
 ```
 
-ERP-11.3.330 finalizes the Air workspace and Booking access bridges. It
+ERP-11.3.331 prepares the cumulative Air workspace, Airline validation and
+Booking access corrections after ERP-11.3.330 became the live predecessor. It
 preserves editable Outbound, Return and Connection itinerary defaults,
 persisted and legacy segment types, balanced layout and controlled 12px
 section rhythm, while keeping all commercial formulas unchanged. Searchable
@@ -28,7 +29,7 @@ Save -> server state -> fresh GET -> new remount regression evidence preserves
 two segments, Ticket Group ownership, Vendor, PNR, commercials and persisted
 service_id, with second-save reuse and SEGMENTS_EMPTY_AFTER_REFRESH=NO.
 No Booking product API payload contract, persistence schema, database schema or
-migration changes are included. ERP-11.3.330 introduces no new migration.
+migration changes are included. ERP-11.3.331 introduces no new migration.
 `CURRENT` is now the sole editable development authority. Future changes are
 made and tested in this directory without creating versioned source copies or
 automatic ZIP archives.

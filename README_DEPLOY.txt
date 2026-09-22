@@ -1,9 +1,10 @@
-ERP-11.3.330 Air Workspace, Airline Validation and Booking Access
+ERP-11.3.331 Air Workspace, Airline Validation and Booking Access
 
-Active release: v1.1.33.330-ERP11.3.330
+Active release: v1.1.33.331-ERP11.3.331
 
-ERP-11.3.330 is the Air Workspace, Airline Validation and Booking Access
-release. New itinerary rows default Outbound, Return, then Connection while
+ERP-11.3.331 is the pending cumulative Air Workspace, Airline Validation and
+Booking Access release after ERP-11.3.330 became the live predecessor. New
+itinerary rows default Outbound, Return, then Connection while
 remaining editable; persisted and legacy meaningful segment types are retained
 and true blank placeholders normalize safely. The Air layout remains balanced
 with corrected Type width and controlled 12px rhythm. Searchable Airline Master
@@ -19,12 +20,12 @@ Operations authority, including the Booking-side Sales Invoice bridge; ordinary
 Sales Invoice routes retain their own authority. Save → server state → fresh GET
 → new remount regression evidence preserves two Air segments, Ticket Group
 ownership, Vendor, PNR, commercials and persisted service_id, with second-save
-reuse and SEGMENTS_EMPTY_AFTER_REFRESH=NO. ERP-11.3.330 introduces no new
+reuse and SEGMENTS_EMPTY_AFTER_REFRESH=NO. ERP-11.3.331 introduces no new
 migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .329 already has it applied. Before .330 Air UAT, confirm System
+current live .330 already has it applied. Before .331 Air UAT, confirm System
 Health reports the database schema is up to date. Take a fresh database backup
 before deployment, but do not treat this as a new migration requirement or
 manually modify the database.
@@ -32,15 +33,15 @@ manually modify the database.
 Deployment order:
 1. Stop Air multi-ticket-group data entry during deployment.
 2. Take/confirm a fresh database backup before deployment.
-3. Upload/extract the authoritative ERP-11.3.330 ZIP through cPanel over the existing ERP application.
-4. Open System Health & Updates and confirm the database schema is up to date; no new .330 migration is required.
+3. Upload/extract the authoritative ERP-11.3.331 ZIP through cPanel over the existing ERP application.
+4. Open System Health & Updates and confirm the database schema is up to date; no new .331 migration is required.
 5. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
 6. If the schema is not current, HOLD deployment and resolve through the established migration process; do not improvise manual database edits.
 7. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
 
-Focused ERP-11.3.330 production UAT (not yet production-verified):
+Focused ERP-11.3.331 production UAT (not yet production-verified):
 - Use a safe Draft GENERAL Air booking.
-- System Health shows v1.1.33.330-ERP11.3.330, database Connected and schema up to date.
+- System Health shows v1.1.33.331-ERP11.3.331, database Connected and schema up to date.
 - Flight Itinerary Type displays Connection, Outbound and Return fully; Remove remains contained without overlapping Airline and there is no page-level horizontal overflow.
 - Booking Data -> PNR Fare Commercials -> Passenger Tickets -> PNR totals remains separated by the controlled 12px rhythm; Applies To Flight Segments, commercial scrollbar absence and zero-group bootstrap remain unchanged.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
@@ -68,7 +69,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Confirm the database schema is up to date; ERP-11.3.330 introduces no new migration.
+3. Confirm the database schema is up to date; ERP-11.3.331 introduces no new migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking
