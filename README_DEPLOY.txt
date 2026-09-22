@@ -26,16 +26,55 @@ before deployment, but do not treat this as a new migration requirement or
 manually modify the database.
 
 Deployment order:
-1. Stop Air multi-ticket-group data entry during deployment.
-2. Take/confirm a fresh database backup before deployment.
-3. Upload/extract the ONE authoritative ERP-11.3.332 ZIP through cPanel over the existing ERP application.
-4. Open System Health & Updates and confirm the displayed version is v1.1.33.332-ERP11.3.332.
-5. Confirm Database = Connected, schema is up to date, and ERP-11.3.332 introduces NO new migration.
-5. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
-6. If the schema is not current, HOLD deployment and resolve through the established migration process; do not improvise manual database edits.
-7. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
+1. Stop relevant Booking/Air editing during deployment.
+2. Take a fresh full database backup.
+3. Upload/extract the ONE authoritative ERP-11.3.332 ZIP through cPanel.
+4. Open System Health & Updates.
+5. Confirm displayed application version is v1.1.33.332-ERP11.3.332.
+6. Confirm Database = Connected.
+7. Confirm schema is up to date; verify booking_itinerary_segments has nullable indexed booking_service_id ownership.
+8. Confirm ERP-11.3.332 introduces NO new migration.
+9. If health/schema is not correct, HOLD. Do not manually alter production DB.
+10. Clear Application Cache.
+11. Ctrl+F5 / hard refresh.
+12. Run focused ERP-11.3.332 production UAT.
 
 Focused ERP-11.3.332 production UAT (not yet production-verified):
+
+Passenger removal consistency:
+- Use a safe Draft GENERAL booking, add one passenger, remove it, and verify the row disappears without manual refresh.
+- Passenger KPI and Adult/Child/Infant counts become zero; browser refresh remains consistent.
+- With multiple passengers, removing one decrements exactly once; failed DELETE leaves UI unchanged; locked booking blocks removal server-side.
+
+Passenger re-add:
+- Add a saved Passenger Master as ADULT, remove it in Draft, immediately select the same Master as CHILD, and verify Add succeeds.
+- Master is reused with no duplicate; exactly one active booking passenger exists; passenger table, KPI and Air display agree.
+- Old Air ticket rows and generic links are not resurrected.
+
+Pending Air pre-issuance:
+- In a safe Draft GENERAL Air booking configure a passenger, segment, Ticket Group, Vendor, PNR, Ticket Status=PENDING, blank Ticket No. and zero commercials.
+- Save succeeds without native-link errors, fake air_ticket_details rows or fake generic links; group, Vendor, PNR, ownership and refresh persist; second Save reuses the Air service.
+
+Segment defaults:
+- First new segment is Outbound, second Return, third and fourth-plus Connection.
+- Type remains editable and the saved Type persists after save/reload.
+
+ISSUED / Issue Date:
+- Ticket Status=ISSUED displays Issue Date *, makes the field required, and blocks blank-date save.
+- A valid date saves and survives refresh; BOOKED/PENDING still allow blank Issue Date.
+- Multi-group validation is group-specific: an ISSUED group missing its own date is rejected against that group.
+
+Issued-history passenger removal safety:
+- Removal is blocked for ISSUED, real ticket/document evidence after downgrade, issue-date/issued-at evidence, VOID, REFUNDED, CANCELLED and unknown/incomplete Air status.
+- Changing genuine ISSUED history to BOOKED/PENDING cannot bypass the evidence guard.
+
+Commercial reconciliation / non-Air immutability:
+- With Air plus Hotel, Transport and Visa where practical, remove one draft-safe Air passenger and verify only affected Air totals recalculate.
+- Remaining Air customer/supplier totals, Booking Value, Supplier Cost and Gross Margin remain authoritative; Hotel, Transport, Visa and Other Services remain unchanged.
+- Remove the final draft-safe Air passenger: native rows may reach zero, established Air snapshot quantity remains intact, Ticket Group/PNR/Vendor/itinerary/ownership remain, and unrelated totals do not change.
+
+Preserved ERP-11.3.331 Air regression checks:
+- Airline Master search/resolution, multi-group ownership, save/reload, second-save service reuse, Booking RBAC, locking/readiness, layout/no horizontal overflow and legacy single-group compatibility.
 - Use a safe Draft GENERAL Air booking.
 - System Health shows v1.1.33.332-ERP11.3.332, database Connected and schema up to date.
 - Flight Itinerary Type displays Connection, Outbound and Return fully; Remove remains contained without overlapping Airline and there is no page-level horizontal overflow.
