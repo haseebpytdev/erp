@@ -27,8 +27,8 @@ Sales Invoice bridge; ordinary Sales Invoice routes retain their own authority.
 Save -> server state -> fresh GET -> new remount regression evidence preserves
 two segments, Ticket Group ownership, Vendor, PNR, commercials and persisted
 service_id, with second-save reuse and SEGMENTS_EMPTY_AFTER_REFRESH=NO.
-No product API, persistence schema, database schema or migration changes are
-included. ERP-11.3.330 introduces no new migration.
+No Booking product API payload contract, persistence schema, database schema or
+migration changes are included. ERP-11.3.330 introduces no new migration.
 `CURRENT` is now the sole editable development authority. Future changes are
 made and tested in this directory without creating versioned source copies or
 automatic ZIP archives.
