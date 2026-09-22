@@ -314,7 +314,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 
   var itineraryRows=Array.isArray(data.itinerary)?data.itinerary:[];
   if(itineraryRows.length){itineraryRows.forEach(segmentRow);}else{segmentRow({segment_type:'outbound'});}
-  addSegment.addEventListener('click',function(){segmentRow({segment_type:etgpAirDefaultSegmentType113329(segmentCounter)});});
+  addSegment.addEventListener('click',function(){var existingCount=segmentList.querySelectorAll('[data-etgp-air-segment-113106]').length;segmentRow({segment_type:etgpAirDefaultSegmentType113329(existingCount)});});
   if(!renderGroupOnly)host.appendChild(itinerary);
 
   /* Booking / ticket common data: vendor owns this PNR. */
