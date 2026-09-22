@@ -1,19 +1,44 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.331
-CURRENT_LIVE_RELEASE=ERP-11.3.330
-CURRENT_VERSION=ERP-11.3.331
-APPLICATION_VERSION=v1.1.33.331-ERP11.3.331
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.332
+CURRENT_LIVE_RELEASE=ERP-11.3.331
+CURRENT_VERSION=ERP-11.3.332
+APPLICATION_VERSION=v1.1.33.332-ERP11.3.332
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
+PRODUCTION_STATUS=ERP-11.3.331 LIVE; ERP-11.3.332 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.331
 ```
+
+ERP-11.3.332 Passenger, Air Issuance and Runtime Integrity Hotfix
+
+ERP-11.3.332 is the development candidate following live ERP-11.3.331. It
+preserves same-page passenger removal/KPI authority, safe REMOVED-passenger
+re-add with Passenger Master reuse, Pending Air groups before native issuance,
+issued-history removal guards, server-side booking locks and affected-Air-only
+commercial snapshot reconciliation. Hotel, Transport, Visa and Other Services
+remain untouched. Air segment defaults remain Outbound, Return, then
+Connection; ISSUED requires a group-specific Issue Date *. Commercial formulas,
+Ticket Group architecture, API field shapes, database schema and migrations are
+unchanged.
+
+Regression evidence:
+- tests/release/erp113332-passenger-remove-kpi-consistency-regression.mjs (71 assertions)
+- tests/release/erp113332-air-pending-passenger-links-regression.mjs (46 assertions)
+- Final functional source SHA: 189f5e109a70cf00451dbe311143bd6eb91d2686
+- Symmetric suite: parent 90/56/34, candidate 90/56/34, pass-to-fail 0,
+  fail-to-pass 0; PHP_CLI_AVAILABLE=NO.
+
+LIVE=ERP-11.3.331
+DEVELOPMENT_CANDIDATE=ERP-11.3.332
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+DEPLOYED=NO
+NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.331 prepares the cumulative Air workspace, Airline validation and
 Booking access corrections after ERP-11.3.330 became the live predecessor. It
