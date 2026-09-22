@@ -255,10 +255,12 @@ final class GeneralBookingAirProductController extends Controller
                 // ticket table. Use the already-read-back ticket rows as the
                 // only source and keep this pivot synchronization in the same
                 // transaction as the Air save.
-                $this->passengerLinks->syncAirFromNative(
-                    $booking,
-                    (int) $service['id'],
-                );
+                if ($freshTickets !== []) {
+                    $this->passengerLinks->syncAirFromNative(
+                        $booking,
+                        (int) $service['id'],
+                    );
+                }
                 $this->syncAirServiceCommercialSnapshot((int) $service['id'], $this->summary($freshTickets, (int) $service['id']));
 
                 return [
@@ -673,7 +675,9 @@ final class GeneralBookingAirProductController extends Controller
                     $stage = 'Passenger Tickets / PNR Commercials';
                     $this->syncTickets($serviceId, $booking, $bookingRow, $passengers, $ticketPayloads, $common, $fare);
                     $fresh = $this->ticketRows($serviceId, $passengers);
-                    $this->passengerLinks->syncAirFromNative($booking, $serviceId);
+                    if ($fresh !== []) {
+                        $this->passengerLinks->syncAirFromNative($booking, $serviceId);
+                    }
                     $this->syncAirServiceCommercialSnapshot($serviceId, $this->summary($fresh, $serviceId));
                     $saved[] = ['service_id' => $serviceId, 'client_key' => (string) ($group['client_key'] ?? ('group-'.$serviceId)), 'common' => $this->commonSnapshot($fresh, (array) (DB::table('booking_services')->where('id', $serviceId)->first() ?? [])), 'tickets' => $fresh, 'fare_commercials' => $this->fareCommercialsSnapshot($fresh), 'summary' => $this->summary($fresh, $serviceId), 'segment_keys' => $keys];
                     $resolvedGroupContexts[] = ['service_id' => $serviceId, 'common' => $common, 'segment_keys' => $keys];
