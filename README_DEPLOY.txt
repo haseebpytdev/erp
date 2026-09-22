@@ -1,44 +1,45 @@
-ERP-11.3.329 Air Itinerary Type Width Correction
+ERP-11.3.330 Air Workspace UX and Section Rhythm
 
-Active release: v1.1.33.329-ERP11.3.329
+Active release: v1.1.33.330-ERP11.3.330
 
-ERP-11.3.329 corrects the Flight Itinerary Type control width discovered during
-ERP-11.3.328 production visual UAT. The scoped desktop Type column is widened
-from 82px to 108px so Outbound, Return and Connection remain fully readable
-while existing itinerary row geometry, the contained Remove action and
-responsive breakpoints are preserved. Air JavaScript, Ticket Group ownership,
-segment persistence, commercial formulas, draft/save lifecycle, locking and
-Travel Readiness remain unchanged. ERP-11.3.329 introduces no new database
-migration.
+ERP-11.3.330 refines the GENERAL Air workspace after ERP-11.3.329 production
+visual UAT. Newly created itinerary segments default by current segment count
+as Outbound, Return, then Connection while remaining user-editable and without
+rewriting persisted segment types. The duplicated row-level margin line is
+removed from PNR Fare Commercials while Customer/Vendor values, PNR Gross
+Margin, Air Gross Margin and all commercial formulas remain unchanged. The
+multi-group Air workspace and Ticket Group sections use a controlled 12px
+vertical rhythm. Backend, API, persistence, locking, Travel Readiness and
+database schema remain unchanged. ERP-11.3.330 introduces no new migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .328 already has it applied. Before .329 Air UAT,
-confirm System Health reports the database schema is up to date. Take a fresh
-database backup before deployment, but do not treat this as a new migration
-requirement or manually modify the database.
+current live .329 already has it applied. Before .330 Air UAT, confirm System
+Health reports the database schema is up to date. Take a fresh database backup
+before deployment, but do not treat this as a new migration requirement or
+manually modify the database.
 
 Deployment order:
 1. Stop Air multi-ticket-group data entry during deployment.
 2. Take/confirm a fresh database backup before deployment.
-3. Upload/extract the authoritative ERP-11.3.329 ZIP through cPanel over the existing ERP application.
-4. Open System Health & Updates and confirm the database schema is up to date; no new .329 migration is required.
+3. Upload/extract the authoritative ERP-11.3.330 ZIP through cPanel over the existing ERP application.
+4. Open System Health & Updates and confirm the database schema is up to date; no new .330 migration is required.
 5. Verify booking_itinerary_segments has nullable indexed booking_service_id ownership through ERP migration/health evidence.
 6. If the schema is not current, HOLD deployment and resolve through the established migration process; do not improvise manual database edits.
 7. Clear Application Cache, perform Ctrl+F5 / hard refresh, then run focused production UAT.
 
-Focused ERP-11.3.329 production UAT (not yet production-verified):
+Focused ERP-11.3.330 production UAT (not yet production-verified):
 - Use a safe Draft GENERAL Air booking.
-- System Health shows v1.1.33.329-ERP11.3.329, database Connected and schema up to date.
+- System Health shows v1.1.33.330-ERP11.3.330, database Connected and schema up to date.
 - Flight Itinerary Type displays Connection, Outbound and Return fully; Remove remains contained without overlapping Airline and there is no page-level horizontal overflow.
-- The .328 Ticket Group sequence remains Booking Data -> PNR Fare Commercials -> Passenger Tickets -> PNR totals; Applies To Flight Segments, commercial scrollbar absence and zero-group bootstrap remain unchanged.
+- Booking Data -> PNR Fare Commercials -> Passenger Tickets -> PNR totals remains separated by the controlled 12px rhythm; Applies To Flight Segments, commercial scrollbar absence and zero-group bootstrap remain unchanged.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
-- Flight Itinerary uses balanced field widths; Remove remains fully inside the segment row without overlapping Arrival or leaving the action cell.
+- Flight Itinerary uses balanced field widths; Type defaults are Outbound, Return, then Connection by current row count; Remove remains fully inside the segment row without overlapping Arrival or leaving the action cell.
 - Applies To Flight Segments uses compact readable assignment controls; route and flight-number labels are readable.
 - Segment selection remains exclusive: each segment belongs to exactly one Ticket Group.
 - Booking / Ticket Data is full width; PNR Fare Commercials is full width immediately after it, with no normal desktop/laptop internal horizontal scrollbar and all commercial columns readable without overlap.
 - Passenger Tickets is full width below PNR Fare Commercials; PNR Customer Total / PNR Vendor Total / Gross Margin remain below both tables.
-- There is no page-level horizontal overflow; zero-group bootstrap opens the Ticket Group workspace; save/reload and multi-group persistence remain unchanged.
+- There is no page-level horizontal overflow; zero-group bootstrap opens the Ticket Group workspace; save/reload, multi-group persistence and delete-then-add Type defaults remain unchanged.
 - Multi-ticket groups: verify at least two Ticket Groups can exist, each with an independent Vendor / Supplier, independent PNR, independent Airline PNR / GDS Source where applicable, independent segment assignment, passenger ticket numbers and PNR Fare Commercials.
 - Segment ownership: each itinerary segment belongs to exactly one Ticket Group; duplicate ownership is prevented; a group with zero assigned segments or an unowned submitted segment cannot save.
 - Commercials: aggregate Air Customer Total and Vendor Total include all groups; Gross Margin is correct; Customer Minus and Vendor Minus remain based on Basic Rate; V O Cost remains one fare-row total after passenger multiplication; commercial formulas are unchanged.
@@ -54,7 +55,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Confirm the database schema is up to date; ERP-11.3.329 introduces no new migration.
+3. Confirm the database schema is up to date; ERP-11.3.330 introduces no new migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking

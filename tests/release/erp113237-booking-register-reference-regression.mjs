@@ -28,7 +28,7 @@ ok(!/createElement\(['"](?:section|article|table|form)/.test(interactions), 'int
 ok(!interactions.includes('fetch(') && !interactions.includes('XMLHttpRequest') && !interactions.includes('localStorage') && !interactions.includes('sessionStorage'), 'interaction layer performs no network/persistent state mutation');
 ok(controller.includes("'purchase' => 'registers.css'") && registersTheme.includes('.et-booking-ref-register-card'), 'approved shared register CSS remains served');
 ok(controller.includes("'Cache-Control' => 'private, max-age=31536000, immutable'"), 'immutable browser cache policy remains intact');
-ok(version === 'v1.1.33.329-ERP11.3.329', 'packaged release version is current');
+ok(version === 'v1.1.33.330-ERP11.3.330', 'packaged release version is current');
 
 console.log(`TESTS_PASS=${pass}`);
 console.log('TESTS_FAIL=0');
