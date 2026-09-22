@@ -1,16 +1,26 @@
-ERP-11.3.330 Air Workspace UX and Section Rhythm
+ERP-11.3.330 Air Workspace, Airline Validation and Booking Access
 
 Active release: v1.1.33.330-ERP11.3.330
 
-ERP-11.3.330 refines the GENERAL Air workspace after ERP-11.3.329 production
-visual UAT. Newly created itinerary segments default by current segment count
-as Outbound, Return, then Connection while remaining user-editable and without
-rewriting persisted segment types. The duplicated row-level margin line is
-removed from PNR Fare Commercials while Customer/Vendor values, PNR Gross
-Margin, Air Gross Margin and all commercial formulas remain unchanged. The
-multi-group Air workspace and Ticket Group sections use a controlled 12px
-vertical rhythm. Backend, API, persistence, locking, Travel Readiness and
-database schema remain unchanged. ERP-11.3.330 introduces no new migration.
+ERP-11.3.330 is the Air Workspace, Airline Validation and Booking Access
+release. New itinerary rows default Outbound, Return, then Connection while
+remaining editable; persisted and legacy meaningful segment types are retained
+and true blank placeholders normalize safely. The Air layout remains balanced
+with corrected Type width and controlled 12px rhythm. Searchable Airline Master
+selection supports name/code and keyboard selection, resolves legacy values, and
+fails closed with “Select an airline from the list.” before draft write or
+network save when a meaningful segment lacks a resolved airline_id. The
+multi-group Ticket Group structure, Passenger Tickets, PNR Fare Commercials,
+Customer/Vendor totals, PNR Gross Margin, Air Gross Margin and all formulas
+remain unchanged.
+
+Booking product routes and known Booking product APIs remain under Booking
+Operations authority, including the Booking-side Sales Invoice bridge; ordinary
+Sales Invoice routes retain their own authority. Save → server state → fresh GET
+→ new remount regression evidence preserves two Air segments, Ticket Group
+ownership, Vendor, PNR, commercials and persisted service_id, with second-save
+reuse and SEGMENTS_EMPTY_AFTER_REFRESH=NO. ERP-11.3.330 introduces no new
+migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
@@ -49,6 +59,9 @@ Focused ERP-11.3.330 production UAT (not yet production-verified):
 - Travel readiness: every Ticket Group participates in readiness; missing group segment, missing group PNR or missing/unissued required passenger ticket blocks readiness.
 - Legacy single-group compatibility: an existing single-group Air booking still opens, saved values remain correct and single-group Save still works (legacy single-group path verified).
 - Network/navigation: confirm the Air fragment request, no full Air document on the successful path, one Air product API GET, no general-progressive-step1.js/.css, normal Air URL, modified clicks, native Hotel/Transport/Visa links, fallback/deep-link behavior, dirty/draft confirmation, save-in-flight guard and browser back/forward behavior.
+- Airline Master: search Saudia and SV, immediately select Saudia, search Emirates and EK, verify keyboard selection, and confirm arbitrary or invalid Airline text cannot save.
+- Persistence: create Outbound Saudia/SV SV739 LHE -> JED and Return Saudia/SV SV738 JED -> LHE; create one Ticket Group, assign both segments, enter Vendor, PNR, passenger ticket numbers and commercials, Final Save, refresh, and verify both segments, types, Airline Master values, flights, routes, group, Vendor, PNR, commercials and assignments remain. Save again and verify NO duplicate Ticket Group/service.
+- Booking RBAC: with appropriate Booking permissions verify Booking -> Air -> Hotel -> Transport -> Visa. A staff user without Products & Services Master permission must retain these Booking product workspaces despite /products URLs. A user with only unrelated Travel Masters / Passenger-style permission must not directly GET known Booking Air/Hotel/Transport/Visa product APIs through the generic JSON/AJAX fallback.
 
 Audited cumulative overlay based on deployed ERP-11.3.151.
 

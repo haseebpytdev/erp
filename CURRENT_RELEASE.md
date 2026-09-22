@@ -1,24 +1,34 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.330
+CURRENT_LIVE_RELEASE=ERP-11.3.329
 CURRENT_VERSION=ERP-11.3.330
 APPLICATION_VERSION=v1.1.33.330-ERP11.3.330
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+DEPLOYED=NO
+NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
 PRODUCTION_STATUS=NOT VERIFIED FROM THIS CLEANUP
-LAST_PACKAGED_RELEASE=ERP-11.3.330
+LAST_PACKAGED_RELEASE=ERP-11.3.329
 ```
 
-ERP-11.3.330 refines the GENERAL Air workspace after ERP-11.3.329 production
-visual UAT. Newly created itinerary segments default by current segment count
-as Outbound, Return, then Connection while remaining user-editable and without
-rewriting persisted segment types. The duplicated row-level margin line is
-removed from PNR Fare Commercials while Customer/Vendor values, PNR Gross
-Margin, Air Gross Margin and all commercial formulas remain unchanged. The
-multi-group Air workspace and Ticket Group sections use a controlled 12px
-vertical rhythm. Backend, API, persistence, locking, Travel Readiness and
-database schema remain unchanged. ERP-11.3.330 introduces no new migration.
+ERP-11.3.330 finalizes the Air workspace and Booking access bridges. It
+preserves editable Outbound, Return and Connection itinerary defaults,
+persisted and legacy segment types, balanced layout and controlled 12px
+section rhythm, while keeping all commercial formulas unchanged. Searchable
+Airline Master selection supports name/code and keyboard use, resolves legacy
+values, and fails closed before draft or network save when a meaningful segment
+lacks a resolved airline_id. Booking product routes and known Booking product
+APIs remain under Booking Operations authority, including the Booking-side
+Sales Invoice bridge; ordinary Sales Invoice routes retain their own authority.
+Save -> server state -> fresh GET -> new remount regression evidence preserves
+two segments, Ticket Group ownership, Vendor, PNR, commercials and persisted
+service_id, with second-save reuse and SEGMENTS_EMPTY_AFTER_REFRESH=NO.
+No product API, persistence schema, database schema or migration changes are
+included. ERP-11.3.330 introduces no new migration.
 `CURRENT` is now the sole editable development authority. Future changes are
 made and tested in this directory without creating versioned source copies or
 automatic ZIP archives.

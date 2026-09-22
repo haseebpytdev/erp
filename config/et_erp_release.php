@@ -3,7 +3,7 @@
 return [
     'version' => 'v1.1.33.330-ERP11.3.330',
     'release' => 'ERP-11.3.330',
-    'package' => 'ERP-11.3.330 Air Workspace UX and Section Rhythm',
-    'package_detail' => 'ERP-11.3.330 refines the GENERAL Air workspace after ERP-11.3.329 production visual UAT. Newly created itinerary segments now default by the current segment count as Outbound, Return, then Connection while remaining user-editable and without rewriting persisted segment types. The duplicated row-level margin line is removed from PNR Fare Commercials while Customer/Vendor values, PNR Gross Margin, Air Gross Margin and all commercial formulas remain unchanged. The multi-group Air workspace and Ticket Group sections now use a controlled 12px vertical rhythm. Backend, API, persistence, locking, Travel Readiness and database schema remain unchanged. ERP-11.3.330 introduces no new migration.',
+    'package' => 'ERP-11.3.330 Air Workspace, Airline Validation and Booking Access',
+    'package_detail' => 'ERP-11.3.330 finalizes the Air workspace and Booking access bridges. It preserves editable Outbound, Return and Connection itinerary defaults, persisted and legacy segment types, the balanced Air layout and controlled 12px rhythm, and the existing commercial formulas. Searchable Airline Master selection supports name/code and keyboard use, resolves legacy values, and fails closed before draft or network save when a meaningful segment lacks a resolved airline_id. Booking product routes and known Booking product APIs remain under Booking Operations authority, including the Booking-side Sales Invoice bridge, while ordinary Sales Invoice routes retain their own authority. Save/fresh-GET/remount regression evidence preserves two segments, Ticket Group ownership, Vendor, PNR, commercials and persisted service_id with second-save reuse. No Booking product API payload contract, persistence schema, database schema or migration changes are included; NEW_MIGRATION_REQUIRED=NO.',
 ];
 
