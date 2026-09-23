@@ -22,6 +22,7 @@ use App\Http\Controllers\Operations\GroupUmrahCommercialAmendmentController;
 use App\Http\Controllers\Operations\GroupUmrahSalesInvoiceBridgeController;
 use App\Http\Controllers\Operations\GroupUmrahSalesInvoiceWorkflowController;
 use App\Http\Controllers\Reports\GroupUmrahProfitabilityController;
+use App\Http\Controllers\Reports\TravelReportsController;
 use App\Http\Middleware\InjectGroupPackageCreateEntry;
 use App\Http\Middleware\ApplyErpReleaseMetadata;
 use App\Http\Middleware\RedirectGroupUmrahDraftToUnified;
@@ -499,6 +500,19 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::get('/reports/group-umrah-profitability/{booking}', [GroupUmrahProfitabilityController::class, 'show'])
         ->whereNumber('booking')
         ->name('reports.group-umrah-profitability.show');
+
+    /* ERP-11.3.338: operational Travel Reports are a separate authority from
+     * Accounting Reports and existing profitability remains untouched. */
+    Route::prefix('travel-reports')->name('travel-reports.')->middleware(EnforceErpRoleScopedAccess::class)->group(function (): void {
+        Route::get('/', [TravelReportsController::class, 'index'])->name('index');
+        foreach (array_keys(\App\Services\Reports\TravelReportService::REPORTS) as $report) {
+            Route::get('/'.$report.'/export', [TravelReportsController::class, 'export'])->name($report.'.export');
+            Route::get('/'.$report, [TravelReportsController::class, 'show'])->name($report);
+        }
+        foreach (array_keys(\App\Services\Reports\TravelReportService::MOVEMENTS) as $movement) {
+            Route::get('/group-umrah/'.$movement, [TravelReportsController::class, 'movement'])->name('group-umrah.'.$movement);
+        }
+    });
 
     // Optional safe direct entry for diagnostics/bookmarks.
     Route::get('/operations/group-package-bookings/create', [UnifiedGroupPackageBookingController::class, 'create'])

@@ -11,6 +11,7 @@ final class ServerSidebarComposer
         $groups = [
             'OPERATIONS' => ['bookings', 'passengers', 'sales invoices', 'supplier costing'],
             'ACCOUNTING' => ['receipts', 'payments', 'expense vouchers', 'contra vouchers', 'chart of accounts', 'account mappings', 'journals', 'ledgers', 'reports'],
+            'TRAVEL REPORTS' => ['travel reports', 'report center', 'booking report', 'passenger report', 'air / ticketing report', 'hotel report', 'visa report', 'transport report', 'group umrah report', 'customer-wise report', 'supplier / vendor-wise report', 'branch-wise report', 'agent / salesperson report', 'airline-wise report', 'sector / destination report'],
             'MASTER DATA' => ['party master', 'travel masters', 'products & services'],
             'ADMINISTRATION' => ['organization', 'currency rates', 'financial years', 'health & updates', 'administration', 'foundation'],
         ];
@@ -36,6 +37,33 @@ final class ServerSidebarComposer
             if (!$a) { $unknown[] = $row; continue; }
             $label = strtolower(trim(preg_replace('/\s+/', ' ', $a->textContent)));
             $known[$label] ??= $row;
+        }
+        // Travel Reports are repo-owned operational links. Authorization is
+        // still enforced by EnforceErpRoleScopedAccess; this layer only adds
+        // presentation links so direct URLs and sidebar share the same policy.
+        foreach ([
+            ['Report Center','/travel-reports'],
+            ['Booking Report','/travel-reports/bookings'],
+            ['Passenger Report','/travel-reports/passengers'],
+            ['Air / Ticketing Report','/travel-reports/air'],
+            ['Hotel Report','/travel-reports/hotels'],
+            ['Visa Report','/travel-reports/visas'],
+            ['Transport Report','/travel-reports/transport'],
+            ['Group Umrah Report','/travel-reports/group-umrah'],
+            ['Customer-wise Report','/travel-reports/customers'],
+            ['Supplier / Vendor-wise Report','/travel-reports/suppliers'],
+            ['Branch-wise Report','/travel-reports/branches'],
+            ['Agent / Salesperson Report','/travel-reports/agents'],
+            ['Airline-wise Report','/travel-reports/airlines'],
+            ['Sector / Destination Report','/travel-reports/sectors'],
+        ] as [$label,$href]) {
+            $key = strtolower($label);
+            if (isset($known[$key])) continue;
+            $row = $dom->createElement('li');
+            $anchor = $dom->createElement('a', $label);
+            $anchor->setAttribute('href', $href);
+            $row->appendChild($anchor);
+            $known[$key] = $row;
         }
         if (!isset($known['dashboard'])) return $html;
         $out = [$known['dashboard']];

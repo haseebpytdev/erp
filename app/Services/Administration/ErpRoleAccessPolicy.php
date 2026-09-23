@@ -131,6 +131,7 @@ class ErpRoleAccessPolicy
             'MASTER DATA' => ['party_master', 'travel_masters', 'products_services'],
             'OPERATIONS' => ['bookings', 'sales_invoices', 'supplier_costing', 'passengers', 'vendor_bills', 'refunds'],
             'ACCOUNTING' => ['cash_vouchers', 'receipts', 'payments', 'journals', 'ledgers', 'reports'],
+            'TRAVEL REPORTS' => ['travel_reports'],
         ];
 
         foreach ($groups as $label => $modules) {
@@ -419,6 +420,21 @@ class ErpRoleAccessPolicy
                     'view analytics',
                     'financial reports',
                     'management reports',
+                ],
+            ],
+
+            'travel_reports' => [
+                'labels' => [
+                    'Travel Reports', 'Report Center', 'Booking Report', 'Passenger Report',
+                    'Air / Ticketing Report', 'Hotel Report', 'Visa Report', 'Transport Report',
+                    'Group Umrah Report', 'Customer-wise Report', 'Supplier / Vendor-wise Report',
+                    'Branch-wise Report', 'Agent / Salesperson Report', 'Airline-wise Report', 'Sector / Destination Report',
+                ],
+                'hrefs' => ['/travel-reports'],
+                'paths' => ['/travel-reports', 'travel-reports.'],
+                'capability_phrases' => [
+                    'view travel reports', 'travel reports', 'manage travel reports', 'export travel reports',
+                    'view reports', 'view analytics', 'manage reports',
                 ],
             ],
 
