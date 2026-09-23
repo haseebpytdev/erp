@@ -1,8 +1,9 @@
-ERP-11.3.332 Passenger, Air Issuance and Runtime Integrity Hotfix
+ERP-11.3.333 Historical Active Passenger Authority Hotfix
 
-Active release: v1.1.33.332-ERP11.3.332
+Active release: v1.1.33.333-ERP11.3.333
 
-ERP-11.3.331 is currently LIVE. ERP-11.3.332 is the next deployment candidate
+ERP-11.3.332 is currently LIVE. Its live UAT exposed a historical
+active-passenger inconsistency. ERP-11.3.333 is the next deployment candidate
 and has NOT yet been deployed. It preserves same-page passenger removal/KPI
 consistency, REMOVED-passenger re-add with Passenger Master reuse, Pending Air
 Ticket Groups before native issuance without fake native rows or generic links,
@@ -15,12 +16,12 @@ unchanged.
 
 Booking product routes and known Booking product APIs remain under Booking
 Operations authority, including the Booking-side Sales Invoice bridge; ordinary
-Sales Invoice routes retain their own authority. ERP-11.3.332 introduces no new
+Sales Invoice routes retain their own authority. ERP-11.3.333 introduces no new
 migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .331 already has it applied. Before .332 Air UAT, confirm System
+current live .332 already has it applied. Before .333 Air UAT, confirm System
 Health reports the database schema is up to date. Take a fresh database backup
 before deployment, but do not treat this as a new migration requirement or
 manually modify the database.
@@ -28,18 +29,30 @@ manually modify the database.
 Deployment order:
 1. Stop relevant Booking/Air editing during deployment.
 2. Take a fresh full database backup.
-3. Upload/extract the ONE authoritative ERP-11.3.332 ZIP through cPanel.
+3. Upload/extract the ONE authoritative ERP-11.3.333 ZIP through cPanel.
 4. Open System Health & Updates.
-5. Confirm displayed application version is v1.1.33.332-ERP11.3.332.
+5. Confirm displayed application version is v1.1.33.333-ERP11.3.333.
 6. Confirm Database = Connected.
 7. Confirm schema is up to date; verify booking_itinerary_segments has nullable indexed booking_service_id ownership.
-8. Confirm ERP-11.3.332 introduces NO new migration.
+8. Confirm ERP-11.3.333 introduces NO new migration.
 9. If health/schema is not correct, HOLD. Do not manually alter production DB.
 10. Clear Application Cache.
 11. Ctrl+F5 / hard refresh.
-12. Run focused ERP-11.3.332 production UAT.
+12. Run focused ERP-11.3.333 production UAT.
 
-Focused ERP-11.3.332 production UAT (not yet production-verified):
+Focused ERP-11.3.333 production UAT (not yet production-verified):
+
+Historical active-passenger authority:
+- Open BK-2026-0023 and verify one current booking passenger is visible.
+- Passenger KPI is 1 with Adult 1 / Child 0 / Infant 0 unless stored fare type differs.
+- Air Passenger Tickets, Operational Summary passenger_count and Booking Review Total Passengers are all 1.
+- Refresh/reopen and verify inactive historical snapshots do not reappear.
+
+History preservation:
+- Do not delete Passenger Master records. Retain ISSUED, ticket/document, Issue Date/issued_at, VOID, REFUNDED and CANCELLED evidence.
+
+Current booking regression:
+- Verify safe Draft removal, same-page KPI update, Passenger Master re-add with fare change, Pending pre-ticket Air save, ISSUED Issue Date validation, Outbound/Return/Connection defaults, commercial totals and non-Air immutability.
 
 Passenger removal consistency:
 - Use a safe Draft GENERAL booking, add one passenger, remove it, and verify the row disappears without manual refresh.

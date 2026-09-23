@@ -1,19 +1,39 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.332
-CURRENT_LIVE_RELEASE=ERP-11.3.331
-CURRENT_VERSION=ERP-11.3.332
-APPLICATION_VERSION=v1.1.33.332-ERP11.3.332
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.333
+CURRENT_LIVE_RELEASE=ERP-11.3.332
+CURRENT_VERSION=ERP-11.3.333
+APPLICATION_VERSION=v1.1.33.333-ERP11.3.333
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.331 LIVE; ERP-11.3.332 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
+PRODUCTION_STATUS=ERP-11.3.332 LIVE (UAT defect under correction); ERP-11.3.333 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.332
 ```
+
+ERP-11.3.333 Historical Active Passenger Authority Hotfix
+
+ERP-11.3.333 is the corrective candidate following live ERP-11.3.332. On
+historical booking BK-2026-0023, one current booking passenger must produce one
+Air passenger, one Operational Summary passenger_count, one KPI passenger and
+one Review passenger. Inactive snapshots marked by deleted_at, is_active,
+active or inactive status variants are excluded from current presentation while
+Passenger Master records and irreversible ticket/Issue Date history remain
+preserved. The .332 regression behavior remains unchanged.
+
+Final functional source SHA: c64ac9c2d56008d7ece383aa0200a72978bb3d91
+Regression: tests/release/erp113333-historical-active-passenger-authority-regression.mjs (26 assertions)
+Symmetric suite: parent 90/56/34; candidate 91/57/34; pass-to-fail 0; fail-to-pass 0; PHP_CLI_AVAILABLE=NO.
+
+LIVE=ERP-11.3.332
+DEVELOPMENT_CANDIDATE=ERP-11.3.333
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+DEPLOYED=NO
+NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.332 Passenger, Air Issuance and Runtime Integrity Hotfix
 
