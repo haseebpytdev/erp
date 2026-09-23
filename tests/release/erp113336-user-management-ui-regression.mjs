@@ -52,4 +52,8 @@ expect('minmax(0,1fr)', 'responsive width-safe layout');
 expect('@media(max-width:650px)', 'mobile layout');
 expect('erp-user-management.update', 'existing update route');
 
-console.log('ERP-11.3.336 user-management UI regression: 55 assertions PASS');
+expect('et-create-user-panel-103336', 'create user hidden panel');
+expect('data-et-create-direct-permission-fallback', 'create user direct fallback');
+expect('Initial Password', 'create user password');
+expect('Prospective access', 'create user prospective summary');
+console.log('ERP-11.3.336 user-management UI regression: 59 assertions PASS');
