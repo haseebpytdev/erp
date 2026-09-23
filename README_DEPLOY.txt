@@ -1,11 +1,14 @@
-ERP-11.3.333 Historical Active Passenger Authority Hotfix
+ERP-11.3.334 Inactive Passenger Re-add Authority Hotfix
 
-Active release: v1.1.33.333-ERP11.3.333
+Active release: v1.1.33.334-ERP11.3.334
 
-ERP-11.3.332 is currently LIVE. Its live UAT exposed a historical
-active-passenger inconsistency. ERP-11.3.333 is the next deployment candidate
-and has NOT yet been deployed. It preserves same-page passenger removal/KPI
-consistency, REMOVED-passenger re-add with Passenger Master reuse, Pending Air
+ERP-11.3.333 is currently LIVE. ERP-11.3.334 is the next deployment candidate
+and has NOT yet been deployed. It corrects inactive passenger re-add duplicate
+authority using the shared ActiveBookingPassengerResolver. Only current active
+booking snapshots participate in duplicate detection; historical REMOVED,
+INACTIVE, DELETED, CANCELLED and CANCELED snapshots do not block re-add.
+Passenger Master reuse, historical ticket/Issue Date evidence and same-page
+passenger removal/KPI consistency remain preserved. Pending Air
 Ticket Groups before native issuance without fake native rows or generic links,
 issued-history guards, server-side booking locks and affected-Air-only
 commercial reconciliation. Hotel, Transport, Visa and Other Services remain
@@ -16,12 +19,12 @@ unchanged.
 
 Booking product routes and known Booking product APIs remain under Booking
 Operations authority, including the Booking-side Sales Invoice bridge; ordinary
-Sales Invoice routes retain their own authority. ERP-11.3.333 introduces no new
+Sales Invoice routes retain their own authority. ERP-11.3.334 introduces no new
 migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .332 already has it applied. Before .333 Air UAT, confirm System
+current live .333 already has it applied. Before .334 Air UAT, confirm System
 Health reports the database schema is up to date. Take a fresh database backup
 before deployment, but do not treat this as a new migration requirement or
 manually modify the database.
@@ -29,18 +32,18 @@ manually modify the database.
 Deployment order:
 1. Stop relevant Booking/Air editing during deployment.
 2. Take a fresh full database backup.
-3. Upload/extract the ONE authoritative ERP-11.3.333 ZIP through cPanel.
+3. Upload/extract the ONE authoritative ERP-11.3.334 ZIP through cPanel.
 4. Open System Health & Updates.
-5. Confirm displayed application version is v1.1.33.333-ERP11.3.333.
+5. Confirm displayed application version is v1.1.33.334-ERP11.3.334.
 6. Confirm Database = Connected.
 7. Confirm schema is up to date; verify booking_itinerary_segments has nullable indexed booking_service_id ownership.
-8. Confirm ERP-11.3.333 introduces NO new migration.
+8. Confirm ERP-11.3.334 introduces NO new migration.
 9. If health/schema is not correct, HOLD. Do not manually alter production DB.
 10. Clear Application Cache.
 11. Ctrl+F5 / hard refresh.
-12. Run focused ERP-11.3.333 production UAT.
+12. Run focused ERP-11.3.334 production UAT.
 
-Focused ERP-11.3.333 production UAT (not yet production-verified):
+Focused ERP-11.3.334 production UAT (not yet production-verified):
 
 Historical active-passenger authority:
 - Open BK-2026-0023 and verify one current booking passenger is visible.
@@ -89,7 +92,7 @@ Commercial reconciliation / non-Air immutability:
 Preserved ERP-11.3.331 Air regression checks:
 - Airline Master search/resolution, multi-group ownership, save/reload, second-save service reuse, Booking RBAC, locking/readiness, layout/no horizontal overflow and legacy single-group compatibility.
 - Use a safe Draft GENERAL Air booking.
-- System Health shows v1.1.33.333-ERP11.3.333, database Connected and schema up to date.
+- System Health shows v1.1.33.334-ERP11.3.334, database Connected and schema up to date.
 - Flight Itinerary Type displays Connection, Outbound and Return fully; Remove remains contained without overlapping Airline and there is no page-level horizontal overflow.
 - Booking Data -> PNR Fare Commercials -> Passenger Tickets -> PNR totals remains separated by the controlled 12px rhythm; Applies To Flight Segments, commercial scrollbar absence and zero-group bootstrap remain unchanged.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
@@ -117,7 +120,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Confirm the database schema is up to date; ERP-11.3.332 introduces no new migration.
+3. Confirm the database schema is up to date; ERP-11.3.334 introduces no new migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking

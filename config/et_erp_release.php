@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.333-ERP11.3.333',
-    'release' => 'ERP-11.3.333',
-    'package' => 'ERP-11.3.333 Historical Active Passenger Authority Hotfix',
-    'package_detail' => 'ERP-11.3.333 follows live ERP-11.3.332 and excludes historical inactive booking-passenger snapshots from current Air/passenger presentation using deleted_at, is_active, active and inactive status variants when installed. Booking table, Air passenger list, Operational Summary, KPI and Review now share current-passenger semantics. Passenger Master records and irreversible issued/ticket/Issue Date history remain preserved; generic service-passenger authority remains behaviorally aligned. All ERP-11.3.332 Air/passenger/commercial behavior is preserved. Commercial formulas, Ticket Group architecture and API field shapes are unchanged; no database schema change or migration is included. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.334-ERP11.3.334',
+    'release' => 'ERP-11.3.334',
+    'package' => 'ERP-11.3.334 Inactive Passenger Re-add Authority Hotfix',
+    'package_detail' => 'ERP-11.3.334 corrects inactive passenger re-add duplicate authority. Duplicate detection uses the shared ActiveBookingPassengerResolver so only current active booking snapshots participate; REMOVED, INACTIVE, DELETED, CANCELLED and CANCELED snapshots, plus deleted_at, is_active=false and active=false snapshots, no longer block re-add. Active duplicate Passenger Master, passport or name+DOB still blocks. Passenger Master reuse, historical ticket and Issue Date evidence remain preserved; old Air and generic links are not resurrected, and an inactive ADULT snapshot may be re-added with a new current fare such as CHILD. No commercial formula, database schema, migration or API contract change is included. NEW_MIGRATION_REQUIRED=NO.',
 ];
 

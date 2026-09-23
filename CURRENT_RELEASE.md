@@ -1,19 +1,47 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.333
-CURRENT_LIVE_RELEASE=ERP-11.3.332
-CURRENT_VERSION=ERP-11.3.333
-APPLICATION_VERSION=v1.1.33.333-ERP11.3.333
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.334
+CURRENT_LIVE_RELEASE=ERP-11.3.333
+CURRENT_VERSION=ERP-11.3.334
+APPLICATION_VERSION=v1.1.33.334-ERP11.3.334
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.332 LIVE (UAT defect under correction); ERP-11.3.333 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
+PRODUCTION_STATUS=ERP-11.3.333 LIVE; ERP-11.3.334 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.333
 ```
+
+ERP-11.3.334 Inactive Passenger Re-add Authority Hotfix
+
+ERP-11.3.334 corrects the remaining passenger lifecycle defect after the
+ERP-11.3.333 active-passenger authority correction. Duplicate detection now
+uses the shared ActiveBookingPassengerResolver, so only current active booking
+snapshots participate. REMOVED, INACTIVE, DELETED, CANCELLED and CANCELED
+snapshots, plus deleted_at, is_active=false and active=false snapshots, no
+longer block re-add. Active duplicate Passenger Master, passport or name+DOB
+still blocks. Passenger Master reuse is preserved; historical ticket and
+Issue Date evidence remains preserved; old Air and generic links are not
+resurrected; and an inactive ADULT snapshot may be re-added with a new current
+fare type such as CHILD. No production verification has been performed.
+
+Functional parent: 0be1128444c7bf02285b55d3c2c2bb2900c87048
+Functional commit: 76b514d50fb355696266457909bbdd0ecc0d9463
+Regression: tests/release/erp113334-inactive-passenger-readd-regression.mjs
+(28 assertions PASS)
+Stable symmetric suite: parent 91/55/36; candidate 92/56/36; common stable
+tests 91; pass-to-fail 0; fail-to-pass 0; PHP_CLI_AVAILABLE=NO.
+
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.334
+CURRENT_LIVE_RELEASE=ERP-11.3.333
+CURRENT_VERSION=ERP-11.3.334
+APPLICATION_VERSION=v1.1.33.334-ERP11.3.334
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+DEPLOYED=NO
+NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.333 Historical Active Passenger Authority Hotfix
 
