@@ -54,4 +54,25 @@ ok(!controller.match(/Travel Report[^\n]*(?:permission|row).*\b(?:create|insert|
 ok(!fs.existsSync('database/migrations') || !read('README_DEPLOY.txt').includes('erp113335'), 'no migration introduced');
 ok(!read('VERSION.txt').includes('335'), 'release metadata unchanged');
 
-console.log(`ERP-11.3.335 custom permission matrix regression: PASS (${templates.length + 35} assertions)`);
+ok(matrix.includes("chart of account|account mapping") && matrix.includes("'ACCOUNTING'"), 'Chart of Accounts classification is Accounting');
+ok(matrix.includes("chart of account|account mapping"), 'Account Mappings classification is Accounting');
+ok(matrix.includes("currency rate|exchange rate|financial year"), 'Currency Rates classification is System / Settings');
+ok(matrix.includes("currency rate|exchange rate|financial year"), 'Financial Years classification is System / Settings');
+ok(matrix.includes('travel report|booking report') && matrix.indexOf('TRAVEL REPORTS') < matrix.indexOf("booking|passenger"), 'Booking Report classification is Travel Reports');
+ok(matrix.includes('hotel report'), 'Hotel Report classification is Travel Reports');
+ok(matrix.includes('visa report'), 'Visa Report classification is Travel Reports');
+ok(matrix.includes('passenger report'), 'Passenger Report classification is Travel Reports');
+ok(matrix.includes('financial report|accounting report') && matrix.includes("'ACCOUNTING'"), 'Financial Report remains Accounting');
+ok(view.includes("if(template.value==='Custom Access')") && view.includes("return;"), 'Custom Access Apply and Reset do not mutate');
+ok(view.includes('allowed_sections') && view.includes('sectionAllowed'), 'template matching is section-aware');
+ok(controller.includes("'Operations Staff' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS']"), 'Operations Staff cannot select Accounting');
+ok(controller.includes("'Umrah Manager' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS']"), 'Umrah Manager cannot select Accounting');
+ok(controller.includes("'Ticketing Staff' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS']"), 'Ticketing Staff cannot select Accounting');
+ok(controller.includes("'Cashier' => ['include' => ['receipt','payment','cash','bank']"), 'Cashier remains entry-scoped');
+ok(controller.includes("'Accountant' => ['include' => ['receipt','payment'"), 'Accountant reference scope remains narrow');
+ok(!matrix.includes("if (preg_match('/travel report") || matrix.indexOf("travel report") < matrix.indexOf("booking|passenger"), 'dedicated Travel Reports priority is before Operations');
+ok(!fs.existsSync('database/migrations') || !read('README_DEPLOY.txt').includes('erp113335'), 'Travel Report rows remain uncreated');
+ok(!controller.match(/permission_ids[^\n]*\b(?:1|2|3)\b/), 'corrective retains no hard-coded permission IDs');
+ok(!controller.match(/role_ids[^\n]*\b(?:1|2|3)\b/), 'corrective retains no hard-coded role IDs');
+
+console.log(`ERP-11.3.335 custom permission matrix regression: PASS (${templates.length + 55} assertions)`);

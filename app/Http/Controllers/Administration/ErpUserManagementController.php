@@ -114,7 +114,7 @@ class ErpUserManagementController extends Controller
 
     private function roleTemplates(): array
     {
-        return [
+        $templates = [
             'Administrator' => ['include' => ['*'], 'exclude' => []],
             'Operations Staff' => ['include' => ['booking','passenger','travel master','party','product','supplier costing','vendor bill','refund','report'], 'exclude' => ['accounting','journal','ledger','role','permission','user administration']],
             'Ticketing Staff' => ['include' => ['booking','passenger','travel master','airline','airport'], 'exclude' => ['accounting','journal','chart of account','post','approve','role','permission']],
@@ -130,5 +130,25 @@ class ErpUserManagementController extends Controller
             'Auditor / Read Only' => ['include' => ['view','read','list','access','report','export','print'], 'exclude' => ['create','add','edit','update','delete','remove','approve','post','reverse','void','cancel','manage']],
             'Custom Access' => ['include' => [], 'exclude' => []],
         ];
+        $all = ['ADMINISTRATION','MASTER DATA','OPERATIONS','ACCOUNTING','TRAVEL REPORTS','SYSTEM / SETTINGS','OTHER / UNMAPPED'];
+        $boundaries = [
+            'Administrator' => $all,
+            'Operations Staff' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Ticketing Staff' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Ticketing Manager' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Cashier' => ['ACCOUNTING'],
+            'Accountant' => ['ACCOUNTING','OPERATIONS'],
+            'Sales Executive' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Sales Manager' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Umrah Staff' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Umrah Manager' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Visa Staff' => ['MASTER DATA','OPERATIONS','TRAVEL REPORTS'],
+            'Finance Manager' => ['ACCOUNTING'],
+            'Auditor / Read Only' => $all,
+            'Custom Access' => $all,
+        ];
+        foreach ($templates as $name => &$template) $template['allowed_sections'] = $boundaries[$name] ?? $all;
+        unset($template);
+        return $templates;
     }
 }

@@ -135,11 +135,11 @@ class ErpPermissionMatrixService
             (string)($permission['description'] ?? ''), (string)($permission['group'] ?? ''),
         ]));
         if (preg_match('/user|staff|role|permission|approval authority|organization administration/', $text)) return 'ADMINISTRATION';
-        if (preg_match('/travel master|airline|airport|hotel master|transport master|visa master|party master|product|currency|exchange rate|financial year|chart of account|account mapping|foundation/', $text)) return 'MASTER DATA';
+        if (preg_match('/travel report|booking report|air(?:line|\/ticketing)? report|hotel report|visa report|transport report|umrah report|passenger report|supplier(?: \/| or )? vendor report|customer report|sales report|profitability|margin report|branch-wise travel report|agent(?: \/| or )?salesperson report|agent report|salesperson report|travel date report|airline-wise report|destination|sector report/', $text)) return 'TRAVEL REPORTS';
+        if (preg_match('/receipt|payment|expense voucher|contra|advance|journal|ledger|trial balance|financial statement|financial report|accounting report|chart of account|account mapping|foundation/', $text)) return 'ACCOUNTING';
+        if (preg_match('/currency rate|exchange rate|financial year|system|setting|health|update|configuration/', $text)) return 'SYSTEM / SETTINGS';
+        if (preg_match('/travel master|airline|airport|hotel master|transport master|visa master|party master|product|service master/', $text)) return 'MASTER DATA';
         if (preg_match('/booking|passenger|passport|ticket|pnr|fare|supplier costing|supplier cost|vendor bill|refund|credit note|sales invoice|group umrah|visa|hotel|transport/', $text)) return 'OPERATIONS';
-        if (preg_match('/receipt|payment|expense voucher|contra|advance|journal|ledger|trial balance|financial statement|accounting/', $text)) return 'ACCOUNTING';
-        if (preg_match('/travel report|booking report|air report|hotel report|visa report|transport report|passenger report|supplier report|vendor report|profitability|margin report|branch-wise|agent report|salesperson report|travel date|airline report|destination|sector/', $text)) return 'TRAVEL REPORTS';
-        if (preg_match('/system|setting|health|update|configuration/', $text)) return 'SYSTEM / SETTINGS';
         return 'OTHER / UNMAPPED';
     }
 

@@ -381,12 +381,17 @@ document.addEventListener('DOMContentLoaded',function(){
     const template=document.getElementById('et-role-template-103335');
     const apply=reset=>{
         const config=templates[template.value]||{include:[],exclude:[]};
-        if(template.value==='Custom Access'&&!reset)return;
+        if(template.value==='Custom Access'){
+            if(state)state.textContent='Custom Access · Customized';
+            return;
+        }
         boxes().forEach(box=>{
             const text=(box.closest('[data-permission-row]')?.dataset.search||'').toLowerCase();
+            const section=box.dataset.section||'';
+            const sectionAllowed=(config.allowed_sections||[]).includes(section);
             const include=config.include.some(term=>term==='*'||text.includes(term));
             const exclude=config.exclude.some(term=>text.includes(term));
-            box.checked=include&&!exclude;
+            box.checked=sectionAllowed&&include&&!exclude;
         });
         if(state)state.textContent=template.value+(reset?'':'');
         refresh();
