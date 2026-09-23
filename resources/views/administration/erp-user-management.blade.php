@@ -15,6 +15,9 @@
     }
     $oldRoleIds = old('role_ids', $selected['role_ids'] ?? []);
     $oldBranchIds = old('branch_ids', $selected['branch_ids'] ?? []);
+    $oldPermissionIds = array_map('intval', old('permission_ids', $selected['direct_permission_ids'] ?? []));
+    $rolePermissionIds = array_map('intval', $selected['role_permission_ids'] ?? []);
+    $effectivePermissionIds = array_map('intval', $selected['effective_permission_ids'] ?? []);
 @endphp
 <style>
 #et-user-management-103175{--blue:#1769d2;--green:#118a55;--red:#bd3d3d;--amber:#8a6412;--text:#17243a;--muted:#6f7d90;--line:#dfe7f0;width:100%;color:var(--text)}
@@ -60,6 +63,19 @@
 #et-user-management-103175 .u-section-title{margin-bottom:7px;font-size:10px;font-weight:850}
 #et-user-management-103175 .u-footer{display:flex;justify-content:flex-end;gap:7px;margin-top:12px;flex-wrap:wrap}
 #et-user-management-103175 .u-info{margin:7px 0;padding:8px 9px;border:1px solid #dce8f5;border-radius:6px;background:#f5f9fe;color:#536b86;font-size:9.5px;line-height:1.45}
+#et-user-management-103175 .u-permission-toolbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:9px}
+#et-user-management-103175 .u-permission-search{flex:1;min-width:220px}
+#et-user-management-103175 .u-permission-section{border:1px solid #e0e7ef;border-radius:7px;margin-top:8px;overflow:hidden}
+#et-user-management-103175 .u-permission-section>summary{cursor:pointer;padding:8px 10px;background:#f7faff;font-size:10px;font-weight:850;list-style:none}
+#et-user-management-103175 .u-permission-section>summary::-webkit-details-marker{display:none}
+#et-user-management-103175 .u-permission-body{padding:8px 10px}
+#et-user-management-103175 .u-permission-row{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #eef2f6;font-size:9.5px}
+#et-user-management-103175 .u-permission-row:last-child{border-bottom:0}
+#et-user-management-103175 .u-permission-meta{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+#et-user-management-103175 .u-badge{display:inline-flex;padding:2px 5px;border-radius:999px;font-size:8px;font-weight:850;background:#edf5ff;color:#285f9f}
+#et-user-management-103175 .u-badge.direct{background:#edf9f2;color:#17623c}
+#et-user-management-103175 .u-badge.both{background:#fff5dc;color:#866116}
+#et-user-management-103175 .u-disabled-note{color:#866116;background:#fff8e7;border-color:#ead7a5}
 @media(max-width:1050px){#et-user-management-103175 .u-grid{grid-template-columns:1fr}#et-user-management-103175 .u-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){#et-user-management-103175 .u-form-grid{grid-template-columns:1fr}#et-user-management-103175 .u-checks{grid-template-columns:1fr}#et-user-management-103175 .u-top{display:block}#et-user-management-103175 .u-actions{justify-content:flex-start;margin-top:7px}}
 </style>
@@ -223,7 +239,8 @@
 
                                 @if(!empty($roles))
                                     <div class="u-field full u-section">
-                                        <div class="u-section-title">Roles</div>
+                                        <div class="u-section-title">Native Roles</div>
+                                        <div class="u-note">Native roles provide baseline permissions. Custom Permissions below can add access. Permissions inherited from Native Roles remain effective until that Native Role is removed.</div>
                                         @if((int)$selected['id']===(int)$currentUserId)
                                             <div class="u-info">Your own roles are shown but locked here to prevent accidental Super Admin lockout.</div>
                                         @endif
@@ -237,6 +254,61 @@
                                         </div>
                                     </div>
                                 @endif
+
+                                <div class="u-field full u-section" data-et-custom-permissions="1">
+                                    <div class="u-section-title">Role Template</div>
+                                    <div class="u-note">Templates are presets only. Apply or reset them client-side, then customize before saving.</div>
+                                    <div class="u-permission-toolbar">
+                                        <select id="et-role-template-103335" aria-label="Role Template">
+                                            @foreach($roleTemplates as $templateName => $template)
+                                                <option value="{{ $templateName }}">{{ $templateName }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button class="u-btn" type="button" id="et-apply-template-103335">Apply Template</button>
+                                        <button class="u-btn" type="button" id="et-reset-template-103335">Reset to Template</button>
+                                        <span class="u-pill warn" id="et-template-state-103335">Template</span>
+                                    </div>
+                                    <div class="u-section-title">Custom Permissions</div>
+                                    <div class="u-note">Use a template as a starting point, then customize access for this user.</div>
+                                    @if(!$permissionStorageAvailable)
+                                        <div class="u-info u-disabled-note">Individual user permissions are not available on this installation.</div>
+                                    @endif
+                                    <input class="u-permission-search" id="et-permission-search-103335" type="search" placeholder="Search permissions..." aria-label="Search permissions">
+                                    <div class="u-note" style="margin-top:8px">Native roles: {{ count($rolePermissionIds) }} · Direct Permissions: {{ count($oldPermissionIds) }} · Effective Permissions: {{ count($effectivePermissionIds) }} · Branches: {{ count($oldBranchIds) }}</div>
+                                    @foreach($permissions as $sectionName => $sectionPermissions)
+                                        <details class="u-permission-section" data-permission-section="{{ $sectionName }}" open>
+                                            <summary>
+                                                <label><input type="checkbox" class="et-section-select-all-103335" data-section="{{ $sectionName }}" {{ !$permissionStorageAvailable ? 'disabled' : '' }}> {{ $sectionName }}</label>
+                                                <span class="u-note" style="float:right"><span class="et-section-count-103335">0</span> selected / {{ count($sectionPermissions) }}</span>
+                                            </summary>
+                                            <div class="u-permission-body">
+                                                @if(!$sectionPermissions && $sectionName === 'TRAVEL REPORTS')
+                                                    <div class="u-note">No dedicated Travel Report permissions exist yet. They will appear here when Travel Reports are added.</div>
+                                                @elseif(!$sectionPermissions)
+                                                    <div class="u-note">No installed permissions in this section.</div>
+                                                @endif
+                                                @foreach($sectionPermissions as $permission)
+                                                    @php
+                                                        $pid=(int)$permission['id'];
+                                                        $isDirect=in_array($pid,$oldPermissionIds,true);
+                                                        $isRole=in_array($pid,$rolePermissionIds,true);
+                                                        $badge=$isDirect&&$isRole?'ROLE + DIRECT':($isRole?'ROLE':($isDirect?'DIRECT':''));
+                                                    @endphp
+                                                    <label class="u-permission-row" data-permission-row data-search="{{ e($permission['search']) }}">
+                                                        <input type="checkbox" name="permission_ids[]" value="{{ $pid }}" data-permission-checkbox data-section="{{ $sectionName }}" {{ $isDirect ? 'checked' : '' }} {{ !$permissionStorageAvailable ? 'disabled' : '' }}>
+                                                        <span><strong>{{ $permission['name'] }}</strong>@if($permission['code']) <span class="u-note">({{ $permission['code'] }})</span>@endif</span>
+                                                        <span class="u-permission-meta">
+                                                            @if($badge)<span class="u-badge {{ $badge==='ROLE + DIRECT' ? 'both' : ($badge==='DIRECT' ? 'direct' : '') }}">{{ $badge }}</span>@endif
+                                                            @if($isRole && !$isDirect)<span class="u-note">Inherited from Native Role</span>@endif
+                                                        </span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        </details>
+                                    @endforeach
+                                    <div class="u-section-title" style="margin-top:10px">Effective Access Summary</div>
+                                    <div class="u-note">Effective access is the union of Native Role permissions and Custom Permissions. Unchecking a direct permission does not remove access inherited from a Native Role.</div>
+                                </div>
 
                                 <div class="u-field full u-section">
                                     <div class="u-section-title">Reset Password <span style="font-weight:500;color:#718096">(leave blank to keep current password)</span></div>
@@ -298,4 +370,50 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 @endif
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+    const root=document.querySelector('[data-et-custom-permissions="1"]');
+    if(!root)return;
+    const templates=@json($roleTemplates);
+    const boxes=()=>Array.from(root.querySelectorAll('[data-permission-checkbox]'));
+    const rows=()=>Array.from(root.querySelectorAll('[data-permission-row]'));
+    const state=document.getElementById('et-template-state-103335');
+    const template=document.getElementById('et-role-template-103335');
+    const apply=reset=>{
+        const config=templates[template.value]||{include:[],exclude:[]};
+        if(template.value==='Custom Access'&&!reset)return;
+        boxes().forEach(box=>{
+            const text=(box.closest('[data-permission-row]')?.dataset.search||'').toLowerCase();
+            const include=config.include.some(term=>term==='*'||text.includes(term));
+            const exclude=config.exclude.some(term=>text.includes(term));
+            box.checked=include&&!exclude;
+        });
+        if(state)state.textContent=template.value+(reset?'':'');
+        refresh();
+    };
+    const refresh=()=>{
+        root.querySelectorAll('[data-permission-section]').forEach(section=>{
+            const sectionBoxes=Array.from(section.querySelectorAll('[data-permission-checkbox]'));
+            const selected=sectionBoxes.filter(box=>box.checked).length;
+            const all=sectionBoxes.length>0&&selected===sectionBoxes.length;
+            const select=section.querySelector('.et-section-select-all-103335');
+            if(select){select.checked=all;select.indeterminate=selected>0&&!all;}
+            const count=section.querySelector('.et-section-count-103335');
+            if(count)count.textContent=String(selected);
+        });
+    };
+    document.getElementById('et-apply-template-103335')?.addEventListener('click',()=>apply(false));
+    document.getElementById('et-reset-template-103335')?.addEventListener('click',()=>apply(true));
+    boxes().forEach(box=>box.addEventListener('change',()=>{if(state)state.textContent=template.value+' · Customized';refresh();}));
+    root.querySelectorAll('.et-section-select-all-103335').forEach(select=>select.addEventListener('change',()=>{
+        root.querySelectorAll('[data-permission-checkbox][data-section="'+CSS.escape(select.dataset.section)+'"]').forEach(box=>box.checked=select.checked);
+        if(state)state.textContent=template.value+' · Customized'; refresh();
+    }));
+    document.getElementById('et-permission-search-103335')?.addEventListener('input',event=>{
+        const query=String(event.target.value||'').toLowerCase().trim();
+        rows().forEach(row=>row.style.display=!query||row.dataset.search.includes(query)?'':'none');
+    });
+    refresh();
+});
+</script>
 @endsection

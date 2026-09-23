@@ -61,6 +61,7 @@ class ErpUserManagementService
         $staffLink = $this->detectStaffLink($staffTable, $staffColumns, $userColumns);
         $roleLink = $this->detectRoleLink($userColumns);
         $branchLink = $this->detectBranchLink($userColumns);
+        $permission = $this->detectPermissionStorage();
 
         return $this->schemaCache = [
             'users_table' => 'users',
@@ -109,6 +110,7 @@ class ErpUserManagementService
             'branch_name_column' => $branchTable ? $this->firstColumn($branchColumns, ['name', 'branch_name', 'title']) : null,
             'branch_code_column' => $branchTable ? $this->firstColumn($branchColumns, ['code', 'branch_code']) : null,
             'branch_link' => $branchLink,
+            'permission_storage' => $permission,
         ];
     }
 
@@ -143,6 +145,9 @@ class ErpUserManagementService
                 'role_ids' => $this->assignedRoleIds($id),
                 'role_names' => $this->assignedRoleNames($id),
                 'branch_ids' => $this->assignedBranchIds($id),
+                'role_permission_ids' => $this->rolePermissionIds($id),
+                'direct_permission_ids' => $this->assignedPermissionIds($id),
+                'effective_permission_ids' => $this->effectivePermissionIds($id),
             ];
         }
 
@@ -269,6 +274,76 @@ class ErpUserManagementService
         );
     }
 
+    /** @return array<int,int> */
+    public function assignedPermissionIds(int $userId): array
+    {
+        $link = $this->schema()['permission_storage']['user_link'] ?? null;
+        if (!$link) return [];
+        $query = DB::table($link['table'])->where($link['user_column'], $userId);
+        if ($link['model_type_column']) {
+            $type = $this->userModelType($userId, $link);
+            if ($type !== '') $query->where($link['model_type_column'], $type);
+        }
+        return array_values(array_unique(array_map('intval', $query->pluck($link['permission_column'])->all())));
+    }
+
+    /** @return array<int,int> */
+    public function rolePermissionIds(int $userId): array
+    {
+        $schema = $this->schema();
+        $permission = $schema['permission_storage'] ?? [];
+        $roleLink = $permission['role_link'] ?? null;
+        if (!$roleLink) return [];
+        $roleIds = $this->assignedRoleIds($userId);
+        if (!$roleIds) return [];
+        return array_values(array_unique(array_map('intval', DB::table($roleLink['table'])
+            ->whereIn($roleLink['role_column'], $roleIds)
+            ->pluck($roleLink['permission_column'])->all())));
+    }
+
+    /** @return array<int,int> */
+    public function effectivePermissionIds(int $userId): array
+    {
+        return array_values(array_unique(array_merge(
+            $this->rolePermissionIds($userId),
+            $this->assignedPermissionIds($userId)
+        )));
+    }
+
+    public function directPermissionStorageAvailable(): bool
+    {
+        return (bool) ($this->schema()['permission_storage']['user_link'] ?? null);
+    }
+
+    /** @param array<int,mixed> $permissionIds */
+    public function syncPermissions(int $userId, array $permissionIds): void
+    {
+        $schema = $this->schema();
+        $storage = $schema['permission_storage'] ?? [];
+        $link = $storage['user_link'] ?? null;
+        $table = $storage['permission_table'] ?? null;
+        $idColumn = $storage['permission_id_column'] ?? null;
+        if (!$link || !$table || !$idColumn) return;
+
+        $ids = array_values(array_unique(array_filter(array_map('intval', $permissionIds), fn(int $id) => $id > 0)));
+        $valid = $ids ? DB::table($table)->whereIn($idColumn, $ids)->pluck($idColumn)->map(fn($id)=>(int)$id)->all() : [];
+        $delete = DB::table($link['table'])->where($link['user_column'], $userId);
+        $modelType = '';
+        if ($link['model_type_column']) {
+            $modelType = $this->userModelType($userId, $link);
+            if ($modelType !== '') $delete->where($link['model_type_column'], $modelType);
+        }
+        $delete->delete();
+        $columns = Schema::getColumnListing($link['table']);
+        foreach ($valid as $permissionId) {
+            $row = [$link['user_column'] => $userId, $link['permission_column'] => $permissionId];
+            if ($link['model_type_column']) $row[$link['model_type_column']] = $modelType !== '' ? $modelType : 'App\\Models\\User';
+            if (in_array('created_at', $columns, true)) $row['created_at'] = now();
+            if (in_array('updated_at', $columns, true)) $row['updated_at'] = now();
+            DB::table($link['table'])->insert($row);
+        }
+    }
+
     public function updateUser(int $id, array $input, int $actorId): array
     {
         $schema = $this->schema();
@@ -371,6 +446,9 @@ class ErpUserManagementService
             }
 
             $this->syncBranches($id, array_map('intval', (array) ($input['branch_ids'] ?? [])));
+            if ($this->directPermissionStorageAvailable()) {
+                $this->syncPermissions($id, (array) ($input['permission_ids'] ?? []));
+            }
         });
 
         return $this->user($id) ?? [];
@@ -808,6 +886,35 @@ class ErpUserManagementService
         }
 
         return null;
+    }
+
+    private function detectPermissionStorage(): array
+    {
+        $permissionTable = $this->firstExistingTable(['permissions', 'permission_masters', 'permission_master']);
+        $permissionColumns = $permissionTable ? Schema::getColumnListing($permissionTable) : [];
+        $permissionId = $this->firstColumn($permissionColumns, ['id']);
+        $roleLink = null;
+        foreach (['role_has_permissions', 'permission_role', 'role_permissions', 'role_permission'] as $table) {
+            if (!Schema::hasTable($table)) continue;
+            $columns = Schema::getColumnListing($table);
+            $role = $this->firstColumn($columns, ['role_id']);
+            $permission = $this->firstColumn($columns, ['permission_id']);
+            if ($role && $permission) { $roleLink = ['table'=>$table,'role_column'=>$role,'permission_column'=>$permission]; break; }
+        }
+        $userLink = null;
+        foreach (['model_has_permissions', 'permission_user', 'user_permissions', 'user_permission'] as $table) {
+            if (!Schema::hasTable($table)) continue;
+            $columns = Schema::getColumnListing($table);
+            $user = $this->firstColumn($columns, ['model_id', 'user_id']);
+            $permission = $this->firstColumn($columns, ['permission_id']);
+            if ($user && $permission) { $userLink = ['table'=>$table,'user_column'=>$user,'permission_column'=>$permission,'model_type_column'=>in_array('model_type',$columns,true)?'model_type':null]; break; }
+        }
+        return [
+            'permission_table' => $permissionTable,
+            'permission_id_column' => $permissionId,
+            'role_link' => $roleLink,
+            'user_link' => $userLink,
+        ];
     }
 
     private function userModelType(int $userId, array $link): string

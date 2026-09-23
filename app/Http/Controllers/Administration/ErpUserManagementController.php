@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Administration;
 use App\Http\Controllers\Controller;
 use App\Services\Administration\ErpUserManagementAuthority;
 use App\Services\Administration\ErpUserManagementService;
+use App\Services\Administration\ErpPermissionMatrixService;
 use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class ErpUserManagementController extends Controller
     public function __construct(
         private readonly ErpUserManagementAuthority $authority,
         private readonly ErpUserManagementService $users,
+        private readonly ErpPermissionMatrixService $permissions,
         private readonly NativeErpLayoutResolver $layoutResolver,
     ) {}
 
@@ -43,6 +45,9 @@ class ErpUserManagementController extends Controller
             'roles' => $this->users->roles(),
             'branches' => $this->users->branches(),
             'schema' => $this->users->schema(),
+            'permissions' => $this->permissions->groupedPermissions(),
+            'permissionStorageAvailable' => $this->users->directPermissionStorageAvailable(),
+            'roleTemplates' => $this->roleTemplates(),
             'currentUserId' => (int) ($request->user()?->getAuthIdentifier() ?? 0),
             'erpLayout' => $layout['layout'],
             'erpContentSection' => $layout['content_section'],
@@ -66,6 +71,7 @@ class ErpUserManagementController extends Controller
                     'primary_branch_id' => $request->input('primary_branch_id'),
                     'role_ids' => $request->input('role_ids', []),
                     'branch_ids' => $request->input('branch_ids', []),
+                    'permission_ids' => $request->input('permission_ids', []),
                     'password' => $request->input('password'),
                     'password_confirmation' => $request->input('password_confirmation'),
                 ],
@@ -104,5 +110,25 @@ class ErpUserManagementController extends Controller
         return redirect()
             ->route('administration.erp-user-management.index', ['user' => $user])
             ->with('erp_user_success', $active ? 'ERP user activated.' : 'ERP user deactivated.');
+    }
+
+    private function roleTemplates(): array
+    {
+        return [
+            'Administrator' => ['include' => ['*'], 'exclude' => []],
+            'Operations Staff' => ['include' => ['booking','passenger','travel master','party','product','supplier costing','vendor bill','refund','report'], 'exclude' => ['accounting','journal','ledger','role','permission','user administration']],
+            'Ticketing Staff' => ['include' => ['booking','passenger','travel master','airline','airport'], 'exclude' => ['accounting','journal','chart of account','post','approve','role','permission']],
+            'Ticketing Manager' => ['include' => ['booking','passenger','ticket','pnr','fare','approve','commercial','supplier','report'], 'exclude' => ['journal','chart of account','user administration']],
+            'Cashier' => ['include' => ['receipt','payment','cash','bank'], 'exclude' => ['approve','post','reverse','journal','chart of account','user administration']],
+            'Accountant' => ['include' => ['receipt','payment','expense voucher','contra','advance','journal','chart of account','account mapping','ledger','trial balance','financial report'], 'exclude' => ['user administration']],
+            'Sales Executive' => ['include' => ['booking','party','customer','passenger','sales invoice'], 'exclude' => ['accounting','post','supplier','role','permission']],
+            'Sales Manager' => ['include' => ['booking','party','customer','passenger','sales invoice','approve','margin','report'], 'exclude' => ['journal','post','role','permission']],
+            'Umrah Staff' => ['include' => ['booking','group umrah','passenger','air','hotel','transport','visa','voucher','travel master','airline','airport'], 'exclude' => ['accounting','journal','administration']],
+            'Umrah Manager' => ['include' => ['booking','group umrah','passenger','air','hotel','transport','visa','voucher','supplier costing','supplier','travel master','airline','airport','approve','report'], 'exclude' => ['sales invoice post','payment post','journal','chart of account','user management','role','permission','financial year']],
+            'Visa Staff' => ['include' => ['booking','visa','passenger','saudi company','pakistani iata','visa master'], 'exclude' => ['accounting','journal','administration']],
+            'Finance Manager' => ['include' => ['receipt','payment','expense voucher','contra','advance','journal','chart of account','account mapping','ledger','trial balance','financial report','management report','approve','post','reverse','margin'], 'exclude' => ['user administration']],
+            'Auditor / Read Only' => ['include' => ['view','read','list','access','report','export','print'], 'exclude' => ['create','add','edit','update','delete','remove','approve','post','reverse','void','cancel','manage']],
+            'Custom Access' => ['include' => [], 'exclude' => []],
+        ];
     }
 }

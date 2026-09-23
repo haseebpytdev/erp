@@ -114,6 +114,35 @@ class ErpPermissionMatrixService
         return $result;
     }
 
+    /** @return array<string,array<int,array<string,mixed>>> */
+    public function groupedPermissions(): array
+    {
+        $groups = [
+            'ADMINISTRATION' => [], 'MASTER DATA' => [], 'OPERATIONS' => [],
+            'ACCOUNTING' => [], 'TRAVEL REPORTS' => [], 'SYSTEM / SETTINGS' => [],
+            'OTHER / UNMAPPED' => [],
+        ];
+        foreach ($this->allPermissions() as $permission) {
+            $groups[$this->presentationSection($permission)][] = $permission;
+        }
+        return $groups;
+    }
+
+    private function presentationSection(array $permission): string
+    {
+        $text = $this->normalize(implode(' ', [
+            (string)($permission['name'] ?? ''), (string)($permission['code'] ?? ''),
+            (string)($permission['description'] ?? ''), (string)($permission['group'] ?? ''),
+        ]));
+        if (preg_match('/user|staff|role|permission|approval authority|organization administration/', $text)) return 'ADMINISTRATION';
+        if (preg_match('/travel master|airline|airport|hotel master|transport master|visa master|party master|product|currency|exchange rate|financial year|chart of account|account mapping|foundation/', $text)) return 'MASTER DATA';
+        if (preg_match('/booking|passenger|passport|ticket|pnr|fare|supplier costing|supplier cost|vendor bill|refund|credit note|sales invoice|group umrah|visa|hotel|transport/', $text)) return 'OPERATIONS';
+        if (preg_match('/receipt|payment|expense voucher|contra|advance|journal|ledger|trial balance|financial statement|accounting/', $text)) return 'ACCOUNTING';
+        if (preg_match('/travel report|booking report|air report|hotel report|visa report|transport report|passenger report|supplier report|vendor report|profitability|margin report|branch-wise|agent report|salesperson report|travel date|airline report|destination|sector/', $text)) return 'TRAVEL REPORTS';
+        if (preg_match('/system|setting|health|update|configuration/', $text)) return 'SYSTEM / SETTINGS';
+        return 'OTHER / UNMAPPED';
+    }
+
     /** @return array<int,array<string,mixed>> */
     public function effectivePermissions(mixed $user): array
     {
