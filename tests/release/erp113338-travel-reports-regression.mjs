@@ -60,6 +60,17 @@ ok(service.includes('applyAirFilters') && service.includes("$filters['pnr']") &&
 ok(service.includes("$key==='airlines'") && service.includes("$row['ticket_groups']") && service.includes("$row['sector_count']"), 'Airline-wise report has independent Air grain');
 ok(service.includes("$query->paginate") && !service.includes('mappedRows($key,$filters)->forPage'), 'HTML pagination is query-bounded');
 ok(service.includes('foreach($query->cursor()') && !service.includes('streamRows(string $key,array $filters=[]): iterable { foreach($this->mappedRows'), 'CSV uses cursor generators without pre-materialized report collections');
+ok(service.includes("bis.departure_at") && service.includes("atd.issue_date"), 'Air date basis uses segment departure or ticket issue authority');
+ok(service.includes("bis.from") && service.includes("bis.to") && service.includes("atd.ticket_number"), 'Air origin destination and ticket number filters use child authorities');
+ok(service.includes("booking_services.airline_pnr") && service.includes("$filters['pnr']"), 'Air PNR filter uses Ticket Group authority');
+ok(service.includes('dimensionAggregate') && service.includes("$ref['ticket_groups']") && service.includes("$ref['sectors']"), 'Airline aggregate counts distinct groups and sectors');
+ok(service.includes('normalSector') && service.includes("$ref['airlines']"), 'Sector aggregate normalizes itinerary endpoints and airlines');
+for (const source of ['booking_services','booking_hotel_stays','booking_visa_services','booking_transport_segments','booking_group_package_services']) ok(service.includes(source) && service.includes('supplierSources'), `supplier source ${source}`);
+for (const metric of ['passengers','air','hotel','visa','transport','group_umrah']) ok(service.includes(`$ref['${metric}']`), `dimension operational count ${metric}`);
+ok(service.includes("$filters['mode']??'agent'") && service.includes('$sales'), 'agent/salesperson mode uses distinct booking authorities');
+ok(service.includes('isDimension($key)') && service.includes('dimensionAggregate($key,$filters)'), 'dimension CSV uses bounded aggregate generator path');
+for (const filter of ['origin','destination','ticket_no','issue_date','salesperson']) ok(service.includes(`$filters['${filter}']`) || service.includes(`'${filter}'`), `Air/dimension filter ${filter} is declared and applied`);
+ok(service.includes("'suppliers'=>['branch','vendor','service_type']") && service.includes("'agents'=>['branch','mode','agent','salesperson']"), 'dimension filter definitions are report-specific');
 ok(service.includes('activePassengerCount') && service.includes('hotelTable()'), 'report center counts use resolved authorities');
 ok(!routes.includes('Schema::create') && !service.includes('Schema::create'), 'no migration/schema creation');
 ok(fs.existsSync(new URL('../../resources/views/reports/group-umrah-profitability-v103146.blade.php', import.meta.url)), 'existing profitability preserved');
