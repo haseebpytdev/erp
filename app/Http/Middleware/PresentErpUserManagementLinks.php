@@ -63,7 +63,7 @@ class PresentErpUserManagementLinks
 
         $script = <<<HTML
 <style id="et-user-management-links-103175-style">
-.et-user-manage-link-103175{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 11px;border:1px solid #1769d2;border-radius:6px;background:#1769d2;color:#fff!important;text-decoration:none!important;font-size:10px;font-weight:800;white-space:nowrap}.et-user-manage-note-103175{margin:7px 0;padding:8px 9px;border:1px solid #d6e5f6;border-radius:6px;background:#f2f7fd;color:#48647f;font-size:9.5px;line-height:1.45}.et-native-erp-users-103337 input[type="checkbox"]{width:14px;height:14px;min-width:14px;min-height:14px;flex:0 0 14px;margin:1px 0 0;accent-color:#1769d2}.et-native-erp-users-103337 .et-native-user-role-grid-103337{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:start}.et-native-erp-users-103337 .et-native-user-role-card-103337{min-height:0;padding:8px;align-self:start}.et-native-erp-users-103337 .et-native-user-branches-103337{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;align-items:start}.et-native-erp-users-103337 .et-native-user-list-103337{max-height:none}.et-native-erp-users-103337 form{gap:8px}.et-native-erp-users-103337 .et-native-user-helper-103337{margin:4px 0;font-size:10px;line-height:1.35}@media(max-width:1100px){.et-native-erp-users-103337 .et-native-user-role-grid-103337{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.et-native-erp-users-103337 .et-native-user-role-grid-103337,.et-native-erp-users-103337 .et-native-user-branches-103337{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.et-native-erp-users-103337 .et-native-user-role-grid-103337,.et-native-erp-users-103337 .et-native-user-branches-103337{grid-template-columns:1fr}}
+.et-user-manage-link-103175{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:7px 11px;border:1px solid #1769d2;border-radius:6px;background:#1769d2;color:#fff!important;text-decoration:none!important;font-size:10px;font-weight:800;white-space:nowrap}.et-user-manage-note-103175{margin:7px 0;padding:8px 9px;border:1px solid #d6e5f6;border-radius:6px;background:#f2f7fd;color:#48647f;font-size:9.5px;line-height:1.45}.et-native-erp-users-103337 input[type="checkbox"]{width:14px;height:14px;min-width:14px;min-height:14px;flex:0 0 14px;margin:1px 0 0;accent-color:#1769d2}.et-native-erp-users-103337 .et-native-user-role-grid-103337{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:start}.et-native-erp-users-103337 .et-native-user-role-card-103337{min-height:0;padding:8px;align-self:start}.et-native-erp-users-103337 .et-native-user-branches-103337{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;align-items:start}.et-native-erp-users-103337 .et-native-user-helper-103337{margin:4px 0;font-size:10px;line-height:1.35}@media(max-width:1100px){.et-native-erp-users-103337 .et-native-user-role-grid-103337{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.et-native-erp-users-103337 .et-native-user-role-grid-103337,.et-native-erp-users-103337 .et-native-user-branches-103337{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.et-native-erp-users-103337 .et-native-user-role-grid-103337,.et-native-erp-users-103337 .et-native-user-branches-103337{grid-template-columns:1fr}}
 </style>
 <script id="et-user-management-links-103175-script">
 (function(){
@@ -72,33 +72,24 @@ const manageUrl={$urlJson};
 const norm=v=>String(v||'').replace(/\s+/g,' ').trim().toLowerCase();
 const leaves=()=>Array.from(document.querySelectorAll('*')).filter(el=>el.children.length===0);
 const exact=text=>leaves().find(el=>norm(el.textContent)===norm(text))||null;
+function markCheckboxCardParent(anchorText,gridClass,cardClass){
+    const anchor=exact(anchorText); if(!anchor)return false;
+    let scope=anchor.parentElement;
+    for(let depth=0;depth<5&&scope;depth++,scope=scope.parentElement){
+        const inputs=Array.from(scope.querySelectorAll('input[type="checkbox"]'));
+        if(!inputs.length)continue;
+        const cards=inputs.map(input=>input.closest('label')||input.closest('li')||input.closest('[role="checkbox"]')).filter(Boolean);
+        const groups=new Map();
+        cards.forEach(card=>{const parent=card.parentElement;if(!parent)return;const list=groups.get(parent)||[];if(!list.includes(card))list.push(card);groups.set(parent,list);});
+        const best=Array.from(groups.entries()).sort((a,b)=>b[1].length-a[1].length)[0];
+        if(best&&best[1].length>=2){best[0].classList.add(gridClass);best[1].forEach(card=>card.classList.add(cardClass));return true;}
+    }
+    return false;
+}
 function markNativePresentation(){
     document.body.classList.add('et-native-erp-users-103337');
-    const heading=exact('Roles');
-    if(heading){
-        let container=heading.parentElement;
-        for(let i=0;i<6&&container;i++,container=container.parentElement){
-            if(container.querySelectorAll('input[type="checkbox"]').length){
-                container.classList.add('et-native-user-role-grid-103337');
-                container.querySelectorAll('label,li,[role="checkbox"]').forEach(card=>card.classList.add('et-native-user-role-card-103337'));
-                break;
-            }
-        }
-    }
-    const branches=exact('Allowed Branches');
-    if(branches){
-        let container=branches.parentElement;
-        for(let i=0;i<5&&container;i++,container=container.parentElement){
-            if(container.querySelectorAll('input[type="checkbox"]').length){container.classList.add('et-native-user-branches-103337');break;}
-        }
-    }
-    const users=exact('Users');
-    if(users){
-        let container=users.parentElement;
-        for(let i=0;i<5&&container;i++,container=container.parentElement){
-            if(container.querySelectorAll('a,button').length){container.classList.add('et-native-user-list-103337');break;}
-        }
-    }
+    markCheckboxCardParent('Roles','et-native-user-role-grid-103337','et-native-user-role-card-103337');
+    markCheckboxCardParent('Allowed Branches','et-native-user-branches-103337','et-native-user-branch-card-103337');
 }
 
 function addTopButton(anchorText,label){
