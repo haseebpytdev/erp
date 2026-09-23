@@ -44,6 +44,13 @@ ok(service.includes("['booking_no','Booking No.']") && service.includes("['key'=
 ok(views.includes("$column['key']") && !views.includes('foreach((array)$row)'), 'Blade renders by deterministic column key');
 ok(service.includes('dimensionRows') && service.includes('groupBy'), 'dimension reports use grouped aggregation');
 ok(service.includes('streamRows') && controller.includes('streamRows'), 'CSV uses complete streaming path');
+ok(service.includes('groupRows(array $filters)') && service.includes("$key==='group-umrah'"), 'Group Umrah has a dedicated aggregate authority');
+for (const child of ['booking_group_package_flights','booking_group_package_hotels','booking_group_package_transports','booking_group_package_services']) ok(service.includes(`orderedChildRows('${child}'`), `Group Umrah child authority ${child}`);
+ok(service.includes('paxCounts') && service.includes('$this->passengers->rows($id)'), 'Group Umrah active passenger T/A/C/I counts');
+ok(service.includes('sort_order') && service.includes('values()'), 'Group Umrah child ordering is deterministic');
+ok(service.includes("'filters'=>$filters") && views.includes("$definition['filters']"), 'filters are definition-driven and persisted by query');
+for (const filter of ['branch','customer','agent','product']) ok(service.includes(`'${filter}'`) && service.includes('$filters[$filter]'), `report filter authority ${filter}`);
+ok(service.includes("->cursor()") && !controller.includes('$service->rows($report'), 'CSV iterates complete cursor/stream path without pagination cap');
 ok(service.includes('activePassengerCount') && service.includes('hotelTable()'), 'report center counts use resolved authorities');
 ok(!routes.includes('Schema::create') && !service.includes('Schema::create'), 'no migration/schema creation');
 ok(fs.existsSync(new URL('../../resources/views/reports/group-umrah-profitability-v103146.blade.php', import.meta.url)), 'existing profitability preserved');
