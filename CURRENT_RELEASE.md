@@ -1,19 +1,55 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.336
-CURRENT_LIVE_RELEASE=ERP-11.3.335
-CURRENT_VERSION=ERP-11.3.336
-APPLICATION_VERSION=v1.1.33.336-ERP11.3.336
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.337
+CURRENT_LIVE_RELEASE=ERP-11.3.336
+CURRENT_VERSION=ERP-11.3.337
+APPLICATION_VERSION=v1.1.33.337-ERP11.3.337
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.335 LIVE; ERP-11.3.336 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
+PRODUCTION_STATUS=ERP-11.3.336 LIVE / DEPLOYED; production health verification pending; ERP-11.3.337 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.336
 ```
+
+ERP-11.3.337 User Management Presentation Corrective
+
+ERP-11.3.337 carries the user-management presentation corrective after the
+ERP-11.3.336 deployment. The Manage User page now has a neutral Role Template
+placeholder, truthful Preset not applied state and fourteen presets; when
+direct permission storage is unavailable, Apply and Reset are disabled while
+Native Roles and Branches remain usable. Scoped 14px checkbox presentation is
+applied to the Manage User and positively detected native user page.
+
+Functional commits: 7ef355113b72be8934e48c7dbbf3c8b61d6e533d
+(fix(admin): refine user access presentation) and
+8cb9d4f49c947b5b511db7ee98709d346b016673
+(fix(admin): harden native user page presentation targeting).
+
+The native Accounts workflow, host, vendor and framework remain authoritative.
+The presentation adapter only marks a positively detected native page and
+targets card parents from exact Roles and Allowed Branches headings, requiring
+at least two cards; it does not move, clone or recreate fields, change values,
+checked state, actions or submission. A one-branch page is not forced into a
+four-column grid. Existing Users compaction is not claimed because no safe
+deterministic target was available. Overlay/detail behavior, Travel Reports
+zero-state and all persistence remain unchanged. No migration is introduced.
+
+Regression: tests/release/erp113337-user-management-live-uat-regression.mjs
+(55 assertions PASS). ERP-11.3.336 regression: 82 assertions PASS.
+ERP-11.3.330 permission regression: 25 assertions PASS. Stable symmetric
+comparison: common 95 tests, pass-to-fail 0, fail-to-pass 0; PHP_CLI_AVAILABLE=NO.
+
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.337
+CURRENT_LIVE_RELEASE=ERP-11.3.336
+CURRENT_VERSION=ERP-11.3.337
+APPLICATION_VERSION=v1.1.33.337-ERP11.3.337
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+DEPLOYED=NO
+NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.336 User Management UI Redesign
 

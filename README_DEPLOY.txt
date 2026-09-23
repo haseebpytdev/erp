@@ -1,34 +1,31 @@
-ERP-11.3.336 User Management UI Redesign
+ERP-11.3.337 User Management Presentation Corrective
 
-Active release: v1.1.33.336-ERP11.3.336
+Active release: v1.1.33.337-ERP11.3.337
 
-ERP-11.3.335 is currently LIVE. ERP-11.3.336 is the next deployment candidate
-and has NOT yet been deployed. It redesigns Manage Existing Users and Manage
-User while preserving Native Roles, Branch Access, direct-route authorization
-and the ERP-11.3.335 RBAC authority. The release adds summary cards, search,
-branch filtering, a compact user table, a full-width editor, Identity &
-Account Status, Role Template & Native Roles, Branch Access, Custom
-Permissions, Effective Access Summary, Login & Security, collapsed
-permission accordions, permission search, Expand All / Collapse All, section
-Select All, live counts, responsive 3 / 2 / 1-column layout, ROLE / DIRECT /
-ROLE + DIRECT indicators, 14 section-aware templates, no-mutation Custom
-Access, semantic navigation and truthful native-host back navigation.
+ERP-11.3.336 is deployed and currently undergoing live UAT; full System Health
+and production verification remain pending. ERP-11.3.337 is the next
+deployment candidate and has NOT been deployed. It preserves the native ERP
+host, Native Roles, Branch Access, direct-route authorization and the existing
+RBAC authority while correcting the Manage User presentation contract.
 
-Native Create ERP User remains owned by the existing native ERP host flow.
-The observed production database has no supported direct-user permission
-storage, so Custom Permissions remain disabled/read-only with the controlled
-fallback. Native Roles, Branch Access, identity and password management remain
-available. Travel Reports remains a zero-state only; no report permissions are
-created. ERP-11.3.336 introduces no new migration.
+Manage User has a neutral Role Template placeholder, truthful Preset not
+applied state and fourteen presets. When direct permission storage is
+unavailable, Apply and Reset are disabled while Native Roles and Branches
+remain usable. Scoped 14px checkbox presentation is used on Manage User and on
+the positively detected native user page. Travel Reports remains a zero-state;
+no report permissions are created. No migration is introduced.
 
-Booking product routes and known Booking product APIs remain under Booking
-Operations authority, including the Booking-side Sales Invoice bridge; ordinary
-Sales Invoice routes retain their own authority. ERP-11.3.336 introduces no new
-migration.
+The native Accounts workflow, host, vendor and framework remain authoritative.
+The presentation adapter only targets exact Roles and Allowed Branches card
+parents, requires at least two cards, and never replaces or mutates native
+fields, values, checked state, actions or submission. A one-branch page is not
+forced into four columns. Existing Users compaction is not claimed because no
+safe deterministic target was available. Overlay/detail behavior remains
+unchanged.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .335 already has it applied. Before .336 UAT, confirm System
+current live .336 already has it applied. Before .337 UAT, confirm System
 Health reports the database schema is up to date. Take a fresh database backup
 before deployment, but do not treat this as a new migration requirement or
 manually modify the database.
@@ -36,40 +33,32 @@ manually modify the database.
 Deployment order:
 1. Stop relevant Booking/Air editing during deployment.
 2. Take a fresh full database backup.
-3. Upload/extract the ONE authoritative ERP-11.3.336 ZIP through cPanel.
+3. Upload/extract the ONE authoritative ERP-11.3.337 ZIP through cPanel.
 4. Open System Health & Updates.
-5. Confirm displayed application version is v1.1.33.336-ERP11.3.336.
+5. Confirm displayed application version is v1.1.33.337-ERP11.3.337.
 6. Confirm Database = Connected.
 7. Confirm schema is up to date; verify booking_itinerary_segments has nullable indexed booking_service_id ownership.
-8. Confirm ERP-11.3.336 introduces NO new migration.
+8. Confirm ERP-11.3.337 introduces NO new migration.
 9. If health/schema is not correct, HOLD. Do not manually alter production DB.
 10. Clear Application Cache.
 11. Ctrl+F5 / hard refresh.
-12. Run focused ERP-11.3.336 production UAT.
+12. Run focused ERP-11.3.337 production UAT.
 
-Focused ERP-11.3.336 production UAT (not yet production-verified):
+Focused ERP-11.3.337 production UAT (not yet production-verified):
 
 User Management UI:
-- Open Manage Existing Users and verify the Total / Active / Inactive / Super Admin cards, user search, branch filter and compact table.
-- Open Edit for a safe non-Super-Admin user and verify the full-width editor sections: Identity & Account Status, Role Template & Native Roles, Branch Access, Custom Permissions, Effective Access Summary and Login & Security.
-- Confirm permission accordions are collapsed initially; test Expand All, Collapse All, permission search, section selected counts and ROLE / DIRECT / ROLE + DIRECT indicators.
-- Confirm production direct permissions remain disabled with the controlled fallback and applying a template does not visually mutate disabled direct permissions.
-- Verify Native Roles, Branch Access, password fields and semantic Profile & Access / Effective Permissions / Login & Security navigation.
-- Confirm native Create ERP User remains untouched, Travel Reports remains a zero-state, and desktop/laptop/tablet/mobile layouts have no page-level horizontal overflow.
+- Open Manage User and verify the neutral Role Template placeholder, Preset not applied state and fourteen presets.
+- Confirm Apply and Reset are disabled when direct permission storage is unavailable; Native Roles and Branches remain usable.
+- Verify scoped 14px checkbox presentation, fallback messaging, identity/password controls and responsive layouts without page-level overflow.
+- Verify the native Accounts workflow retains its host/vendor ownership, exact Roles and Allowed Branches card targeting, and no unintended four-column layout for one branch.
+- Confirm native Create ERP User, values, checked state, actions and submission remain untouched; overlay/detail navigation remains unchanged.
+- Confirm Travel Reports remains a zero-state and no report permissions are created.
 
 User Permission Matrix:
-- Open Manage Existing Users as Super Admin and confirm Role Template, Native
-  Roles, Branch Access, Custom Permissions and all seven permission sections.
-- Confirm the 14 templates are presets only; Apply, Reset to Template, manual
-  add/remove and Custom Access do not write until Save User Account.
-- If a native direct-permission pivot exists, save and refresh direct grants;
-  otherwise the matrix is disabled/read-only with its controlled message while
-  identity, roles and branches remain editable.
-- Confirm ROLE, DIRECT and ROLE + DIRECT badges, inherited-role safety,
-  section-aware templates, no Accounting leakage, independent branch scope and
-  unchanged direct-route authorization.
-- Confirm Travel Reports shows its zero-state and no report permission rows are
-  created.
+- Confirm Role Template, Native Roles, Branch Access and the controlled Custom
+  Permissions fallback remain available without changing native persistence.
+- Confirm the native page adapter is presentation-only and does not replace
+  native create, input, values, checked state, actions or submission.
 
 Historical active-passenger authority:
 - Open BK-2026-0023 and verify one current booking passenger is visible.
@@ -118,7 +107,7 @@ Commercial reconciliation / non-Air immutability:
 Preserved ERP-11.3.331 Air regression checks:
 - Airline Master search/resolution, multi-group ownership, save/reload, second-save service reuse, Booking RBAC, locking/readiness, layout/no horizontal overflow and legacy single-group compatibility.
 - Use a safe Draft GENERAL Air booking.
-- System Health shows v1.1.33.336-ERP11.3.336, database Connected and schema up to date.
+- System Health shows v1.1.33.337-ERP11.3.337, database Connected and schema up to date.
 - Flight Itinerary Type displays Connection, Outbound and Return fully; Remove remains contained without overlapping Airline and there is no page-level horizontal overflow.
 - Booking Data -> PNR Fare Commercials -> Passenger Tickets -> PNR totals remains separated by the controlled 12px rhythm; Applies To Flight Segments, commercial scrollbar absence and zero-group bootstrap remain unchanged.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
@@ -146,7 +135,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Confirm the database schema is up to date; ERP-11.3.336 introduces no new migration.
+3. Confirm the database schema is up to date; ERP-11.3.337 introduces no new migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking
