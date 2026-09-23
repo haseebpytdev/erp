@@ -1,30 +1,25 @@
-ERP-11.3.334 Inactive Passenger Re-add Authority Hotfix
+ERP-11.3.335 Customizable User Permission Matrix
 
-Active release: v1.1.33.334-ERP11.3.334
+Active release: v1.1.33.335-ERP11.3.335
 
-ERP-11.3.333 is currently LIVE. ERP-11.3.334 is the next deployment candidate
-and has NOT yet been deployed. It corrects inactive passenger re-add duplicate
-authority using the shared ActiveBookingPassengerResolver. Only current active
-booking snapshots participate in duplicate detection; historical REMOVED,
-INACTIVE, DELETED, CANCELLED and CANCELED snapshots do not block re-add.
-Passenger Master reuse, historical ticket/Issue Date evidence and same-page
-passenger removal/KPI consistency remain preserved. Pending Air
-Ticket Groups before native issuance without fake native rows or generic links,
-issued-history guards, server-side booking locks and affected-Air-only
-commercial reconciliation. Hotel, Transport, Visa and Other Services remain
-untouched. Air defaults remain Outbound, Return, then Connection; ISSUED
-requires Issue Date * with group-specific validation. Commercial formulas,
-Ticket Group architecture, API field shapes, database schema and migrations are
-unchanged.
+ERP-11.3.334 is currently LIVE. ERP-11.3.335 is the next deployment candidate
+and has NOT yet been deployed. It adds a customizable ERP User Permission
+Matrix while preserving Native Roles, branch security and direct-route
+authorization. Fourteen Role Template presets remain fully customizable;
+effective access is Native Role Permissions plus Direct User Permissions, with
+ROLE, DIRECT and ROLE + DIRECT indicators. Section Select All, indeterminate
+state, search, section-aware templates and a Travel Reports zero-state are
+included. No Travel Report permission rows or migration are created, and
+runtime direct-permission pivot/persistence remains unverified until UAT.
 
 Booking product routes and known Booking product APIs remain under Booking
 Operations authority, including the Booking-side Sales Invoice bridge; ordinary
-Sales Invoice routes retain their own authority. ERP-11.3.334 introduces no new
+Sales Invoice routes retain their own authority. ERP-11.3.335 introduces no new
 migration.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .333 already has it applied. Before .334 Air UAT, confirm System
+current live .334 already has it applied. Before .335 UAT, confirm System
 Health reports the database schema is up to date. Take a fresh database backup
 before deployment, but do not treat this as a new migration requirement or
 manually modify the database.
@@ -32,18 +27,32 @@ manually modify the database.
 Deployment order:
 1. Stop relevant Booking/Air editing during deployment.
 2. Take a fresh full database backup.
-3. Upload/extract the ONE authoritative ERP-11.3.334 ZIP through cPanel.
+3. Upload/extract the ONE authoritative ERP-11.3.335 ZIP through cPanel.
 4. Open System Health & Updates.
-5. Confirm displayed application version is v1.1.33.334-ERP11.3.334.
+5. Confirm displayed application version is v1.1.33.335-ERP11.3.335.
 6. Confirm Database = Connected.
 7. Confirm schema is up to date; verify booking_itinerary_segments has nullable indexed booking_service_id ownership.
-8. Confirm ERP-11.3.334 introduces NO new migration.
+8. Confirm ERP-11.3.335 introduces NO new migration.
 9. If health/schema is not correct, HOLD. Do not manually alter production DB.
 10. Clear Application Cache.
 11. Ctrl+F5 / hard refresh.
-12. Run focused ERP-11.3.334 production UAT.
+12. Run focused ERP-11.3.335 production UAT.
 
-Focused ERP-11.3.334 production UAT (not yet production-verified):
+Focused ERP-11.3.335 production UAT (not yet production-verified):
+
+User Permission Matrix:
+- Open Manage Existing Users as Super Admin and confirm Role Template, Native
+  Roles, Branch Access, Custom Permissions and all seven permission sections.
+- Confirm the 14 templates are presets only; Apply, Reset to Template, manual
+  add/remove and Custom Access do not write until Save User Account.
+- If a native direct-permission pivot exists, save and refresh direct grants;
+  otherwise the matrix is disabled/read-only with its controlled message while
+  identity, roles and branches remain editable.
+- Confirm ROLE, DIRECT and ROLE + DIRECT badges, inherited-role safety,
+  section-aware templates, no Accounting leakage, independent branch scope and
+  unchanged direct-route authorization.
+- Confirm Travel Reports shows its zero-state and no report permission rows are
+  created.
 
 Historical active-passenger authority:
 - Open BK-2026-0023 and verify one current booking passenger is visible.
@@ -92,7 +101,7 @@ Commercial reconciliation / non-Air immutability:
 Preserved ERP-11.3.331 Air regression checks:
 - Airline Master search/resolution, multi-group ownership, save/reload, second-save service reuse, Booking RBAC, locking/readiness, layout/no horizontal overflow and legacy single-group compatibility.
 - Use a safe Draft GENERAL Air booking.
-- System Health shows v1.1.33.334-ERP11.3.334, database Connected and schema up to date.
+- System Health shows v1.1.33.335-ERP11.3.335, database Connected and schema up to date.
 - Flight Itinerary Type displays Connection, Outbound and Return fully; Remove remains contained without overlapping Airline and there is no page-level horizontal overflow.
 - Booking Data -> PNR Fare Commercials -> Passenger Tickets -> PNR totals remains separated by the controlled 12px rhythm; Applies To Flight Segments, commercial scrollbar absence and zero-group bootstrap remain unchanged.
 - Air page: verify one booking-level Flight Itinerary, all saved itinerary segments visible, and Add Flight Segment / Remove Flight Segment work in Draft.
@@ -120,7 +129,7 @@ Audited cumulative overlay based on deployed ERP-11.3.151.
 Deployment without SSH:
 1. Upload/extract this ZIP over the current ERP application.
 2. Open System Health & Updates.
-3. Confirm the database schema is up to date; ERP-11.3.334 introduces no new migration.
+3. Confirm the database schema is up to date; ERP-11.3.335 introduces no new migration.
 4. Click Clear Application Cache.
 5. Ctrl+F5.
 6. Verify the Dashboard and representative register, accounting and booking

@@ -1,45 +1,45 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.334
-CURRENT_LIVE_RELEASE=ERP-11.3.333
-CURRENT_VERSION=ERP-11.3.334
-APPLICATION_VERSION=v1.1.33.334-ERP11.3.334
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.335
+CURRENT_LIVE_RELEASE=ERP-11.3.334
+CURRENT_VERSION=ERP-11.3.335
+APPLICATION_VERSION=v1.1.33.335-ERP11.3.335
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.333 LIVE; ERP-11.3.334 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
+PRODUCTION_STATUS=ERP-11.3.334 LIVE; ERP-11.3.335 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.334
 ```
 
-ERP-11.3.334 Inactive Passenger Re-add Authority Hotfix
+ERP-11.3.335 Customizable User Permission Matrix
 
-ERP-11.3.334 corrects the remaining passenger lifecycle defect after the
-ERP-11.3.333 active-passenger authority correction. Duplicate detection now
-uses the shared ActiveBookingPassengerResolver, so only current active booking
-snapshots participate. REMOVED, INACTIVE, DELETED, CANCELLED and CANCELED
-snapshots, plus deleted_at, is_active=false and active=false snapshots, no
-longer block re-add. Active duplicate Passenger Master, passport or name+DOB
-still blocks. Passenger Master reuse is preserved; historical ticket and
-Issue Date evidence remains preserved; old Air and generic links are not
-resurrected; and an inactive ADULT snapshot may be re-added with a new current
-fare type such as CHILD. No production verification has been performed.
+ERP-11.3.335 adds a customizable ERP User Permission Matrix while preserving
+the existing native role/permission system, branch security and direct-route
+authorization. Fourteen Role Template presets are available, but every
+template remains customizable; Native Roles remain baseline authority and
+effective access is the union of Native Role Permissions and Direct User
+Permissions. The UI distinguishes ROLE, DIRECT and ROLE + DIRECT access and
+provides section Select All, indeterminate state, search and a Travel Reports
+zero-state without creating Travel Report permission rows. Runtime direct-
+permission pivot availability and persistence remain unverified pending
+production UAT. No migration has been added.
 
-Functional parent: 0be1128444c7bf02285b55d3c2c2bb2900c87048
-Functional commit: 76b514d50fb355696266457909bbdd0ecc0d9463
-Regression: tests/release/erp113334-inactive-passenger-readd-regression.mjs
-(28 assertions PASS)
-Stable symmetric suite: parent 91/55/36; candidate 92/56/36; common stable
-tests 91; pass-to-fail 0; fail-to-pass 0; PHP_CLI_AVAILABLE=NO.
+Functional commits: b49d32419a2409c779cea3e13e4176a5b5101fb8 and
+a0586846b3098e4e3e6b7d2878683cc5552cd3a0
+Regression: tests/release/erp113335-user-custom-permission-matrix-regression.mjs
+(69 assertions PASS)
+Stable symmetric suite: parent 93/59/34; candidate 93/59/34; common stable
+tests 93; pass-to-fail 0; fail-to-pass 0; PHP_CLI_AVAILABLE=NO.
 
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.334
-CURRENT_LIVE_RELEASE=ERP-11.3.333
-CURRENT_VERSION=ERP-11.3.334
-APPLICATION_VERSION=v1.1.33.334-ERP11.3.334
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.335
+CURRENT_LIVE_RELEASE=ERP-11.3.334
+CURRENT_VERSION=ERP-11.3.335
+APPLICATION_VERSION=v1.1.33.335-ERP11.3.335
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 
