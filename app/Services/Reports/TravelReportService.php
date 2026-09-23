@@ -3,95 +3,72 @@
 namespace App\Services\Reports;
 
 use App\Services\Operations\ActiveBookingPassengerResolver;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/** Read-only, operational Travel Reports authority. No monetary fields are exposed. */
+/** Read-only operational report authority. No monetary fields are exposed. */
 final class TravelReportService
 {
-    /** Operational authorities: bookings; booking_passengers; booking_services,
-     * booking_itinerary_segments and air_ticket_details; native hotel stays;
-     * booking_visa_services; booking_transport_segments; Group Umrah unified
-     * tables. Air rows are Ticket Group rows. Financial authority remains outside this service. */
+    // Air report grain is one Ticket Group (booking_services) with
+    // booking_itinerary_segments and air_ticket_details aggregated beneath it.
+    public const REPORTS = ['bookings'=>'Booking Report','passengers'=>'Passenger Report','air'=>'Air / Ticketing Report','hotels'=>'Hotel Report','visas'=>'Visa Report','transport'=>'Transport Report','group-umrah'=>'Group Umrah Report','customers'=>'Customer-wise Report','suppliers'=>'Supplier / Vendor-wise Report','branches'=>'Branch-wise Report','agents'=>'Agent / Salesperson Report','airlines'=>'Airline-wise Report','sectors'=>'Sector / Destination Report'];
+    public const MOVEMENTS = ['arrival'=>'Arrival Intimation','makkah-checkin'=>'Makkah Check-in','makkah-checkout'=>'Makkah Check-out','madinah-checkin'=>'Madinah Check-in','madinah-checkout'=>'Madinah Check-out','departure'=>'Departure Intimation'];
     public function __construct(private readonly ActiveBookingPassengerResolver $passengers) {}
-    public const REPORTS = [
-        'bookings'=>'Booking Report','passengers'=>'Passenger Report','air'=>'Air / Ticketing Report',
-        'hotels'=>'Hotel Report','visas'=>'Visa Report','transport'=>'Transport Report',
-        'group-umrah'=>'Group Umrah Report','customers'=>'Customer-wise Report','suppliers'=>'Supplier / Vendor-wise Report',
-        'branches'=>'Branch-wise Report','agents'=>'Agent / Salesperson Report','airlines'=>'Airline-wise Report','sectors'=>'Sector / Destination Report',
-    ];
-    public const MOVEMENTS = [
-        'arrival'=>'Arrival Intimation','makkah-checkin'=>'Makkah Check-in','makkah-checkout'=>'Makkah Check-out',
-        'madinah-checkin'=>'Madinah Check-in','madinah-checkout'=>'Madinah Check-out','departure'=>'Departure Intimation',
-    ];
 
     public function definition(string $key): array
     {
-        $title = self::REPORTS[$key] ?? self::MOVEMENTS[$key] ?? 'Travel Report';
-        return ['key'=>$key,'title'=>$title,'description'=>'Operational travel activity; no financial data.','columns'=>$this->columns($key)];
+        $columns = match ($key) {
+            'bookings'=>[['booking_no','Booking No.'],['booking_date','Booking Date'],['travel_date','Travel Date'],['customer','Customer'],['products','Product(s)'],['total_pax','Total Pax'],['adult','Adult'],['child','Child'],['infant','Infant'],['sector','Sector / Route'],['departure','Departure'],['arrival','Arrival'],['check_in','Check-in'],['check_out','Check-out'],['nights','Nights'],['status','Status'],['branch','Branch'],['agent','Agent'],['salesperson','Salesperson'],['action','Action / View']],
+            'passengers'=>[['booking_no','Booking No.'],['booking_date','Booking Date'],['travel_date','Travel Date'],['customer','Customer'],['passenger','Passenger Name'],['gender_title','Gender / Title'],['pax_type','Pax Type'],['passport_no','Passport No.'],['nationality','Nationality'],['dob','DOB'],['product','Product'],['status','Status'],['branch','Branch'],['agent_salesperson','Agent / Salesperson'],['action','Action']],
+            'air','airlines'=>[['booking_no','Booking No.'],['customer','Customer'],['airline','Airline'],['sector','Sector / Segments'],['departure','Departure'],['arrival','Arrival'],['pnr','PNR'],['airline_pnr','Airline PNR'],['source','GDS / Source'],['ticket_status','Ticket Status'],['issue_date','Issue Date'],['passenger_count','Passenger Count'],['ticket_numbers','Ticket Numbers'],['vendor','Vendor'],['branch','Branch'],['action','Action']],
+            'hotels'=>[['booking_no','Booking No.'],['customer','Customer'],['city','City'],['hotel','Hotel'],['vendor','Vendor'],['confirmation_no','Confirmation No.'],['room_type','Room Type'],['board','Board'],['check_in','Check-in'],['check_out','Check-out'],['nights','Nights'],['passenger_count','Passenger Count'],['status','Status'],['branch','Branch'],['action','Action']],
+            'visas'=>[['booking_no','Booking No.'],['customer','Customer'],['passenger','Passenger'],['passport_no','Passport No.'],['visa_type','Visa Type'],['saudi_company','Saudi Company'],['pakistani_iata','Pakistani IATA'],['vendor','Vendor / Company'],['visa_no','Visa No.'],['issue_date','Issue Date'],['expiry_date','Expiry Date'],['status','Status'],['branch','Branch'],['action','Action']],
+            'transport'=>[['booking_no','Booking No.'],['customer','Customer'],['travel_date','Travel Date'],['route','Route'],['vehicle_type','Vehicle Type'],['vendor','Transport Company / Vendor'],['passenger_count','Passenger Count'],['status','Status'],['branch','Branch'],['action','Action']],
+            'group-umrah'=>[['booking_no','Booking No.'],['booking_date','Booking Date'],['departure_date','Departure Date'],['return_date','Return / Arrival Date'],['customer','Customer'],['package','Package'],['total_pax','Total Pax'],['adult','Adult'],['child','Child'],['infant','Infant'],['flight_sector','Flight / Sector'],['makkah_hotel','Makkah Hotel'],['makkah_check_in','Makkah Check-in'],['makkah_check_out','Makkah Check-out'],['madinah_hotel','Madinah Hotel'],['madinah_check_in','Madinah Check-in'],['madinah_check_out','Madinah Check-out'],['transport','Transport'],['saudi_company','Saudi Company'],['pakistani_iata','Pakistani IATA'],['status','Status'],['branch','Branch'],['agent','Agent'],['salesperson','Salesperson'],['action','Action']],
+            default=>[['name','Name'],['bookings','Bookings'],['passengers','Passengers'],['air','Air'],['hotel','Hotel'],['visa','Visa'],['transport','Transport'],['group_umrah','Group Umrah'],['last_booking_date','Latest Booking Date'],['latest_travel_date','Latest Travel Date'],['branches','Branch(es)'],['action','View']],
+        };
+        return ['key'=>$key,'title'=>self::REPORTS[$key] ?? self::MOVEMENTS[$key] ?? 'Travel Report','description'=>'Operational travel activity; no financial data.','columns'=>array_map(fn($c)=>['key'=>$c[0],'label'=>$c[1]],$columns)];
     }
 
-    public function rows(string $key, array $filters = [], int $perPage = 50)
+    /** paginate the deterministic mapped collection without changing its row schema. */
+    public function rows(string $key,array $filters=[],int $perPage=50): LengthAwarePaginator { $items=$this->mappedRows($key,$filters);$perPage=max(25,min(100,$perPage));$page=max(1,(int)($filters['page']??request()->integer('page',1)));return new Paginator($items->forPage($page,$perPage)->values(),$items->count(),$perPage,$page,['path'=>request()->url(),'query'=>$filters]); }
+    public function streamRows(string $key,array $filters=[]): iterable
     {
-        $table = $this->tableFor($key);
-        if (!$table || ! Schema::hasTable($table)) return collect();
-        $columns = Schema::getColumnListing($table);
-        $select = array_values(array_intersect($this->sourceColumns($key), $columns));
-        if (!$select) $select = ['id'];
-        $query = DB::table($table)->select($select);
-        if ($key === 'passengers') {
-            if (in_array('deleted_at',$columns,true)) $query->whereNull('deleted_at');
-            if (in_array('is_active',$columns,true)) $query->where('is_active',true);
-            if (in_array('active',$columns,true)) $query->where('active',true);
-            if (in_array('status',$columns,true)) $query->whereNotIn('status',['inactive','deleted','removed','cancelled','canceled']);
+        $table=$this->tableFor($key);
+        if($table && !in_array($key,['air','passengers','customers','suppliers','branches','agents','airlines','sectors'],true)) {
+            foreach($this->filteredQuery($table,$filters)->cursor() as $record) yield $this->mapRow($key,$record);
+            return;
         }
-        $date = $this->firstColumn($columns, ['booking_date','travel_date','departure_date','created_at']);
-        if ($date && !empty($filters['from'])) $query->whereDate($date, '>=', $filters['from']);
-        if ($date && !empty($filters['to'])) $query->whereDate($date, '<=', $filters['to']);
-        if ($this->firstColumn($columns, ['status']) && !empty($filters['status'])) $query->where($this->firstColumn($columns,['status']), $filters['status']);
-        return $query->orderByDesc($this->firstColumn($columns,['id']) ?: $select[0])->paginate(max(25,min(100,$perPage)))->withQueryString();
+        foreach($this->mappedRows($key,$filters) as $row) yield $row;
     }
-
-    public function counts(): array
+    public function counts(): array { $p=$this->passengerTable();$h=$this->hotelTable();$t=$this->transportTable();return ['bookings'=>$this->countTable('bookings'),'passengers'=>$p?$this->activePassengerCount($p):0,'air'=>$this->countTable('booking_services'),'hotels'=>$h?$this->countTable($h):0,'visas'=>$this->countTable('booking_visa_services'),'transport'=>$t?$this->countTable($t):0,'group-umrah'=>$this->countTable('booking_group_package_unified')]; }
+    private function mappedRows(string $key,array $filters): Collection { if(isset(self::MOVEMENTS[$key]))return $this->movementRows($key,$filters);if($key==='air')return $this->airRows($filters);if($key==='passengers')return $this->passengerRows($filters);if(in_array($key,['customers','suppliers','branches','agents','airlines','sectors'],true))return $this->dimensionRows($key,$filters);$table=$this->tableFor($key);if(!$table)return collect();$rows=collect();foreach($this->filteredQuery($table,$filters)->cursor() as $record)$rows->push($this->mapRow($key,$record));return $rows; }
+    private function movementRows(string $key,array $filters): Collection { $base=$this->tableFor('group-umrah');if(!$base)return collect();$rows=collect();foreach($this->filteredQuery($base,$filters)->cursor() as $booking){$id=(int)($booking->booking_id??$booking->id??0);if(!$id)continue;$hotels=$this->childRows('booking_group_package_hotels',$id);$flights=$this->childRows('booking_group_package_flights',$id);if(str_starts_with($key,'makkah-'))$hotels=$hotels->filter(fn($h)=>stripos((string)($h->city??$h->city_name??''),'makkah')!==false);if(str_starts_with($key,'madinah-'))$hotels=$hotels->filter(fn($h)=>stripos((string)($h->city??$h->city_name??''),'madinah')!==false);$field=match($key){'makkah-checkin','madinah-checkin'=>'check_in','makkah-checkout','madinah-checkout'=>'check_out',default=>null};if($field)$hotels=$hotels->filter(fn($h)=>!empty($h->{$field}));$flight=$key==='arrival'?$flights->first(fn($f)=>in_array(strtolower((string)($f->segment_type??$f->type??'')),['arrival','inbound'],true)):$flights->first(fn($f)=>in_array(strtolower((string)($f->segment_type??$f->type??'')),['departure','outbound'],true));if(in_array($key,['arrival','departure'],true)&&!$flight)continue;if($field&&!$hotels->count())continue;$rows->push($this->movementMap($booking,$hotels,$flight,$key));}return $rows; }
+    private function passengerRows(array $filters): Collection { $table=$this->passengerTable();if(!$table)return collect();$rows=collect();foreach($this->filteredQuery($table,$filters)->cursor() as $record){if((int)($record->booking_id??0))$this->passengers->rows((int)$record->booking_id);$rows->push($this->mapRow('passengers',$record));}return $rows; }
+    private function airRows(array $filters): Collection { if(!Schema::hasTable('booking_services'))return collect();$rows=collect();foreach($this->filteredQuery('booking_services',$filters)->cursor() as $service){$segments=$this->childRows('booking_itinerary_segments',(int)$service->id,'booking_service_id');$tickets=$this->childRows('air_ticket_details',(int)$service->id,'booking_service_id');$row=$this->blank('air');$row['booking_no']=$service->booking_id??'—';$row['sector']=$segments->map(fn($s)=>trim((string)($s->from??'')).'-'.trim((string)($s->to??'')))->filter()->implode(', ')?:'—';$row['departure']=$segments->min('departure_at')??$segments->min('departure_datetime')??'—';$row['arrival']=$segments->max('arrival_at')??$segments->max('arrival_datetime')??'—';$row['airline']=$segments->map(fn($s)=>$s->airline_code??$s->airline??'')->filter()->unique()->implode(', ')?:'—';$row['pnr']=$service->pnr??$service->airline_pnr??'—';$row['airline_pnr']=$service->airline_pnr??'—';$row['source']=$service->booking_source??$service->gds_source??'—';$row['ticket_status']=$tickets->map(fn($t)=>$t->status??$t->ticket_status??'')->filter()->unique()->implode(', ')?:'—';$row['issue_date']=$tickets->map(fn($t)=>$t->issue_date??null)->filter()->min()??'—';$row['passenger_count']=$tickets->count();$row['ticket_numbers']=$tickets->map(fn($t)=>$t->ticket_number??$t->ticket_no??'')->filter()->implode(', ')?:'—';$rows->push($row);}return $rows; }
+    private function dimensionRows(string $key,array $filters): Collection { $base=$this->mappedRows('bookings',$filters);$groups=$base->groupBy(fn($r)=>match($key){'customers'=>$r['customer'],'suppliers'=>$r['vendor'],'branches'=>$r['branch'],'agents'=>$r['agent'],'airlines'=>$r['airline']??'—','sectors'=>$r['sector']??'—',default=>'—'});$rows=collect();foreach($groups as $name=>$items){$row=$this->blank($key);$row['name']=$name?:'—';$row['bookings']=$items->count();$row['last_booking_date']=$items->max('booking_date')??'—';$row['latest_travel_date']=$items->max('travel_date')??'—';$row['branches']=$items->pluck('branch')->filter()->unique()->implode(', ')?:'—';$rows->push($row);}return $rows; }
+    private function mapRow(string $key,object $r): array
     {
-        $map=['bookings'=>'bookings','passengers'=>null,'air'=>'booking_services','hotels'=>null,'visas'=>'booking_visa_services','transport'=>'booking_transport_segments','group-umrah'=>'booking_group_package_unified'];
-        $out=[]; foreach($map as $key=>$table) $out[$key]=($table && Schema::hasTable($table)) ? DB::table($table)->count() : 0;
-        return $out;
+        $row=$this->blank($key);$get=fn(array $names)=>collect($names)->first(fn($n)=>isset($r->{$n})&&$r->{$n}!==null&&$r->{$n}!=='');
+        $row['booking_no']=$get(['booking_reference','booking_ref','booking_no','booking_number','booking_id'])??'—';$row['booking_date']=$get(['booking_date','date','created_at'])??'—';$row['travel_date']=$get(['travel_date','departure_date','start_date'])??'—';$row['customer']=$get(['customer_name','customer','party_name'])??($r->customer_id??'—');$row['status']=$get(['status','workflow_status','booking_status'])??'—';$row['branch']=$get(['branch_name','office_name','branch_id'])??'—';$row['vendor']=$get(['vendor_name','supplier_name','company_name','vendor_id','supplier_id'])??'—';$row['agent']=$get(['agent_name','service_partner_name','partner_name'])??'—';$row['salesperson']=$get(['salesperson_name','sales_person_name','created_by_name'])??'—';
+        if($key==='passengers'){$row['passenger']=trim(($r->first_name??'').' '.($r->last_name??''))?:'—';$row['gender_title']=$get(['gender','sex','title'])??'—';$row['pax_type']=$get(['pax_type','fare_as','type'])??'—';$row['passport_no']=$r->passport_no??'—';$row['nationality']=$r->nationality??'—';$row['dob']=$get(['date_of_birth','dob'])??'—';$row['product']='—';}
+        if($key==='hotels'){$row['city']=$get(['city_name','city'])??'—';$row['hotel']=$get(['hotel_name','hotel'])??'—';$row['confirmation_no']=$get(['confirmation_no','confirmation_number'])??'—';$row['room_type']=$get(['room_type','room'])??'—';$row['board']=$get(['board','meal_plan'])??'—';$row['check_in']=$r->check_in??'—';$row['check_out']=$r->check_out??'—';$row['nights']=$r->nights??'—';$row['passenger_count']=$get(['passenger_count','pax_count'])??'—';}
+        if($key==='visas'){$row['passenger']=trim(($r->first_name??'').' '.($r->last_name??''))?:'—';$row['passport_no']=$r->passport_no??'—';$row['visa_type']=$r->visa_type??'—';$row['saudi_company']=$get(['saudi_company_name','saudi_company_id'])??'—';$row['pakistani_iata']=$get(['pakistani_iata_name','pakistani_iata_id'])??'—';$row['visa_no']=$get(['visa_number','visa_no'])??'—';$row['issue_date']=$r->issue_date??'—';$row['expiry_date']=$r->expiry_date??'—';}
+        if($key==='transport'){$row['travel_date']=$get(['travel_date','pickup_date'])??'—';$row['route']=$get(['route_name','from_location'])??'—';$row['vehicle_type']=$r->vehicle_type??'—';$row['passenger_count']=$get(['passenger_count','quantity'])??'—';}
+        if($key==='group-umrah'){$row['package']=$get(['package_name','package_code'])??'—';$row['departure_date']=$get(['departure_date','travel_date'])??'—';$row['return_date']=$get(['return_date','arrival_date'])??'—';$row['total_pax']=$get(['booked_pax','total_pax'])??'—';$row['adult']=$r->adult??'—';$row['child']=$r->child??'—';$row['infant']=$r->infant??'—';}
+        return $row;
     }
-
-    public function exportRows(string $key, array $filters = []): iterable
-    {
-        $rows=$this->rows($key,$filters,100); return $rows instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? $rows->items() : $rows;
-    }
-
-    private function tableFor(string $key): ?string
-    {
-        return match($key){
-            'bookings','customers','branches','agents','suppliers','sectors'=> 'bookings',
-            'passengers'=>Schema::hasTable('booking_passengers')?'booking_passengers':(Schema::hasTable('booking_travellers')?'booking_travellers':'booking_travelers'),
-            'air','airlines'=>Schema::hasTable('booking_services')?'booking_services':null,
-            'hotels'=>collect(['booking_hotel_stays','booking_hotels','hotel_stays','booking_hotel_details','booking_accommodations','hotel_booking_details'])->first(fn($t)=>Schema::hasTable($t)),
-            'visas'=>'booking_visa_services', 'transport'=>collect(['booking_transport_segments','booking_transports','transport_booking_details','booking_transport_details'])->first(fn($t)=>Schema::hasTable($t)),
-            'group-umrah'=>'booking_group_package_unified', default=>null,
-        };
-    }
-    private function sourceColumns(string $key): array
-    {
-        return ['id','booking_id','booking_reference','booking_date','travel_date','departure_date','customer_id','customer_name','supplier_id','vendor_id','vendor_name','branch_id','agent_name','salesperson_name','status','first_name','last_name','title','gender','passport_no','nationality','date_of_birth','airline','airline_code','flight_number','from','to','segment_type','pnr','airline_pnr','booking_source','ticket_status','issue_date','city','hotel_name','confirmation_no','room_type','board','check_in','check_out','nights','visa_type','visa_number','expiry_date','route_name','vehicle_type','company_name','package_name','package_code','sort_order'];
-    }
-    private function columns(string $key): array
-    {
-        return match($key){
-            'bookings'=>['Booking No.','Booking Date','Travel Date','Customer','Product(s)','Total Pax','Adult','Child','Infant','Sector / Route','Departure','Arrival','Check-in','Check-out','Nights','Status','Branch','Agent','Salesperson','Action / View'],
-            'passengers'=>['Booking No.','Booking Date','Travel Date','Customer','Passenger Name','Gender / Title','Pax Type','Passport No.','Nationality','DOB','Product','Status','Branch','Agent / Salesperson','Action'],
-            'air','airlines'=>['Booking No.','Customer','Airline','Sector / Segments','Departure','Arrival','PNR','Airline PNR','GDS / Source','Ticket Status','Issue Date','Passenger Count','Ticket Numbers','Vendor','Branch','Action'],
-            'hotels'=>['Booking No.','Customer','City','Hotel','Vendor','Confirmation No.','Room Type','Board','Check-in','Check-out','Nights','Passenger Count','Status','Branch','Action'],
-            'visas'=>['Booking No.','Customer','Passenger','Passport No.','Visa Type','Saudi Company','Pakistani IATA','Vendor / Company','Visa No.','Issue Date','Expiry Date','Status','Branch','Action'],
-            'transport'=>['Booking No.','Customer','Travel Date','Route','Vehicle Type','Transport Company / Vendor','Passenger Count','Status','Branch','Action'],
-            'group-umrah'=>['Booking No.','Booking Date','Departure Date','Return / Arrival Date','Customer','Package','Total Pax','Adult','Child','Infant','Flight / Sector','Makkah Hotel','Makkah Check-in','Makkah Check-out','Madinah Hotel','Madinah Check-in','Madinah Check-out','Transport','Saudi Company','Pakistani IATA','Status','Branch','Agent','Salesperson','Action'],
-            default=>['Name','Bookings','Passengers','Air','Hotel','Visa','Transport','Group Umrah','Latest Booking Date','Latest Travel Date','Branch(es)','View'],
-        };
-    }
-    private function firstColumn(array $columns,array $wanted): ?string { foreach($wanted as $w) if(in_array($w,$columns,true)) return $w; return null; }
+    private function movementMap(object $b,Collection $hotels,?object $flight,string $key): array { $r=$this->blank($key);$r['booking_no']=$b->booking_id??$b->id??'—';$r['customer']=$b->customer_name??'—';$r['status']=$b->status??'—';$r['flight_sector']=$flight?trim((string)($flight->from_code??$flight->from??'')).'-'.trim((string)($flight->to_code??$flight->to??'')):'—';$r['departure']=$flight->departure_date??$flight->departure_time??'—';$r['arrival']=$flight->arrival_date??$flight->arrival_time??'—';return $r; }
+    private function blank(string $key): array {$r=[];foreach($this->definition($key)['columns'] as $c)$r[$c['key']]='—';return $r;}
+    private function filteredQuery(string $table,array $filters): \Illuminate\Database\Query\Builder {$q=DB::table($table);$cols=Schema::getColumnListing($table);$date=collect(['booking_date','travel_date','departure_date','created_at'])->first(fn($x)=>in_array($x,$cols,true));if($date&&($filters['from']??null))$q->whereDate($date,'>=',$filters['from']);if($date&&($filters['to']??null))$q->whereDate($date,'<=',$filters['to']);if(in_array('status',$cols,true)&&($filters['status']??null))$q->where('status',$filters['status']);return $q;}
+    private function childRows(string $table,int $id,string $foreign='booking_id'): Collection {if(!Schema::hasTable($table))return collect();$cols=Schema::getColumnListing($table);if(!in_array($foreign,$cols,true))return collect();return DB::table($table)->where($foreign,$id)->get();}
+    private function tableFor(string $key): ?string {return match($key){'bookings','customers','suppliers','branches','agents','sectors'=>'bookings','passengers'=>$this->passengerTable(),'air','airlines'=>Schema::hasTable('booking_services')?'booking_services':null,'hotels'=>$this->hotelTable(),'visas'=>Schema::hasTable('booking_visa_services')?'booking_visa_services':null,'transport'=>$this->transportTable(),'group-umrah'=>Schema::hasTable('booking_group_package_unified')?'booking_group_package_unified':null,default=>null};}
+    private function passengerTable(): ?string {foreach(['booking_passengers','booking_travellers','booking_travelers'] as $t)if(Schema::hasTable($t))return $t;return null;}
+    private function hotelTable(): ?string {foreach(['booking_hotel_stays','booking_hotels','hotel_stays','booking_hotel_details','booking_accommodations','hotel_booking_details'] as $t)if(Schema::hasTable($t))return $t;return null;}
+    private function transportTable(): ?string {foreach(['booking_transport_segments','booking_transports','transport_booking_details','booking_transport_details'] as $t)if(Schema::hasTable($t))return $t;return null;}
+    private function countTable(string $table): int {return Schema::hasTable($table)?(int)DB::table($table)->count():0;}
+    private function activePassengerCount(string $table): int {$q=DB::table($table);$c=Schema::getColumnListing($table);if(in_array('deleted_at',$c,true))$q->whereNull('deleted_at');if(in_array('is_active',$c,true))$q->where('is_active',true);if(in_array('active',$c,true))$q->where('active',true);if(in_array('status',$c,true))$q->whereNotIn('status',['inactive','deleted','removed','cancelled','canceled']);return(int)$q->count();}
 }

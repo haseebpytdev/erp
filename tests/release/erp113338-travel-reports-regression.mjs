@@ -37,6 +37,14 @@ ok(controller.includes("['=','+','-','@']"), 'CSV formula injection protection')
 ok(views.includes('window.print()') && views.includes('@media print'), 'browser print support');
 ok(!views.match(/sale_price|cost_price|gross_margin|profitability|commission/i), 'views contain no monetary fields');
 ok(!service.match(/sale_price|cost_price|gross_margin|supplier_cost|margin|profit|commission/i), 'service contains no monetary fields');
+for (const movement of ['arrival','makkah-checkin','makkah-checkout','madinah-checkin','madinah-checkout','departure']) ok(service.includes("movementRows(string $key") && service.includes(`'${movement}'`), `movement ${movement} has a resolver path`);
+ok(service.includes('$this->passengers->rows('), 'ActiveBookingPassengerResolver is invoked');
+ok(service.includes("childRows('booking_itinerary_segments'") && service.includes("childRows('air_ticket_details'"), 'Air segment and ticket-detail aggregation executes');
+ok(service.includes("['booking_no','Booking No.']") && service.includes("['key'=>$c[0]"), 'deterministic column keys exist');
+ok(views.includes("$column['key']") && !views.includes('foreach((array)$row)'), 'Blade renders by deterministic column key');
+ok(service.includes('dimensionRows') && service.includes('groupBy'), 'dimension reports use grouped aggregation');
+ok(service.includes('streamRows') && controller.includes('streamRows'), 'CSV uses complete streaming path');
+ok(service.includes('activePassengerCount') && service.includes('hotelTable()'), 'report center counts use resolved authorities');
 ok(!routes.includes('Schema::create') && !service.includes('Schema::create'), 'no migration/schema creation');
 ok(fs.existsSync(new URL('../../resources/views/reports/group-umrah-profitability-v103146.blade.php', import.meta.url)), 'existing profitability preserved');
 ok(routes.includes('reports/group-umrah-profitability'), 'existing profitability route preserved');
