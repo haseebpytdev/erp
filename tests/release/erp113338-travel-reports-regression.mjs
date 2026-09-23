@@ -86,6 +86,14 @@ ok(service.includes('aggregateSeed') && service.includes('airDimensionSeed') && 
 ok(service.includes("Schema::hasColumn('bookings',$column)") && service.includes("whereColumn('b.id','booking_services.booking_id')"), 'Air booking relationship filters are schema guarded');
 ok(service.includes('airColumnValue') && service.includes("['arrival_at','arrival_datetime','arrival_date']") && service.includes("['ticket_status','status']"), 'Air display mapping shares adaptive aliases');
 ok(service.includes("collect(['ticket_status','status'])") && service.includes("if(!$status)return'pending'"), 'ticket status authority is schema adaptive');
+ok(service.includes('hotelRow') && service.includes("$row['confirmation_no']") && service.includes("$row['room_type']") && service.includes("$row['board']"), 'Hotel row builder populates approved operational columns');
+ok(service.includes('visaRow') && service.includes("$row['passport_no']") && service.includes("$row['visa_type']") && service.includes("$row['expiry_date']"), 'Visa row builder populates approved operational columns');
+ok(service.includes('transportRow') && service.includes("$row['travel_date']") && service.includes("$row['vehicle_type']") && service.includes("$row['passenger_count']"), 'Transport row builder populates approved operational columns');
+ok(service.includes("$r['booking_date']") && service.includes("$r['travel_date']") && service.includes("$r['product']=$this->productNames($id)"), 'Passenger row includes booking context and product authority');
+ok(service.includes('supplierDimensionKeyQuery') && service.includes('fromSub'), 'Supplier dimension has a bounded normalized key query');
+ok(service.includes('airDimensionKeyQuery') && service.includes("CONCAT($from, ' → ', $to)"), 'Airline and sector dimension keys use filtered normalized authorities');
+ok(service.includes("booking_group_package_hotels as h") && service.includes("$dateMap[$basis]"), 'Group Umrah hotel filters and date basis use child hotel authority');
+ok(!service.includes('passesReportFilters($record,$filters)') && !service.includes('passesArrayFilters($row,$filters)'), 'standard report rows have no post-pagination rejection');
 for (const filter of ['origin','destination','ticket_no','issue_date','salesperson']) ok(service.includes(`$filters['${filter}']`) || service.includes(`'${filter}'`), `Air/dimension filter ${filter} is declared and applied`);
 ok(service.includes("'suppliers'=>['branch','vendor','service_type']") && service.includes("'agents'=>['branch','mode','agent','salesperson']"), 'dimension filter definitions are report-specific');
 ok(service.includes('activePassengerCount') && service.includes('hotelTable()'), 'report center counts use resolved authorities');
