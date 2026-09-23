@@ -1,19 +1,45 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.335
-CURRENT_LIVE_RELEASE=ERP-11.3.334
-CURRENT_VERSION=ERP-11.3.335
-APPLICATION_VERSION=v1.1.33.335-ERP11.3.335
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.336
+CURRENT_LIVE_RELEASE=ERP-11.3.335
+CURRENT_VERSION=ERP-11.3.336
+APPLICATION_VERSION=v1.1.33.336-ERP11.3.336
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.334 LIVE; ERP-11.3.335 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
+PRODUCTION_STATUS=ERP-11.3.335 LIVE; ERP-11.3.336 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.335
 ```
+
+ERP-11.3.336 User Management UI Redesign
+
+ERP-11.3.336 redesigns the Manage Existing Users and Manage User surfaces
+while preserving the ERP-11.3.335 RBAC authority. It adds compact summary
+cards, search and branch filtering, a full-width user editor, Identity &
+Account Status, Role Template & Native Roles, Branch Access, Custom
+Permissions, Effective Access Summary, Login & Security, collapsed permission
+accordions, permission search, Expand All / Collapse All, section Select All,
+live selected counts, responsive 3 / 2 / 1-column layout, ROLE / DIRECT /
+ROLE + DIRECT indicators, 14 section-aware templates, no-mutation Custom
+Access, semantic navigation and truthful native-host back navigation.
+
+Native Create ERP User remains owned by the existing native ERP host flow.
+Direct-user permission storage remains unavailable in the observed production
+database, so Custom Permissions remain safely disabled/read-only with the
+controlled fallback. Native Roles, Branch Access, identity and password
+management remain available. Travel Reports remains a zero-state only. No
+database migration is introduced.
+
+Functional source SHA: 4c3b23bc3427f2519b54b7910a446a23848d7948
+Regression: tests/release/erp113336-user-management-ui-regression.mjs
+(82 assertions PASS)
+Booking Product permission regression: 25 assertions PASS.
+Stable symmetric suite: parent 94/57/37; candidate 94/57/37; common stable
+tests 94; pass-to-fail 0; fail-to-pass 0; PHP_CLI_AVAILABLE=NO.
 
 ERP-11.3.335 Customizable User Permission Matrix
 
