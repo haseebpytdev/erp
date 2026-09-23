@@ -109,7 +109,7 @@ ok(!!duplicateBy(snapshots, row => row.name.toLowerCase() === 'another passenger
 const readded = { passenger_id: 701, fare_type: 'CHILD', status: 'ACTIVE' };
 equal(readded.fare_type, 'CHILD', 're-added booking snapshot uses selected booking fare type');
 equal(activeSnapshots(removed.concat([readded])).length, 1, 'only one active booking snapshot exists after re-add');
-ok(quick.includes("if (in_array('status', $columns, true))") && quick.includes("UPPER(status) <> ?"), 'server duplicate authority excludes REMOVED status rows');
+ok(quick.includes('ActiveBookingPassengerResolver $activePassengerResolver') && quick.includes('$this->activePassengerResolver->ids($booking)') && quick.includes("whereIn('id', $activeIds)"), 'server duplicate authority uses shared active snapshot ids');
 ok(quick.includes("'status'], 'active'"), 're-added snapshot is written ACTIVE');
 ok(removeController.includes('assertDraftDependencies'), 'remove path retains irreversible-history protection');
 ok(!quick.includes('air_ticket_details') || quick.includes('booking passenger'), 're-add controller does not resurrect Air ticket history');

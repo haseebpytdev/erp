@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\AdaptivePassengerMasterWriter;
+use App\Services\Operations\ActiveBookingPassengerResolver;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ final class GeneralBookingPassengerQuickController extends Controller
     public function __construct(
         private readonly UnifiedGroupPackageDataSource $source,
         private readonly AdaptivePassengerMasterWriter $passengerWriter,
+        private readonly ActiveBookingPassengerResolver $activePassengerResolver,
     ) {
     }
 
@@ -387,13 +389,10 @@ final class GeneralBookingPassengerQuickController extends Controller
         int $masterId,
         array $row,
     ): ?int {
-        $base = DB::table($table)->where('booking_id', $booking);
-        if (in_array('status', $columns, true)) {
-            $base->where(function ($query): void {
-                $query->whereNull('status')
-                    ->orWhereRaw('UPPER(status) <> ?', ['REMOVED']);
-            });
-        }
+        $activeIds = $this->activePassengerResolver->ids($booking);
+        $base = DB::table($table)
+            ->where('booking_id', $booking)
+            ->whereIn('id', $activeIds);
 
         $masterColumn = $this->firstColumn($columns, [
             'passenger_id', 'master_passenger_id', 'traveller_id', 'traveler_id',
