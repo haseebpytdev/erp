@@ -2,8 +2,8 @@ ERP-11.3.342 Arrival Movement Report
 
 Active release: v1.1.33.342-ERP11.3.342
 
-ERP-11.3.337 remains the live release after rollback. ERP-11.3.338 failed
-startup at TravelReportService.php line 55 and was rolled back. ERP-11.3.339
+ERP-11.3.341 is the current live production release. ERP-11.3.337 was the
+restored former baseline. ERP-11.3.338 failed startup at TravelReportService.php line 55 and was rolled back. ERP-11.3.339
 failed startup at line 101 and was rolled back. ERP-11.3.340 repaired both
 syntax defects, but its PHP 8.5.7 parser preflight was held for an implicit
 nullable parameter; .340 was not packaged or deployed. ERP-11.3.341 applies
