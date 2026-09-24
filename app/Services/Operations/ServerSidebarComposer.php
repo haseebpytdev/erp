@@ -39,25 +39,15 @@ final class ServerSidebarComposer
             $label = strtolower(trim(preg_replace('/\s+/', ' ', $a->textContent)));
             $known[$label] ??= $row;
         }
+        // Deferred route labels (Booking Report, Passenger Report, Air / Ticketing Report,
+        // Hotel Report, Visa Report, Transport Report, Group Umrah Report,
+        // Customer-wise Report, Supplier / Vendor-wise Report, Branch-wise Report,
+        // Agent / Salesperson Report, Airline-wise Report, Sector / Destination Report)
+        // remain route-only and are intentionally not synthesized here.
         // Travel Reports are repo-owned operational links. Authorization is
         // still enforced by EnforceErpRoleScopedAccess; this layer only adds
         // presentation links so direct URLs and sidebar share the same policy.
-        foreach ([
-            ['Report Center','/travel-reports'],
-            ['Booking Report','/travel-reports/bookings'],
-            ['Passenger Report','/travel-reports/passengers'],
-            ['Air / Ticketing Report','/travel-reports/air'],
-            ['Hotel Report','/travel-reports/hotels'],
-            ['Visa Report','/travel-reports/visas'],
-            ['Transport Report','/travel-reports/transport'],
-            ['Group Umrah Report','/travel-reports/group-umrah'],
-            ['Customer-wise Report','/travel-reports/customers'],
-            ['Supplier / Vendor-wise Report','/travel-reports/suppliers'],
-            ['Branch-wise Report','/travel-reports/branches'],
-            ['Agent / Salesperson Report','/travel-reports/agents'],
-            ['Airline-wise Report','/travel-reports/airlines'],
-            ['Sector / Destination Report','/travel-reports/sectors'],
-        ] as [$label,$href]) {
+        foreach ([['Report Center','/travel-reports']] as [$label,$href]) {
             $key = strtolower($label);
             if (isset($known[$key])) continue;
             $row = $dom->createElement('li');

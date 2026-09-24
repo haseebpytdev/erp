@@ -31,6 +31,7 @@ ok(routes.includes("name('group-umrah.'.$movement)"), 'movement route names pres
 ok(controller.includes("route('travel-reports.'.$report" ) === false, 'controller does not invent route names');
 ok(sidebar.includes("'TRAVEL REPORTS' => ['travel reports', 'report center']"), 'compact Travel Reports section');
 ok(sidebar.includes("['Report Center','/travel-reports']"), 'Report Center sidebar entry');
+for (const label of ['Booking Report','Passenger Report','Air / Ticketing Report','Hotel Report','Visa Report','Transport Report','Group Umrah Report','Customer-wise Report','Supplier / Vendor-wise Report','Branch-wise Report','Agent / Salesperson Report','Airline-wise Report','Sector / Destination Report']) ok(!sidebar.includes(`['${label}'`), `deferred sidebar link not synthesized: ${label}`);
 ok(sidebar.includes(".//ul[li]"), 'LI-owning UL selected before NAV wrapper');
 ok(sidebar.includes('classMatches') && sidebar.includes('count($classMatches[0]) !== 1'), 'class-only ambiguity remains fail closed');
 ok(sidebar.includes('data-et-server-sidebar'), 'sidebar composition marker preserved');

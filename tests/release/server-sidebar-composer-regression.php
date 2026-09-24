@@ -25,6 +25,7 @@ if (strpos($composer->compose($unmatched), '/unknown">Custom Tool</a>') === fals
 $nestedNav = '<aside class="sidebar"><nav class="native-shell"><ul class="nav flex-column"><li><a href="/dashboard">Dashboard</a></li><li><a data-native="yes" href="/operations/bookings">Bookings</a><ul><li><a href="/child-two">Child Two</a></li></ul></li></ul></nav></aside>';
 $nestedNavOut = $composer->compose($nestedNav);
 if (substr_count($nestedNavOut, 'href="/travel-reports">Report Center</a>') !== 1 || strpos($nestedNavOut, '/child-two">Child Two</a>') === false || strpos($nestedNavOut, 'data-native="yes"') === false) exit(1);
+foreach (['Booking Report','Passenger Report','Air / Ticketing Report','Hotel Report','Visa Report','Transport Report','Group Umrah Report','Customer-wise Report','Supplier / Vendor-wise Report','Branch-wise Report','Agent / Salesperson Report','Airline-wise Report','Sector / Destination Report'] as $deferred) if (strpos($nestedNavOut, '>'.$deferred.'</a>') !== false) exit(1);
 $classOnly = '<aside id="native-sidebar"><ul class="live-nav"><li><a href="/dashboard">Dashboard</a></li><li><a href="/operations/bookings">Bookings</a></li></ul></aside><ul class="outside-nav"><li><a href="/outside-two">Outside Two</a></li></ul>';
 $classOnlyOut = $composer->compose($classOnly);
 if (substr_count($classOnlyOut, 'href="/travel-reports">Report Center</a>') !== 1 || strpos($classOnlyOut, '/outside-two">Outside Two</a>') === false) exit(1);
