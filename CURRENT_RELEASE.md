@@ -1,19 +1,54 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.338
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.339
 CURRENT_LIVE_RELEASE=ERP-11.3.337
-CURRENT_VERSION=ERP-11.3.338
-APPLICATION_VERSION=v1.1.33.338-ERP11.3.338
+CURRENT_VERSION=ERP-11.3.339
+APPLICATION_VERSION=v1.1.33.339-ERP11.3.339
 CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.337 LIVE / DEPLOYED; visual UAT accepted; ERP-11.3.337 System Health verification not supplied / remains unverified; ERP-11.3.338 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
+PRODUCTION_STATUS=ERP-11.3.337 LIVE / RESTORED AFTER ROLLBACK; visual UAT accepted; ERP-11.3.337 System Health verification not supplied / remains unverified; ERP-11.3.338 DEPLOYED BUT FAILED STARTUP WITH PHP PARSE ERROR AND WAS ROLLED BACK; ERP-11.3.338 SYSTEM HEALTH/LIVE TRAVEL REPORTS UAT NOT COMPLETED; ERP-11.3.339 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.338
 ```
+
+ERP-11.3.339 Travel Reports Startup Parse Hotfix
+
+ERP-11.3.338 introduced Operational Travel Reports but failed production
+startup after deployment with HTTP 500. Laravel reported `ParseError:
+unexpected token ";", expecting ")"` in
+`app/Services/Reports/TravelReportService.php` line 55. The cause was one
+missing closing parenthesis in the Group Umrah child-date `whereExists()`
+expression inside `applyNativeChildFilters()`. ERP-11.3.339 adds that one
+syntax correction and a seven-assertion regression guard. No report formulas,
+filter semantics, report grain, RBAC, schema, database mutation or migration
+changes are included. Production was restored to ERP-11.3.337 while this
+hotfix was prepared.
+
+The .339 release carries forward the operational-only .338 Travel Reports:
+Report Center, Booking, Passenger, Air / Ticketing, Hotel, Visa, Transport,
+Group Umrah, Customer-wise, Supplier / Vendor-wise, Branch-wise,
+Agent / Salesperson, Airline-wise, Sector / Destination, Arrival Intimation,
+Makkah Check-in/Check-out, Madinah Check-in/Check-out and Departure Intimation.
+HTML, CSV and Browser Print remain supported; dimensions remain materialized;
+XLSX and PDF remain unsupported. No financial Travel Report fields are added;
+Group Umrah Profitability and Accounting Reports remain separate.
+
+FAILED_338_FINAL_SOURCE_SHA=d5d4b05699a95868e16a0c900cd32c5f71c0d7ec
+FINAL_339_FUNCTIONAL_SOURCE_SHA=dbbe49f439cbc87576f7304506db2075fbc99fac
+338_DEPLOYED=YES
+338_STARTUP=FAIL
+338_HTTP_STATUS=500
+338_SYSTEM_HEALTH_COMPLETED=NO
+338_LIVE_UAT_COMPLETED=NO
+338_ROLLED_BACK=YES
+337_LIVE_AGAIN=YES
+339_DEPLOYED=NO
+339_PRODUCTION_VERIFIED=NO
+PHP_CLI_AVAILABLE=NO
 
 ERP-11.3.338 Operational Travel Reports
 

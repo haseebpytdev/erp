@@ -1,11 +1,42 @@
+ERP-11.3.339 Travel Reports Startup Parse Hotfix
+
+Active release: v1.1.33.339-ERP11.3.339
+
+ERP-11.3.337 is currently live after rollback. Its visual UAT was accepted,
+but .337 System Health verification was not supplied. ERP-11.3.338 was
+deployed but failed Laravel startup with HTTP 500 because of the confirmed
+TravelReportService.php ParseError; System Health and Travel Reports UAT were
+not completed. ERP-11.3.339 repairs that syntax defect and is NOT deployed.
+NEW_MIGRATION_REQUIRED=NO
+
+Deployment order:
+1. Confirm ERP-11.3.337 is currently serving production.
+2. Stop relevant ERP editing and take a fresh full database backup.
+3. Upload/extract ONE authoritative ERP-11.3.339 ZIP through cPanel.
+4. Do not run a migration solely for ERP-11.3.339.
+5. Load the ERP root/dashboard and confirm the HTTP 500 startup failure is gone.
+6. Open System Health & Updates; confirm version v1.1.33.339-ERP11.3.339,
+   Database = Connected and schema up to date.
+7. Confirm ERP-11.3.339 introduces NO new migration.
+8. Clear Application Cache, Ctrl+F5, then run focused Travel Reports UAT.
+If startup still returns HTTP 500, HOLD and capture the newest Laravel error.
+
+Focused .339 UAT (not yet completed): first verify root, login/dashboard and
+System Health; then run the existing .338 Travel Reports checks for Report
+Center, Booking, Passenger, Air, Hotel, Visa, Transport, Group Umrah,
+movements, dimensions, CSV, Browser Print, RBAC and no financial fields.
+Exercise Group Umrah Makkah/Madinah Check-in/Check-out date filters explicitly.
+Group Umrah Profitability and Accounting Reports remain separate.
+
 ERP-11.3.338 Operational Travel Reports
 
 Active release: v1.1.33.338-ERP11.3.338
 
 ERP-11.3.337 is the current live predecessor. Its visual UAT was accepted,
 but System Health verification for .337 was not supplied and remains
-unverified. ERP-11.3.338 is the next deployment candidate and is NOT deployed
-or production-verified.
+unverified. ERP-11.3.338 was deployed, failed Laravel startup with HTTP 500
+from the TravelReportService.php ParseError, and was rolled back before
+System Health or Travel Reports UAT completed.
 
 NEW_MIGRATION_REQUIRED=NO
 

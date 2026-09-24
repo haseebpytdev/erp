@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.338-ERP11.3.338',
-    'release' => 'ERP-11.3.338',
-    'package' => 'ERP-11.3.338 Operational Travel Reports',
-    'package_detail' => 'ERP-11.3.338 adds an operational Travel Reports workspace with Report Center and Booking, Passenger, Air / Ticketing, Hotel, Visa, Transport, Group Umrah, Customer-wise, Supplier / Vendor-wise, Branch-wise, Agent / Salesperson, Airline-wise, Sector / Destination and movement reports for Arrival, Departure, Makkah Check-in/Check-out and Madinah Check-in/Check-out. HTML, complete CSV and browser print share native RBAC and filter authorities; full-width presentation is used. Group Umrah Profitability and Accounting Reports remain separate. Travel Reports expose no financial fields, XLSX or PDF export, and no migration is introduced. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.339-ERP11.3.339',
+    'release' => 'ERP-11.3.339',
+    'package' => 'ERP-11.3.339 Travel Reports Startup Parse Hotfix',
+    'package_detail' => 'ERP-11.3.339 carries the ERP-11.3.338 Operational Travel Reports feature set and repairs the production startup ParseError in TravelReportService.php caused by one missing closing parenthesis in the Group Umrah child-date whereExists expression. No report business logic, formulas, schema or database changes and no migration are included. The .338 deployment failed during startup and was rolled back; .337 is live, and .339 is not deployed. NEW_MIGRATION_REQUIRED=NO.',
 ];
 
