@@ -1,3 +1,20 @@
+ERP-11.3.341 Travel Reports PHP 8.5 Compatibility Corrective
+
+Active release: v1.1.33.341-ERP11.3.341
+
+ERP-11.3.337 remains the live release after rollback. ERP-11.3.338 failed
+startup at TravelReportService.php line 55 and was rolled back. ERP-11.3.339
+failed startup at line 101 and was rolled back. ERP-11.3.340 repaired both
+syntax defects, but its PHP 8.5.7 parser preflight was held for an implicit
+nullable parameter; .340 was not packaged or deployed. ERP-11.3.341 applies
+the explicit nullable correction and passed the server PHP 8.5.7 parser check
+for all six files. ERP-11.3.341 is not deployed.
+CURRENT_LIVE_RELEASE=ERP-11.3.337
+NEW_MIGRATION_REQUIRED=NO
+
+Deployment remains manual cPanel direct upload after final package
+certification. No database migration is required for .341.
+
 ERP-11.3.340 Travel Reports Remaining Startup Parse Hotfix
 
 Active release: v1.1.33.340-ERP11.3.340
