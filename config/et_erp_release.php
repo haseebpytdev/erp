@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.337-ERP11.3.337',
-    'release' => 'ERP-11.3.337',
-    'package' => 'ERP-11.3.337 User Management Presentation Corrective',
-    'package_detail' => 'ERP-11.3.337 corrects the user-management presentation layer while preserving the native ERP host and RBAC authority. Manage User now exposes a neutral Role Template placeholder, truthful Preset not applied state, 14 presets, and disabled Apply/Reset controls when direct permission storage is unavailable; Roles and Branches remain usable. Scoped 14px checkbox presentation and a native-page adapter use safe common-parent targeting with a minimum of two cards, without replacing or mutating native create, input, values, checked state, persistence or submission behavior. Existing Users compaction is not claimed. Overlay/detail behavior, Travel Reports zero-state and all other product behavior remain unchanged. No migration is introduced. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.338-ERP11.3.338',
+    'release' => 'ERP-11.3.338',
+    'package' => 'ERP-11.3.338 Operational Travel Reports',
+    'package_detail' => 'ERP-11.3.338 adds an operational Travel Reports workspace with Report Center and Booking, Passenger, Air / Ticketing, Hotel, Visa, Transport, Group Umrah, Customer-wise, Supplier / Vendor-wise, Branch-wise, Agent / Salesperson, Airline-wise, Sector / Destination and movement reports for Arrival, Departure, Makkah Check-in/Check-out and Madinah Check-in/Check-out. HTML, complete CSV and browser print share native RBAC and filter authorities; full-width presentation is used. Group Umrah Profitability and Accounting Reports remain separate. Travel Reports expose no financial fields, XLSX or PDF export, and no migration is introduced. NEW_MIGRATION_REQUIRED=NO.',
 ];
 

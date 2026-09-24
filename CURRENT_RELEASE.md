@@ -1,19 +1,58 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.337
-CURRENT_LIVE_RELEASE=ERP-11.3.336
-CURRENT_VERSION=ERP-11.3.337
-APPLICATION_VERSION=v1.1.33.337-ERP11.3.337
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.338
+CURRENT_LIVE_RELEASE=ERP-11.3.337
+CURRENT_VERSION=ERP-11.3.338
+APPLICATION_VERSION=v1.1.33.338-ERP11.3.338
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.336 LIVE / DEPLOYED; production health verification pending; ERP-11.3.337 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
+PRODUCTION_STATUS=ERP-11.3.337 LIVE / DEPLOYED; visual UAT accepted; ERP-11.3.337 System Health verification not supplied / remains unverified; ERP-11.3.338 NOT DEPLOYED / NOT PRODUCTION-VERIFIED
 LAST_PACKAGED_RELEASE=ERP-11.3.337
 ```
+
+ERP-11.3.338 Operational Travel Reports
+
+ERP-11.3.338 introduces the operational Travel Reports workspace and Report
+Center. It provides Booking, Passenger, Air / Ticketing, Hotel, Visa,
+Transport, Group Umrah, Customer-wise, Supplier / Vendor-wise, Branch-wise,
+Agent / Salesperson, Airline-wise and Sector / Destination reports, plus
+Arrival Intimation, Departure Intimation, Makkah Check-in/Check-out and
+Madinah Check-in/Check-out movement reports.
+
+Reports use operational data only: no Sale, Cost, Margin, Profit, Revenue,
+Supplier Cost, Commission, Basic Fare, Taxes or financial currency totals are
+exposed. Group Umrah Profitability and Accounting Reports remain separate.
+HTML, complete filtered CSV and Browser Print are supported; XLSX and PDF are
+not supported. Native ERP RBAC and route/sidebar authority remain authoritative
+and no Travel Report permission rows or migration are added.
+
+Architecture is explicit: Air is one Ticket Group, Passenger is one active
+booking passenger, Hotel one stay, Visa one booking-passenger visa service,
+Transport one segment, Group Umrah one booking and movement reports one event.
+Canonical dimensions paginate canonical identities; HTML and CSV share query
+authority; Group Umrah child hotel dates and deterministic filter/display
+domains are preserved; supplier identity uses deterministic row fallback;
+Booking Product filtering fails closed; optional tables are guarded and no
+post-pagination business filtering is used.
+
+Regression: tests/release/erp113338-travel-reports-regression.mjs
+(244 assertions PASS). ERP-11.3.336 regression: 82 assertions PASS.
+ERP-11.3.330 permission regression: 25 assertions PASS. ERP-11.3.337 is a
+historical failure after later release progression. ISOLATED_PASS_TO_FAIL=0;
+PHP_CLI_AVAILABLE=NO.
+
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.338
+CURRENT_LIVE_RELEASE=ERP-11.3.337
+CURRENT_VERSION=ERP-11.3.338
+APPLICATION_VERSION=v1.1.33.338-ERP11.3.338
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+DEPLOYED=NO
+NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.337 User Management Presentation Corrective
 

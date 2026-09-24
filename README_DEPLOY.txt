@@ -1,3 +1,55 @@
+ERP-11.3.338 Operational Travel Reports
+
+Active release: v1.1.33.338-ERP11.3.338
+
+ERP-11.3.337 is the current live predecessor. Its visual UAT was accepted,
+but System Health verification for .337 was not supplied and remains
+unverified. ERP-11.3.338 is the next deployment candidate and is NOT deployed
+or production-verified.
+
+NEW_MIGRATION_REQUIRED=NO
+
+Deployment order:
+1. Stop relevant ERP editing during deployment.
+2. Take a fresh full database backup.
+3. Upload/extract the ONE authoritative ERP-11.3.338 ZIP through cPanel.
+4. Open System Health & Updates.
+5. Confirm application version: v1.1.33.338-ERP11.3.338.
+6. Confirm Database = Connected.
+7. Confirm schema is up to date.
+8. Confirm ERP-11.3.338 introduces NO new migration.
+9. If health/schema is incorrect, HOLD.
+10. Clear Application Cache.
+11. Ctrl+F5 / hard refresh.
+12. Run focused Travel Reports live UAT.
+
+Focused ERP-11.3.338 production UAT (not yet completed):
+- Report Center opens from authorized navigation, shows the complete inventory,
+  and contains no financial figures.
+- Booking filters, pagination, Product filter and View action work.
+- Passenger active-only filtering and Branch/Customer/Passenger/Pax Type/
+  Gender/Nationality filters have HTML/CSV consistency.
+- Air has one row per Ticket Group with Vendor/Airline/Origin/Destination/
+  Sector/Ticket Status/PNR/Ticket No filters and no duplicates.
+- Hotel is one row per stay with check-in/check-out filtering; Visa exposes
+  passenger, visa, company, IATA, vendor and date filters; Transport is one row
+  per segment with operational travel-date filtering.
+- Group Umrah is one row per booking with package/company/IATA/status/branch/
+  customer/agent/salesperson and child hotel/date filters; display and filter
+  values remain consistent.
+- Movement reports show one row per Arrival, Departure, Makkah CI/CO and
+  Madinah CI/CO event with HTML/CSV parity.
+- Customer, Supplier/Vendor, Branch, Agent/Salesperson, Airline and Sector
+  dimensions use canonical pagination and filters.
+- CSV exports the full filtered result with formula-injection protection;
+  dimensions use the materialized implementation.
+- Full-width report presentation has internal table scrolling and no page-level
+  horizontal overflow.
+- Existing ERP RBAC denies unauthorized direct routes according to native
+  authority while authorized navigation remains available.
+- Group Umrah Profitability and Accounting Reports remain separate; no
+  financial values appear in Travel Reports.
+
 ERP-11.3.337 User Management Presentation Corrective
 
 Active release: v1.1.33.337-ERP11.3.337
