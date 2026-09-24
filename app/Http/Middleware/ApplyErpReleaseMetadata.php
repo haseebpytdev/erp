@@ -293,6 +293,7 @@ class ApplyErpReleaseMetadata
             str_starts_with($path, 'sales/') => 'sales',
             str_starts_with($path, 'purchase/'), str_starts_with($path, 'purchases/') => 'purchase',
             str_starts_with($path, 'accounting/reports') => 'reports',
+            str_starts_with($path, 'travel-reports') => 'reports',
             str_starts_with($path, 'accounting/') => 'accounting',
             str_starts_with($path, 'system/') => 'system',
             default => 'foundation',

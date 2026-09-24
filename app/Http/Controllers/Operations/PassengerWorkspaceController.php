@@ -7,6 +7,7 @@ use App\Services\Operations\AdaptivePassengerMasterWriter;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -24,11 +25,14 @@ final class PassengerWorkspaceController extends Controller
     {
         $query = trim((string) $request->query('q', ''));
         $needle = Str::lower($query);
-        $passengers = $this->source->passengers()->filter(function (array $row) use ($needle): bool {
+        $filtered = $this->source->passengers()->filter(function (array $row) use ($needle): bool {
             if ($needle === '') return true;
             return str_contains(Str::lower((string) ($row['name'] ?? '')), $needle)
-                || str_contains(Str::lower((string) ($row['passport_no'] ?? '')), $needle);
-        })->take(100)->values()->map(function (array $row): array {
+                || str_contains(Str::lower(UnifiedGroupPackageDataSource::normalizePassport((string) ($row['passport_no'] ?? ''))), UnifiedGroupPackageDataSource::normalizePassport($needle));
+        })->values();
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = 25;
+        $pageRows = $filtered->forPage($page, $perPage)->values()->map(function (array $row): array {
             $expiry = trim((string) ($row['passport_expiry'] ?? ''));
             $row['passport_status'] = '—';
             if ($expiry !== '') {
@@ -36,6 +40,14 @@ final class PassengerWorkspaceController extends Controller
             }
             return $row;
         });
+        $passengers = new LengthAwarePaginator(
+            $pageRows,
+            $filtered->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+        $passengers->withQueryString();
         $editPassenger = null;
         if ($request->filled('edit_source') && $request->filled('edit_id')) {
             $table = $this->safeSource((string) $request->query('edit_source'));
@@ -59,9 +71,9 @@ final class PassengerWorkspaceController extends Controller
         $table = $this->safeSource($source);
         abort_unless($table && Schema::hasTable($table), 404);
         $data = $request->validate(['title'=>['nullable','string','max:20'],'sex'=>['nullable','string','max:20'],'first_name'=>['required','string','max:100'],'last_name'=>['required','string','max:100'],'passport_no'=>['required','string','max:100'],'nationality'=>['required','string','max:100'],'date_of_birth'=>['required','date'],'passport_expiry'=>['required','date'],'issuing_country'=>['nullable','string','max:100']]);
-        $data['passport_no'] = strtoupper(preg_replace('/\s+/', '', trim($data['passport_no'])) ?? '');
+        $data['passport_no'] = UnifiedGroupPackageDataSource::normalizePassport($data['passport_no']);
         $columns = Schema::getColumnListing($table);
-        $duplicate = DB::table($table)->where('id','<>',$passenger)->where(function($q) use ($columns,$data) { foreach (['passport_no','passport_number'] as $c) if(in_array($c,$columns,true)) $q->orWhereRaw('LOWER(`'.$c.'`) = ?', [strtolower($data['passport_no'])]); })->exists();
+        $duplicate = DB::table($table)->where('id','<>',$passenger)->where(function($q) use ($columns,$data) { foreach (['passport_no','passport_number'] as $c) if(in_array($c,$columns,true)) $q->orWhereRaw("UPPER(REPLACE(`$c`, ' ', '')) = ?", [$data['passport_no']]); })->exists();
         if ($duplicate) return back()->withErrors(['passport_no'=>'Another Passenger Master record already uses this passport number.'])->withInput();
         $updates=[]; $fullName=trim($data['first_name'].' '.$data['last_name']); foreach ([['title','salutation','title'],['sex','gender','sex'],['first_name','given_name','first_name'],['last_name','surname','last_name'],['name','passenger_name','full_name'],['passport_no','passport_number','passport_no'],['date_of_birth','dob','date_of_birth'],['passport_expiry','passport_expiry_date','passport_expiry'],['nationality','nationality_name','nationality'],['issuing_country','passport_issuing_country','issuing_country']] as [$a,$b,$k]) { foreach([$a,$b] as $c) if(in_array($c,$columns,true)){ $updates[$c]=$k==='full_name'?$fullName:($k==='nationality'?$this->fitNationality($table,$c,$data[$k]):($data[$k]??null)); break; } }
         if (in_array('updated_at',$columns,true)) $updates['updated_at']=now(); DB::table($table)->where('id',$passenger)->update($updates);
@@ -84,7 +96,7 @@ final class PassengerWorkspaceController extends Controller
             'passport_expiry' => ['required', 'date'],
             'issuing_country' => ['nullable', 'string', 'max:100'],
         ]);
-        $data['passport_no'] = strtoupper(preg_replace('/\s+/', '', trim($data['passport_no'])) ?? '');
+        $data['passport_no'] = UnifiedGroupPackageDataSource::normalizePassport($data['passport_no']);
         if (($data['title'] ?? '') === '' && ($data['sex'] ?? '') === 'Male') $data['title'] = 'Mr';
         if (($data['title'] ?? '') === '' && ($data['sex'] ?? '') === 'Female') $data['title'] = 'Ms';
         $result = $this->writer->resolveStandalone($data);

@@ -67,7 +67,8 @@ class AdaptivePassengerMasterWriter
     /** Resolve or create a reusable Passenger Master row without inventing a booking. */
     public function resolveStandalone(array $row): array
     {
-        $row['passport_no'] = strtoupper(preg_replace('/\s+/', '', trim((string) ($row['passport_no'] ?? ''))) ?? '');
+        // Canonical normalization replaces strtoupper(preg_replace('/\s+/', '', trim((string) ...))).
+        $row['passport_no'] = UnifiedGroupPackageDataSource::normalizePassport($row['passport_no'] ?? '');
         foreach ($this->masterCandidates() as $table) {
             if (Schema::hasTable($table) && ($existing = $this->findDuplicate($table, $row))) {
                 return ['id' => $existing, 'source' => $table, 'warning' => null, 'duplicate' => true];
@@ -98,7 +99,7 @@ class AdaptivePassengerMasterWriter
         $passportColumn = $this->firstColumn($columns, ['passport_no', 'passport_number']);
         $passport = trim((string) ($row['passport_no'] ?? ''));
         if ($passportColumn && $passport !== '') {
-            $found = DB::table($table)->whereRaw('LOWER(' . $passportColumn . ') = ?', [strtolower($passport)])->value('id');
+            $found = DB::table($table)->whereRaw("UPPER(REPLACE(`$passportColumn`, ' ', '')) = ?", [$passport])->value('id');
             if ($found) {
                 return (int) $found;
             }

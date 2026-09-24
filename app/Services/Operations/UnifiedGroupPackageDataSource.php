@@ -9,6 +9,12 @@ use Illuminate\Support\Str;
 
 class UnifiedGroupPackageDataSource
 {
+    /** Canonical logical passport identity used by search and duplicate checks. */
+    public static function normalizePassport(?string $value): string
+    {
+        return strtoupper((string) (preg_replace('/\s+/', '', trim((string) $value)) ?? ''));
+    }
+
     public function customers(): Collection
     {
         return $this->partiesByRole('customer');

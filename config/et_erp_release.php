@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.342-ERP11.3.342',
-    'release' => 'ERP-11.3.342',
-    'package' => 'ERP-11.3.342 Arrival Movement Report',
-    'package_detail' => 'ERP-11.3.342 corrects Travel Report child routes and native-shell presentation, hardens the server sidebar, and introduces the dedicated Arrival Report Phase 1 operational view with movement tabs, operational columns, enrichment, CSV foundation, browser Print, and wide table-only scrolling. Other movement pages and broader report polish remain deferred. No financial reporting, database schema, migration, or new database upgrade is included. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.343-ERP11.3.343',
+    'release' => 'ERP-11.3.343',
+    'package' => 'ERP-11.3.343 Travel Reports and Passenger Master Corrective',
+    'package_detail' => 'ERP-11.3.343 corrects Travel Reports navigation, report-shell presentation, scoped pagination controls, and Passenger Master passport lookup consistency with 25-row server pagination and query retention. Existing authorization, duplicate protection, booking passenger reuse, report authorities, formulas, persistence, database schema, and migrations remain unchanged. NEW_MIGRATION_REQUIRED=NO.',
 ];
 

@@ -48,7 +48,7 @@ final class ServerSidebarComposer
         // Travel Reports are repo-owned operational links. Authorization is
         // still enforced by EnforceErpRoleScopedAccess; this layer only adds
         // presentation links so direct URLs and sidebar share the same policy.
-        foreach ([['Movement Reports','/travel-reports/group-umrah/arrival']] as [$label,$href]) {
+        foreach ([['Travel Reports','/travel-reports'],['Movement Reports','/travel-reports/group-umrah/arrival']] as [$label,$href]) {
             $key = strtolower($label);
             if (isset($known[$key])) continue;
             $row = $dom->createElement('li');
