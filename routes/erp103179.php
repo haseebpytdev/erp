@@ -506,11 +506,14 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::prefix('travel-reports')->name('travel-reports.')->middleware(EnforceErpRoleScopedAccess::class)->group(function (): void {
         Route::get('/', [TravelReportsController::class, 'index'])->name('index');
         foreach (array_keys(\App\Services\Reports\TravelReportService::REPORTS) as $report) {
-            Route::get('/'.$report.'/export', [TravelReportsController::class, 'export'])->name($report.'.export');
-            Route::get('/'.$report, [TravelReportsController::class, 'show'])->name($report);
+            Route::get('/'.$report.'/export', [TravelReportsController::class, 'export'])
+                ->defaults('report', $report)->name($report.'.export');
+            Route::get('/'.$report, [TravelReportsController::class, 'show'])
+                ->defaults('report', $report)->name($report);
         }
         foreach (array_keys(\App\Services\Reports\TravelReportService::MOVEMENTS) as $movement) {
-            Route::get('/group-umrah/'.$movement, [TravelReportsController::class, 'movement'])->name('group-umrah.'.$movement);
+            Route::get('/group-umrah/'.$movement, [TravelReportsController::class, 'movement'])
+                ->defaults('movement', $movement)->name('group-umrah.'.$movement);
         }
     });
 

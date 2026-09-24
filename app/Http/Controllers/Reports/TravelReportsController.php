@@ -23,7 +23,7 @@ final class TravelReportsController extends Controller
         return response()->streamDownload(function() use($service,$report,$filters){ $out=fopen('php://output','w'); $columns=$service->definition($report)['columns']; fputcsv($out,array_column($columns,'label')); foreach($service->streamRows($report,$filters) as $row){$values=[]; foreach($columns as $column){$v=(string)($row[$column['key']]??'—');$values[]=in_array($v[0]??'', ['=','+','-','@'],true)?"'".$v:$v;} fputcsv($out,$values);} fclose($out); },'travel-'.$report.'.csv',['Content-Type'=>'text/csv']);
     }
     private function view(string $name,string $title,?string $report=null,?Request $request=null,bool $movement=false): \Illuminate\View\View {
-        $layout=$this->layoutResolver->resolve(); $data=['title'=>$title,'report'=>$report,'definition'=>$report?$this->reports->definition($report):null,'rows'=>$report&&$request?$this->reports->rows($report,$request->query(),(int)$request->query('per_page',50)):collect(),'counts'=>$this->reports->counts(),'reports'=>TravelReportService::REPORTS,'movements'=>TravelReportService::MOVEMENTS,'movement'=>$movement,'erpLayout'=>$layout['layout'],'erpContentSection'=>$layout['content_section'],'erpTitleSection'=>$layout['title_section']];
+        $layoutMeta=$this->layoutResolver->resolve(); $data=['title'=>$title,'report'=>$report,'definition'=>$report?$this->reports->definition($report):null,'rows'=>$report&&$request?$this->reports->rows($report,$request->query(),(int)$request->query('per_page',50)):collect(),'counts'=>$this->reports->counts(),'reports'=>TravelReportService::REPORTS,'movements'=>TravelReportService::MOVEMENTS,'movement'=>$movement,'layoutMeta'=>$layoutMeta];
         return view('reports.travel.'.$name,$data);
     }
 }

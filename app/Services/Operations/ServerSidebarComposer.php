@@ -11,7 +11,7 @@ final class ServerSidebarComposer
         $groups = [
             'OPERATIONS' => ['bookings', 'passengers', 'sales invoices', 'supplier costing'],
             'ACCOUNTING' => ['receipts', 'payments', 'expense vouchers', 'contra vouchers', 'chart of accounts', 'account mappings', 'journals', 'ledgers', 'reports'],
-            'TRAVEL REPORTS' => ['travel reports', 'report center', 'booking report', 'passenger report', 'air / ticketing report', 'hotel report', 'visa report', 'transport report', 'group umrah report', 'customer-wise report', 'supplier / vendor-wise report', 'branch-wise report', 'agent / salesperson report', 'airline-wise report', 'sector / destination report'],
+            'TRAVEL REPORTS' => ['travel reports', 'report center'],
             'MASTER DATA' => ['party master', 'travel masters', 'products & services'],
             'ADMINISTRATION' => ['organization', 'currency rates', 'financial years', 'health & updates', 'administration', 'foundation'],
         ];
@@ -24,7 +24,8 @@ final class ServerSidebarComposer
         $xpath = new \DOMXPath($dom);
         $sidebar = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " sidebar ") or contains(concat(" ", normalize-space(@class), " "), " sidebar-menu ") or contains(concat(" ", normalize-space(@class), " "), " side-nav ") or contains(concat(" ", normalize-space(@class), " "), " navbar-vertical ")]')->item(0);
         if (!$sidebar) return $html;
-        $root = $sidebar->tagName === 'ul' ? $sidebar : $xpath->query('.//ul[li] | .//nav[ul]', $sidebar)->item(0);
+        $root = $sidebar->tagName === 'ul' ? $sidebar : $xpath->query('.//ul[li]', $sidebar)->item(0);
+        if (!$root) $root = $sidebar->tagName === 'nav' ? $xpath->query('.//ul[li]', $sidebar)->item(0) : $xpath->query('.//nav[ul]', $sidebar)->item(0);
         if (!$root) return $html;
         $rows = [];
         foreach ($root->childNodes as $node) if ($node instanceof \DOMElement && strtolower($node->tagName) === 'li') $rows[] = $node;
@@ -95,10 +96,10 @@ final class ServerSidebarComposer
                 if (substr_count($html, 'id="'.$id.'"') + substr_count($html, "id='".$id."'") !== 1) return $html;
                 preg_match('/<'.preg_quote($root->tagName, '/').'\b[^>]*\bid=["\']'.preg_quote($id, '/').'["\'][^>]*>/i', $html, $opening, PREG_OFFSET_CAPTURE);
             } elseif ($classes !== '') {
-                // Class-only roots are ambiguous in a full document. Refuse
-                // correlation here unless a stable id exists; fallback keeps
-                // the legacy client authority rather than replacing a wrong node.
-                return $html;
+                $classPattern = preg_quote($classes, '/');
+                preg_match_all('/<'.preg_quote($root->tagName, '/').'\\b[^>]*\\bclass=["\\\']'.$classPattern.'["\\\'][^>]*>/i', $html, $classMatches);
+                if (count($classMatches[0]) !== 1) return $html;
+                $opening = [[$classMatches[0][0], strpos($html, $classMatches[0][0])]];
             }
         }
         if (!$fragment || !$opening) {

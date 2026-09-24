@@ -1,6 +1,6 @@
-@extends($erpLayout)
-@section($erpTitleSection,'Travel Reports')
-@section($erpContentSection)
+@extends($layoutMeta['layout'])
+@section($layoutMeta['title_section'] ?? 'title','Travel Reports')
+@section($layoutMeta['content_section'] ?? 'content')
 <style>.et-travel-report{width:100%;max-width:none;min-width:0}.et-travel-report .card{background:#fff;border:1px solid #dfe7f0;border-radius:8px;padding:16px;margin-bottom:12px}.et-travel-report .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}.et-travel-report a{color:#1769d2;text-decoration:none;font-weight:700}.et-travel-report .kpi{font-size:22px;font-weight:800}</style>
 <div class="et-travel-report" data-et-travel-reports="1"><div class="card"><div class="muted">Dashboard &gt; Travel Reports</div><h1>Travel Reports</h1><p>Operational travel activity and movement reporting. No financial data.</p></div><div class="grid">@foreach($counts as $key=>$count)<div class="card"><div>{{ $reports[$key] ?? ucfirst($key) }}</div><div class="kpi">{{ $count }}</div></div>@endforeach</div><div class="card"><h2>Report Center</h2><div class="grid">@foreach($reports as $key=>$label)<div><a href="{{ route('travel-reports.'.$key) }}">{{ $label }}</a><p>Operational report</p></div>@endforeach</div></div></div>
 @endsection
