@@ -26,7 +26,23 @@ final class ServerSidebarComposer
         if (!$sidebar) return $html;
         $root = $sidebar->tagName === 'ul' ? $sidebar : $xpath->query('.//ul[li]', $sidebar)->item(0);
         if (!$root) $root = $sidebar->tagName === 'nav' ? $xpath->query('.//ul[li]', $sidebar)->item(0) : $xpath->query('.//nav[ul]', $sidebar)->item(0);
-        if (!$root) return $html;
+        if (!$root) {
+            // Some native shells use NAV/DIV/A rather than UL/LI. Preserve
+            // that host structure and add the authorized report entry once.
+            $container = $xpath->query('.//nav[.//a]', $sidebar)->item(0) ?: $sidebar;
+            $hasTravelReports = false;
+            foreach ($xpath->query('.//a', $container) as $anchor) {
+                if (strtolower(trim(preg_replace('/\s+/', ' ', $anchor->textContent))) === 'travel reports') {
+                    $hasTravelReports = true;
+                    break;
+                }
+            }
+            if ($hasTravelReports) return $html;
+            $anchor = $dom->createElement('a', 'Travel Reports');
+            $anchor->setAttribute('href', '/travel-reports');
+            $container->appendChild($anchor);
+            return $dom->saveHTML();
+        }
         $rows = [];
         foreach ($root->childNodes as $node) if ($node instanceof \DOMElement && strtolower($node->tagName) === 'li') $rows[] = $node;
         if (!$rows) return $html;

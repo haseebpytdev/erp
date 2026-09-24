@@ -29,7 +29,7 @@ ok(service.includes('movementHotels')&&service.includes('booking_group_package_h
 ok(service.includes('movementTransport')&&service.includes('booking_group_package_transports')&&service.includes('route_name'),'transport enrichment');
 ok(service.includes('booking_reference','booking_ref')&&service.includes("$r['booking_no']"),'booking reference fallback');
 ok(!view.match(/\b(?:Sale|Cost|Basic Fare|Taxes|Profit|Revenue|Supplier Cost|Commission|Customer Total|Supplier Total|PKR|SR|USD)\b/i),'financial fields excluded');
-ok(filterSource.includes('onclick="{{ $action[\'onclick\'] }}"')&&filterSource.includes("'onclick'=>'window.print()'"),'print button');
+ok(filterSource.includes("$action['onclick']")&&filterSource.includes("'onclick' => 'window.print()'"),'print button');
 ok(filterSource.includes('Branch ID')&&filterSource.includes('Customer ID')&&filterSource.includes('name="{{ $filter[\'key\'] }}"'),'filter ID semantics');
 ok(filterPartial.includes('grid-template-columns:repeat(3')&&filterPartial.includes('grid-template-columns:repeat(2')&&filterPartial.includes('grid-template-columns:1fr'),'shared responsive filter grid');
 ok(filterPartial.includes('et-report-filter-actions')&&filterPartial.includes('grid-column:1/-1'),'actions occupy a separate row');

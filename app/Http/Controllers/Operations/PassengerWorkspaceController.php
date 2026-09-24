@@ -24,11 +24,15 @@ final class PassengerWorkspaceController extends Controller
     public function index(Request $request)
     {
         $query = trim((string) $request->query('q', ''));
-        $needle = Str::lower($query);
-        $filtered = $this->source->passengers()->filter(function (array $row) use ($needle): bool {
-            if ($needle === '') return true;
-            return str_contains(Str::lower((string) ($row['name'] ?? '')), $needle)
-                || str_contains(Str::lower(UnifiedGroupPackageDataSource::normalizePassport((string) ($row['passport_no'] ?? ''))), UnifiedGroupPackageDataSource::normalizePassport($needle));
+        $nameNeedle = Str::lower($query);
+        $passportNeedle = UnifiedGroupPackageDataSource::normalizePassport($query);
+        $filtered = $this->source->passengers()->filter(function (array $row) use ($nameNeedle, $passportNeedle): bool {
+            if ($nameNeedle === '') return true;
+            return str_contains(Str::lower((string) ($row['name'] ?? '')), $nameNeedle)
+                || ($passportNeedle !== '' && str_contains(
+                    UnifiedGroupPackageDataSource::normalizePassport((string) ($row['passport_no'] ?? '')),
+                    $passportNeedle
+                ));
         })->values();
         $page = max(1, (int) $request->query('page', 1));
         $perPage = 25;

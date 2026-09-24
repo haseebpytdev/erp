@@ -9,7 +9,21 @@
  <div class="et-arrival-card et-arrival-tabs" aria-label="Movement Reports">
   @foreach($movements as $movementKey=>$movementLabel)<a class="{{ $movementKey==='arrival'?'active':'' }}" href="{{ route('travel-reports.group-umrah.'.$movementKey) }}">{{ $movementKey==='arrival'?'Arrival':$movementLabel }}</a>@endforeach
  </div>
- @include('reports.travel.partials.filter-form',['filters'=>[['key'=>'from','label'=>'From Date','type'=>'date'],['key'=>'to','label'=>'To Date','type'=>'date'],['key'=>'status','label'=>'Status','type'=>'text'],['key'=>'branch','label'=>'Branch ID','type'=>'text'],['key'=>'customer','label'=>'Customer ID','type'=>'text']],'actions'=>[['label'=>'Apply Filters','type'=>'submit'],['label'=>'Reset','type'=>'link','class'=>'secondary','href'=>route('travel-reports.group-umrah.arrival')],['label'=>'Print','type'=>'button','class'=>'secondary','onclick'=>'window.print()'],['label'=>'Export CSV','type'=>'link','class'=>'secondary','href'=>route('travel-reports.group-umrah.arrival.export',request()->query())]])
+ @include('reports.travel.partials.filter-form', [
+     'filters' => [
+         ['key' => 'from', 'label' => 'From Date', 'type' => 'date'],
+         ['key' => 'to', 'label' => 'To Date', 'type' => 'date'],
+         ['key' => 'status', 'label' => 'Status', 'type' => 'text'],
+         ['key' => 'branch', 'label' => 'Branch ID', 'type' => 'text'],
+         ['key' => 'customer', 'label' => 'Customer ID', 'type' => 'text'],
+     ],
+     'actions' => [
+         ['label' => 'Apply Filters', 'type' => 'submit'],
+         ['label' => 'Reset', 'type' => 'link', 'class' => 'secondary', 'href' => route('travel-reports.group-umrah.arrival')],
+         ['label' => 'Print', 'type' => 'button', 'class' => 'secondary', 'onclick' => 'window.print()'],
+         ['label' => 'Export CSV', 'type' => 'link', 'class' => 'secondary', 'href' => route('travel-reports.group-umrah.arrival.export', request()->query())],
+     ],
+ ])
  <div class="et-arrival-card"><strong>Arrival Results</strong> <span class="et-arrival-sub">{{ method_exists($rows,'total')?$rows->total():0 }} records</span></div>
  <div class="et-arrival-card"><div class="et-arrival-scroll"><table class="et-arrival-table"><thead><tr><th>Arrival Date</th><th>Arrival Time</th><th>Booking No.</th><th>Customer / Group</th><th>Total Pax</th><th>Adult</th><th>Child</th><th>Infant</th><th>Flight</th><th>Sector</th><th>Makkah Hotel</th><th>Transport</th><th>Saudi Company</th><th>Pakistani IATA</th><th>Status</th><th>Branch</th><th>Agent / Salesperson</th><th>View</th></tr></thead><tbody>@forelse($rows as $row)<tr><td>{{ $row['arrival']??'—' }}</td><td>{{ $row['arrival_time']??'—' }}</td><td>{{ $row['booking_no']??'—' }}</td><td>{{ $row['customer']??'—' }}</td><td>{{ $row['total_pax']??'—' }}</td><td>{{ $row['adult']??'—' }}</td><td>{{ $row['child']??'—' }}</td><td>{{ $row['infant']??'—' }}</td><td>{{ $row['flight']??'—' }}</td><td>{{ $row['sector']??'—' }}</td><td>{{ $row['makkah_hotel']??'—' }}</td><td>{{ $row['transport']??'—' }}</td><td>{{ $row['saudi_company']??'—' }}</td><td>{{ $row['pakistani_iata']??'—' }}</td><td><span class="et-arrival-badge">{{ $row['status']??'—' }}</span></td><td>{{ $row['branch']??'—' }}</td><td>{{ $row['agent_salesperson']??'—' }}</td><td>@if(($row['action']??'—')!=='—')<a href="{{ $row['action'] }}">View</a>@else—@endif</td></tr>@empty<tr><td colspan="18">No arrival records match the selected filters.</td></tr>@endforelse</tbody></table></div>@if(is_object($rows) && method_exists($rows,'links')){{ $rows->links() }}@endif</div>
 </div>

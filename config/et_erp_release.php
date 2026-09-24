@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.344-ERP11.3.344',
-    'release' => 'ERP-11.3.344',
-    'package' => 'ERP-11.3.344 Travel Reports and Passenger Master Live-UAT Corrective',
-    'package_detail' => 'ERP-11.3.344 standardizes responsive Travel Report filters, makes Passenger Master passport search authoritative across merged sources before pagination, keeps Reports navigation reachable in the scrollable shell, and resolves the native host title to Travel Reports on report routes. Existing authorization, duplicate protection, report authorities, formulas, persistence, database schema, and migrations remain unchanged. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.345-ERP11.3.345',
+    'release' => 'ERP-11.3.345',
+    'package' => 'ERP-11.3.345 Live-UAT Passport, Arrival and Reports Menu Corrective',
+    'package_detail' => 'ERP-11.3.345 corrects canonical Passenger Master passport search, repairs the Arrival shared-filter Blade structure, and supports Travel Reports insertion into native NAV/DIV/A sidebar hosts while preserving authorization, pagination, report filters, calculations, persistence, database schema, and migrations. NEW_MIGRATION_REQUIRED=NO.',
 ];
 
