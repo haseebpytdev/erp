@@ -19,10 +19,14 @@ for(const css of ['width:100%','max-width:none','min-width:0','overflow-x:hidden
 ok(!view.match(/<html|<body|position\s*:\s*(absolute|fixed)/i),'no standalone shell or positioning hack');
 for(const column of ['Arrival Date','Arrival Time','Booking No.','Customer / Group','Total Pax','Adult','Child','Infant','Flight','Sector','Makkah Hotel','Transport','Saudi Company','Pakistani IATA','Status','Branch','Agent / Salesperson','View'])ok(view.includes(column),`arrival column ${column}`);
 ok(service.includes('booking_group_package_flights')&&service.includes("arrival_date','arrival_at','arrival_datetime")&&service.includes("'inbound"),'arrival event authority');
+ok(service.includes('movementArrivalTime($event)')&&service.includes('arrival_time'), 'arrival date/time authorities');
+ok(service.includes('arrival_at')&&service.includes('arrival_datetime')&&!view.includes('preg_split'),'arrival time legacy fallback without whitespace split authority');
 ok(service.includes('movementHotels')&&service.includes('booking_group_package_hotels')&&service.includes('makkah'),'Makkah hotel enrichment');
 ok(service.includes('movementTransport')&&service.includes('booking_group_package_transports')&&service.includes('route_name'),'transport enrichment');
 ok(service.includes('booking_reference','booking_ref')&&service.includes("$r['booking_no']"),'booking reference fallback');
 ok(!view.match(/\b(?:Sale|Cost|Basic Fare|Taxes|Profit|Revenue|Supplier Cost|Commission|Customer Total|Supplier Total|PKR|SR|USD)\b/i),'financial fields excluded');
+ok(view.includes('onclick="window.print()"'),'print button');
+ok(view.includes('Branch ID')&&view.includes('Customer ID')&&view.includes('name="branch"')&&view.includes('name="customer"'),'filter ID semantics');
 ok(!routes.includes('Route::get(\'/travel-reports/{movement}'),'no uncontrolled movement wildcard');
 ok(!service.includes('Schema::create')&&!routes.includes('migrate'),'no migration');
 ok(!view.includes('max-width:1200px')&&!view.includes('max-width:1400px'),'full-width canvas');
