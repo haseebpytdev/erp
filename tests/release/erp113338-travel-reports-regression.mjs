@@ -92,6 +92,12 @@ ok(service.includes('transportRow') && service.includes("$row['travel_date']") &
 ok(service.includes("$r['booking_date']") && service.includes("$r['travel_date']") && service.includes("$r['product']=$this->productNames($id)"), 'Passenger row includes booking context and product authority');
 ok(service.includes('supplierDimensionKeyQuery') && service.includes('fromSub'), 'Supplier dimension has a bounded normalized key query');
 ok(service.includes('airDimensionKeyQuery') && service.includes("CONCAT($from, ' → ', $to)"), 'Airline and sector dimension keys use filtered normalized authorities');
+ok(service.includes('filteredPassengerQuery') && service.includes("where('status',$filters['status'])") && service.includes("where('b.status',$filters['status'])"), 'Passenger status filter has explicit native/booking query authority');
+ok(service.includes('dimensionCanonical') && service.includes('canonical_key') && service.includes('display_label'), 'Customer/branch/agent/salesperson dimensions retain canonical keys and display labels');
+ok(service.includes('supplierCanonical') && service.includes("LOWER(TRIM($column)) as dimension_key") && service.includes('in_array($canonical,$allowed,true)'), 'Supplier key discovery and bounded aggregation share canonical keys');
+ok(service.includes("$key==='airlines'?$this->normalizedDimensionKey($air):$sector") && service.includes('if(!$name||$name===\'—\'||($allowed&&!in_array($canonical,$allowed,true)))continue'), 'Airline and sector aggregation enforces only allowed canonical page keys');
+ok(service.includes("$departure=collect(['departure_at','departure_datetime','departure_date'])") && service.includes('whereDate($departure'), 'Air dimension key query applies itinerary date filters before pagination');
+ok(service.includes('$allowed=collect') && service.includes('$this->dimensionAggregate($key,$filters,$allowed)') && service.includes('paginate($perPage'), 'Dimension pages paginate canonical keys before bounded hydration');
 ok(service.includes("booking_group_package_hotels as h") && service.includes("$dateMap[$basis]"), 'Group Umrah hotel filters and date basis use child hotel authority');
 ok(!service.includes('passesReportFilters($record,$filters)') && !service.includes('passesArrayFilters($row,$filters)'), 'standard report rows have no post-pagination rejection');
 for (const filter of ['origin','destination','ticket_no','issue_date','salesperson']) ok(service.includes(`$filters['${filter}']`) || service.includes(`'${filter}'`), `Air/dimension filter ${filter} is declared and applied`);
