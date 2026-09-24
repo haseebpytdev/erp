@@ -1,6 +1,6 @@
-ERP-11.3.341 Travel Reports PHP 8.5 Compatibility Corrective
+ERP-11.3.342 Arrival Movement Report
 
-Active release: v1.1.33.341-ERP11.3.341
+Active release: v1.1.33.342-ERP11.3.342
 
 ERP-11.3.337 remains the live release after rollback. ERP-11.3.338 failed
 startup at TravelReportService.php line 55 and was rolled back. ERP-11.3.339
@@ -8,12 +8,36 @@ failed startup at line 101 and was rolled back. ERP-11.3.340 repaired both
 syntax defects, but its PHP 8.5.7 parser preflight was held for an implicit
 nullable parameter; .340 was not packaged or deployed. ERP-11.3.341 applies
 the explicit nullable correction and passed the server PHP 8.5.7 parser check
-for all six files. ERP-11.3.341 is not deployed.
-CURRENT_LIVE_RELEASE=ERP-11.3.337
+for all six files. ERP-11.3.341 is the current live production release with
+System Health PASS, PHP 8.5.7, Database Connected and schema up to date.
+ERP-11.3.342 is not deployed.
+CURRENT_LIVE_RELEASE=ERP-11.3.341
 NEW_MIGRATION_REQUIRED=NO
 
 Deployment remains manual cPanel direct upload after final package
-certification. No database migration is required for .341.
+certification. No database migration is required for .342.
+
+ERP-11.3.342 scope includes deterministic Travel Report child-route defaults,
+NativeErpLayoutResolver shell presentation, safer server-sidebar ownership,
+the Travel Reports / Movement Reports rollout, and the dedicated Arrival Report
+Phase 1 operational page. Arrival provides its operational columns, booking /
+Makkah hotel / transport enrichment, deterministic CSV export, Browser Print,
+View action, and table-only horizontal scrolling. Other five movement pages and
+broader report polish remain deferred. Travel Reports contain no financial data.
+
+Deployment order after final certification:
+1. Confirm ERP-11.3.341 is currently serving production.
+2. Stop relevant ERP editing and take a fresh full database backup.
+3. Upload/extract ONE authoritative ERP-11.3.342 ZIP through cPanel.
+4. Open System Health & Updates; confirm version v1.1.33.342-ERP11.3.342,
+   Database = Connected and schema up to date.
+5. Confirm ERP-11.3.342 introduces NO new migration.
+6. Clear Application Cache, Ctrl+F5, then run focused Arrival / Movement
+   Reports UAT, including sidebar access, native shell geometry, filters,
+   Arrival Date and Arrival Time, enrichment, CSV, Print, View, table-only
+   scrolling and no financial fields.
+
+ERP-11.3.342 is a deployment candidate only; it is not packaged or deployed.
 
 ERP-11.3.340 Travel Reports Remaining Startup Parse Hotfix
 
