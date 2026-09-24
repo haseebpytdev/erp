@@ -37,7 +37,8 @@ Deployment order after final certification:
    Arrival Date and Arrival Time, enrichment, CSV, Print, View, table-only
    scrolling and no financial fields.
 
-ERP-11.3.342 is a deployment candidate only; it is not packaged or deployed.
+ERP-11.3.342 is FINALIZED / READY FOR PACKAGING; it is not packaged or
+deployed.
 
 ERP-11.3.340 Travel Reports Remaining Startup Parse Hotfix
 
