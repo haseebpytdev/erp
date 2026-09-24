@@ -16,11 +16,19 @@ final class TravelReportsController extends Controller
     }
     public function movement(Request $request,string $movement): \Illuminate\View\View {
         abort_unless(isset(TravelReportService::MOVEMENTS[$movement]),404);
+        if ($movement === 'arrival') {
+            $layoutMeta=$this->layoutResolver->resolve();
+            return view('reports.travel.movements.arrival',['layoutMeta'=>$layoutMeta,'title'=>'Arrival Report','report'=>$movement,'definition'=>$this->reports->definition($movement),'rows'=>$this->reports->rows($movement,$request->query(),(int)$request->query('per_page',50)),'movements'=>TravelReportService::MOVEMENTS]);
+        }
         return $this->view('report',TravelReportService::MOVEMENTS[$movement],$movement,$request,true);
     }
     public function export(Request $request,string $report): StreamedResponse {
         abort_unless(isset(TravelReportService::REPORTS[$report]),404); $service=$this->reports; $filters=$request->query();
         return response()->streamDownload(function() use($service,$report,$filters){ $out=fopen('php://output','w'); $columns=$service->definition($report)['columns']; fputcsv($out,array_column($columns,'label')); foreach($service->streamRows($report,$filters) as $row){$values=[]; foreach($columns as $column){$v=(string)($row[$column['key']]??'—');$values[]=in_array($v[0]??'', ['=','+','-','@'],true)?"'".$v:$v;} fputcsv($out,$values);} fclose($out); },'travel-'.$report.'.csv',['Content-Type'=>'text/csv']);
+    }
+    public function exportMovement(Request $request,string $movement): StreamedResponse {
+        abort_unless(isset(TravelReportService::MOVEMENTS[$movement]),404); $service=$this->reports; $filters=$request->query();
+        return response()->streamDownload(function() use($service,$movement,$filters){ $out=fopen('php://output','w'); $columns=$service->definition($movement)['columns']; fputcsv($out,array_column($columns,'label')); foreach($service->streamRows($movement,$filters) as $row){$values=[]; foreach($columns as $column){$v=(string)($row[$column['key']]??'—');$values[]=in_array($v[0]??'', ['=','+','-','@'],true)?"'".$v:$v;} fputcsv($out,$values);} fclose($out); },'travel-'.$movement.'.csv',['Content-Type'=>'text/csv']);
     }
     private function view(string $name,string $title,?string $report=null,?Request $request=null,bool $movement=false): \Illuminate\View\View {
         $layoutMeta=$this->layoutResolver->resolve(); $data=['title'=>$title,'report'=>$report,'definition'=>$report?$this->reports->definition($report):null,'rows'=>$report&&$request?$this->reports->rows($report,$request->query(),(int)$request->query('per_page',50)):collect(),'counts'=>$this->reports->counts(),'reports'=>TravelReportService::REPORTS,'movements'=>TravelReportService::MOVEMENTS,'movement'=>$movement,'layoutMeta'=>$layoutMeta];

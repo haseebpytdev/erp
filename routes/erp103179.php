@@ -512,6 +512,8 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
                 ->defaults('report', $report)->name($report);
         }
         foreach (array_keys(\App\Services\Reports\TravelReportService::MOVEMENTS) as $movement) {
+            Route::get('/group-umrah/'.$movement.'/export', [TravelReportsController::class, 'exportMovement'])
+                ->defaults('movement', $movement)->name('group-umrah.'.$movement.'.export');
             Route::get('/group-umrah/'.$movement, [TravelReportsController::class, 'movement'])
                 ->defaults('movement', $movement)->name('group-umrah.'.$movement);
         }
