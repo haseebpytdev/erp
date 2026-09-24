@@ -1,3 +1,32 @@
+ERP-11.3.340 Travel Reports Remaining Startup Parse Hotfix
+
+Active release: v1.1.33.340-ERP11.3.340
+
+ERP-11.3.337 is currently live again after rollback. Its visual UAT was
+accepted, but .337 System Health verification was not supplied. ERP-11.3.338
+was deployed and failed startup with HTTP 500 at TravelReportService.php line
+55 and was rolled back. ERP-11.3.339 was deployed and failed startup with
+HTTP 500 at TravelReportService.php line 101 and was rolled back. ERP-11.3.340
+repairs the remaining parse defect and is not deployed.
+NEW_MIGRATION_REQUIRED=NO
+
+Deployment order:
+1. Confirm ERP-11.3.337 is currently serving production.
+2. Stop relevant ERP editing and take a fresh full database backup.
+3. Upload/extract ONE authoritative ERP-11.3.340 ZIP through cPanel.
+4. Do not run a migration solely for ERP-11.3.340.
+5. Load the ERP root/dashboard and confirm the startup failure is gone.
+6. Open System Health & Updates; confirm version v1.1.33.340-ERP11.3.340,
+   Database = Connected and schema up to date.
+7. Confirm ERP-11.3.340 introduces NO new migration.
+8. Clear Application Cache, Ctrl+F5, then run focused Travel Reports UAT.
+If startup still returns HTTP 500, HOLD and capture the newest Laravel error.
+
+Focused .340 UAT (not yet completed): verify root, login/dashboard and System
+Health, then run the existing Travel Reports checks for Report Center,
+Booking, Passenger, Air, Hotel, Visa, Transport, Group Umrah, movements,
+dimensions, CSV, Browser Print, RBAC and no financial fields.
+
 ERP-11.3.339 Travel Reports Startup Parse Hotfix
 
 Active release: v1.1.33.339-ERP11.3.339
