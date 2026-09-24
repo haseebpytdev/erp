@@ -122,7 +122,7 @@ class ApplyErpReleaseMetadata
             report($e);
         }
 
-
+        $html = $this->normalizeTravelReportHostTitle($request, $html);
         $html = $this->injectProfessionalUi($request, $html, $version);
 
         /*
@@ -211,6 +211,61 @@ class ApplyErpReleaseMetadata
         $timing?->stop('release_response');
         $timing?->stop('release_metadata');
         return $response;
+    }
+
+    /** Keep the native shell title route-aware without rewriting report headings. */
+    private function normalizeTravelReportHostTitle(Request $request, string $html): string
+    {
+        if (! str_starts_with(strtolower(trim($request->path(), '/')), 'travel-reports')) {
+            return $html;
+        }
+
+        if (! class_exists(\DOMDocument::class)) {
+            return $html;
+        }
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML(
+            '<?xml encoding="UTF-8">'.$html,
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if (! $loaded) {
+            return $html;
+        }
+
+        $xpath = new \DOMXPath($dom);
+        $hosts = $xpath->query(
+            '//*[self::header'
+            .' or contains(concat(" ", normalize-space(@class), " "), " topbar ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " top-bar ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " app-header ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " main-header ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " page-header ")'
+            .' or contains(concat(" ", normalize-space(@class), " "), " navbar-horizontal ")]'
+        );
+
+        if (! $hosts) {
+            return $html;
+        }
+
+        foreach ($hosts as $host) {
+            $heading = $xpath->query(
+                './/*[self::h1 or self::h2 or self::h3 or self::span]'
+                .'[normalize-space(.)="Dashboard"]',
+                $host
+            )->item(0);
+
+            if ($heading instanceof \DOMElement) {
+                $heading->nodeValue = 'Travel Reports';
+                return $dom->saveHTML();
+            }
+        }
+
+        return $html;
     }
 
     private function injectProfessionalUi(Request $request, string $html, string $version): string

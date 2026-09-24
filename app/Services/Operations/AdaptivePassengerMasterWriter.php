@@ -96,7 +96,7 @@ class AdaptivePassengerMasterWriter
             return null;
         }
 
-        $passportColumn = $this->firstColumn($columns, ['passport_no', 'passport_number']);
+        $passportColumn = $this->firstColumn($columns, ['passport_no', 'passport_number', 'passport', 'passport_id', 'document_number']);
         $passport = trim((string) ($row['passport_no'] ?? ''));
         if ($passportColumn && $passport !== '') {
             $found = DB::table($table)->whereRaw("UPPER(REPLACE(`$passportColumn`, ' ', '')) = ?", [$passport])->value('id');
@@ -135,7 +135,7 @@ class AdaptivePassengerMasterWriter
         $this->put($row, $columns, ['last_name', 'surname', 'family_name'], $data['last_name'] ?? null);
         $this->put($row, $columns, ['name', 'passenger_name'], trim(($data['first_name'] ?? '') . ' ' . ($data['last_name'] ?? '')));
         $this->put($row, $columns, ['date_of_birth', 'dob', 'birth_date'], $data['date_of_birth'] ?? null);
-        $this->put($row, $columns, ['passport_no', 'passport_number'], $data['passport_no'] ?? null);
+        $this->put($row, $columns, ['passport_no', 'passport_number', 'passport', 'passport_id', 'document_number'], $data['passport_no'] ?? null);
         $this->put($row, $columns, ['passport_expiry', 'passport_expiry_date'], $data['passport_expiry'] ?? null);
         $this->putFitted($row, $table, $columns, ['nationality', 'nationality_name', 'country'], $data['nationality'] ?? null);
         if ($bookingId !== null) $this->put($row, $columns, ['booking_id'], $bookingId);

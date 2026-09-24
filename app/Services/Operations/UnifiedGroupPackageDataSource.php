@@ -121,7 +121,7 @@ class UnifiedGroupPackageDataSource
                 $first = (string) $this->value($a, $columns, ['first_name', 'given_name', 'name', 'passenger_name'], '');
                 $last = (string) $this->value($a, $columns, ['last_name', 'surname', 'family_name'], '');
                 $full = trim($first . ' ' . $last);
-                $passport = (string) $this->value($a, $columns, ['passport_no', 'passport_number'], '');
+                $passport = $this->passportValue($a, $columns);
                 $dob = (string) $this->value($a, $columns, ['date_of_birth', 'dob', 'birth_date'], '');
 
                 if ($full === '' && $passport === '') {
@@ -186,7 +186,7 @@ class UnifiedGroupPackageDataSource
             $hasIdentity = ($this->firstColumn($columns, ['first_name', 'given_name']) !== null)
                 || ($this->firstColumn($columns, ['name', 'passenger_name']) !== null);
             if (in_array('id', $columns, true)
-                && $this->firstColumn($columns, ['passport_no', 'passport_number'])
+                && $this->firstColumn($columns, ['passport_no', 'passport_number', 'passport', 'passport_id', 'document_number'])
                 && $hasIdentity) {
                 $allowed[] = $table;
             }
@@ -953,5 +953,16 @@ class UnifiedGroupPackageDataSource
         }
 
         return $default;
+    }
+
+    /** Resolve the first non-empty passport value across installed schema aliases. */
+    private function passportValue(array $row, array $columns): string
+    {
+        foreach (['passport_no', 'passport_number', 'passport', 'passport_id', 'document_number'] as $candidate) {
+            if (! in_array($candidate, $columns, true) || ! array_key_exists($candidate, $row)) continue;
+            $value = trim((string) ($row[$candidate] ?? ''));
+            if ($value !== '') return $value;
+        }
+        return '';
     }
 }

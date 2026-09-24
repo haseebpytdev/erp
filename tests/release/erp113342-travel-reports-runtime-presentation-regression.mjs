@@ -9,6 +9,10 @@ const resolver = read('../../app/Services/Operations/NativeErpLayoutResolver.php
 const index = read('../../resources/views/reports/travel/index.blade.php');
 const report = read('../../resources/views/reports/travel/report.blade.php');
 const service = read('../../app/Services/Reports/TravelReportService.php');
+const middleware = read('../../app/Http/Middleware/ApplyErpReleaseMetadata.php');
+const shellCss = read('../../public/erp-theme/et-shell.css');
+const passengerSource = read('../../app/Services/Operations/UnifiedGroupPackageDataSource.php');
+const passengerController = read('../../app/Http/Controllers/Operations/PassengerWorkspaceController.php');
 let assertions = 0;
 const ok = (value, message) => { assertions += 1; assert.ok(value, message); };
 
@@ -47,4 +51,16 @@ ok(report.includes('width:100%') && report.includes('max-width:none') && report.
 ok(report.includes('overflow-x:auto'), 'table scroll is container-local');
 ok(!index.match(/position\s*:\s*(absolute|fixed)|left\s*:\s*-\d+/i) && !report.match(/position\s*:\s*(absolute|fixed)|left\s*:\s*-\d+/i), 'no overlay positioning workaround');
 ok(!service.match(/sale_price|cost_price|gross_margin|supplier_cost|profitability|commission/i), 'no financial fields introduced');
+ok(middleware.includes('normalizeTravelReportHostTitle'), 'travel report host title normalizer is in final response path');
+ok(middleware.includes("'Travel Reports'"), 'travel report host title is explicit');
+for (const route of ['travel-reports','travel-reports/sectors','travel-reports/group-umrah/arrival','travel-reports/group-umrah/departure-intimation']) {
+  ok(middleware.includes("str_starts_with(strtolower(trim($request->path(), '/')), 'travel-reports')"), `host title route guard covers ${route}`);
+}
+ok(shellCss.includes('display:flex!important;') && shellCss.includes('flex-direction:column!important;'), 'sidebar owns vertical flex layout');
+ok(shellCss.includes('.sidebar .nav') && shellCss.includes('flex:1 1 auto!important'), 'sidebar navigation owns remaining height');
+ok(shellCss.includes('.sidebar footer') && shellCss.includes('flex:0 0 auto!important'), 'sidebar release footer remains fixed sibling');
+ok(passengerSource.includes('passportValue($a, $columns)'), 'passenger sources use canonical passport resolver');
+ok(passengerSource.includes("'passport', 'passport_id', 'document_number'"), 'passport aliases are supported');
+ok(passengerController.includes("normalizePassport((string) ($row['passport_no'] ?? ''))"), 'search uses canonical displayed passport');
+ok(passengerController.includes('forPage($page, $perPage)'), 'passenger search paginates after filtering');
 console.log(`PASS erp113342 travel reports runtime presentation regression (${assertions} assertions)`);

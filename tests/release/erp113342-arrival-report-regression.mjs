@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const read = file => fs.readFileSync(new URL(file, import.meta.url), 'utf8');
-const routes=read('../../routes/erp103179.php'); const controller=read('../../app/Http/Controllers/Reports/TravelReportsController.php'); const service=read('../../app/Services/Reports/TravelReportService.php'); const sidebar=read('../../app/Services/Operations/ServerSidebarComposer.php'); const view=read('../../resources/views/reports/travel/movements/arrival.blade.php');
+const routes=read('../../routes/erp103179.php'); const controller=read('../../app/Http/Controllers/Reports/TravelReportsController.php'); const service=read('../../app/Services/Reports/TravelReportService.php'); const sidebar=read('../../app/Services/Operations/ServerSidebarComposer.php'); const view=read('../../resources/views/reports/travel/movements/arrival.blade.php'); const filterPartial=read('../../resources/views/reports/travel/partials/filter-form.blade.php'); const filterSource=view+'\n'+filterPartial;
 let assertions=0; const ok=(v,m)=>{assertions++;assert.ok(v,m)};
 ok(view.includes("@extends($layoutMeta['layout'])"),'dedicated Arrival view');
 ok(controller.includes("$movement === 'arrival'")&&controller.includes("reports.travel.movements.arrival"),'arrival-only view selection');
@@ -29,8 +29,10 @@ ok(service.includes('movementHotels')&&service.includes('booking_group_package_h
 ok(service.includes('movementTransport')&&service.includes('booking_group_package_transports')&&service.includes('route_name'),'transport enrichment');
 ok(service.includes('booking_reference','booking_ref')&&service.includes("$r['booking_no']"),'booking reference fallback');
 ok(!view.match(/\b(?:Sale|Cost|Basic Fare|Taxes|Profit|Revenue|Supplier Cost|Commission|Customer Total|Supplier Total|PKR|SR|USD)\b/i),'financial fields excluded');
-ok(view.includes('onclick="window.print()"'),'print button');
-ok(view.includes('Branch ID')&&view.includes('Customer ID')&&view.includes('name="branch"')&&view.includes('name="customer"'),'filter ID semantics');
+ok(filterSource.includes('onclick="{{ $action[\'onclick\'] }}"')&&filterSource.includes("'onclick'=>'window.print()'"),'print button');
+ok(filterSource.includes('Branch ID')&&filterSource.includes('Customer ID')&&filterSource.includes('name="{{ $filter[\'key\'] }}"'),'filter ID semantics');
+ok(filterPartial.includes('grid-template-columns:repeat(3')&&filterPartial.includes('grid-template-columns:repeat(2')&&filterPartial.includes('grid-template-columns:1fr'),'shared responsive filter grid');
+ok(filterPartial.includes('et-report-filter-actions')&&filterPartial.includes('grid-column:1/-1'),'actions occupy a separate row');
 ok(!routes.includes('Route::get(\'/travel-reports/{movement}'),'no uncontrolled movement wildcard');
 ok(!service.includes('Schema::create')&&!routes.includes('migrate'),'no migration');
 ok(!view.includes('max-width:1200px')&&!view.includes('max-width:1400px'),'full-width canvas');

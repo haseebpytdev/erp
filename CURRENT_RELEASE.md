@@ -1,10 +1,10 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.343
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.344
 CURRENT_LIVE_RELEASE=ERP-11.3.341
-CURRENT_VERSION=ERP-11.3.343
-APPLICATION_VERSION=v1.1.33.343-ERP11.3.343
+CURRENT_VERSION=ERP-11.3.344
+APPLICATION_VERSION=v1.1.33.344-ERP11.3.344
 CURRENT_LIVE_VERSION=v1.1.33.341-ERP11.3.341
 CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
@@ -12,9 +12,27 @@ NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.341 PACKAGED / DEPLOYED / CURRENT LIVE PRODUCTION; System Health PASS; PHP 8.5.7; Database Connected; database schema up to date; ERP-11.3.343 FUNCTIONAL CANDIDATE VALIDATED; NOT PACKAGED; NOT DEPLOYED. Historical ERP-11.3.337 was the restored former baseline; ERP-11.3.338 and ERP-11.3.339 failed startup and were rolled back; ERP-11.3.340 was metadata-finalized but never packaged or deployed.
+PRODUCTION_STATUS=ERP-11.3.341 PACKAGED / DEPLOYED / CURRENT LIVE PRODUCTION; System Health PASS; PHP 8.5.7; Database Connected; database schema up to date; ERP-11.3.344 FUNCTIONAL CANDIDATE VALIDATED; NOT PACKAGED; NOT DEPLOYED. Historical ERP-11.3.337 was the restored former baseline; ERP-11.3.338 and ERP-11.3.339 failed startup and were rolled back; ERP-11.3.340 was metadata-finalized but never packaged or deployed.
 LAST_PACKAGED_RELEASE=ERP-11.3.341
 ```
+
+ERP-11.3.344 Travel Reports, Passenger Master and Shell Presentation Corrective
+
+ERP-11.3.344 closes the remaining live-UAT presentation and data-authority
+issues: all Travel Reports use the shared responsive filter-grid partial,
+Passenger Master passport search resolves the displayed identity across
+authorized merged sources before deterministic 25-row pagination, Reports
+navigation owns the remaining sidebar height with a fixed release footer, and
+the native host shell resolves Travel Reports routes to the Travel Reports
+title. Existing report routes, authorization, calculations, pagination,
+duplicate protection, persistence, database schema and migrations remain
+unchanged. NEW_MIGRATION_REQUIRED=NO.
+
+FILTER_LAYOUT_REGRESSION=PASS
+PASSENGER_SEARCH_REGRESSION=PASS
+REPORTS_SIDEBAR_REGRESSION=PASS
+REPORT_HOST_TITLE_REGRESSION=PASS
+NEW_NODE_FAILURES=0
 
 ERP-11.3.342 Arrival Movement Report
 

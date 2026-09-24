@@ -249,6 +249,25 @@ body.et-ui-professional .et-shell-content-frame{
     max-height:100vh!important;
     align-self:flex-start!important;
     overflow:hidden!important;
+
+    display:flex!important;
+    flex-direction:column!important;
+  }
+
+  /* The brand and release footer are fixed flex siblings; only navigation
+     owns the remaining viewport height and scrolls independently. */
+  body.et-ui-professional .sidebar .nav,
+  body.et-ui-professional .navbar-vertical .nav,
+  body.et-ui-professional .side-nav .nav{
+    flex:1 1 auto!important;
+    height:auto!important;
+    max-height:none!important;
+  }
+
+  body.et-ui-professional .sidebar footer,
+  body.et-ui-professional .sidebar .sidebar-footer,
+  body.et-ui-professional .sidebar .sidebar-foot{
+    flex:0 0 auto!important;
   }
 }
 
