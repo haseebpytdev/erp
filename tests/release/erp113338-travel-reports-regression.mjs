@@ -53,8 +53,8 @@ for (const filter of ['branch','customer','agent','product']) ok(service.include
 ok(service.includes("->cursor()") && !controller.includes('$service->rows($report'), 'CSV iterates complete cursor/stream path without pagination cap');
 ok(service.includes("$row['action']=$this->action") && views.includes("$column['key']==='action'") && views.includes('>View</a>'), 'action URLs render as safe View links');
 ok(service.includes("isset(self::MOVEMENTS[$key])") && service.includes("$movement=['booking_no'") && service.includes("$stay=['booking_no'"), 'movement-specific keyed column definitions');
-ok(service.includes('movementDate') && service.includes('dateInRange') && service.includes("arrival'=>$x->arrival_date") && service.includes("default=>$x->departure_date"), 'movement filters use child event dates');
-ok(service.includes('foreach($this->passengers->rows($id) as $p)'), 'passenger report iterates resolver result');
+ok(service.includes('movementEventQuery') && service.includes("['arrival_date','arrival_at','arrival_datetime']") && service.includes("['departure_date','departure_at','departure_datetime']"), 'movement filters use adaptive child event dates');
+ok(service.includes('passengerQuery($filters)') && service.includes('passengerQuery($filters)->cursor()'), 'passenger report iterates shared query result');
 ok(service.includes('private function bookingRow') && service.includes("$row['products']") && service.includes("$row['sector']") && service.includes("$row['check_in']"), 'booking report has dedicated operational row builder');
 ok(service.includes('applyAirFilters') && service.includes("$filters['pnr']") && service.includes("$filters['ticket_status']") && service.includes("$filters['airline']"), 'Air filters affect executable query paths');
 ok(service.includes("$key==='airlines'") && service.includes("$row['ticket_groups']") && service.includes("$row['sector_count']"), 'Airline-wise report has independent Air grain');
@@ -65,7 +65,7 @@ ok(service.includes("['from','from_code','origin','origin_code']") && service.in
 ok(service.includes("Schema::hasColumn('booking_services','pnr')") && service.includes("$filters['pnr']"), 'Air PNR filter uses Ticket Group authority');
 ok(service.includes('passengerPage') && service.includes('paginate($perPage') && service.includes('gender_title'), 'Passenger pagination is passenger-grain and gender-aware');
 ok(service.includes("'gender'=>['gender','title','gender_title']") && service.includes('passengerQuery') && !service.includes("'passengers'=>['branch','customer','passenger','pax_type','gender','nationality','product']"), 'Passenger Gender filter maps to resolved title and Product no-op is absent');
-ok(service.includes("$record->id??$record->booking_id??0"), 'Passenger resolver uses booking base id first');
+ok(service.includes('mapPassenger($record') && service.includes('bookingRecord($id)'), 'Passenger resolver uses linked Booking context');
 ok(service.includes("$airFilters=$filters;unset($airFilters['from'],$airFilters['to'],$airFilters['date_type'])"), 'Air generic created-at date filtering is removed');
 ok(service.includes('applyReportSpecificQuery') && service.includes('check_in') && service.includes('check_out') && service.includes('expiry_date') && service.includes('makkah_check_in') && service.includes('madinah_check_out'), 'report-specific date bases are implemented');
 ok(service.includes("whereColumn('b.id',\"$table.booking_id\")") && service.includes('withoutDateFilters'), 'child reports use linked booking authority before pagination');
@@ -155,4 +155,8 @@ ok(service.includes("$maps=['status'=>['status','workflow_status','booking_statu
 ok(service.includes("'branch_name','branch_id','office_id'") && service.includes("'agent_name','agent','agent_id'") && service.includes("'salesperson_name','salesperson','salesperson_id'"), 'Group Umrah branch agent and salesperson authority is adaptive');
 ok(service.includes("$this->applyNativeChildFilters('group-umrah',$q,$filters,$table)"), 'Group Umrah hotel child filters remain the sole child-hotel authority');
 ok(service.includes('groupUmrahQuery($filters);if(!$query)return;foreach($query->cursor()') && service.includes('groupRow($record)'), 'Group Umrah CSV uses the same query and row mapper as HTML');
+ok(service.includes("'makkah_check_in','makkah_check_out','madinah_check_in','madinah_check_out'=>null") && service.includes("$this->applyNativeChildFilters('group-umrah',$q,$filters,$table)"), 'Group Umrah child date modes bypass parent date authority');
+ok(!service.includes('private function movementRowsFor') && !service.includes('private function movementMatches') && !service.includes('private function movementDate') && !service.includes('private function dateInRange'), 'Legacy movement expansion methods are removed');
+ok(service.includes("['customer_name','customer','party_name','customer_id','party_id','client_id','customer_party_id']") && service.includes("['status','workflow_status','booking_status']"), 'Group Umrah display aliases match deterministic query authority');
+ok(!service.includes('passesReportFilters') && !service.includes('passesArrayFilters') && !service.includes('passengerRowsForBooking'), 'Obsolete post-row filter authorities are removed');
 console.log(`ERP-11.3.338 Travel Reports regression: PASS (${assertions} assertions)`);
