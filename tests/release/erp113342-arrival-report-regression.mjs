@@ -19,7 +19,11 @@ for(const css of ['width:100%','max-width:none','min-width:0','overflow-x:hidden
 ok(!view.match(/<html|<body|position\s*:\s*(absolute|fixed)/i),'no standalone shell or positioning hack');
 for(const column of ['Arrival Date','Arrival Time','Booking No.','Customer / Group','Total Pax','Adult','Child','Infant','Flight','Sector','Makkah Hotel','Transport','Saudi Company','Pakistani IATA','Status','Branch','Agent / Salesperson','View'])ok(view.includes(column),`arrival column ${column}`);
 ok(service.includes('booking_group_package_flights')&&service.includes("arrival_date','arrival_at','arrival_datetime")&&service.includes("'inbound"),'arrival event authority');
-ok(service.includes('movementArrivalTime($event)')&&service.includes('arrival_time'), 'arrival date/time authorities');
+ok(service.includes('movementArrivalTime($event)'), 'arrival resolver call');
+ok(service.includes('private function movementArrivalTime'), 'arrival resolver method');
+ok(service.includes('arrival_time'), 'arrival direct authority');
+ok(service.includes('arrival_at')&&service.includes('arrival_datetime'), 'arrival legacy authorities');
+ok(service.includes("return'—'"), 'arrival resolver fails safely');
 ok(service.includes('arrival_at')&&service.includes('arrival_datetime')&&!view.includes('preg_split'),'arrival time legacy fallback without whitespace split authority');
 ok(service.includes('movementHotels')&&service.includes('booking_group_package_hotels')&&service.includes('makkah'),'Makkah hotel enrichment');
 ok(service.includes('movementTransport')&&service.includes('booking_group_package_transports')&&service.includes('route_name'),'transport enrichment');
