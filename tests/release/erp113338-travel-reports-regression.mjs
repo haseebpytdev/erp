@@ -108,6 +108,13 @@ ok(service.includes("$filters['status']") && service.includes("b.status"), 'Airl
 ok(service.includes("$filters['sector']") && service.includes('whereRaw') && service.includes('normalSector'), 'Airline sector filter uses the same route authority in query and hydration');
 ok(service.includes('strtoupper($from)') && service.includes('strtoupper($to)') && service.includes('TRIM($from)'), 'Sector SQL/PHP normalization contract is explicit');
 ok(service.includes("$r['status']=$booking?$this->first($booking") && service.includes('filteredPassengerQuery'), 'Passenger status filter and displayed status use booking authority');
+const supplierSource = service.slice(service.indexOf('supplierDimensionKeyQuery'), service.indexOf('applySupplierBookingDateFilter'));
+ok(supplierSource.includes("if(!Schema::hasTable($table))continue;") && supplierSource.indexOf('hasTable($table)') < supplierSource.indexOf('getColumnListing($table)'), 'Supplier optional tables are checked before column discovery');
+ok(service.includes("'airline_id'") && service.includes("TRIM($from) <> '' AND TRIM($to) <> ''"), 'Airline aliases and incomplete sector endpoints are guarded');
+ok(service.includes("$this->hotelTable()") && service.includes("$this->transportTable()") && service.includes("'company_name','vendor_name','supplier_name','vendor_id'"), 'Supplier key and aggregation share resolved product authorities');
+ok(service.includes('departure_date') && service.includes('applySupplierBookingDateFilter') && service.includes("Schema::hasTable('bookings')"), 'Supplier date and booking-status parity is schema guarded');
+ok(service.includes("strtolower(trim($sector))!==strtolower(trim((string)$filters['sector']))"), 'Airline sector hydration rejects unrelated sectors');
+ok(!service.includes("'makkah_check_in'=>collect") && !service.includes("'madinah_check_out'=>collect"), 'Group Umrah child date modes are absent from base-table date selection');
 ok(service.includes("booking_group_package_hotels as h") && service.includes("$dateMap[$basis]"), 'Group Umrah hotel filters and date basis use child hotel authority');
 ok(!service.includes('passesReportFilters($record,$filters)') && !service.includes('passesArrayFilters($row,$filters)'), 'standard report rows have no post-pagination rejection');
 for (const filter of ['origin','destination','ticket_no','issue_date','salesperson']) ok(service.includes(`$filters['${filter}']`) || service.includes(`'${filter}'`), `Air/dimension filter ${filter} is declared and applied`);
