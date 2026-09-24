@@ -94,7 +94,7 @@ ok(service.includes('supplierDimensionKeyQuery') && service.includes('fromSub'),
 ok(service.includes('airDimensionKeyQuery') && service.includes('CONCAT') && service.includes('dimension_key'), 'Airline and sector dimension keys use filtered normalized authorities');
 ok(service.includes('filteredPassengerQuery') && service.includes("where('status',$filters['status'])") && service.includes("where('b.status',$filters['status'])"), 'Passenger status filter has explicit native/booking query authority');
 ok(service.includes('dimensionCanonical') && service.includes('canonical_key') && service.includes('display_label'), 'Customer/branch/agent/salesperson dimensions retain canonical keys and display labels');
-ok(service.includes('supplierCanonical') && service.includes("LOWER(TRIM($column)) as dimension_key") && service.includes('in_array($canonical,$allowed,true)'), 'Supplier key discovery and bounded aggregation share canonical keys');
+ok(service.includes('supplierCanonical') && service.includes('COALESCE(') && service.includes('NULLIF(TRIM($c)') && service.includes('in_array($canonical,$allowed,true)'), 'Supplier key discovery and bounded aggregation share canonical keys');
 ok(service.includes("$key==='airlines'?$this->normalizedDimensionKey($air):$sector") && service.includes('if(!$name||$name===\'—\'||($allowed&&!in_array($canonical,$allowed,true)))continue'), 'Airline and sector aggregation enforces only allowed canonical page keys');
 ok(service.includes("$departure=collect(['departure_at','departure_datetime','departure_date'])") && service.includes('whereDate($departure'), 'Air dimension key query applies itinerary date filters before pagination');
 ok(service.includes('$allowed=collect') && service.includes('$this->dimensionAggregate($key,$filters,$allowed)') && service.includes('paginate($perPage'), 'Dimension pages paginate canonical keys before bounded hydration');
@@ -124,4 +124,14 @@ ok(!routes.includes('Schema::create') && !service.includes('Schema::create'), 'n
 ok(fs.existsSync(new URL('../../resources/views/reports/group-umrah-profitability-v103146.blade.php', import.meta.url)), 'existing profitability preserved');
 ok(routes.includes('reports/group-umrah-profitability'), 'existing profitability route preserved');
 ok(routes.includes('PresentAccountingReportsWorkspace'), 'accounting presentation preserved');
+ok(service.includes("$basis=$filters['date_type']??'booking'") && service.includes("['booking_date','date','created_at']") && service.includes("['travel_date','departure_date','start_date']") && service.includes('bookingBaseQuery'), 'Booking date_type changes the executable date basis before pagination');
+ok(service.includes('applyProductExistence') && service.includes('product_source.booking_id') && service.includes('productNames'), 'Booking product filter uses operational product existence');
+ok(service.includes("['travel_date','departure_date','start_date']") && service.includes('whereDate("b.$date"') && service.includes('filteredPassengerQuery'), 'Passenger From/To filters use linked Booking travel dates before pagination');
+ok(service.includes("['status','workflow_status','booking_status']") && service.includes('filteredPassengerQuery') && service.includes("$r['status']=$booking"), 'Passenger status filtering follows displayed Booking status aliases');
+ok(service.includes('applyTransportDateFilter') && service.includes("['travel_date','pickup_date','departure_date','service_date']"), 'Transport From/To filters use operational date aliases');
+ok(!service.includes("'transport'=>['date',"), 'Transport obsolete date filter is removed');
+ok(service.includes('movementEventQuery') && service.includes('movementPage') && service.includes('event.*') && service.includes('$p->total()'), 'Movement HTML pagination is event-grain with filtered event totals');
+ok(service.includes('this->movementPage($key,$filters,$perPage,$page)') && service.includes('movementEventRow') && service.includes('movementEventQuery'), 'Movement rows do not expand events after booking pagination');
+ok(service.includes('sectorMatches') && service.includes('str_contains($sector,$filter)'), 'Airline sector key and hydration share case-insensitive contains semantics');
+ok(service.includes('NULLIF(TRIM($c)') && service.includes('supplierSources') && service.includes('??$r->supplier_id'), 'Supplier NULL primary aliases retain row-level fallback parity');
 console.log(`ERP-11.3.338 Travel Reports regression: PASS (${assertions} assertions)`);
