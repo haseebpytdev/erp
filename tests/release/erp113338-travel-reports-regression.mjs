@@ -92,7 +92,7 @@ ok(service.includes('transportRow') && service.includes("$row['travel_date']") &
 ok(service.includes("$r['booking_date']") && service.includes("$r['travel_date']") && service.includes("$r['product']=$this->productNames($id)"), 'Passenger row includes booking context and product authority');
 ok(service.includes('supplierDimensionKeyQuery') && service.includes('fromSub'), 'Supplier dimension has a bounded normalized key query');
 ok(service.includes('airDimensionKeyQuery') && service.includes('CONCAT') && service.includes('dimension_key'), 'Airline and sector dimension keys use filtered normalized authorities');
-ok(service.includes('filteredPassengerQuery') && service.includes("where('status',$filters['status'])") && service.includes("where('b.status',$filters['status'])"), 'Passenger status filter has explicit native/booking query authority');
+ok(service.includes('filteredPassengerQuery') && service.includes("collect(['status','workflow_status','booking_status'])") && service.includes("where(\"b.$status\",$filters['status'])"), 'Passenger status filter has explicit adaptive native/booking query authority');
 ok(service.includes('dimensionCanonical') && service.includes('canonical_key') && service.includes('display_label'), 'Customer/branch/agent/salesperson dimensions retain canonical keys and display labels');
 ok(service.includes('supplierCanonical') && service.includes('COALESCE(') && service.includes('NULLIF(TRIM($c)') && service.includes('in_array($canonical,$allowed,true)'), 'Supplier key discovery and bounded aggregation share canonical keys');
 ok(service.includes("$key==='airlines'?$this->normalizedDimensionKey($air):$sector") && service.includes('if(!$name||$name===\'—\'||($allowed&&!in_array($canonical,$allowed,true)))continue'), 'Airline and sector aggregation enforces only allowed canonical page keys');
@@ -104,7 +104,7 @@ ok(service.includes("'passenger_id','passenger_name','traveller_name'") && servi
 ok(service.includes("'vendor_id','vendor_name','company_id','company_name','supplier_id'") && service.includes("'route_id','route_name','route'") && service.includes("'vehicle_type_id','vehicle_type','vehicle'"), 'Transport filters resolve adaptive authority aliases');
 ok(service.includes('hotelTable()') && service.includes('transportTable()') && service.includes('supplierSources($id)'), 'Supplier key and aggregate use resolved product authorities');
 ok(service.includes("unset($bookingFilters['from'],$bookingFilters['to'],$bookingFilters['date_type'])") && service.includes('segmentMatchesDate'), 'Air dimensions use itinerary date authority without booking-date double filtering');
-ok(service.includes("$filters['status']") && service.includes("b.status"), 'Airline and sector status filters share booking status authority');
+ok(service.includes("$filters['status']") && service.includes("collect(['status','workflow_status','booking_status'])"), 'Airline and sector status filters share adaptive booking status authority');
 ok(service.includes("$filters['sector']") && service.includes('whereRaw') && service.includes('normalSector'), 'Airline sector filter uses the same route authority in query and hydration');
 ok(service.includes('strtoupper($from)') && service.includes('strtoupper($to)') && service.includes('TRIM($from)'), 'Sector SQL/PHP normalization contract is explicit');
 ok(service.includes("$r['status']=$booking?$this->first($booking") && service.includes('filteredPassengerQuery'), 'Passenger status filter and displayed status use booking authority');
@@ -113,7 +113,7 @@ ok(supplierSource.includes("if(!Schema::hasTable($table))continue;") && supplier
 ok(service.includes("'airline_id'") && service.includes("TRIM($from) <> '' AND TRIM($to) <> ''"), 'Airline aliases and incomplete sector endpoints are guarded');
 ok(service.includes("$this->hotelTable()") && service.includes("$this->transportTable()") && service.includes("'company_name','vendor_name','supplier_name','vendor_id'"), 'Supplier key and aggregation share resolved product authorities');
 ok(service.includes('departure_date') && service.includes('applySupplierBookingDateFilter') && service.includes("Schema::hasTable('bookings')"), 'Supplier date and booking-status parity is schema guarded');
-ok(service.includes("strtolower(trim($sector))!==strtolower(trim((string)$filters['sector']))"), 'Airline sector hydration rejects unrelated sectors');
+ok(service.includes('sectorMatches($sector') && service.includes('airColumnValue($segment'), 'Airline sector hydration uses adaptive contains authority');
 ok(!service.includes("'makkah_check_in'=>collect") && !service.includes("'madinah_check_out'=>collect"), 'Group Umrah child date modes are absent from base-table date selection');
 ok(service.includes("booking_group_package_hotels as h") && service.includes("$dateMap[$basis]"), 'Group Umrah hotel filters and date basis use child hotel authority');
 ok(!service.includes('passesReportFilters($record,$filters)') && !service.includes('passesArrayFilters($row,$filters)'), 'standard report rows have no post-pagination rejection');
@@ -133,5 +133,15 @@ ok(!service.includes("'transport'=>['date',"), 'Transport obsolete date filter i
 ok(service.includes('movementEventQuery') && service.includes('movementPage') && service.includes('event.*') && service.includes('$p->total()'), 'Movement HTML pagination is event-grain with filtered event totals');
 ok(service.includes('this->movementPage($key,$filters,$perPage,$page)') && service.includes('movementEventRow') && service.includes('movementEventQuery'), 'Movement rows do not expand events after booking pagination');
 ok(service.includes('sectorMatches') && service.includes('str_contains($sector,$filter)'), 'Airline sector key and hydration share case-insensitive contains semantics');
-ok(service.includes('NULLIF(TRIM($c)') && service.includes('supplierSources') && service.includes('??$r->supplier_id'), 'Supplier NULL primary aliases retain row-level fallback parity');
+ok(service.includes('NULLIF(TRIM($c)') && service.includes('supplierSources') && service.includes('supplierIdentity'), 'Supplier NULL primary aliases retain row-level fallback parity');
+ok(service.includes('whereRaw(\'1=0\')') && service.includes('applyProductExistence'), 'Unknown or unavailable Booking products fail closed');
+ok(service.includes("['segment_type','type']") && service.includes("['arrival_date','arrival_at','arrival_datetime']") && service.includes("['check_in','checkin','check_in_date']"), 'Movement event date/type aliases are adaptive and fail closed');
+ok(service.includes("DB::table('booking_group_package_unified')") && service.includes('$context?:$booking'), 'Movement rows prefer Group Umrah context with Booking fallback');
+ok(service.includes('movementEventQuery($key,$filters);if(!$query)return;foreach($query->cursor()'), 'Movement CSV streams the filtered event cursor directly');
+ok(service.includes('filteredPassengerQuery($table,$filters)->cursor()'), 'Passenger CSV streams the shared filtered query directly');
+ok(service.includes("whereRaw(\"LOWER(TRIM($airline)) like ?\""), 'Airline dimension filter uses contains semantics');
+ok(service.includes("CONCAT(TRIM(bis.$origin), ' → ', TRIM(bis.$destination))"), 'Air product sector filter uses combined route authority');
+ok(service.includes("['vendor_name','supplier_name','vendor_id','supplier_id']") && service.includes('booking_services.$vendor'), 'Air vendor filter uses adaptive vendor authority before pagination');
+ok(service.includes('applyGroupUmrahFilters') && service.includes("['package','package_name','package_code','package_id']") && service.includes("['status','workflow_status','booking_status']"), 'Group Umrah filters use adaptive aliases without duplicate status predicates');
+ok(service.includes('movementEventRow') && service.includes('booking_group_package_unified') && service.includes('event.*'), 'Movement HTML and CSV share one event-grain row authority');
 console.log(`ERP-11.3.338 Travel Reports regression: PASS (${assertions} assertions)`);
