@@ -1,9 +1,8 @@
 <?php
 
-use IlluminateDatabaseMigrationsMigration;
-use IlluminateDatabaseSchemaBlueprint;
-use IlluminateSupportFacadesDB;
-use IlluminateSupportFacadesSchema;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 return new class extends Migration
@@ -15,12 +14,12 @@ return new class extends Migration
 
         DB::transaction(function () use ($s, $targets): void {
             $rows = DB::table($s['table'])->get();
-            $byCode = $rows->keyBy(fn ($r) => (string) $r->{$s['code']});
+            $byCode = $rows->keyBy(fn ($r) => trim((string) $r->{$s['code']}));
             $byName = $rows->keyBy(fn ($r) => mb_strtolower(trim((string) $r->{$s['name']})));
 
             foreach ($targets as $target) {
-                $code = $target['code'];
-                $nameKey = mb_strtolower($target['name']);
+                $code = trim($target['code']);
+                $nameKey = mb_strtolower(trim($target['name']));
                 $existing = $byCode->get($code);
                 $sameName = $byName->get($nameKey);
                 if ($sameName && (!$existing || (int) $sameName->{$s['id']} !== (int) $existing->{$s['id']})) {
@@ -37,8 +36,8 @@ return new class extends Migration
             $prototype = $rows->first(fn ($r) => (string) $r->{$s['code']} === '5110');
             $created = [];
             foreach ($targets as $target) {
-                if ($byCode->has($target['code'])) {
-                    $created[$target['code']] = $byCode->get($target['code']);
+                if ($byCode->has(trim($target['code']))) {
+                    $created[$target['code']] = $byCode->get(trim($target['code']));
                     continue;
                 }
                 $insert = $this->insertValues($target, $s, $created, $prototype);
@@ -92,7 +91,8 @@ return new class extends Migration
             if (!Schema::hasTable($table)) continue;
             $c = Schema::getColumnListing($table);
             $s = ['table'=>$table,'columns'=>$c,'id'=>$this->first($c,['id','account_id']),'code'=>$this->first($c,['code','account_code','gl_code','number','account_number']),'name'=>$this->first($c,['name','account_name','title']),'type'=>$this->first($c,['type','account_type','category','account_category']),'subtype'=>$this->first($c,['subtype','sub_type','account_subtype','account_sub_type']),'parent'=>$this->first($c,['parent_id','parent_account_id','parent_account','parent_code']),'normal'=>$this->first($c,['normal_balance','normal_side','balance_type']),'posting'=>$this->first($c,['allow_direct_journal_posting','allow_direct_posting','allow_posting','is_posting','posting_allowed','can_post']),'control'=>$this->first($c,['is_control_account','is_control','control_account']),'control_type'=>$this->first($c,['control_type','control_code','control_key']),'status'=>$this->first($c,['status','account_status']),'active'=>$this->first($c,['is_active','active','enabled']),'created_at'=>$this->first($c,['created_at']),'updated_at'=>$this->first($c,['updated_at'])];
-            foreach (['id','code','name','type','subtype','parent','normal','posting','control','control_type','active'] as $key) if (!$s[$key]) continue 2;
+            foreach (['id','code','name','type','subtype','parent','normal','posting','control'] as $key) if (!$s[$key]) continue 2;
+            if (!$s['active'] && !$s['status']) continue;
             return $s;
         }
         throw new RuntimeException('No safe native Chart of Accounts schema found.');
@@ -104,15 +104,16 @@ return new class extends Migration
         if ($s['control_type']) $v[$s['control_type']] = null;
         $parent = $t['parent'] === null ? null : ($created[$t['parent']]->{$s['id']} ?? null);
         $v[$s['parent']] = $this->parentValue($parent, $t['parent'], $s);
-        $v[$s['active']] = 1;
+        if ($s['active']) $v[$s['active']] = 1;
         if ($s['status']) $v[$s['status']] = $this->storage('Active',$s['status'],$s);
         if ($prototype) foreach (['company_id','branch_id','organization_id','tenant_id','legal_entity_id'] as $scope) if (in_array($scope,$s['columns'],true)) $v[$scope] = $prototype->{$scope} ?? null;
         $now = now(); if ($s['created_at']) $v[$s['created_at']]=$now; if ($s['updated_at']) $v[$s['updated_at']]=$now;
         return $v;
     }
-    private function matches(object $row,array $t,array $s,$rows): bool { $parent=$t['parent']; if($parent!==null){$p=$rows->first(fn($r)=>(string)$r->{$s['code']}===$parent);$parent=$p?->{$s['id']};} return (strcasecmp((string)$row->{$s['name']},$t['name'])===0 && strcasecmp((string)$row->{$s['type']},'Expense')===0 && strcasecmp((string)$row->{$s['subtype']},$t['subtype'])===0 && strcasecmp((string)$row->{$s['normal']},'DEBIT')===0 && ((int)($row->{$s['posting']}??0)===(int)$t['posting']) && (int)($row->{$s['control']}??0)===0 && empty($row->{$s['control_type']}) && (int)($row->{$s['active']}??0)===1 && $this->parentMatches($row->{$s['parent']}??null,$parent,$t['parent'],$s)); }
-    private function parentMatches($actual,$id,?string $code,array $s): bool { if($code===null)return $actual===null; return (string)$actual===(string)$id || (string)$actual===$code; }
-    private function parentValue($id,?string $code,array $s){ if($code===null)return null; $sample=DB::table($s['table'])->whereNotNull($s['parent'])->value($s['parent']); return $sample!==null && DB::table($s['table'])->where($s['id'],$sample)->exists()?$id:$code; }
-    private function storage(string $value,string $column,array $s): string { $sample=DB::table($s['table'])->whereNotNull($column)->value($column); if($sample===null)return $value; if(strtoupper((string)$sample)===$value)return strtoupper($value); if(strtolower((string)$sample)===$value)return strtolower($value); return ucfirst(strtolower($value)); }
+    private function matches(object $row,array $t,array $s,$rows): bool { $parent=$t['parent']; if($parent!==null){$p=$rows->first(fn($r)=>trim((string)$r->{$s['code']})===$parent);$parent=$p?->{$s['id']};} $activeOk=$s['active']?(int)($row->{$s['active']}??0)===1:strcasecmp((string)($row->{$s['status']}??''),'active')===0; $controlTypeOk=!$s['control_type']||empty($row->{$s['control_type']}); return (strcasecmp(trim((string)$row->{$s['name']}),trim($t['name']))===0 && strcasecmp((string)$row->{$s['type']},'Expense')===0 && strcasecmp((string)$row->{$s['subtype']},$t['subtype'])===0 && strcasecmp((string)$row->{$s['normal']},'DEBIT')===0 && ((int)($row->{$s['posting']}??0)===(int)$t['posting']) && (int)($row->{$s['control']}??0)===0 && $controlTypeOk && $activeOk && $this->parentMatches($row->{$s['parent']}??null,$parent,$t['parent'],$s)); }
+    private function parentMatches($actual,$id,?string $code,array $s): bool { if($code===null)return $actual===null; return $this->parentUsesId($s)?(string)$actual===(string)$id:(string)$actual===$code; }
+    private function parentUsesId(array $s): bool { if(str_ends_with(strtolower($s['parent']),'_id'))return true; $sample=DB::table($s['table'])->whereNotNull($s['parent'])->value($s['parent']); if($sample!==null){$id=DB::table($s['table'])->where($s['id'],$sample)->exists();$code=DB::table($s['table'])->where($s['code'],trim((string)$sample))->exists();if($id xor $code)return$id;} return in_array(strtolower($s['parent']),['parent_code','parent_account'],true)?false:true; }
+    private function parentValue($id,?string $code,array $s){ if($code===null)return null; if($this->parentUsesId($s)){if(!$id)throw new RuntimeException("Unresolved parent {$code}");return$id;} return$code; }
+    private function storage(string $value,string $column,array $s): string { $sample=DB::table($s['table'])->whereNotNull($column)->value($column); if($sample===null)return$value; $sample=(string)$sample; if($sample===strtoupper($sample))return strtoupper($value); if($sample===strtolower($sample))return strtolower($value); if($sample===ucfirst(strtolower($sample)))return ucfirst(strtolower($value)); return$value; }
     private function first(array $columns,array $names): ?string { foreach($names as $name)if(in_array($name,$columns,true))return$name; return null; }
 };
