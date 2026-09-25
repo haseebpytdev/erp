@@ -27,4 +27,11 @@ ok(filter.includes("$filter['type'] ?? 'text') === 'select'"), 'select filter su
 ok(filter.includes('selected'), 'selected option persistence');
 ok(fs.readFileSync('resources/views/reports/travel/movements/arrival.blade.php', 'utf8').includes("'key' => 'destination'"), 'arrival airport filter');
 ok(fs.readFileSync('resources/views/reports/travel/movements/departure.blade.php', 'utf8').includes("'key' => 'origin'"), 'departure airport filter');
-console.log('ERP-11.3.352 Makkah check-in regression: PASS / 22');
+const route = service.slice(service.indexOf('private function latestMakkahAirRoute'));
+ok(route.indexOf('orderByDesc($arr)') < route.indexOf("foreach(['sort_order'"), 'arrival ordering is primary');
+ok(route.includes("where('booking_id',$bookingId)"), 'direct booking relation scope');
+ok(route.includes("Schema::hasColumn('booking_services','id')") && route.includes("Schema::hasColumn('booking_services','booking_id')"), 'service relation schema guard');
+ok(route.includes("if($serviceIds->isEmpty())return'—'"), 'empty service relation fails closed');
+ok(route.includes("} else return'—';"), 'missing booking relation fails closed');
+ok(route.includes("whereDate($arr,'<=',$day)"), 'future flights excluded');
+console.log('ERP-11.3.352 Makkah check-in regression: PASS / 28');

@@ -166,7 +166,23 @@ private function groupRow(object $b): array { $id=(int)($b->booking_id??$b->id??
         return$this->latestMakkahAirRoute('booking_itinerary_segments',$bookingId,$day);
     }
     private function latestMakkahAirRoute(string $table,int $bookingId,string $day): string {
-        if(!Schema::hasTable($table))return'—';$cols=Schema::getColumnListing($table);$from=collect(['from_code','origin_code','from','origin'])->first(fn($c)=>in_array($c,$cols,true));$to=collect(['to_code','destination_code','to','destination'])->first(fn($c)=>in_array($c,$cols,true));$arr=collect(['arrival_at','arrival_datetime','arrival_date','arrive_at'])->first(fn($c)=>in_array($c,$cols,true));if(!$from||!$to||!$arr)return'—';$q=DB::table($table)->whereNotNull($arr)->whereDate($arr,'<=',$day);if(in_array('booking_id',$cols,true))$q->where('booking_id',$bookingId);elseif(in_array('booking_service_id',$cols,true)&&Schema::hasTable('booking_services'))$q->whereIn('booking_service_id',DB::table('booking_services')->where('booking_id',$bookingId)->pluck('id'));foreach(['sort_order','sequence','sequence_no','id'] as $tie)if(in_array($tie,$cols,true))$q->orderByDesc($tie);$row=$q->orderByDesc($arr)->first();if(!$row)return'—';$a=strtoupper(trim((string)$row->{$from}));$b=strtoupper(trim((string)$row->{$to}));return$a!==''&&$b!==''?$a.' → '.$b:'—';
+        if(!Schema::hasTable($table))return'—';
+        $cols=Schema::getColumnListing($table);
+        $from=collect(['from_code','origin_code','from','origin'])->first(fn($c)=>in_array($c,$cols,true));
+        $to=collect(['to_code','destination_code','to','destination'])->first(fn($c)=>in_array($c,$cols,true));
+        $arr=collect(['arrival_at','arrival_datetime','arrival_date','arrive_at'])->first(fn($c)=>in_array($c,$cols,true));
+        if(!$from||!$to||!$arr)return'—';
+        $q=DB::table($table)->whereNotNull($arr)->whereDate($arr,'<=',$day);
+        if(in_array('booking_id',$cols,true)){$q->where('booking_id',$bookingId);}
+        elseif(in_array('booking_service_id',$cols,true)){
+            if(!Schema::hasTable('booking_services')||!Schema::hasColumn('booking_services','id')||!Schema::hasColumn('booking_services','booking_id'))return'—';
+            $serviceIds=DB::table('booking_services')->where('booking_id',$bookingId)->pluck('id');
+            if($serviceIds->isEmpty())return'—';
+            $q->whereIn('booking_service_id',$serviceIds);
+        } else return'—';
+        $q->orderByDesc($arr);
+        foreach(['sort_order','sequence','sequence_no','id'] as $tie)if($tie!==$arr&&in_array($tie,$cols,true))$q->orderByDesc($tie);
+        $row=$q->first();if(!$row)return'—';$a=strtoupper(trim((string)$row->{$from}));$b=strtoupper(trim((string)$row->{$to}));return$a!==''&&$b!==''?$a.' → '.$b:'—';
     }
     private function activePassengerCount(string $t): int {$q=DB::table($t);$c=Schema::getColumnListing($t);if(in_array('deleted_at',$c,true))$q->whereNull('deleted_at');if(in_array('is_active',$c,true))$q->where('is_active',true);if(in_array('active',$c,true))$q->where('active',true);if(in_array('status',$c,true))$q->whereNotIn('status',['inactive','deleted','removed','cancelled','canceled']);return(int)$q->count();}
 }
