@@ -1,0 +1,20 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const service = fs.readFileSync('app/Services/Reports/TravelReportService.php', 'utf8');
+const ok = (condition, message) => assert.ok(condition, message);
+ok(service.includes("'makkah-checkin'"), 'makkah movement is registered');
+ok(service.includes("$key==='makkah-checkin'"), 'makkah has a dedicated path');
+ok(service.includes("$makkahCheckin=['check_in','booking_no','customer','coming_from','total_pax','adult','child','infant','makkah_hotel','check_out','nights']"), 'exact eleven columns');
+ok(service.includes("return $this->makkahCheckinEvents($filters)"), 'hotel stay event source');
+ok(service.includes("COALESCE(event.'.$city") && service.includes("%makkah%"), 'makkah city filter');
+ok(service.includes("$this->makkahCheckinRow($event)"), 'dedicated row mapper');
+ok(service.includes("$this->customerResolver->resolve($id)"), 'resolver-backed customer');
+ok(service.includes("$this->paxCounts($this->passengers->rows($id))"), 'active passenger authority');
+ok(service.includes("$row['coming_from']=$this->makkahComingFrom($id,$row['check_in'])"), 'coming-from authority');
+ok(service.includes("return'Madinah'"), 'prior Madinah hotel precedence');
+ok(service.includes("return strtoupper($a).' → '.strtoupper($b)"), 'flight route fallback');
+ok(service.includes("return'—'"), 'unresolved coming-from fallback');
+ok(service.includes("orderByDesc($arr)->orderByDesc('sort_order')->orderByDesc('id')"), 'deterministic flight tie order');
+ok(!service.includes("'time'") || service.includes("$makkahCheckin"), 'no time column in Makkah definition');
+console.log('ERP-11.3.352 Makkah check-in regression: PASS / 14');

@@ -1,14 +1,13 @@
-ERP-11.3.351 Live Sidebar and Movement Customer Identity Corrective
+ERP-11.3.352 Makkah Check-in Movement Report
 
-ERP-11.3.351 recognizes the live native sidebar's direct-child ACCOUNTING and
-SYSTEM headings and inserts one Reports / Travel Reports section immediately
-before SYSTEM. Arrival and Departure movement rows resolve Customer / Group
-through NativeBookingCustomerResolver with safe direct-field fallback. Existing
-movement selection, deduplication, dates, times, filters, actions and
-authorization remain unchanged. ERP-11.3.351 is not deployed.
+ERP-11.3.352 adds the read-only Makkah Check-in movement report at hotel-stay
+grain. It reports each Makkah hotel stay with resolver-backed customer and
+passenger counts, deterministic Coming From context, and no financial fields.
+Existing movement reports, routes, authorization, calculations, schema and
+migrations remain unchanged. ERP-11.3.352 is not deployed.
 
-Active release: v1.1.33.351-ERP11.3.351
-CURRENT_LIVE_RELEASE=ERP-11.3.350
+Active release: v1.1.33.352-ERP11.3.352
+CURRENT_LIVE_RELEASE=ERP-11.3.351
 NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.350 Departure Report and Travel Reports Navigation Corrective
