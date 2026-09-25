@@ -1,10 +1,11 @@
 ERP-11.3.352 Makkah Check-in Movement Report
 
 ERP-11.3.352 adds the read-only Makkah Check-in movement report at hotel-stay
-grain. It reports each Makkah hotel stay with resolver-backed customer and
-passenger counts, deterministic Coming From context, and no financial fields.
-Existing movement reports, routes, authorization, calculations, schema and
-migrations remain unchanged. ERP-11.3.352 is not deployed.
+grain, deterministic Coming From resolution, and dynamic airport-code filters
+for Arrival and Departure movement reports. Existing Arrival/Departure event
+selection, date/time presentation, customer authority and deduplication remain
+unchanged. No financial logic, persistence, database schema or migration is
+changed. ERP-11.3.352 is not deployed.
 
 Active release: v1.1.33.352-ERP11.3.352
 CURRENT_LIVE_RELEASE=ERP-11.3.351
@@ -23,7 +24,7 @@ migration changes are included.
 
 Active release: v1.1.33.350-ERP11.3.350
 
-ERP-11.3.350 is the current live production release. ERP-11.3.337 was the
+ERP-11.3.350 was the prior live production release. ERP-11.3.337 was the
 restored former baseline. ERP-11.3.338 failed startup at TravelReportService.php line 55 and was rolled back. ERP-11.3.339
 failed startup at line 101 and was rolled back. ERP-11.3.340 repaired both
 syntax defects, but its PHP 8.5.7 parser preflight was held for an implicit
@@ -31,9 +32,10 @@ nullable parameter; .340 was not packaged or deployed. ERP-11.3.341 applies
 the explicit nullable correction and passed the server PHP 8.5.7 parser check
 for all six files. ERP-11.3.341 is the current live production release with
 System Health PASS, PHP 8.5.7, Database Connected and schema up to date.
-ERP-11.3.350 is the current live production release. ERP-11.3.351 is not deployed.
-CURRENT_LIVE_RELEASE=ERP-11.3.350
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.351
+ERP-11.3.351 is the current live production release. ERP-11.3.352 is the
+finalized release candidate and is not deployed.
+CURRENT_LIVE_RELEASE=ERP-11.3.351
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.352
 NEW_MIGRATION_REQUIRED=NO
 
 Deployment remains manual cPanel direct upload after final package
