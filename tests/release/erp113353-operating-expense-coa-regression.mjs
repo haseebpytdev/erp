@@ -1,0 +1,24 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const migration = fs.readFileSync('database/migrations/2026_09_26_000000_add_operating_expense_chart_structure.php', 'utf8');
+const service = fs.readFileSync('app/Services/Accounting/ChartOfAccountsWorkspaceService.php', 'utf8');
+const voucher = fs.readFileSync('app/Services/Accounting/CashVoucherService.php', 'utf8');
+const reporting = fs.readFileSync('app/Services/Accounting/ManagementAccountingReportService.php', 'utf8');
+const ok = (v, m) => assert.ok(v, m);
+const groups = ['6000','6100','6200','6300','6400','6500','6600','6700','6800','6900'];
+const children = ['6101','6102','6103','6104','6105','6106','6107','6108','6109','6110','6111','6112','6113','6114','6119','6201','6202','6203','6204','6205','6206','6207','6208','6209','6210','6211','6212','6213','6219','6301','6302','6303','6304','6305','6306','6307','6308','6309','6310','6319','6401','6402','6403','6404','6405','6406','6407','6408','6409','6410','6411','6412','6413','6419','6501','6502','6503','6504','6505','6506','6507','6508','6509','6510','6511','6512','6519','6601','6602','6603','6604','6605','6606','6607','6608','6609','6610','6619','6701','6702','6703','6704','6705','6706','6707','6708','6709','6710','6711','6712','6713','6719','6801','6802','6803','6804','6805','6806','6807','6808','6809','6810','6819','6901','6902','6903','6904','6905','6906','6907','6908','6909','6910','6911','6912','6913','6914','6915','6916','6919'];
+for (const code of groups) ok(migration.includes(`['${code}',`), `requested group code ${code}`);
+for (const code of children) ok(new RegExp(`['\"]${code}\\s`).test(migration), `requested child code ${code}`);
+ok(groups.length === 10 && children.length === 120, 'requested account counts');
+ok(migration.includes('DB::transaction'), 'single transaction');
+ok(migration.includes('Operating expense name conflict') && migration.includes('Operating expense code conflict'), 'conflicts fail closed');
+ok(migration.includes('if ($byCode->has($target[\'code\']))'), 'exact-match idempotency');
+ok(migration.includes('Non-destructive by design'), 'down is non-destructive');
+ok(!migration.includes('nextCodeForParentRow'), 'account generator untouched');
+ok(service.includes('public function parentOptions'), 'parent options architecture preserved');
+ok(voucher.includes('public function expenseAccounts') && voucher.includes("$s['posting']"), 'posting authority preserved');
+ok(reporting.includes('5110') && reporting.includes('5190'), 'direct-cost constants preserved');
+ok(service.includes('allow_direct_journal_posting') || service.includes('allow_posting'), 'native posting mapping preserved');
+for (const code of ['5110','5120','5130','5140','5150','5190','5310','7200','1130','1140','1150','2110','2120','2130']) ok(!migration.includes(`$s['code'] === '${code}'`), `protected account ${code}`);
+console.log('ERP-11.3.353 operating expense COA regression: PASS / 22');

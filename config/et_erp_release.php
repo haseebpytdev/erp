@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.352-ERP11.3.352',
-    'release' => 'ERP-11.3.352',
-    'package' => 'ERP-11.3.352 Makkah Check-in and Movement Airport Filters',
-    'package_detail' => 'ERP-11.3.352 adds the read-only Makkah Check-in movement report at hotel-stay grain, deterministic Coming From resolution, and dynamic airport-code filters for Arrival and Departure movement reports. Existing Arrival/Departure event selection, date/time presentation, customer authority and deduplication remain unchanged. No financial logic, persistence, database schema or migration is changed. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.353-ERP11.3.353',
+    'release' => 'ERP-11.3.353',
+    'package' => 'ERP-11.3.353 Operating Expense Chart of Accounts',
+    'package_detail' => 'ERP-11.3.353 adds the controlled Operating Expense Chart of Accounts hierarchy under the reserved 6000 series. It adds non-posting group accounts and posting child expense ledgers without changing existing accounts, account-code generation, direct-cost mappings, AR/AP controls or subledger architecture. NEW_MIGRATION_REQUIRED=YES.',
 ];
 
