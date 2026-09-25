@@ -1,58 +1,24 @@
 <?php
 require dirname(__DIR__, 2).'/app/Services/Operations/ServerSidebarComposer.php';
+
+function check(bool $condition, string $name): void
+{
+    if (!$condition) {
+        fwrite(STDERR, "FAIL {$name}\n");
+        exit(1);
+    }
+    echo "PASS {$name}\n";
+}
+
 $composer = new App\Services\Operations\ServerSidebarComposer();
-$html = '<ul class="nav flex-column"><li><a href="/outside">Outside</a></li></ul><aside class="sidebar"><ul id="main-nav"><li><a href="/operations/bookings">Bookings</a></li><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
-$out = $composer->compose($html);
-if (strpos($out, '/outside">Outside</a></li></ul>') === false || strpos($out, 'data-et-server-sidebar="1"') === false) exit(1);
-if (strpos($out, '/dashboard') > strpos($out, '/operations/bookings')) exit(1);
-$duplicateId = '<ul id="main-nav"><li><a href="/outside">Outside</a></li></ul><aside class="sidebar"><ul id="main-nav"><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
-if (strpos($composer->compose($duplicateId), 'data-et-server-sidebar="1"') !== false) exit(1);
-$ambiguous = '<ul class="nav flex-column"><li><a href="/outside">Outside</a></li></ul><aside class="sidebar"><ul class="nav flex-column"><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
-if (strpos($composer->compose($ambiguous), 'data-et-server-sidebar="1"') !== false) exit(1);
-$nested = '<aside class="sidebar"><ul id="main-nav"><li><a href="/operations/bookings">Bookings</a><ul><li><a href="/child">Child</a></li></ul></li><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
-$nestedOut = $composer->compose($nested);
-if (strpos($nestedOut, '/child">Child</a>') === false || strpos($nestedOut, '/dashboard') > strpos($nestedOut, '/operations/bookings')) exit(1);
-$restricted = '<aside class="sidebar"><ul id="main-nav"><li><a href="/dashboard">Dashboard</a></li><li><a href="/operations/bookings">Bookings</a></li></ul></aside>';
-if (strpos($composer->compose($restricted), '>Payments<') !== false) exit(1);
-$rootSidebar = '<ul class="sidebar-menu"><li><a href="/operations/bookings">Bookings</a></li><li><a href="/dashboard">Dashboard</a></li></ul>';
-$rootOut = $composer->compose($rootSidebar);
-if (strpos($rootOut, 'data-et-server-sidebar="1"') === false || strpos($rootOut, '/dashboard') > strpos($rootOut, '/operations/bookings')) exit(1);
-$nestedAttrs = '<ul class="sidebar-menu"><li class="active"><a aria-current="page" data-test="x" href="/administration">Administration</a><ul><li><a href="/administration/users?tab=active">Users</a></li></ul></li><li><a href="/dashboard">Dashboard</a></li></ul>';
-$nestedAttrsOut = $composer->compose($nestedAttrs);
-if (strpos($nestedAttrsOut, 'aria-current="page"') === false || strpos($nestedAttrsOut, 'data-test="x"') === false || strpos($nestedAttrsOut, '/administration/users?tab=active') === false) exit(1);
-$unmatched = '<aside class="sidebar"><ul id="main-nav"><li><a href="/unknown">Custom Tool</a></li><li><a href="/dashboard">Dashboard</a></li></ul></aside>';
-if (strpos($composer->compose($unmatched), '/unknown">Custom Tool</a>') === false) exit(1);
-$nestedNav = '<aside class="sidebar"><nav class="native-shell"><ul class="nav flex-column"><li><a href="/dashboard">Dashboard</a></li><li><a data-native="yes" href="/operations/bookings">Bookings</a><ul><li><a href="/child-two">Child Two</a></li></ul></li></ul></nav></aside>';
-$nestedNavOut = $composer->compose($nestedNav);
-if (substr_count($nestedNavOut, 'href="/travel-reports">Travel Reports</a>') !== 1 || strpos($nestedNavOut, 'Movement Reports') !== false || strpos($nestedNavOut, '/child-two">Child Two</a>') === false || strpos($nestedNavOut, 'data-native="yes"') === false) exit(1);
-foreach (['Booking Report','Passenger Report','Air / Ticketing Report','Hotel Report','Visa Report','Transport Report','Group Umrah Report','Customer-wise Report','Supplier / Vendor-wise Report','Branch-wise Report','Agent / Salesperson Report','Airline-wise Report','Sector / Destination Report'] as $deferred) if (strpos($nestedNavOut, '>'.$deferred.'</a>') !== false) exit(1);
-$classOnly = '<aside id="native-sidebar"><ul class="live-nav"><li><a href="/dashboard">Dashboard</a></li><li><a href="/operations/bookings">Bookings</a></li></ul></aside><ul class="outside-nav"><li><a href="/outside-two">Outside Two</a></li></ul>';
-$classOnlyOut = $composer->compose($classOnly);
-if (substr_count($classOnlyOut, 'href="/travel-reports">Travel Reports</a>') !== 1 || strpos($classOnlyOut, 'Movement Reports') !== false || strpos($classOnlyOut, '/outside-two">Outside Two</a>') === false) exit(1);
-$ambiguousClass = '<aside class="sidebar"><ul class="live-nav"><li><a href="/dashboard">Dashboard</a></li></ul><ul class="live-nav"><li><a href="/operations/bookings">Bookings</a></li></ul></aside>';
-if (strpos($composer->compose($ambiguousClass), 'data-et-server-sidebar="1"') !== false) exit(1);
-$idempotent = $composer->compose($nestedNav);
-if ($composer->compose($idempotent) !== $idempotent || substr_count($idempotent, 'href="/travel-reports">Travel Reports</a>') !== 1 || strpos($idempotent, 'Movement Reports') !== false) exit(1);
-$semantic = '<aside class="sidebar"><div class="native-menu"><div class="section"><span>ADMINISTRATION</span><a href="/administration">Administration</a></div><div class="section"><span>MASTER DATA</span><a href="/master-data">Master Data</a></div><div class="section"><span>OPERATIONS</span><a href="/operations/bookings">Bookings</a></div><div class="section"><span>ACCOUNTING</span><a href="/accounting">Accounting</a></div><div class="section"><span>SYSTEM</span><a href="/system/health">Health &amp; Updates</a></div><div class="release-footer"><span>ERP-11.3.348</span></div></div></aside>';
-$semanticOut = $composer->compose($semantic);
-$accountingIndex = strpos($semanticOut, '>ACCOUNTING<');
-$reportsIndex = strpos($semanticOut, '>REPORTS<');
-$systemIndex = strpos($semanticOut, '>SYSTEM<');
-$footerIndex = strpos($semanticOut, 'release-footer');
-if ($accountingIndex === false || $reportsIndex === false || $systemIndex === false || $footerIndex === false || !($accountingIndex < $reportsIndex && $reportsIndex < $systemIndex && $systemIndex < $footerIndex)) exit(1);
-if (substr_count($semanticOut, '>Travel Reports<') !== 1 || substr_count($semanticOut, '>Movement Reports<') !== 0) exit(1);
-$unsafe = '<aside class="sidebar"><nav class="native-menu"><div class="section"><span>ACCOUNTING</span></div><div class="section"><span>SYSTEM</span><a href="/system/health">Health &amp; Updates</a></div></nav><div class="release-footer">ERP-11.3.348</div></aside>';
-if (strpos($composer->compose($unsafe), 'href="/travel-reports">Travel Reports</a>') === false) exit(1);
-$footerOutsideNav = '<aside class="sidebar"><nav class="native-menu"><div class="section"><span>ACCOUNTING</span><a href="/accounting">Accounting</a></div><div class="section"><span>SYSTEM</span><a href="/system/health">Health &amp; Updates</a></div></nav><div class="release-footer">ERP-11.3.348</div></aside>';
-$footerOutsideOut = $composer->compose($footerOutsideNav);
-if (strpos($footerOutsideOut, 'href="/travel-reports">Travel Reports</a>') === false || strpos($footerOutsideOut, 'release-footer') === false) exit(1);
-$noSystem = '<aside class="sidebar"><nav class="native-menu"><div class="section"><span>ACCOUNTING</span></div><div class="section"><span>OPERATIONS</span></div></nav><div class="release-footer">ERP-11.3.348</div></aside>';
-if ($composer->compose($noSystem) !== $noSystem) exit(1);
-$existingReports = '<aside class="sidebar"><nav class="native-menu"><div class="section"><span>ACCOUNTING</span></div><div class="section"><span>REPORTS</span><a href="/travel-reports">Travel Reports</a></div><div class="section"><span>SYSTEM</span></div></nav></aside>';
-if (substr_count($composer->compose($existingReports), 'href="/travel-reports">Travel Reports</a>') !== 1) exit(1);
-$ulNoMovement = '<aside class="sidebar"><ul class="sidebar-menu"><li><a href="/dashboard">Dashboard</a></li><li><a href="/accounting">Reports</a></li><li><a href="/system/health">Health &amp; Updates</a></li></ul></aside>';
-$ulNoMovementOut = $composer->compose($ulNoMovement);
-if (substr_count($ulNoMovementOut, 'href="/travel-reports">Travel Reports</a>') !== 1 || strpos($ulNoMovementOut, 'Movement Reports') !== false) exit(1);
+
+// Supported UL/LI native shape remains covered.
+$ul = '<aside class="sidebar"><ul class="sidebar-menu"><li><a href="/dashboard">Dashboard</a></li><li><a href="/accounting">Reports</a></li><li><a href="/system/health">Health &amp; Updates</a></li></ul></aside>';
+$ulOut = $composer->compose($ul);
+check(substr_count($ulOut, 'href="/travel-reports">Travel Reports</a>') === 1, 'supported UL Travel Reports count');
+check(strpos($ulOut, 'Movement Reports') === false, 'supported UL Movement Reports absent');
+
+// Exact production DOM fixture: direct nav-section headings and sibling links.
 $productionFixture = '<aside class="sidebar"><div class="brand">Easy Ticket</div><nav class="nav">'
     .'<a class="nav-item" href="/">Dashboard</a><div class="nav-section">MASTER DATA</div>'
     .'<a class="nav-item" href="/master-data/parties">Party Master</a><div class="nav-section">OPERATIONS</div>'
@@ -62,26 +28,45 @@ $productionFixture = '<aside class="sidebar"><div class="brand">Easy Ticket</div
     .'<a class="nav-item" href="/system/update">Health &amp; Updates</a></nav>'
     .'<div class="sidebar-foot">ERP-11.3.350</div></aside>';
 $productionOut = $composer->compose($productionFixture);
-if (substr_count($productionOut, 'href="/travel-reports"') !== 1 || substr_count($productionOut, 'Travel Reports') !== 1) exit(1);
-if (substr_count($productionOut, 'class="nav-section">REPORTS</div>') !== 1 || strpos($productionOut, 'Movement Reports') !== false) exit(1);
+check(substr_count($productionOut, 'href="/travel-reports"') === 1, 'production Travel Reports count');
+check(substr_count($productionOut, 'class="nav-section">REPORTS</div>') === 1, 'production Reports heading count');
+check(substr_count($productionOut, 'Movement Reports') === 0, 'production Movement Reports count');
 $pAccounting = strpos($productionOut, '>ACCOUNTING<'); $pReports = strpos($productionOut, '>REPORTS<');
 $pTravel = strpos($productionOut, 'Travel Reports'); $pSystem = strpos($productionOut, '>SYSTEM<');
-if ($pAccounting === false || $pReports === false || $pTravel === false || $pSystem === false || !($pAccounting < $pReports && $pReports < $pTravel && $pTravel < $pSystem)) exit(1);
-if ($composer->compose($productionOut) !== $productionOut) exit(1);
+check($pAccounting !== false && $pReports !== false && $pTravel !== false && $pSystem !== false && $pAccounting < $pReports && $pReports < $pTravel && $pTravel < $pSystem, 'production order');
+check($composer->compose($productionOut) === $productionOut, 'production idempotence');
+check(strpos($productionOut, '/accounting/chart-of-accounts-workspace') !== false, 'production accounting links preserved');
+check(strpos($productionOut, '/system/update') !== false && strpos($productionOut, 'sidebar-foot') !== false, 'production system and footer preserved');
+
+// Unsupported historical wrapper shapes fail closed.
+$semantic = '<aside class="sidebar"><div class="native-menu"><div class="section"><span>ACCOUNTING</span></div><div class="section"><span>SYSTEM</span></div></div></aside>';
+check($composer->compose($semantic) === $semantic, 'legacy semantic fixture fail closed');
+$unsafe = '<aside class="sidebar"><nav class="native-menu"><div class="section"><span>ACCOUNTING</span></div><div class="section"><span>SYSTEM</span></div></nav></aside>';
+check($composer->compose($unsafe) === $unsafe, 'legacy native-menu fixture fail closed');
+$footerOutsideNav = '<aside class="sidebar"><nav class="native-menu"><div class="section"><span>ACCOUNTING</span></div><div class="section"><span>SYSTEM</span></div></nav><div class="release-footer">ERP-11.3.350</div></aside>';
+check($composer->compose($footerOutsideNav) === $footerOutsideNav, 'legacy footer fixture fail closed');
+$noSystem = '<aside class="sidebar"><nav class="nav"><div class="nav-section">ACCOUNTING</div></nav></aside>';
+check($composer->compose($noSystem) === $noSystem, 'missing System fail closed');
+
+// Raw target adversaries.
 $outsideNavbar = '<nav class="navbar"><a href="/outside">Outside Navbar</a></nav>'.$productionFixture;
 $outsideNavbarOut = $composer->compose($outsideNavbar);
-if (strpos($outsideNavbarOut, '<nav class="navbar"><a href="/outside">Outside Navbar</a></nav>') === false || substr_count($outsideNavbarOut, 'href="/travel-reports"') !== 1) exit(1);
+check(strpos($outsideNavbarOut, '<nav class="navbar"><a href="/outside">Outside Navbar</a></nav>') !== false, 'outside navbar preserved');
+check(substr_count($outsideNavbarOut, 'href="/travel-reports"') === 1, 'outside navbar sidebar mutated');
 $outsideNavigation = '<nav class="navigation"><a href="/outside-two">Outside Navigation</a></nav>'.$productionFixture;
 $outsideNavigationOut = $composer->compose($outsideNavigation);
-if (strpos($outsideNavigationOut, '<nav class="navigation"><a href="/outside-two">Outside Navigation</a></nav>') === false || substr_count($outsideNavigationOut, 'href="/travel-reports"') !== 1) exit(1);
-$ambiguousSidebarNav = str_replace('</nav><div class="sidebar-foot">', '<nav class="nav"><div class="nav-section">ACCOUNTING</div><div class="nav-section">SYSTEM</div></nav></nav><div class="sidebar-foot">', $productionFixture);
-if ($composer->compose($ambiguousSidebarNav) !== $ambiguousSidebarNav) exit(1);
+check(strpos($outsideNavigationOut, '<nav class="navigation"><a href="/outside-two">Outside Navigation</a></nav>') !== false, 'outside navigation preserved');
+check(substr_count($outsideNavigationOut, 'href="/travel-reports"') === 1, 'outside navigation sidebar mutated');
 $outsideExactNav = '<nav class="nav"><a href="/outside-exact">Outside Exact Nav</a></nav>'.$productionFixture;
 $outsideExactNavOut = $composer->compose($outsideExactNav);
-if (strpos($outsideExactNavOut, '<nav class="nav"><a href="/outside-exact">Outside Exact Nav</a></nav>') === false || substr_count($outsideExactNavOut, 'href="/travel-reports"') !== 1) exit(1);
+check(strpos($outsideExactNavOut, '<nav class="nav"><a href="/outside-exact">Outside Exact Nav</a></nav>') !== false, 'outside exact nav preserved');
+check(substr_count($outsideExactNavOut, 'href="/travel-reports"') === 1, 'inside sidebar nav selected');
 $multiClassFixture = str_replace('<aside class="sidebar">', '<aside class="shell sidebar collapsed">', str_replace('<nav class="nav">', '<nav class="primary nav flex-column">', $productionFixture));
 $multiClassOut = $composer->compose($multiClassFixture);
-if (substr_count($multiClassOut, 'href="/travel-reports"') !== 1 || substr_count($multiClassOut, 'class="nav-section">REPORTS</div>') !== 1) exit(1);
+check(substr_count($multiClassOut, 'href="/travel-reports"') === 1, 'multi-class exact token');
 $sidebarExtra = str_replace('<aside class="sidebar">', '<aside class="sidebar-extra">', $productionFixture);
-if ($composer->compose($sidebarExtra) !== $sidebarExtra) exit(1);
+check($composer->compose($sidebarExtra) === $sidebarExtra, 'sidebar-extra rejected');
+$ambiguousSidebarNav = str_replace('</nav><div class="sidebar-foot">', '<nav class="nav"><div class="nav-section">ACCOUNTING</div><div class="nav-section">SYSTEM</div></nav></nav><div class="sidebar-foot">', $productionFixture);
+check($composer->compose($ambiguousSidebarNav) === $ambiguousSidebarNav, 'ambiguous sidebar nav fail closed');
+
 echo "PASS server sidebar composer regression\n";

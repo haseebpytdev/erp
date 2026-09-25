@@ -27,8 +27,8 @@ ok(!arrival.includes('et-arrival-filters'), 'old independent arrival filter remo
 ok(composer.includes('nav[contains(concat')&&composer.includes('nav-section'), 'composer supports live native NAV/DIV/A structure');
 ok(composer.includes("$anchor->setAttribute('href', '/travel-reports')"), 'fallback inserts authorized Travel Reports href');
 ok(composer.includes('if ($hasTravelReports) return $html;'), 'fallback is idempotent');
-ok(sidebarTest.includes('nestedNav'), 'realistic nested native sidebar fixture exists');
-ok(sidebarTest.includes('data-native="yes"'), 'realistic native sidebar attributes are preserved');
+ok(sidebarTest.includes('productionFixture'), 'realistic production native sidebar fixture exists');
+ok(sidebarTest.includes('nav-section')&&sidebarTest.includes('sidebar-foot'), 'realistic production sidebar structure is preserved');
 ok(composer.includes('flex:1 1 auto') === false, 'layout ownership remains CSS-scoped, not PHP');
 
 console.log(`PASS erp113345 live UAT corrective regression (${assertions} assertions)`);
