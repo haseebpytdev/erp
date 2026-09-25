@@ -21,7 +21,7 @@ and places REPORTS / Travel Reports between ACCOUNTING and SYSTEM without
 requiring the release footer to share the navigation parent. Movement Reports
 are not synthesized as a sidebar item. ERP-11.3.349 title behavior and
 ERP-11.3.348 Arrival/Departure movement rows, date/time separation, one-line
-filters and movement tabs remain preserved. ERP-11.3.350 is not deployed. No
+filters and movement tabs remain preserved. At that stage ERP-11.3.350 was not deployed. No
 booking, product, authorization, calculation, persistence, database schema or
 migration changes are included.
 
@@ -33,7 +33,7 @@ failed startup at line 101 and was rolled back. ERP-11.3.340 repaired both
 syntax defects, but its PHP 8.5.7 parser preflight was held for an implicit
 nullable parameter; .340 was not packaged or deployed. ERP-11.3.341 applies
 the explicit nullable correction and passed the server PHP 8.5.7 parser check
-for all six files. ERP-11.3.341 is the current live production release with
+for all six files. ERP-11.3.341 was subsequently confirmed live with
 System Health PASS, PHP 8.5.7, Database Connected and schema up to date.
 ERP-11.3.351 is the current live production release. ERP-11.3.352 is the
 finalized release candidate and is not deployed.
@@ -74,7 +74,7 @@ ERP-11.3.339 Travel Reports Startup Parse Hotfix
 
 Active release: v1.1.33.339-ERP11.3.339
 
-ERP-11.3.337 is currently live after rollback. Its visual UAT was accepted,
+At that stage ERP-11.3.337 had been restored after rollback. Its visual UAT was accepted,
 but .337 System Health verification was not supplied. ERP-11.3.338 was
 deployed but failed Laravel startup with HTTP 500 because of the confirmed
 TravelReportService.php ParseError; System Health and Travel Reports UAT were
@@ -82,7 +82,7 @@ not completed. ERP-11.3.339 repairs that syntax defect and is NOT deployed.
 NEW_MIGRATION_REQUIRED=NO
 
 Deployment order:
-1. Confirm ERP-11.3.337 is currently serving production.
+1. At that stage, confirm the then-current ERP-11.3.337 baseline is serving production.
 2. Stop relevant ERP editing and take a fresh full database backup.
 3. Upload/extract ONE authoritative ERP-11.3.339 ZIP through cPanel.
 4. Do not run a migration solely for ERP-11.3.339.
@@ -104,7 +104,7 @@ ERP-11.3.338 Operational Travel Reports
 
 Active release: v1.1.33.338-ERP11.3.338
 
-ERP-11.3.337 is the current live predecessor. Its visual UAT was accepted,
+ERP-11.3.337 was the live predecessor at that stage. Its visual UAT was accepted,
 but System Health verification for .337 was not supplied and remains
 unverified. ERP-11.3.338 was deployed, failed Laravel startup with HTTP 500
 from the TravelReportService.php ParseError, and was rolled back before
