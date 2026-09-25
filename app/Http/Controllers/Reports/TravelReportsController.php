@@ -16,9 +16,11 @@ final class TravelReportsController extends Controller
     }
     public function movement(Request $request,string $movement): \Illuminate\View\View {
         abort_unless(isset(TravelReportService::MOVEMENTS[$movement]),404);
-        if ($movement === 'arrival') {
+        // Arrival uses the dedicated reports.travel.movements.arrival view;
+        // Departure now uses the matching dedicated movement presentation.
+        if ($movement === 'arrival' || $movement === 'departure') {
             $layoutMeta=$this->layoutResolver->resolve();
-            return view('reports.travel.movements.arrival',['layoutMeta'=>$layoutMeta,'title'=>'Arrival Report','report'=>$movement,'definition'=>$this->reports->definition($movement),'rows'=>$this->reports->rows($movement,$request->query(),(int)$request->query('per_page',50)),'movements'=>TravelReportService::MOVEMENTS]);
+            return view('reports.travel.movements.'.($movement==='arrival'?'arrival':'departure'),['layoutMeta'=>$layoutMeta,'title'=>$movement==='arrival'?'Arrival Report':'Departure Intimation','report'=>$movement,'definition'=>$this->reports->definition($movement),'rows'=>$this->reports->rows($movement,$request->query(),(int)$request->query('per_page',50)),'movements'=>TravelReportService::MOVEMENTS]);
         }
         return $this->view('report',TravelReportService::MOVEMENTS[$movement],$movement,$request,true);
     }

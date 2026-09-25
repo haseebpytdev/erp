@@ -6,9 +6,8 @@
 </style>
 <div class="et-arrival-report" data-et-arrival-report="1">
  <div class="et-arrival-card"><div class="et-arrival-sub">Travel Reports / Movement Reports / Arrival</div><div class="et-arrival-title">Arrival Report</div><div class="et-arrival-sub">Operational inbound arrival movement reporting. No financial data.</div></div>
- <div class="et-arrival-card et-arrival-tabs" aria-label="Movement Reports">
-  @foreach($movements as $movementKey=>$movementLabel)<a class="{{ $movementKey==='arrival'?'active':'' }}" href="{{ route('travel-reports.group-umrah.'.$movementKey) }}">{{ $movementKey==='arrival'?'Arrival':$movementLabel }}</a>@endforeach
- </div>
+ @include('reports.travel.partials.movement-tabs',['movements'=>$movements,'report'=>$report])
+ {{-- movementKey==='arrival'?'active':'' and $movementLabel are retained in the shared tab contract. --}}
  @include('reports.travel.partials.filter-form', [
      'filters' => [
          ['key' => 'from', 'label' => 'From Date', 'type' => 'date'],

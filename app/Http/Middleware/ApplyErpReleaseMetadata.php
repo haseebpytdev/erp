@@ -219,7 +219,7 @@ class ApplyErpReleaseMetadata
         if (! str_starts_with(strtolower(trim($request->path(), '/')), 'travel-reports')) {
             return $html;
         }
-        $pattern = '/(<(?:header|div|nav)\b[^>]*class=["\'][^"\']*(?:topbar|top-bar|app-header|main-header|page-header|navbar-horizontal)[^"\']*["\'][^>]*>)(.*?)(<\/(?:header|div|nav)>)/is';
+        $pattern = '/(<(?:header|div|nav)\b[^>]*(?:class=["\'][^"\']*(?:topbar|top-bar|app-header|main-header|page-header|page-title|navbar-horizontal)[^"\']*["\']|data-et-shell-title=["\'][^"\']*["\'])[^>]*>)(.*?)(<\/(?:header|div|nav)>)/is';
         return preg_replace_callback($pattern, static function (array $match): string {
             $inner = preg_replace('/(>)[\s]*Dashboard[\s]*(<)/i', '$1Travel Reports$2', $match[2], 1, $count);
             return $count ? $match[1].$inner.$match[3] : $match[0];
