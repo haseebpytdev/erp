@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
 
 return new class extends Migration
 {
@@ -17,7 +16,7 @@ return new class extends Migration
             $rows = DB::table($s['table'])->get();
             $scopeColumns = array_values(array_intersect(['company_id','branch_id','organization_id','tenant_id','legal_entity_id'], $s['columns']));
             $prototype = $rows->first(fn ($r) => trim((string) $r->{$s['code']}) === '5110');
-            if ($scopeColumns && !$prototype) throw new RuntimeException('Operating expense scope requires resolvable 5110 prototype.');
+            if ($scopeColumns && !$prototype) throw new \RuntimeException('Operating expense scope requires resolvable 5110 prototype.');
             $byCode = $rows->groupBy(fn ($r) => trim((string) $r->{$s['code']}));
             $byName = $rows->groupBy(fn ($r) => mb_strtolower(trim((string) $r->{$s['name']})));
 
@@ -26,18 +25,18 @@ return new class extends Migration
                 $nameKey = mb_strtolower(trim($target['name']));
                 $codeMatches = $byCode->get($code, collect());
                 $nameMatches = $byName->get($nameKey, collect());
-                if ($codeMatches->count() > 1) throw new RuntimeException("Operating expense duplicate code conflict: {$code}");
-                if ($nameMatches->count() > 1) throw new RuntimeException("Operating expense duplicate name conflict: {$nameKey}");
+                if ($codeMatches->count() > 1) throw new \RuntimeException("Operating expense duplicate code conflict: {$code}");
+                if ($nameMatches->count() > 1) throw new \RuntimeException("Operating expense duplicate name conflict: {$nameKey}");
                 $existing = $codeMatches->first();
                 $sameName = $nameMatches->first();
                 if ($sameName && (!$existing || (int) $sameName->{$s['id']} !== (int) $existing->{$s['id']})) {
-                    throw new RuntimeException("Operating expense name conflict: {$target['name']}");
+                    throw new \RuntimeException("Operating expense name conflict: {$target['name']}");
                 }
                 if (!$existing) {
                     continue;
                 }
                 if (!$this->matches($existing, $target, $s, $rows)) {
-                    throw new RuntimeException("Operating expense code conflict: {$code}");
+                    throw new \RuntimeException("Operating expense code conflict: {$code}");
                 }
             }
 
@@ -102,7 +101,7 @@ return new class extends Migration
             if (!$s['active'] && !$s['status']) continue;
             return $s;
         }
-        throw new RuntimeException('No safe native Chart of Accounts schema found.');
+        throw new \RuntimeException('No safe native Chart of Accounts schema found.');
     }
 
     private function validateTargets(array $targets): void
@@ -110,7 +109,7 @@ return new class extends Migration
         $codes = collect($targets)->map(fn ($t) => trim($t['code']));
         $names = collect($targets)->map(fn ($t) => mb_strtolower(trim($t['name'])));
         if ($codes->count() !== 130 || $codes->unique()->count() !== 130 || $names->unique()->count() !== 130) {
-            throw new RuntimeException('Operating expense target definitions are not unique or complete.');
+            throw new \RuntimeException('Operating expense target definitions are not unique or complete.');
         }
     }
 
@@ -129,7 +128,7 @@ return new class extends Migration
     private function matches(object $row,array $t,array $s,$rows): bool { $parent=$t['parent']; if($parent!==null){$p=$rows->first(fn($r)=>trim((string)$r->{$s['code']})===$parent);$parent=$p?->{$s['id']};} $activeOk=$s['active']?(int)($row->{$s['active']}??0)===1:strcasecmp((string)($row->{$s['status']}??''),'active')===0; $controlTypeOk=!$s['control_type']||empty($row->{$s['control_type']}); return (strcasecmp(trim((string)$row->{$s['name']}),trim($t['name']))===0 && strcasecmp((string)$row->{$s['type']},'Expense')===0 && strcasecmp((string)$row->{$s['subtype']},$t['subtype'])===0 && strcasecmp((string)$row->{$s['normal']},'DEBIT')===0 && ((int)($row->{$s['posting']}??0)===(int)$t['posting']) && (int)($row->{$s['control']}??0)===0 && $controlTypeOk && $activeOk && $this->parentMatches($row->{$s['parent']}??null,$parent,$t['parent'],$s)); }
     private function parentMatches($actual,$id,?string $code,array $s): bool { if($code===null)return $actual===null; return $this->parentUsesId($s)?(string)$actual===(string)$id:(string)$actual===$code; }
     private function parentUsesId(array $s): bool { if(str_ends_with(strtolower($s['parent']),'_id'))return true; $sample=DB::table($s['table'])->whereNotNull($s['parent'])->value($s['parent']); if($sample!==null){$id=DB::table($s['table'])->where($s['id'],$sample)->exists();$code=DB::table($s['table'])->where($s['code'],trim((string)$sample))->exists();if($id xor $code)return$id;} return in_array(strtolower($s['parent']),['parent_code','parent_account'],true)?false:true; }
-    private function parentValue($id,?string $code,array $s){ if($code===null)return null; if($this->parentUsesId($s)){if(!$id)throw new RuntimeException("Unresolved parent {$code}");return$id;} return$code; }
+    private function parentValue($id,?string $code,array $s){ if($code===null)return null; if($this->parentUsesId($s)){if(!$id)throw new \RuntimeException("Unresolved parent {$code}");return$id;} return$code; }
     private function storage(string $value,string $column,array $s): string { $sample=DB::table($s['table'])->whereNotNull($column)->value($column); if($sample===null)return$value; $sample=(string)$sample; if($sample===strtoupper($sample))return strtoupper($value); if($sample===strtolower($sample))return strtolower($value); if($sample===ucfirst(strtolower($sample)))return ucfirst(strtolower($value)); return$value; }
     private function first(array $columns,array $names): ?string { foreach($names as $name)if(in_array($name,$columns,true))return$name; return null; }
 };

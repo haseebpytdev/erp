@@ -28,6 +28,9 @@ ok(migration.includes('use Illuminate\\Database\\Migrations\\Migration;'), 'vali
 ok(migration.includes('use Illuminate\\Support\\Facades\\DB;'), 'valid DB import');
 ok(migration.includes('use Illuminate\\Support\\Facades\\Schema;'), 'valid Schema import');
 ok(!migration.includes('IlluminateDatabaseMigrationsMigration'), 'malformed imports absent');
+ok(!migration.includes('use RuntimeException;'), 'global RuntimeException import absent');
+ok((migration.match(/new \\RuntimeException/g) || []).length >= 8, 'fully qualified RuntimeException references');
+ok(!migration.includes('new RuntimeException'), 'bare RuntimeException constructions absent');
 ok(migration.includes('parentUsesId'), 'parent id/code authority');
 ok(migration.includes("str_ends_with(strtolower($s['parent']),'_id')"), 'parent id suffix rule');
 ok(migration.includes("in_array(strtolower($s['parent']),['parent_code','parent_account'],true)"), 'blank parent sample uses naming semantics');
@@ -46,4 +49,4 @@ ok(voucher.includes('public function expenseAccounts') && voucher.includes("$s['
 ok(reporting.includes('5110') && reporting.includes('5190'), 'direct-cost constants preserved');
 ok(service.includes('allow_direct_journal_posting') || service.includes('allow_posting'), 'native posting mapping preserved');
 for (const code of ['5110','5120','5130','5140','5150','5190','5310','7200','1130','1140','1150','2110','2120','2130']) ok(!migration.includes(`$s['code'] === '${code}'`), `protected account ${code}`);
-console.log('ERP-11.3.353 operating expense COA regression: PASS / 39');
+console.log('ERP-11.3.353 operating expense COA regression: PASS / 42');
