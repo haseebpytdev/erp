@@ -71,9 +71,15 @@ check($composer->compose($ambiguousSidebarNav) === $ambiguousSidebarNav, 'ambigu
 
 $rootLinks = ['/travel-reports', '/travel-reports/', 'https://erp.easyticket.pk/travel-reports', 'https://erp.easyticket.pk/travel-reports/', '/travel-reports?source=sidebar'];
 foreach ($rootLinks as $href) {
-    $fixture = str_replace('href="/accounting/reports"', 'href="'.$href.'"', $productionFixture);
+    $fixture = str_replace(
+        '<a class="nav-item" href="/accounting/reports">Reports</a><div class="nav-section">SYSTEM</div>',
+        '<div class="nav-section">REPORTS</div><a class="nav-item" href="'.$href.'"><span class="et-ui-nav-icon">▦</span><span>Travel Reports</span></a><div class="nav-section">SYSTEM</div>',
+        $productionFixture
+    );
     $out = $composer->compose($fixture);
-    check(substr_count($out, 'Travel Reports') === 1, 'canonical root href recognized: '.$href);
+    check($out === $fixture, 'canonical root href unchanged: '.$href);
+    check(substr_count($out, 'Travel Reports') === 1, 'canonical root label preserved: '.$href);
+    check(substr_count($out, 'class="nav-section">REPORTS</div>') === 1, 'canonical Reports heading preserved: '.$href);
 }
 $movementFixture = str_replace('href="/accounting/reports"', 'href="/travel-reports/group-umrah/arrival"', $productionFixture);
 $movementOut = $composer->compose($movementFixture);
