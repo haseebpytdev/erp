@@ -1,20 +1,29 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.348
-CURRENT_LIVE_RELEASE=ERP-11.3.347
-CURRENT_VERSION=ERP-11.3.348
-APPLICATION_VERSION=v1.1.33.348-ERP11.3.348
-CURRENT_LIVE_VERSION=v1.1.33.341-ERP11.3.341
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.349
+CURRENT_LIVE_RELEASE=ERP-11.3.348
+CURRENT_VERSION=ERP-11.3.349
+APPLICATION_VERSION=v1.1.33.349-ERP11.3.349
+CURRENT_LIVE_VERSION=v1.1.33.348-ERP11.3.348
 CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.347 LIVE / DEPLOYED / CURRENT LIVE PRODUCTION; ERP-11.3.348 FUNCTIONAL CANDIDATE VALIDATED; NOT PACKAGED; NOT DEPLOYED. Historical ERP-11.3.337 was the restored former baseline; ERP-11.3.338 and ERP-11.3.339 failed startup and were rolled back; ERP-11.3.340 was metadata-finalized but never packaged or deployed.
-LAST_PACKAGED_RELEASE=ERP-11.3.347
+PRODUCTION_STATUS=ERP-11.3.348 LIVE / DEPLOYED / CURRENT LIVE PRODUCTION; ERP-11.3.349 TITLE/SIDEBAR CORRECTIVE CANDIDATE VALIDATED; NOT PACKAGED; NOT DEPLOYED.
+LAST_PACKAGED_RELEASE=ERP-11.3.348
 ```
+
+ERP-11.3.349 Travel Reports Title and Sidebar Placement Corrective
+
+ERP-11.3.349 corrects the native Travel Reports shell title and places the
+REPORTS / Travel Reports section between ACCOUNTING and SYSTEM without an
+append-to-end fallback; sidebar insertion fails closed when semantic wrappers
+cannot be identified. ERP-11.3.348 Arrival/Departure movement data,
+date/time presentation, filters and tabs remain preserved. PHP runtime is
+unavailable locally and live UAT remains pending. NEW_MIGRATION_REQUIRED=NO.
 
 ERP-11.3.344 Travel Reports, Passenger Master and Shell Presentation Corrective
 

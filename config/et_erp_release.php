@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.348-ERP11.3.348',
-    'release' => 'ERP-11.3.348',
-    'package' => 'ERP-11.3.348 Arrival and Departure Presentation Corrective',
-    'package_detail' => 'ERP-11.3.348 corrects the Travel Reports native shell title, route-scoped report header spacing, separate Arrival and Departure date/time presentation, and compact one-line desktop movement filters while preserving the .347 movement sources, deduplication, actions, authorization, calculations, persistence, database schema and migrations. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.349-ERP11.3.349',
+    'release' => 'ERP-11.3.349',
+    'package' => 'ERP-11.3.349 Travel Reports Title and Sidebar Placement Corrective',
+    'package_detail' => 'ERP-11.3.349 corrects the Travel Reports native shell title and places the REPORTS / Travel Reports sidebar section semantically between ACCOUNTING and SYSTEM, while preserving ERP-11.3.348 Arrival/Departure movement data, date/time presentation, filters and tabs. No booking, product, accounting, authorization, calculation, persistence, database schema or migration changes are included. NEW_MIGRATION_REQUIRED=NO.',
 ];
 
