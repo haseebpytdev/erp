@@ -25,6 +25,7 @@
          ['key' => 'status', 'label' => 'Status', 'type' => 'text'],
          ['key' => 'branch', 'label' => 'Branch ID', 'type' => 'text'],
          ['key' => 'customer', 'label' => 'Customer ID', 'type' => 'text'],
+         ['key' => 'destination', 'label' => 'Arrival Airport', 'type' => 'select', 'empty_label' => 'All Airports', 'options' => $airportOptions ?? []],
      ],
      'modifier' => 'et-report-filter-one-line',
      'actions' => [

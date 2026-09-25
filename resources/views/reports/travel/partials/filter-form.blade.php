@@ -11,7 +11,7 @@
     <form class="et-report-filter-form" method="get" @if($formAction) action="{{ $formAction }}" @endif>
         <div class="et-report-filter-grid">
             @foreach($filters as $filter)
-                <label class="et-report-filter-field">{{ $filter['label'] }}<input type="{{ $filter['type'] ?? 'text' }}" name="{{ $filter['key'] }}" value="{{ request($filter['key']) }}"></label>
+                <label class="et-report-filter-field">{{ $filter['label'] }}@if(($filter['type'] ?? 'text') === 'select')<select name="{{ $filter['key'] }}"><option value="">{{ $filter['empty_label'] ?? 'All' }}</option>@foreach(($filter['options'] ?? []) as $option)<option value="{{ $option }}" @selected((string)request($filter['key']) === (string)$option)>{{ $option }}</option>@endforeach</select>@else<input type="{{ $filter['type'] ?? 'text' }}" name="{{ $filter['key'] }}" value="{{ request($filter['key']) }}">@endif</label>
             @endforeach
         </div>
         <div class="et-report-filter-actions">
