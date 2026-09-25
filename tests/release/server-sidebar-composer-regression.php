@@ -69,4 +69,14 @@ check($composer->compose($sidebarExtra) === $sidebarExtra, 'sidebar-extra reject
 $ambiguousSidebarNav = str_replace('</nav><div class="sidebar-foot">', '<nav class="nav"><div class="nav-section">ACCOUNTING</div><div class="nav-section">SYSTEM</div></nav></nav><div class="sidebar-foot">', $productionFixture);
 check($composer->compose($ambiguousSidebarNav) === $ambiguousSidebarNav, 'ambiguous sidebar nav fail closed');
 
+$rootLinks = ['/travel-reports', '/travel-reports/', 'https://erp.easyticket.pk/travel-reports', 'https://erp.easyticket.pk/travel-reports/', '/travel-reports?source=sidebar'];
+foreach ($rootLinks as $href) {
+    $fixture = str_replace('href="/accounting/reports"', 'href="'.$href.'"', $productionFixture);
+    $out = $composer->compose($fixture);
+    check(substr_count($out, 'Travel Reports') === 1, 'canonical root href recognized: '.$href);
+}
+$movementFixture = str_replace('href="/accounting/reports"', 'href="/travel-reports/group-umrah/arrival"', $productionFixture);
+$movementOut = $composer->compose($movementFixture);
+check(substr_count($movementOut, 'href="/travel-reports"') === 1, 'movement route is not root Travel Reports');
+
 echo "PASS server sidebar composer regression\n";

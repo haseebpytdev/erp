@@ -34,7 +34,10 @@ final class ServerSidebarComposer
             $container = $navs->item(0);
             $hasTravelReports = false;
             foreach ($xpath->query('.//a', $container) as $anchor) {
-                if (strtolower(trim(preg_replace('/\s+/', ' ', $anchor->textContent))) === 'travel reports') {
+                $href = trim($anchor->getAttribute('href'));
+                $path = parse_url(html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8'), PHP_URL_PATH);
+                $path = '/'.trim((string) $path, '/');
+                if ($path === '/travel-reports') {
                     $hasTravelReports = true;
                     break;
                 }
