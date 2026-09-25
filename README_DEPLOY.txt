@@ -180,7 +180,7 @@ unchanged.
 
 NEW_MIGRATION_REQUIRED=NO
 Existing booking_service_id migration remains part of cumulative source;
-current live .336 already has it applied. Before .337 UAT, confirm System
+At that stage the live .336 baseline already had it applied. Before .337 UAT, confirm System
 Health reports the database schema is up to date. Take a fresh database backup
 before deployment, but do not treat this as a new migration requirement or
 manually modify the database.
