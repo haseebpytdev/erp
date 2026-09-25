@@ -34,4 +34,17 @@ ok(route.includes("Schema::hasColumn('booking_services','id')") && route.include
 ok(route.includes("if($serviceIds->isEmpty())return'—'"), 'empty service relation fails closed');
 ok(route.includes("} else return'—';"), 'missing booking relation fails closed');
 ok(route.includes("whereDate($arr,'<=',$day)"), 'future flights excluded');
-console.log('ERP-11.3.352 Makkah check-in regression: PASS / 28');
+ok(service.includes("foreach($aliases as $column)"), 'all installed airport aliases');
+ok(service.includes("origin_code','from','origin"), 'empty earlier alias fallback');
+ok(service.includes("destination_code','to','destination"), 'destination alias fallback');
+ok(service.includes("$event->from_code=$this->movementEventCode"), 'movement sector canonical source');
+ok(service.includes("$this->movementEventCode($e,['to_code','destination_code','to','destination'])"), 'dedup canonical route');
+ok(service.includes("$this->movementEventCode($row,$fromAliases)"), 'Makkah route alias authority');
+const report = fs.readFileSync('resources/views/reports/travel/report.blade.php', 'utf8');
+ok(report.includes("$report==='makkah-checkin'"), 'Makkah-specific actions');
+ok(report.includes('makkah-checkin.export'), 'Makkah CSV export action');
+ok(report.includes("label'=>'Reset'"), 'Makkah reset action');
+ok(service.includes("$filters['origin']") && service.includes("$filters['destination']"), 'normalized airport filtering');
+ok(fs.readFileSync('resources/views/reports/travel/movements/arrival.blade.php', 'utf8').includes('Arrival Time'), 'arrival presentation preserved');
+ok(fs.readFileSync('resources/views/reports/travel/movements/departure.blade.php', 'utf8').includes('Departure Time'), 'departure presentation preserved');
+console.log('ERP-11.3.352 Makkah check-in regression: PASS / 41');
