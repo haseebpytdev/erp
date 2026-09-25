@@ -161,10 +161,16 @@ final class ServerSidebarComposer
         $sidebarTag = preg_quote($sidebar->tagName, '/');
         $sidebarClass = trim($sidebar->getAttribute('class'));
         if ($sidebarClass === '') return $html;
-        $sidebarPattern = '/<'.$sidebarTag.'\b[^>]*class=["\'][^"\']*(?:^|\s)'.preg_quote($sidebarClass, '/').'(?:\s|$)[^"\']*["\'][^>]*>/i';
-        preg_match_all($sidebarPattern, $html, $sidebarMatches, PREG_OFFSET_CAPTURE);
-        if (count($sidebarMatches[0]) !== 1) return $html;
-        $sidebarStart = $sidebarMatches[0][0][1];
+        preg_match_all('/<'.$sidebarTag.'\b[^>]*>/i', $html, $sidebarMatches, PREG_OFFSET_CAPTURE);
+        $sidebarCandidates = [];
+        foreach ($sidebarMatches[0] as $candidate) {
+            if (preg_match('/\bclass\s*=\s*(["\'])(.*?)\1/i', $candidate[0], $classMatch)) {
+                $tokens = preg_split('/\s+/', trim($classMatch[2]));
+                if (in_array('sidebar', $tokens, true)) $sidebarCandidates[] = $candidate;
+            }
+        }
+        if (count($sidebarCandidates) !== 1) return $html;
+        $sidebarStart = $sidebarCandidates[0][1];
         $sidebarEnd = $this->matchingTagEnd($html, $sidebar->tagName, $sidebarStart);
         if ($sidebarEnd === null) return $html;
         $sidebarHtml = substr($html, $sidebarStart, $sidebarEnd - $sidebarStart);
@@ -172,10 +178,16 @@ final class ServerSidebarComposer
         $tag = preg_quote($node->tagName, '/');
         $class = trim($node->getAttribute('class'));
         if (strtolower($node->tagName) !== 'nav' || $class === '') return $html;
-        $pattern = '/<'.$tag.'\b[^>]*class=["\'][^"\']*(?:^|\s)nav(?:\s|$)[^"\']*["\'][^>]*>/i';
-        preg_match_all($pattern, $sidebarHtml, $matches, PREG_OFFSET_CAPTURE);
-        if (count($matches[0]) !== 1) return $html;
-        $start = $sidebarStart + $matches[0][0][1];
+        preg_match_all('/<'.$tag.'\b[^>]*>/i', $sidebarHtml, $matches, PREG_OFFSET_CAPTURE);
+        $navCandidates = [];
+        foreach ($matches[0] as $candidate) {
+            if (preg_match('/\bclass\s*=\s*(["\'])(.*?)\1/i', $candidate[0], $classMatch)) {
+                $tokens = preg_split('/\s+/', trim($classMatch[2]));
+                if (in_array('nav', $tokens, true)) $navCandidates[] = $candidate;
+            }
+        }
+        if (count($navCandidates) !== 1) return $html;
+        $start = $sidebarStart + $navCandidates[0][1];
         $end = $this->matchingTagEnd($html, $node->tagName, $start);
         if ($end === null || $start < $sidebarStart || $end > $sidebarEnd) return $html;
         return substr($html, 0, $start).$fragment.substr($html, $end);
