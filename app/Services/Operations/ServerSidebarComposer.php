@@ -70,8 +70,8 @@ final class ServerSidebarComposer
             $children = [];
             foreach ($container->childNodes as $child) if ($child instanceof \DOMElement) $children[] = $child;
             if (array_search($accounting, $children, true) >= array_search($system, $children, true)) return $html;
-            $section->appendChild($anchor);
             $sectionParent->insertBefore($section, $system);
+            $sectionParent->insertBefore($anchor, $system);
             return $this->replaceFragment($html, $container, $dom->saveHTML($container));
         }
         $rows = [];

@@ -53,4 +53,19 @@ if (substr_count($composer->compose($existingReports), 'href="/travel-reports">T
 $ulNoMovement = '<aside class="sidebar"><ul class="sidebar-menu"><li><a href="/dashboard">Dashboard</a></li><li><a href="/accounting">Reports</a></li><li><a href="/system/health">Health &amp; Updates</a></li></ul></aside>';
 $ulNoMovementOut = $composer->compose($ulNoMovement);
 if (substr_count($ulNoMovementOut, 'href="/travel-reports">Travel Reports</a>') !== 1 || strpos($ulNoMovementOut, 'Movement Reports') !== false) exit(1);
+$productionFixture = '<aside class="sidebar"><div class="brand">Easy Ticket</div><nav class="nav">'
+    .'<a class="nav-item" href="/">Dashboard</a><div class="nav-section">MASTER DATA</div>'
+    .'<a class="nav-item" href="/master-data/parties">Party Master</a><div class="nav-section">OPERATIONS</div>'
+    .'<a class="nav-item" href="/operations/bookings">Bookings</a><div class="nav-section">ACCOUNTING</div>'
+    .'<a class="nav-item" href="/accounting/chart-of-accounts-workspace">Chart of Accounts</a>'
+    .'<a class="nav-item" href="/accounting/reports">Reports</a><div class="nav-section">SYSTEM</div>'
+    .'<a class="nav-item" href="/system/update">Health &amp; Updates</a></nav>'
+    .'<div class="sidebar-foot">ERP-11.3.350</div></aside>';
+$productionOut = $composer->compose($productionFixture);
+if (substr_count($productionOut, 'href="/travel-reports"') !== 1 || substr_count($productionOut, 'Travel Reports') !== 1) exit(1);
+if (substr_count($productionOut, 'class="nav-section">REPORTS</div>') !== 1 || strpos($productionOut, 'Movement Reports') !== false) exit(1);
+$pAccounting = strpos($productionOut, '>ACCOUNTING<'); $pReports = strpos($productionOut, '>REPORTS<');
+$pTravel = strpos($productionOut, 'Travel Reports'); $pSystem = strpos($productionOut, '>SYSTEM<');
+if ($pAccounting === false || $pReports === false || $pTravel === false || $pSystem === false || !($pAccounting < $pReports && $pReports < $pTravel && $pTravel < $pSystem)) exit(1);
+if ($composer->compose($productionOut) !== $productionOut) exit(1);
 echo "PASS server sidebar composer regression\n";

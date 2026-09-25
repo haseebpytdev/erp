@@ -13,6 +13,7 @@ const middleware = read('../../app/Http/Middleware/ApplyErpReleaseMetadata.php')
 const shellCss = read('../../public/erp-theme/et-shell.css');
 const passengerSource = read('../../app/Services/Operations/UnifiedGroupPackageDataSource.php');
 const passengerController = read('../../app/Http/Controllers/Operations/PassengerWorkspaceController.php');
+const sidebarTest = read('../../tests/release/server-sidebar-composer-regression.php');
 const progressive = read('../../public/erp11390/general-progressive-step1.js');
 const productWorkspace = read('../../resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
 let assertions = 0;
@@ -41,6 +42,8 @@ ok(sidebar.includes("contains(concat(\" \", normalize-space(@class), \" \"), \" 
 ok(sidebar.includes("$text === 'accounting'") && sidebar.includes("$text === 'system'"), 'standalone heading text authority');
 ok(sidebar.includes('count($accounting) !== 1 || count($system) !== 1'), 'ambiguous heading fail closed');
 ok(sidebar.includes('$sectionParent->insertBefore($section, $system)'), 'Reports inserted before System heading');
+ok(sidebar.includes('$sectionParent->insertBefore($anchor, $system)'), 'Travel Reports link is a sibling of heading');
+ok(sidebarTest.includes('$productionFixture') && sidebarTest.includes('nav-section') && sidebarTest.includes('sidebar-foot'), 'production sidebar fixture source present');
 ok(service.includes('$customerResolver') && service.includes('NativeBookingCustomerResolver'), 'movement customer resolver authority');
 ok(service.includes('$customerIdentity[\'name\']') && service.includes("['customer_name','customer','party_name']"), 'customer name primary and safe fallback');
 ok(!sidebar.includes("['Movement Reports','/travel-reports/group-umrah/arrival']"), 'Movement Reports is not synthesized in sidebar');
