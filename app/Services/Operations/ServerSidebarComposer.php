@@ -72,7 +72,7 @@ final class ServerSidebarComposer
             if (array_search($accounting, $children, true) >= array_search($system, $children, true)) return $html;
             $sectionParent->insertBefore($section, $system);
             $sectionParent->insertBefore($anchor, $system);
-            return $this->replaceFragment($html, $container, $dom->saveHTML($container));
+            return $this->replaceFragment($html, $sidebar, $container, $dom->saveHTML($container));
         }
         $rows = [];
         foreach ($root->childNodes as $node) if ($node instanceof \DOMElement && strtolower($node->tagName) === 'li') $rows[] = $node;
@@ -156,26 +156,43 @@ final class ServerSidebarComposer
     }
 
     /** Replace only a uniquely identified sidebar fragment in the original response. */
-    private function replaceFragment(string $html, \DOMElement $node, string $fragment): string
+    private function replaceFragment(string $html, \DOMElement $sidebar, \DOMElement $node, string $fragment): string
     {
+        $sidebarTag = preg_quote($sidebar->tagName, '/');
+        $sidebarClass = trim($sidebar->getAttribute('class'));
+        if ($sidebarClass === '') return $html;
+        $sidebarPattern = '/<'.$sidebarTag.'\b[^>]*class=["\'][^"\']*(?:^|\s)'.preg_quote($sidebarClass, '/').'(?:\s|$)[^"\']*["\'][^>]*>/i';
+        preg_match_all($sidebarPattern, $html, $sidebarMatches, PREG_OFFSET_CAPTURE);
+        if (count($sidebarMatches[0]) !== 1) return $html;
+        $sidebarStart = $sidebarMatches[0][0][1];
+        $sidebarEnd = $this->matchingTagEnd($html, $sidebar->tagName, $sidebarStart);
+        if ($sidebarEnd === null) return $html;
+        $sidebarHtml = substr($html, $sidebarStart, $sidebarEnd - $sidebarStart);
+
         $tag = preg_quote($node->tagName, '/');
         $class = trim($node->getAttribute('class'));
-        $pattern = '/<'.$tag.'\b[^>]*class=["\'][^"\']*'.preg_quote($class, '/').'[^"\']*["\'][^>]*>/i';
-        if ($class === '' || ! preg_match($pattern, $html, $match, PREG_OFFSET_CAPTURE)) return $html;
-        $start = $match[0][1];
-        preg_match_all('/<\/?'.$tag.'\b[^>]*>/i', $html, $tokens, PREG_OFFSET_CAPTURE, $start);
+        if (strtolower($node->tagName) !== 'nav' || $class === '') return $html;
+        $pattern = '/<'.$tag.'\b[^>]*class=["\'][^"\']*(?:^|\s)nav(?:\s|$)[^"\']*["\'][^>]*>/i';
+        preg_match_all($pattern, $sidebarHtml, $matches, PREG_OFFSET_CAPTURE);
+        if (count($matches[0]) !== 1) return $html;
+        $start = $sidebarStart + $matches[0][0][1];
+        $end = $this->matchingTagEnd($html, $node->tagName, $start);
+        if ($end === null || $start < $sidebarStart || $end > $sidebarEnd) return $html;
+        return substr($html, 0, $start).$fragment.substr($html, $end);
+    }
+
+    private function matchingTagEnd(string $html, string $tagName, int $start): ?int
+    {
+        preg_match_all('/<\/?'.preg_quote($tagName, '/').'\b[^>]*>/i', $html, $tokens, PREG_OFFSET_CAPTURE, $start);
         $depth = 0;
         foreach ($tokens[0] as $token) {
             if (str_starts_with($token[0], '</')) {
                 $depth--;
-                if ($depth === 0) {
-                    $end = $token[1] + strlen($token[0]);
-                    return substr($html, 0, $start).$fragment.substr($html, $end);
-                }
+                if ($depth === 0) return $token[1] + strlen($token[0]);
             } elseif (! str_ends_with(trim($token[0]), '/>')) {
                 $depth++;
             }
         }
-        return $html;
+        return null;
     }
 }

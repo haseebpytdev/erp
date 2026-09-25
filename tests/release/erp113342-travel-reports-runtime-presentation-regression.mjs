@@ -44,6 +44,9 @@ ok(sidebar.includes('count($accounting) !== 1 || count($system) !== 1'), 'ambigu
 ok(sidebar.includes('$sectionParent->insertBefore($section, $system)'), 'Reports inserted before System heading');
 ok(sidebar.includes('$sectionParent->insertBefore($anchor, $system)'), 'Travel Reports link is a sibling of heading');
 ok(sidebarTest.includes('$productionFixture') && sidebarTest.includes('nav-section') && sidebarTest.includes('sidebar-foot'), 'production sidebar fixture source present');
+ok(sidebar.includes('matchingTagEnd') && sidebar.includes('sidebarPattern'), 'raw fragment replacement is sidebar scoped');
+ok(sidebar.includes('(?:^|\\s)nav(?:\\s|$)') && sidebar.includes('count($matches[0]) !== 1'), 'raw nav class token and uniqueness guard');
+ok(sidebarTest.includes('outsideNavbar') && sidebarTest.includes('outsideNavigation') && sidebarTest.includes('ambiguousSidebarNav'), 'adversarial sidebar fixtures present');
 ok(service.includes('$customerResolver') && service.includes('NativeBookingCustomerResolver'), 'movement customer resolver authority');
 ok(service.includes('$customerIdentity[\'name\']') && service.includes("['customer_name','customer','party_name']"), 'customer name primary and safe fallback');
 ok(!sidebar.includes("['Movement Reports','/travel-reports/group-umrah/arrival']"), 'Movement Reports is not synthesized in sidebar');
