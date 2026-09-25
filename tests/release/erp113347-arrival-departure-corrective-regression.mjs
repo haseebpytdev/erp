@@ -23,6 +23,6 @@ ok(departure.includes('Apply Filters')&&departure.includes('Reset')&&departure.i
 ok(arrival.includes('movement-tabs')&&tabs.includes('display:flex')&&tabs.includes('active'),'shared professional tabs');
 ok(tabs.includes('overflow-x:auto')&&tabs.includes('border-radius'),'responsive tab contract');
 ok(title.includes('$headerPattern')&&title.includes('Easy Group Of Travels'),'host title uses unique native header');
-ok(sidebar.includes('et-sidebar-report-section'),'sidebar reports section');
+ok(sidebar.includes('nav-section')&&sidebar.includes('nav-item')&&sidebar.includes('et-ui-nav-icon'),'sidebar reports section');
 ok(!service.includes('Schema::create')&&!service.includes('migrate'),'no migration');
 console.log(`PASS erp113347 arrival/departure corrective regression (${assertions} assertions)`);

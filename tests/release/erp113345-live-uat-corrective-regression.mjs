@@ -24,7 +24,7 @@ ok(arrival.includes("['key' => 'customer', 'label' => 'Customer ID'"), 'arrival 
 for (const label of ['Apply Filters', 'Reset', 'Print', 'Export CSV']) ok(arrival.includes(`'label' => '${label}'`), `arrival action ${label} preserved`);
 ok(arrival.indexOf('aria-label="Movement Reports"') < arrival.indexOf("@include('reports.travel.partials.filter-form'"), 'movement tabs precede filter card');
 ok(!arrival.includes('et-arrival-filters'), 'old independent arrival filter removed');
-ok(composer.includes("$xpath->query('.//nav[.//a]'"), 'composer supports native NAV/DIV/A structure');
+ok(composer.includes('nav[contains(concat')&&composer.includes('nav-section'), 'composer supports live native NAV/DIV/A structure');
 ok(composer.includes("$anchor->setAttribute('href', '/travel-reports')"), 'fallback inserts authorized Travel Reports href');
 ok(composer.includes('if ($hasTravelReports) return $html;'), 'fallback is idempotent');
 ok(sidebarTest.includes('nestedNav'), 'realistic nested native sidebar fixture exists');

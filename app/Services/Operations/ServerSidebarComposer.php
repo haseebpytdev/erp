@@ -29,7 +29,9 @@ final class ServerSidebarComposer
         if (!$root) {
             // Some native shells use NAV/DIV/A rather than UL/LI. Preserve
             // that host structure and add the authorized report section once.
-            $container = $xpath->query('.//nav[.//a]', $sidebar)->item(0) ?: $sidebar;
+            $navs = $xpath->query('.//nav[contains(concat(" ", normalize-space(@class), " "), " nav ")][.//a]', $sidebar);
+            if ($navs->length !== 1) return $html;
+            $container = $navs->item(0);
             $hasTravelReports = false;
             foreach ($xpath->query('.//a', $container) as $anchor) {
                 if (strtolower(trim(preg_replace('/\s+/', ' ', $anchor->textContent))) === 'travel reports') {
@@ -39,40 +41,36 @@ final class ServerSidebarComposer
             }
             if ($hasTravelReports) return $html;
             $section = $dom->createElement('div');
-            $section->setAttribute('class', 'et-sidebar-report-section');
-            $heading = $dom->createElement('span', 'REPORTS');
-            $heading->setAttribute('class', 'et-sidebar-section-heading');
+            $section->setAttribute('class', 'nav-section');
+            $heading = $dom->createTextNode('REPORTS');
             $section->appendChild($heading);
-            $anchor = $dom->createElement('a', 'Travel Reports');
+            $anchor = $dom->createElement('a');
+            $anchor->setAttribute('class', 'nav-item');
             $anchor->setAttribute('href', '/travel-reports');
-            $section->appendChild($anchor);
-            // Identify complete semantic section wrappers, not individual links.
-            // If the native shell cannot be proven safe, preserve it unchanged;
-            // Reports must never fall through to the physical end of the menu.
+            $icon = $dom->createElement('span', '▦');
+            $icon->setAttribute('class', 'et-ui-nav-icon');
+            $label = $dom->createElement('span', 'Travel Reports');
+            $anchor->appendChild($icon);
+            $anchor->appendChild($label);
+            $sectionParent = $container;
+            $accounting = [];
+            $system = [];
             $normalize = static fn(string $value): string => strtolower(trim(preg_replace('/\s+/', ' ', $value)));
-            $findHeading = static function (\DOMElement $block, string $label) use ($normalize): ?\DOMElement {
-                foreach ($block->getElementsByTagName('*') as $candidate) {
-                    if ($normalize($candidate->textContent) === strtolower($label)) return $candidate;
-                }
-                return null;
-            };
-            $sectionParent = null; $accounting = null; $system = null;
-            $candidateParents = [$container];
-            foreach ($xpath->query('.//*', $container) as $candidate) $candidateParents[] = $candidate;
-            foreach ($candidateParents as $candidateParent) {
-                $children = [];
-                foreach ($candidateParent->childNodes as $child) if ($child instanceof \DOMElement) $children[] = $child;
-                if (count($children) < 3) continue;
-                $a = null; $s = null;
-                foreach ($children as $child) {
-                    if (!$a && $findHeading($child, 'ACCOUNTING')) $a = $child;
-                    if (!$s && $findHeading($child, 'SYSTEM')) $s = $child;
-                }
-                if ($a && $s && array_search($a, $children, true) < array_search($s, $children, true)) {
-                    $sectionParent = $candidateParent; $accounting = $a; $system = $s; break;
-                }
+            foreach ($container->childNodes as $child) {
+                if (!$child instanceof \DOMElement) continue;
+                $classes = ' '.trim($child->getAttribute('class')).' ';
+                if (!str_contains($classes, ' nav-section ')) continue;
+                $text = $normalize($child->textContent);
+                if ($text === 'accounting') $accounting[] = $child;
+                if ($text === 'system') $system[] = $child;
             }
-            if (!$sectionParent || !$accounting || !$system) return $html;
+            if (count($accounting) !== 1 || count($system) !== 1) return $html;
+            $accounting = $accounting[0];
+            $system = $system[0];
+            $children = [];
+            foreach ($container->childNodes as $child) if ($child instanceof \DOMElement) $children[] = $child;
+            if (array_search($accounting, $children, true) >= array_search($system, $children, true)) return $html;
+            $section->appendChild($anchor);
             $sectionParent->insertBefore($section, $system);
             return $this->replaceFragment($html, $container, $dom->saveHTML($container));
         }
