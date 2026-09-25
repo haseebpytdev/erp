@@ -87,7 +87,18 @@ return new class extends Migration
         ];
         $out = [];
         foreach ($groups as [$code, $name, $parent, $subtype]) $out[] = compact('code','name','parent','subtype') + ['posting'=>false];
-        foreach ($children as $parent => $list) foreach ($list as $item) { [$code, $name] = explode(' ', $item, 2); $subtype = collect($groups)->first(fn ($g) => $g[0] === $parent)[3]; $out[] = compact('code','name','parent','subtype') + ['posting'=>true]; }
+        foreach ($children as $parent => $list) {
+            $parent = (string) $parent;
+            $group = collect($groups)->first(fn ($g) => (string) $g[0] === $parent);
+            if ($group === null) {
+                throw new \RuntimeException("Operating expense child parent group is undefined: {$parent}");
+            }
+            $subtype = $group[3];
+            foreach ($list as $item) {
+                [$code, $name] = explode(' ', $item, 2);
+                $out[] = compact('code','name','parent','subtype') + ['posting'=>true];
+            }
+        }
         return $out;
     }
 

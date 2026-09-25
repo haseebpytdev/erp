@@ -1,12 +1,12 @@
-ERP-11.3.354 Operating Expense Migration PHP Runtime Hotfix
+ERP-11.3.355 Operating Expense Parent-Key Runtime Hotfix
 
-ERP-11.3.354 repairs the Operating Expense migration PHP runtime namespace failure
-under the reserved 6000 series. It adds non-posting group accounts and posting
-child expense ledgers without changing existing accounts, account-code
-generation, direct-cost mappings, AR/AP controls or subledger architecture.
-ERP-11.3.353 deployment was attempted but database upgrade failed during PHP migration load. ERP-11.3.354 is not deployed.
+ERP-11.3.355 fixes the Operating Expense migration failure caused by numeric PHP
+array keys being compared strictly to string group codes. It preserves all 130
+COA targets and fails closed when a child parent group is undefined. ERP-11.3.353
+failed during PHP migration load; ERP-11.3.354 failed during COA target generation;
+ERP-11.3.355 is not deployed.
 
-Active release: v1.1.33.354-ERP11.3.354
+Active release: v1.1.33.355-ERP11.3.355
 CURRENT_LIVE_RELEASE=ERP-11.3.352
 NEW_MIGRATION_REQUIRED=YES
 
