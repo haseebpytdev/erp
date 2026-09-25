@@ -11,17 +11,25 @@ return new class extends Migration
     {
         $s = $this->resolveSchema();
         $targets = $this->targets();
+        $this->validateTargets($targets);
 
         DB::transaction(function () use ($s, $targets): void {
             $rows = DB::table($s['table'])->get();
-            $byCode = $rows->keyBy(fn ($r) => trim((string) $r->{$s['code']}));
-            $byName = $rows->keyBy(fn ($r) => mb_strtolower(trim((string) $r->{$s['name']})));
+            $scopeColumns = array_values(array_intersect(['company_id','branch_id','organization_id','tenant_id','legal_entity_id'], $s['columns']));
+            $prototype = $rows->first(fn ($r) => trim((string) $r->{$s['code']}) === '5110');
+            if ($scopeColumns && !$prototype) throw new RuntimeException('Operating expense scope requires resolvable 5110 prototype.');
+            $byCode = $rows->groupBy(fn ($r) => trim((string) $r->{$s['code']}));
+            $byName = $rows->groupBy(fn ($r) => mb_strtolower(trim((string) $r->{$s['name']})));
 
             foreach ($targets as $target) {
                 $code = trim($target['code']);
                 $nameKey = mb_strtolower(trim($target['name']));
-                $existing = $byCode->get($code);
-                $sameName = $byName->get($nameKey);
+                $codeMatches = $byCode->get($code, collect());
+                $nameMatches = $byName->get($nameKey, collect());
+                if ($codeMatches->count() > 1) throw new RuntimeException("Operating expense duplicate code conflict: {$code}");
+                if ($nameMatches->count() > 1) throw new RuntimeException("Operating expense duplicate name conflict: {$nameKey}");
+                $existing = $codeMatches->first();
+                $sameName = $nameMatches->first();
                 if ($sameName && (!$existing || (int) $sameName->{$s['id']} !== (int) $existing->{$s['id']})) {
                     throw new RuntimeException("Operating expense name conflict: {$target['name']}");
                 }
@@ -33,11 +41,10 @@ return new class extends Migration
                 }
             }
 
-            $prototype = $rows->first(fn ($r) => (string) $r->{$s['code']} === '5110');
             $created = [];
             foreach ($targets as $target) {
                 if ($byCode->has(trim($target['code']))) {
-                    $created[$target['code']] = $byCode->get(trim($target['code']));
+                    $created[$target['code']] = $byCode->get(trim($target['code']))->first();
                     continue;
                 }
                 $insert = $this->insertValues($target, $s, $created, $prototype);
@@ -96,6 +103,15 @@ return new class extends Migration
             return $s;
         }
         throw new RuntimeException('No safe native Chart of Accounts schema found.');
+    }
+
+    private function validateTargets(array $targets): void
+    {
+        $codes = collect($targets)->map(fn ($t) => trim($t['code']));
+        $names = collect($targets)->map(fn ($t) => mb_strtolower(trim($t['name'])));
+        if ($codes->count() !== 130 || $codes->unique()->count() !== 130 || $names->unique()->count() !== 130) {
+            throw new RuntimeException('Operating expense target definitions are not unique or complete.');
+        }
     }
 
     private function insertValues(array $t, array $s, array $created, ?object $prototype): array
