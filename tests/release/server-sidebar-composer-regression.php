@@ -33,4 +33,14 @@ $ambiguousClass = '<aside class="sidebar"><ul class="live-nav"><li><a href="/das
 if (strpos($composer->compose($ambiguousClass), 'data-et-server-sidebar="1"') !== false) exit(1);
 $idempotent = $composer->compose($nestedNav);
 if ($composer->compose($idempotent) !== $idempotent || substr_count($idempotent, 'href="/travel-reports/group-umrah/arrival">Movement Reports</a>') !== 1) exit(1);
+$semantic = '<aside class="sidebar"><div class="native-menu"><div class="section"><span>ADMINISTRATION</span><a href="/administration">Administration</a></div><div class="section"><span>MASTER DATA</span><a href="/master-data">Master Data</a></div><div class="section"><span>OPERATIONS</span><a href="/operations/bookings">Bookings</a></div><div class="section"><span>ACCOUNTING</span><a href="/accounting">Accounting</a></div><div class="section"><span>SYSTEM</span><a href="/system/health">Health &amp; Updates</a></div><div class="release-footer"><span>ERP-11.3.348</span></div></div></aside>';
+$semanticOut = $composer->compose($semantic);
+$accountingIndex = strpos($semanticOut, '>ACCOUNTING<');
+$reportsIndex = strpos($semanticOut, '>REPORTS<');
+$systemIndex = strpos($semanticOut, '>SYSTEM<');
+$footerIndex = strpos($semanticOut, 'release-footer');
+if ($accountingIndex === false || $reportsIndex === false || $systemIndex === false || $footerIndex === false || !($accountingIndex < $reportsIndex && $reportsIndex < $systemIndex && $systemIndex < $footerIndex)) exit(1);
+if (substr_count($semanticOut, '>Travel Reports<') !== 1 || substr_count($semanticOut, '>Movement Reports<') !== 0) exit(1);
+$unsafe = '<aside class="sidebar"><nav class="native-menu"><div class="section"><span>ACCOUNTING</span></div><div class="section"><span>SYSTEM</span><a href="/system/health">Health &amp; Updates</a></div></nav><div class="release-footer">ERP-11.3.348</div></aside>';
+if ($composer->compose($unsafe) !== $unsafe) exit(1);
 echo "PASS server sidebar composer regression\n";

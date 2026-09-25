@@ -22,7 +22,7 @@ ok(departure.includes('Departure Intimation')&&departure.includes('Departure Dat
 ok(departure.includes('Apply Filters')&&departure.includes('Reset')&&departure.includes('Print')&&departure.includes('Export CSV'),'departure actions');
 ok(arrival.includes('movement-tabs')&&tabs.includes('display:flex')&&tabs.includes('active'),'shared professional tabs');
 ok(tabs.includes('overflow-x:auto')&&tabs.includes('border-radius'),'responsive tab contract');
-ok(title.includes('Travel Reports')&&title.includes('page-title'),'host title fragment targeting');
+ok(title.includes('$headerPattern')&&title.includes('Easy Group Of Travels'),'host title uses unique native header');
 ok(sidebar.includes('et-sidebar-report-section'),'sidebar reports section');
 ok(!service.includes('Schema::create')&&!service.includes('migrate'),'no migration');
 console.log(`PASS erp113347 arrival/departure corrective regression (${assertions} assertions)`);

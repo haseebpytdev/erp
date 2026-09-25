@@ -46,16 +46,36 @@ final class ServerSidebarComposer
             $anchor = $dom->createElement('a', 'Travel Reports');
             $anchor->setAttribute('href', '/travel-reports');
             $section->appendChild($anchor);
-            $system = null;
-            foreach ($xpath->query('.//a', $container) as $candidate) {
-                if (strtolower(trim(preg_replace('/\s+/', ' ', $candidate->textContent))) === 'health & updates') {
-                    $system = $candidate;
-                    break;
+            // Identify complete semantic section wrappers, not individual links.
+            // If the native shell cannot be proven safe, preserve it unchanged;
+            // Reports must never fall through to the physical end of the menu.
+            $normalize = static fn(string $value): string => strtolower(trim(preg_replace('/\s+/', ' ', $value)));
+            $findHeading = static function (\DOMElement $block, string $label) use ($normalize): ?\DOMElement {
+                foreach ($block->getElementsByTagName('*') as $candidate) {
+                    if ($normalize($candidate->textContent) === strtolower($label)) return $candidate;
+                }
+                return null;
+            };
+            $sectionParent = null; $accounting = null; $system = null; $footer = null;
+            $candidateParents = [$container];
+            foreach ($xpath->query('.//*', $container) as $candidate) $candidateParents[] = $candidate;
+            foreach ($candidateParents as $candidateParent) {
+                $children = [];
+                foreach ($candidateParent->childNodes as $child) if ($child instanceof \DOMElement) $children[] = $child;
+                if (count($children) < 3) continue;
+                $a = null; $s = null; $f = null;
+                foreach ($children as $child) {
+                    if (!$a && $findHeading($child, 'ACCOUNTING')) $a = $child;
+                    if (!$s && $findHeading($child, 'SYSTEM')) $s = $child;
+                    $class = strtolower($child->getAttribute('class').' '.$child->getAttribute('id'));
+                    if (!$f && preg_match('/(?:release|footer)/', $class)) $f = $child;
+                }
+                if ($a && $s && $f && array_search($a, $children, true) < array_search($s, $children, true) && array_search($s, $children, true) < array_search($f, $children, true)) {
+                    $sectionParent = $candidateParent; $accounting = $a; $system = $s; $footer = $f; break;
                 }
             }
-            $parent = $system?->parentNode;
-            if ($parent && $parent->parentNode === $container) $container->insertBefore($section, $parent);
-            else $container->appendChild($section);
+            if (!$sectionParent || !$accounting || !$system || !$footer) return $html;
+            $sectionParent->insertBefore($section, $system);
             return $this->replaceFragment($html, $container, $dom->saveHTML($container));
         }
         $rows = [];

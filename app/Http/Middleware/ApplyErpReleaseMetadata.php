@@ -219,11 +219,30 @@ class ApplyErpReleaseMetadata
         if (! str_starts_with(strtolower(trim($request->path(), '/')), 'travel-reports')) {
             return $html;
         }
-        $pattern = '/(<(?:header|div|nav)\b[^>]*(?:class=["\'][^"\']*(?:topbar|top-bar|app-header|main-header|page-header|page-title|navbar-horizontal)[^"\']*["\']|data-et-shell-title=["\'][^"\']*["\'])[^>]*>)(.*?)(<\/(?:header|div|nav)>)/is';
-        return preg_replace_callback($pattern, static function (array $match): string {
-            $inner = preg_replace('/(>)[\s]*Dashboard[\s]*(<)/i', '$1Travel Reports$2', $match[2], 1, $count);
-            return $count ? $match[1].$inner.$match[3] : $match[0];
-        }, $html, 1) ?? $html;
+        // The native title is the Dashboard heading in the unique header that
+        // also carries the current company identity. Do not infer it from a
+        // guessed class or replace every Dashboard string in the document.
+        $headerPattern = '/<header\b[^>]*>.*?<\/header>/is';
+        $matches = [];
+        preg_match_all($headerPattern, $html, $matches, PREG_OFFSET_CAPTURE);
+        $targets = [];
+        foreach ($matches[0] ?? [] as $match) {
+            if (stripos($match[0], 'Easy Group Of Travels') === false) {
+                continue;
+            }
+            if (preg_match('/(>)[\s]*Dashboard[\s]*(<)/i', $match[0])) {
+                $targets[] = $match;
+            }
+        }
+        if (count($targets) !== 1) {
+            return $html;
+        }
+        [$fragment, $offset] = $targets[0];
+        $updated = preg_replace('/(>)[\s]*Dashboard[\s]*(<)/i', '$1Travel Reports$2', $fragment, 1, $count);
+        if ($count !== 1 || $updated === null) {
+            return $html;
+        }
+        return substr($html, 0, $offset).$updated.substr($html, $offset + strlen($fragment));
     }
 
     private function injectProfessionalUi(Request $request, string $html, string $version): string
