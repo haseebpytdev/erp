@@ -13,6 +13,8 @@ const middleware = read('../../app/Http/Middleware/ApplyErpReleaseMetadata.php')
 const shellCss = read('../../public/erp-theme/et-shell.css');
 const passengerSource = read('../../app/Services/Operations/UnifiedGroupPackageDataSource.php');
 const passengerController = read('../../app/Http/Controllers/Operations/PassengerWorkspaceController.php');
+const progressive = read('../../public/erp11390/general-progressive-step1.js');
+const productWorkspace = read('../../resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
 let assertions = 0;
 const ok = (value, message) => { assertions += 1; assert.ok(value, message); };
 
@@ -46,13 +48,15 @@ ok(index.includes("$layoutMeta['content_section'] ?? 'content'") && report.inclu
 ok(controller.includes("'layoutMeta'=>$layoutMeta"), 'controller passes layoutMeta data shape');
 ok(resolver.includes('fromExistingBookingViews') && resolver.includes('detectPrimarySection'), 'native resolver contract preserved');
 ok(!index.match(/<html|<body|class=["']sidebar/iu) && !report.match(/<html|<body|class=["']sidebar/iu), 'views do not create standalone shell');
-ok(index.includes('width:100%') && index.includes('max-width:none') && index.includes('min-width:0'), 'index width contract');
+ok(index.includes('et-travel-hub') && index.includes('Reports / Travel Reports'), 'professional Travel Reports landing header');
+ok(index.includes('Movement &amp; Intimation Reports') && index.includes('et-travel-strip'), 'landing summary and movement sections');
+ok(index.includes('grid-template-columns:repeat(3') && index.includes('grid-template-columns:repeat(2') && index.includes('grid-template-columns:1fr'), 'landing responsive grid contract');
 ok(report.includes('width:100%') && report.includes('max-width:none') && report.includes('min-width:0'), 'report width contract');
 ok(report.includes('overflow-x:auto'), 'table scroll is container-local');
 ok(!index.match(/position\s*:\s*(absolute|fixed)|left\s*:\s*-\d+/i) && !report.match(/position\s*:\s*(absolute|fixed)|left\s*:\s*-\d+/i), 'no overlay positioning workaround');
 ok(!service.match(/sale_price|cost_price|gross_margin|supplier_cost|profitability|commission/i), 'no financial fields introduced');
 ok(middleware.includes('normalizeTravelReportHostTitle'), 'travel report host title normalizer is in final response path');
-ok(middleware.includes("'Travel Reports'"), 'travel report host title is explicit');
+ok(middleware.includes('Travel Reports'), 'travel report host title is explicit');
 for (const route of ['travel-reports','travel-reports/sectors','travel-reports/group-umrah/arrival','travel-reports/group-umrah/departure-intimation']) {
   ok(middleware.includes("str_starts_with(strtolower(trim($request->path(), '/')), 'travel-reports')"), `host title route guard covers ${route}`);
 }
@@ -63,4 +67,9 @@ ok(passengerSource.includes('passportValue($a, $columns)'), 'passenger sources u
 ok(passengerSource.includes("'passport', 'passport_id', 'document_number'"), 'passport aliases are supported');
 ok(passengerController.includes("normalizePassport((string) ($row['passport_no'] ?? ''))"), 'search uses canonical displayed passport');
 ok(passengerController.includes('forPage($page, $perPage)'), 'passenger search paginates after filtering');
+ok(!sidebar.includes('return $dom->saveHTML();'), 'sidebar never serializes whole document');
+ok(!middleware.includes('return $dom->saveHTML();'), 'report title never serializes whole document');
+ok(progressive.includes('root.classList.add(\'etgp-step1-ready-11390\')'), 'dedicated products reveal after successful mount');
+ok(progressive.includes('root.classList.add(\'etgp-step1-fallback-11390\')'), 'dedicated products reveal fallback on mount failure');
+ok(productWorkspace.includes('Other Services workspace is not configured yet.'), 'Other Services controlled placeholder preserved');
 console.log(`PASS erp113342 travel reports runtime presentation regression (${assertions} assertions)`);

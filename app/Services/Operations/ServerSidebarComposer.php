@@ -28,7 +28,7 @@ final class ServerSidebarComposer
         if (!$root) $root = $sidebar->tagName === 'nav' ? $xpath->query('.//ul[li]', $sidebar)->item(0) : $xpath->query('.//nav[ul]', $sidebar)->item(0);
         if (!$root) {
             // Some native shells use NAV/DIV/A rather than UL/LI. Preserve
-            // that host structure and add the authorized report entry once.
+            // that host structure and add the authorized report section once.
             $container = $xpath->query('.//nav[.//a]', $sidebar)->item(0) ?: $sidebar;
             $hasTravelReports = false;
             foreach ($xpath->query('.//a', $container) as $anchor) {
@@ -38,10 +38,25 @@ final class ServerSidebarComposer
                 }
             }
             if ($hasTravelReports) return $html;
+            $section = $dom->createElement('div');
+            $section->setAttribute('class', 'et-sidebar-report-section');
+            $heading = $dom->createElement('span', 'REPORTS');
+            $heading->setAttribute('class', 'et-sidebar-section-heading');
+            $section->appendChild($heading);
             $anchor = $dom->createElement('a', 'Travel Reports');
             $anchor->setAttribute('href', '/travel-reports');
-            $container->appendChild($anchor);
-            return $dom->saveHTML();
+            $section->appendChild($anchor);
+            $system = null;
+            foreach ($xpath->query('.//a', $container) as $candidate) {
+                if (strtolower(trim(preg_replace('/\s+/', ' ', $candidate->textContent))) === 'health & updates') {
+                    $system = $candidate;
+                    break;
+                }
+            }
+            $parent = $system?->parentNode;
+            if ($parent && $parent->parentNode === $container) $container->insertBefore($section, $parent);
+            else $container->appendChild($section);
+            return $this->replaceFragment($html, $container, $dom->saveHTML($container));
         }
         $rows = [];
         foreach ($root->childNodes as $node) if ($node instanceof \DOMElement && strtolower($node->tagName) === 'li') $rows[] = $node;
@@ -122,5 +137,29 @@ final class ServerSidebarComposer
         }
         if ($end === null) return $html;
         return substr($html, 0, $start).$fragment.substr($html, $end);
+    }
+
+    /** Replace only a uniquely identified sidebar fragment in the original response. */
+    private function replaceFragment(string $html, \DOMElement $node, string $fragment): string
+    {
+        $tag = preg_quote($node->tagName, '/');
+        $class = trim($node->getAttribute('class'));
+        $pattern = '/<'.$tag.'\b[^>]*class=["\'][^"\']*'.preg_quote($class, '/').'[^"\']*["\'][^>]*>/i';
+        if ($class === '' || ! preg_match($pattern, $html, $match, PREG_OFFSET_CAPTURE)) return $html;
+        $start = $match[0][1];
+        preg_match_all('/<\/?'.$tag.'\b[^>]*>/i', $html, $tokens, PREG_OFFSET_CAPTURE, $start);
+        $depth = 0;
+        foreach ($tokens[0] as $token) {
+            if (str_starts_with($token[0], '</')) {
+                $depth--;
+                if ($depth === 0) {
+                    $end = $token[1] + strlen($token[0]);
+                    return substr($html, 0, $start).$fragment.substr($html, $end);
+                }
+            } elseif (! str_ends_with(trim($token[0]), '/>')) {
+                $depth++;
+            }
+        }
+        return $html;
     }
 }

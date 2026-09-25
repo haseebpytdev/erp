@@ -1,6 +1,6 @@
-ERP-11.3.345 Live-UAT Passport, Arrival and Reports Menu Corrective
+ERP-11.3.346 Consolidated Live-UAT and Travel Reports UX Corrective
 
-Active release: v1.1.33.345-ERP11.3.345
+Active release: v1.1.33.346-ERP11.3.346
 
 ERP-11.3.341 is the current live production release. ERP-11.3.337 was the
 restored former baseline. ERP-11.3.338 failed startup at TravelReportService.php line 55 and was rolled back. ERP-11.3.339
@@ -10,31 +10,32 @@ nullable parameter; .340 was not packaged or deployed. ERP-11.3.341 applies
 the explicit nullable correction and passed the server PHP 8.5.7 parser check
 for all six files. ERP-11.3.341 is the current live production release with
 System Health PASS, PHP 8.5.7, Database Connected and schema up to date.
-ERP-11.3.345 is not deployed.
+ERP-11.3.346 is not deployed.
 CURRENT_LIVE_RELEASE=ERP-11.3.341
 NEW_MIGRATION_REQUIRED=NO
 
 Deployment remains manual cPanel direct upload after final package
-certification. No database migration is required for .345.
+certification. No database migration is required for .346.
 
-ERP-11.3.345 scope includes canonical exact passport search, Arrival shared
-filter structure repair, and native sidebar host compatibility for the Travel
-Reports entry. Existing report routes, calculations, authorization, actions,
-pagination, shared filter layout and operational-only data remain unchanged.
+ERP-11.3.346 scope includes safe sidebar/title fragment mutation, Reports
+section positioning, a professional Travel Reports landing workspace, safe
+non-Air dedicated reveals, canonical passport search, and Arrival filter
+structure repair. Existing report routes, calculations, authorization,
+actions, pagination, shared filter layout and operational-only data remain unchanged.
 
 Deployment order after final certification:
 1. Confirm ERP-11.3.341 is currently serving production.
 2. Stop relevant ERP editing and take a fresh full database backup.
-3. Upload/extract ONE authoritative ERP-11.3.345 ZIP through cPanel.
-4. Open System Health & Updates; confirm version v1.1.33.345-ERP11.3.345,
+3. Upload/extract ONE authoritative ERP-11.3.346 ZIP through cPanel.
+4. Open System Health & Updates; confirm version v1.1.33.346-ERP11.3.346,
    Database = Connected and schema up to date.
-5. Confirm ERP-11.3.345 introduces NO new migration.
+5. Confirm ERP-11.3.346 introduces NO new migration.
 6. Clear Application Cache, Ctrl+F5, then run focused Arrival / Movement
    Reports UAT, including sidebar access, native shell geometry, filters,
    Arrival Date and Arrival Time, enrichment, CSV, Print, View, table-only
    scrolling and no financial fields.
 
-ERP-11.3.345 is NOT FINALIZED / NOT PACKAGED; it is not deployed.
+ERP-11.3.346 is NOT FINALIZED / NOT PACKAGED; it is not deployed.
 
 ERP-11.3.340 Travel Reports Remaining Startup Parse Hotfix
 

@@ -5827,10 +5827,14 @@ window.etgpMountDedicatedProduct113305=function(root){
     else renderVisaProductWorkspace113142(host);
     if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markMounted)window.etDedicatedProductCore.markMounted(root);
   }catch(error){
+    root.classList.remove('etgp-step1-ready-11390');
+    root.classList.add('etgp-step1-fallback-11390');
     if(window.etDedicatedProductCore&&window.etDedicatedProductCore.markFailed)window.etDedicatedProductCore.markFailed(root,'This product workspace could not be loaded. Please refresh and try again.');
     if(window.console&&console.error)console.error(error);
     return false;
   }
+  root.classList.remove('etgp-step1-fallback-11390');
+  root.classList.add('etgp-step1-ready-11390');
   if(etgpBookingLockState113162.locked)etgpApplyBookingLock113162({booking_locked:true,booking_status:etgpBookingLockState113162.status,booking_lock_reason:etgpBookingLockState113162.reason});
   return true;
 };
