@@ -11,7 +11,7 @@ final class ServerSidebarComposer
         $groups = [
             'OPERATIONS' => ['bookings', 'passengers', 'sales invoices', 'supplier costing'],
             'ACCOUNTING' => ['receipts', 'payments', 'expense vouchers', 'contra vouchers', 'chart of accounts', 'account mappings', 'journals', 'ledgers', 'reports'],
-            'TRAVEL REPORTS' => ['travel reports', 'movement reports'],
+            'TRAVEL REPORTS' => ['travel reports'],
             'MASTER DATA' => ['party master', 'travel masters', 'products & services'],
             'ADMINISTRATION' => ['organization', 'currency rates', 'financial years', 'health & updates', 'administration', 'foundation'],
         ];
@@ -56,25 +56,23 @@ final class ServerSidebarComposer
                 }
                 return null;
             };
-            $sectionParent = null; $accounting = null; $system = null; $footer = null;
+            $sectionParent = null; $accounting = null; $system = null;
             $candidateParents = [$container];
             foreach ($xpath->query('.//*', $container) as $candidate) $candidateParents[] = $candidate;
             foreach ($candidateParents as $candidateParent) {
                 $children = [];
                 foreach ($candidateParent->childNodes as $child) if ($child instanceof \DOMElement) $children[] = $child;
                 if (count($children) < 3) continue;
-                $a = null; $s = null; $f = null;
+                $a = null; $s = null;
                 foreach ($children as $child) {
                     if (!$a && $findHeading($child, 'ACCOUNTING')) $a = $child;
                     if (!$s && $findHeading($child, 'SYSTEM')) $s = $child;
-                    $class = strtolower($child->getAttribute('class').' '.$child->getAttribute('id'));
-                    if (!$f && preg_match('/(?:release|footer)/', $class)) $f = $child;
                 }
-                if ($a && $s && $f && array_search($a, $children, true) < array_search($s, $children, true) && array_search($s, $children, true) < array_search($f, $children, true)) {
-                    $sectionParent = $candidateParent; $accounting = $a; $system = $s; $footer = $f; break;
+                if ($a && $s && array_search($a, $children, true) < array_search($s, $children, true)) {
+                    $sectionParent = $candidateParent; $accounting = $a; $system = $s; break;
                 }
             }
-            if (!$sectionParent || !$accounting || !$system || !$footer) return $html;
+            if (!$sectionParent || !$accounting || !$system) return $html;
             $sectionParent->insertBefore($section, $system);
             return $this->replaceFragment($html, $container, $dom->saveHTML($container));
         }
@@ -99,7 +97,7 @@ final class ServerSidebarComposer
         // Travel Reports are repo-owned operational links. Authorization is
         // still enforced by EnforceErpRoleScopedAccess; this layer only adds
         // presentation links so direct URLs and sidebar share the same policy.
-        foreach ([['Travel Reports','/travel-reports'],['Movement Reports','/travel-reports/group-umrah/arrival']] as [$label,$href]) {
+        foreach ([['Travel Reports','/travel-reports']] as [$label,$href]) {
             $key = strtolower($label);
             if (isset($known[$key])) continue;
             $row = $dom->createElement('li');

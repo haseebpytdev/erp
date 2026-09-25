@@ -1,15 +1,17 @@
-ERP-11.3.349 Travel Reports Title and Sidebar Placement Corrective
+ERP-11.3.350 Departure Report and Travel Reports Navigation Corrective
 
-ERP-11.3.349 corrects the native Travel Reports shell title and places the
-REPORTS / Travel Reports sidebar section between ACCOUNTING and SYSTEM. It
-must not appear at the physical menu end. ERP-11.3.348 Arrival/Departure
-movement rows, date/time separation, one-line filters and movement tabs remain
-preserved. ERP-11.3.349 is not deployed. No booking, product, authorization,
-calculation, persistence, database schema or migration changes are included.
+ERP-11.3.350 repairs the Departure Report filter include that caused HTTP 500
+and places REPORTS / Travel Reports between ACCOUNTING and SYSTEM without
+requiring the release footer to share the navigation parent. Movement Reports
+are not synthesized as a sidebar item. ERP-11.3.349 title behavior and
+ERP-11.3.348 Arrival/Departure movement rows, date/time separation, one-line
+filters and movement tabs remain preserved. ERP-11.3.350 is not deployed. No
+booking, product, authorization, calculation, persistence, database schema or
+migration changes are included.
 
-Active release: v1.1.33.349-ERP11.3.349
+Active release: v1.1.33.350-ERP11.3.350
 
-ERP-11.3.348 is the current live production release. ERP-11.3.337 was the
+ERP-11.3.349 is the current live production release. ERP-11.3.337 was the
 restored former baseline. ERP-11.3.338 failed startup at TravelReportService.php line 55 and was rolled back. ERP-11.3.339
 failed startup at line 101 and was rolled back. ERP-11.3.340 repaired both
 syntax defects, but its PHP 8.5.7 parser preflight was held for an implicit
@@ -17,8 +19,8 @@ nullable parameter; .340 was not packaged or deployed. ERP-11.3.341 applies
 the explicit nullable correction and passed the server PHP 8.5.7 parser check
 for all six files. ERP-11.3.341 is the current live production release with
 System Health PASS, PHP 8.5.7, Database Connected and schema up to date.
-ERP-11.3.349 is not deployed.
-CURRENT_LIVE_RELEASE=ERP-11.3.348
+ERP-11.3.350 is not deployed.
+CURRENT_LIVE_RELEASE=ERP-11.3.349
 NEW_MIGRATION_REQUIRED=NO
 
 Deployment remains manual cPanel direct upload after final package

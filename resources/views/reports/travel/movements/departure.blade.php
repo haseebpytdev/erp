@@ -10,8 +10,22 @@
 <div class="et-arrival-report" data-et-departure-report="1">
  <div class="et-arrival-card"><div class="et-arrival-sub">Travel Reports / Movement Reports / Departure</div><div class="et-arrival-title">Departure Intimation</div><div class="et-arrival-sub">Operational outbound departure movement reporting. No financial data.</div></div>
  @include('reports.travel.partials.movement-tabs',['movements'=>$movements,'report'=>$report])
- @php($modifier='et-report-filter-one-line')
- <div class="et-report-filter-one-line">@include('reports.travel.partials.filter-form',['filters'=>[['key'=>'from','label'=>'From Date','type'=>'date'],['key'=>'to','label'=>'To Date','type'=>'date'],['key'=>'status','label'=>'Status','type'=>'text'],['key'=>'branch','label'=>'Branch ID','type'=>'text'],['key'=>'customer','label'=>'Customer ID','type'=>'text']],'actions'=>[['label'=>'Apply Filters','type'=>'submit'],['label'=>'Reset','type'=>'link','class'=>'secondary','href'=>route('travel-reports.group-umrah.departure')],['label'=>'Print','type'=>'button','class'=>'secondary','onclick'=>'window.print()'],['label'=>'Export CSV','type'=>'link','class'=>'secondary','href'=>route('travel-reports.group-umrah.departure.export',request()->query())]])</div>
+ @include('reports.travel.partials.filter-form', [
+     'filters' => [
+         ['key' => 'from', 'label' => 'From Date', 'type' => 'date'],
+         ['key' => 'to', 'label' => 'To Date', 'type' => 'date'],
+         ['key' => 'status', 'label' => 'Status', 'type' => 'text'],
+         ['key' => 'branch', 'label' => 'Branch ID', 'type' => 'text'],
+         ['key' => 'customer', 'label' => 'Customer ID', 'type' => 'text'],
+     ],
+     'modifier' => 'et-report-filter-one-line',
+     'actions' => [
+         ['label' => 'Apply Filters', 'type' => 'submit'],
+         ['label' => 'Reset', 'type' => 'link', 'class' => 'secondary', 'href' => route('travel-reports.group-umrah.departure')],
+         ['label' => 'Print', 'type' => 'button', 'class' => 'secondary', 'onclick' => 'window.print()'],
+         ['label' => 'Export CSV', 'type' => 'link', 'class' => 'secondary', 'href' => route('travel-reports.group-umrah.departure.export', request()->query())],
+     ],
+ ])
  <div class="et-arrival-card"><strong>Departure Results</strong> <span class="et-arrival-sub">{{ method_exists($rows,'total')?$rows->total():0 }} records</span></div>
  <div class="et-arrival-card"><div class="et-arrival-scroll"><table class="et-arrival-table"><thead><tr><th>Departure Date</th><th>Departure Time</th><th>Booking No.</th><th>Customer / Group</th><th>Total Pax</th><th>Adult</th><th>Child</th><th>Infant</th><th>Flight</th><th>Sector</th><th>Makkah Hotel</th><th>Madinah Hotel</th><th>Transport</th><th>Saudi Company</th><th>Pakistani IATA</th><th>Status</th><th>Branch</th><th>Agent / Salesperson</th><th>View</th></tr></thead><tbody>@forelse($rows as $row)<tr><td>{{ $row['departure_date']??'—' }}</td><td>{{ $row['departure_time']??'—' }}</td><td>{{ $row['booking_no']??'—' }}</td><td>{{ $row['customer']??'—' }}</td><td>{{ $row['total_pax']??'—' }}</td><td>{{ $row['adult']??'—' }}</td><td>{{ $row['child']??'—' }}</td><td>{{ $row['infant']??'—' }}</td><td>{{ $row['flight']??'—' }}</td><td>{{ $row['sector']??'—' }}</td><td>{{ $row['makkah_hotel']??'—' }}</td><td>{{ $row['madinah_hotel']??'—' }}</td><td>{{ $row['transport']??'—' }}</td><td>{{ $row['saudi_company']??'—' }}</td><td>{{ $row['pakistani_iata']??'—' }}</td><td><span class="et-arrival-badge">{{ $row['status']??'—' }}</span></td><td>{{ $row['branch']??'—' }}</td><td>{{ $row['agent_salesperson']??'—' }}</td><td>@if(($row['action']??'—')!=='—')<a href="{{ $row['action'] }}">View</a>@else—@endif</td></tr>@empty<tr><td colspan="19">No departure records match the selected filters.</td></tr>@endforelse</tbody></table></div>@if(is_object($rows) && method_exists($rows,'links')){{ $rows->links() }}@endif</div>
 </div>

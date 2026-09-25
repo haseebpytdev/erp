@@ -6,6 +6,7 @@ const middleware=read('../../app/Http/Middleware/ApplyErpReleaseMetadata.php');
 const partial=read('../../resources/views/reports/travel/partials/filter-form.blade.php');
 const arrival=read('../../resources/views/reports/travel/movements/arrival.blade.php');
 const departure=read('../../resources/views/reports/travel/movements/departure.blade.php');
+const departureInclude=departure.slice(departure.indexOf("@include('reports.travel.partials.filter-form'"), departure.indexOf('\n <div class="et-arrival-card"><strong>Departure Results'));
 let n=0;const ok=(v,m)=>{n++;assert.ok(v,m)};
 ok(service.includes("$r['arrival_date']=$this->movementDisplayDate")&&service.includes("$r['departure_date']=$this->movementDisplayDate"),'separate movement dates');
 ok(service.includes('private function movementDisplayDate')&&service.includes('private function movementTime'),'date/time normalization');
@@ -18,6 +19,10 @@ ok(arrival.includes('display:flex')&&arrival.includes('flex-wrap:nowrap')&&arriv
 ok(arrival.includes('@media(max-width:760px)')&&arrival.includes('grid-template-columns:repeat(2'),'tablet responsive filter');
 ok(arrival.includes('@media(max-width:430px)')&&arrival.includes('grid-template-columns:1fr'),'mobile responsive filter');
 ok(arrival.includes('padding-top:18px')&&departure.includes('padding-top:18px'),'route-scoped header spacing');
+const balance=(source,open,close)=>{let depth=0;for(const char of source){if(char===open)depth++;if(char===close)depth--;if(depth<0)return false;}return depth===0;};
+ok(departureInclude.includes("'filters' => [")&&departureInclude.includes("'actions' => [")&&departureInclude.includes("'modifier' => 'et-report-filter-one-line'"),'Departure filter include structure');
+ok(balance(departureInclude,'[',']')&&balance(departureInclude,'(',')'),'Departure filter include delimiters balanced');
+ok(departureInclude.includes("'label' => 'Apply Filters'")&&departureInclude.includes("'label' => 'Reset'")&&departureInclude.includes("'label' => 'Print'")&&departureInclude.includes("'label' => 'Export CSV'"),'Departure actions preserved');
 const fixture=(body)=>`<header><div>${body}</div><span>Easy Group Of Travels · Head Office</span><div class="profile">User</div></header><main>${body==='Dashboard'?'Travel Reports':'Arrival Report'}</main>`;
 const normalize=(path,html)=>{
   if(!path.replace(/^\/+|\/+$/g,'').toLowerCase().startsWith('travel-reports')) return html;

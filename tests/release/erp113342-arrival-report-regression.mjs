@@ -11,7 +11,7 @@ ok(routes.includes("'/group-umrah/'.$movement.'/export")&&service.includes("publ
 ok(routes.includes("name('group-umrah.'.$movement.'.export')"),'movement export names stable');
 ok(controller.includes('exportMovement(Request $request,string $movement)')&&controller.includes('isset(TravelReportService::MOVEMENTS[$movement])'),'unknown movement export fails closed');
 ok(controller.includes("['=','+','-','@']"),'CSV injection protection');
-ok(sidebar.includes("['Movement Reports','/travel-reports/group-umrah/arrival']")&&!sidebar.includes("['Report Center','/travel-reports']"),'sidebar Movement Reports scope');
+ok(!sidebar.includes("['Movement Reports','/travel-reports/group-umrah/arrival']")&&!sidebar.includes("['Report Center','/travel-reports']"),'sidebar contains no synthesized Movement Reports');
 ok(view.includes('$movementLabel')&&service.includes("'makkah-checkin'=>'Makkah Check-in'")&&service.includes("'departure'=>'Departure Intimation"),'six movement tabs');
 ok(view.includes("movementKey==='arrival'?'active':''"),'arrival active state');
 ok(view.includes("$layoutMeta['content_section'] ?? 'content'"),'native layoutMeta contract');
