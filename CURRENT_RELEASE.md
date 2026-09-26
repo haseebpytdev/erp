@@ -6,15 +6,34 @@ CURRENT_LIVE_RELEASE=ERP-11.3.359
 CURRENT_VERSION=ERP-11.3.360
 APPLICATION_VERSION=v1.1.33.360-ERP11.3.360
 CURRENT_LIVE_VERSION=v1.1.33.359-ERP11.3.359
-CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.359 LIVE; ERP-11.3.360 DEVELOPMENT / NOT DEPLOYED.
+PRODUCTION_STATUS=ERP-11.3.359 LIVE; ERP-11.3.360 FINALIZED / NOT DEPLOYED.
 LAST_PACKAGED_RELEASE=ERP-11.3.359
 ```
+
+ERP-11.3.360 Combined Party Statement Live Corrective
+
+ERP-11.3.360 completes the combined customer/vendor statement history with
+visible advances, receipts and payments, an earliest posted party-movement
+default, Air itinerary enrichment, a shared accounting-document header and a
+ten-column portrait layout without horizontal scrolling. The Balance column
+uses an 11% deterministic width. Path-pure A/B evidence passed with no
+accounting, posting, schema or migration changes. NEW_MIGRATION_REQUIRED=NO.
+
+360_PARTY_STATEMENT_REGRESSION=PASS (36 assertions)
+PATH_PURE_A_B_GATE=PASS
+ACCOUNTING_LOGIC_CHANGED=NO
+JOURNAL_POSTING_CHANGED=NO
+DATABASE_SCHEMA_CHANGED=NO
+REPORT_DATABASE_WRITES=0
+PHP_RUNTIME=UNAVAILABLE
+LIVE_RUNTIME_UAT=PENDING
+LIVE_UI_UAT=PENDING
 
 ERP-11.3.359 Party Statement Client Document Corrective
 
