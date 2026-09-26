@@ -57,6 +57,7 @@ use App\Http\Controllers\Accounting\CashVoucherController;
 use App\Http\Controllers\Accounting\AdvanceAdjustmentController;
 use App\Http\Controllers\Accounting\ChartOfAccountsWorkspaceController;
 use App\Http\Controllers\Accounting\ManagementAccountingReportController;
+use App\Http\Controllers\Accounting\PartyStatementController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentPassengerOperationsLink;
@@ -385,6 +386,10 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.balance-sheet');
     Route::get('/accounting/reports/trial-balance', [ManagementAccountingReportController::class, 'trialBalance'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.trial-balance');
+    Route::get('/accounting/reports/party-statement', [PartyStatementController::class, 'index'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-statement.index');
+    Route::get('/accounting/reports/party-statement/print', [PartyStatementController::class, 'print'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-statement.print');
 
     // ERP-11.3.1 Chart of Accounts UX / Performance Completion
     Route::get('/accounting/chart-of-accounts/next-code', [ChartOfAccountsWorkspaceController::class, 'nextCode'])

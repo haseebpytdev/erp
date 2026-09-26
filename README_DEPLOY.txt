@@ -1,13 +1,12 @@
-ERP-11.3.356 Sales Invoice & Reports Presentation Corrective
+ERP-11.3.357 Combined Party Statement
 
-ERP-11.3.356 restores native Sales Invoice presentation for GENERAL
-multi-product invoices and keeps report preview documents within their native
-document boundary without index workspace chrome. No accounting formulas,
-journal data, database schema or migration changes are included. ERP-11.3.355
+ERP-11.3.357 adds a read-only combined customer/vendor Party Statement over
+posted journal movements. Existing Customer Ledger and Vendor Ledger meanings,
+posting logic, database schema and migrations remain unchanged. ERP-11.3.356
 remains the current live production release.
 
-Active release: v1.1.33.356-ERP11.3.356
-CURRENT_LIVE_RELEASE=ERP-11.3.355
+Active release: v1.1.33.357-ERP11.3.357
+CURRENT_LIVE_RELEASE=ERP-11.3.356
 NEW_MIGRATION_REQUIRED=NO
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT

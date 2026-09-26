@@ -543,6 +543,7 @@ HTML;
                 ['Trial Balance', route('accounting.management-reports.trial-balance')],
                 ['Balance Sheet', route('accounting.management-reports.balance-sheet')],
                 ['Ledger Reports', route('accounting.reports.index')],
+                ['Party Statement', route('accounting.party-statement.index')],
             ];
         } catch (Throwable) {
             return $html;

@@ -4,4 +4,5 @@
   <a href="{{ route('accounting.management-reports.trial-balance', ['from'=>$filters['from'],'to'=>$filters['to'],'branch_id'=>$filters['branch_id']]) }}">Trial Balance</a>
   <a class="{{ $filters['mode']==='balance-sheet' ? 'active' : '' }}" href="{{ route('accounting.management-reports.balance-sheet', ['as_of'=>$filters['as_of'],'branch_id'=>$filters['branch_id']]) }}">Balance Sheet</a>
   @if($reportCenterUrl)<a href="{{ $reportCenterUrl }}">Ledger Reports / Print Center</a>@endif
+  <a href="{{ route('accounting.party-statement.index') }}">Party Statement</a>
 </nav>
