@@ -25,7 +25,7 @@ preserving report reconciliation while avoiding index workspace filters and
 navigation. No accounting formulas, journal data, database schema or migration
 changes are included. NEW_MIGRATION_REQUIRED=NO.
 
-356_REGRESSION=PASS (21 assertions)
+356_REGRESSION=PASS (39 assertions)
 SALES_INVOICE_REGRESSION=PASS (78 assertions)
 CUSTOMER_LEDGER_REGRESSION=PASS (37 assertions)
 MANAGEMENT_ACCOUNTING_AB_DELTA=0
