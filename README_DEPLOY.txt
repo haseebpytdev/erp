@@ -1,12 +1,13 @@
-ERP-11.3.357 Combined Party Statement
+ERP-11.3.358 Party Statement Live-UAT Corrective
 
-ERP-11.3.357 adds a read-only combined customer/vendor Party Statement over
-posted journal movements. Existing Customer Ledger and Vendor Ledger meanings,
-posting logic, database schema and migrations remain unchanged. ERP-11.3.356
-remains the current live production release.
+ERP-11.3.358 refines the client-sendable Party Statement header, table geometry,
+landscape print and Air ticket/PNR, airline, sector and flight presentation.
+The accepted 357 financial projection, accounting authority, posting logic,
+database schema and migrations remain unchanged. ERP-11.3.357 remains the
+current live production release.
 
-Active release: v1.1.33.357-ERP11.3.357
-CURRENT_LIVE_RELEASE=ERP-11.3.356
+Active release: v1.1.33.358-ERP11.3.358
+CURRENT_LIVE_RELEASE=ERP-11.3.357
 NEW_MIGRATION_REQUIRED=NO
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT

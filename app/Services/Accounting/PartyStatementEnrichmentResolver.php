@@ -16,6 +16,7 @@ final class PartyStatementEnrichmentResolver
     private array $productCache = [];
     private array $nativeProductIds = [];
     private array $passengerCache = [];
+    private array $airCache = [];
 
     public function __construct(
         private readonly ActiveBookingPassengerResolver $passengers,
@@ -174,6 +175,22 @@ final class PartyStatementEnrichmentResolver
     private function serviceRef(int $bookingId, string $product, array $source): string
     {
         if ($bookingId <= 0) return $this->cashRef($source);
+        if ($this->canonicalProduct($product) === 'air') {
+            $rows = $this->airRows($bookingId, $source);
+            $tickets = [];
+            $pnrs = [];
+            foreach ($rows as $row) {
+                foreach (['ticket_number','ticket_no','e_ticket_number','document_number'] as $key) if (trim((string)($row[$key] ?? '')) !== '') $tickets[] = trim((string)$row[$key]);
+                foreach (['pnr','booking_reference','booking_ref'] as $key) if (trim((string)($row[$key] ?? '')) !== '') $pnrs[] = strtoupper(trim((string)$row[$key]));
+            }
+            $tickets = array_values(array_unique($tickets)); $pnrs = array_values(array_unique($pnrs));
+            if ($tickets !== [] || $pnrs !== []) {
+                $label = $tickets !== [] ? implode(' + ', $tickets) : '';
+                if (count($tickets) > 1) $label = $tickets[0].' + '.(count($tickets)-1).' tickets';
+                if ($pnrs !== []) $label .= ($label !== '' ? ' · ' : '').'PNR '.implode('/', $pnrs);
+                return $label;
+            }
+        }
         $refs=[]; $lower=strtolower($product);
         $families = $product === 'MULTI PRODUCT' ? ['air','hotel','visa','transport','umrah_package'] : [$this->canonicalProduct($product)];
         foreach ($families as $family) foreach ($this->serviceTables($family, $bookingId) as [$table, $key]) { if (! Schema::hasTable($table)) continue; try { $columns=Schema::getColumnListing($table); $query=DB::table($table); if($table==='air_ticket_details' && $key==='booking_service_id' && Schema::hasTable('booking_services')) { $ids=DB::table('booking_services')->where('booking_id',$bookingId)->whereIn('product_service_id',array_values($this->nativeProductIds()))->pluck('id')->all(); if(!$ids) continue; $query->whereIn($key,$ids); } else { $query->where($key,$bookingId); } foreach($query->get() as $r){ $v=$this->first((array)$r,$columns,['pnr','ticket_number','ticket_no','e_ticket_number','document_number','confirmation_no','confirmation_number','brn','supplier_reference','booking_reference','voucher_no','visa_number','application_reference','reference']); if($v) $refs[]=strtoupper($family).' '.(string)$v; } } catch(Throwable){} }
@@ -184,7 +201,46 @@ final class PartyStatementEnrichmentResolver
     { if ($family === 'air') { $out=[]; if (Schema::hasTable('booking_services')) try { $ids=DB::table('booking_services')->where('booking_id',$bookingId)->whereIn('product_service_id',array_values($this->nativeProductIds()))->pluck('id')->all(); if($ids && Schema::hasTable('air_ticket_details')) $out[]=['air_ticket_details','booking_service_id']; } catch(Throwable){} return $out; } return match($family) { 'hotel'=>array_map(fn($t)=>[$t,'booking_id'],['booking_hotel_stays','booking_hotels','hotel_stays','booking_hotel_details','booking_accommodations','hotel_booking_details']), 'transport'=>array_map(fn($t)=>[$t,'booking_id'],['booking_transport_segments','booking_transports','transport_booking_details','booking_transport_details']), 'visa'=>[['booking_visa_services','booking_id']], 'umrah_package'=>[['booking_group_umrah_contexts','booking_id'],['booking_group_umrah_services','booking_id']], default=>[] }; }
     private function cashRef(array $source): string { $row=(array)($source['row']??[]); foreach(['transaction_reference','instrument_no','posting_reference','voucher_no'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k]; return '—'; }
 
+    private function airRows(int $bookingId, array $source = []): array
+    {
+        $cacheKey = $bookingId.'#'.((string)($source['table'] ?? '')).'#'.((int)($source['row']['id'] ?? 0));
+        if (array_key_exists($cacheKey, $this->airCache)) return $this->airCache[$cacheKey];
+        $rows = [];
+        try {
+            if (Schema::hasTable('booking_services') && Schema::hasTable('air_ticket_details')) {
+                $ids = DB::table('booking_services')->where('booking_id', $bookingId)->whereIn('product_service_id', array_values($this->nativeProductIds()))->pluck('id')->all();
+                if ($ids) foreach (DB::table('air_ticket_details')->whereIn('booking_service_id', $ids)->get() as $row) $rows[] = (array)$row;
+            }
+        } catch (Throwable) { }
+        if ($rows === [] && str_contains((string)($source['table'] ?? ''), 'sales_invoice') && Schema::hasTable('sales_invoice_air_ticket_line_links')) {
+            try {
+                $columns = Schema::getColumnListing('sales_invoice_air_ticket_line_links');
+                $id = (int)($source['row']['id'] ?? 0);
+                if ($id > 0) foreach (DB::table('sales_invoice_air_ticket_line_links')->where('sales_invoice_id', $id)->get() as $row) $rows[] = (array)$row;
+            } catch (Throwable) { }
+        }
+        return $this->airCache[$cacheKey] = $rows;
+    }
+
     private function description(int $bookingId, string $product, string $booking, array $source, string $reference): string
-    { $row=(array)($source['row']??[]); $family=$this->canonicalProduct($product); if($family==='air' && $bookingId>0 && Schema::hasTable('booking_services') && Schema::hasTable('air_ticket_details')) try { $ids=DB::table('booking_services')->where('booking_id',$bookingId)->whereIn('product_service_id',array_values($this->nativeProductIds()))->pluck('id')->all(); if($ids){$cols=Schema::getColumnListing('air_ticket_details');$r=DB::table('air_ticket_details')->whereIn('booking_service_id',$ids)->first();$origin=$this->first((array)$r,$cols,['origin','origin_code','from','from_airport']);$destination=$this->first((array)$r,$cols,['destination','destination_code','to','to_airport']);if($origin&&$destination)return strtoupper($origin.'-'.$destination);}} catch(Throwable){} foreach(['origin','origin_code','from','destination','destination_code','to','sector','route'] as $k) if(trim((string)($row[$k]??''))!=='') return strtoupper((string)$row[$k]); foreach(['description','narration','remarks','memo','notes'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k]; if($product!=='—') return $product.' context'; return $reference ?: 'Journal'; }
+    { $row=(array)($source['row']??[]); $family=$this->canonicalProduct($product);
+      if ($family === 'air' && $bookingId > 0) {
+        $parts = [];
+        foreach ($this->airRows($bookingId, $source) as $air) {
+            $airline = $this->first($air, array_keys($air), ['airline_name','airline','carrier_name','carrier','airline_code']);
+            $origin = $this->first($air, array_keys($air), ['origin','origin_code','from','from_airport','departure_airport']);
+            $destination = $this->first($air, array_keys($air), ['destination','destination_code','to','to_airport','arrival_airport']);
+            $flight = $this->first($air, array_keys($air), ['flight_number','flight_no','flight']);
+            $route = ($origin && $destination) ? strtoupper(trim((string)$origin).'-'.trim((string)$destination)) : '';
+            $label = array_filter([(string)$airline, $route, $flight ? strtoupper((string)$flight) : '']);
+            if ($label) $parts[] = implode(' · ', $label);
+        }
+        if ($parts) return implode(' / ', array_values(array_unique($parts)));
+      }
+      foreach (['description','narration','remarks','memo','notes'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k];
+      $descriptions = ['hotel'=>['hotel_name','property_name','hotel','city'], 'visa'=>['visa_type','country','destination_country'], 'transport'=>['route','vehicle','transport_company'], 'umrah_package'=>['package_name','package','vendor']];
+      foreach (($descriptions[$family] ?? []) as $k) if (trim((string)($row[$k] ?? '')) !== '') return (string)$row[$k];
+      foreach (['origin','origin_code','from','destination','destination_code','to','sector','route'] as $k) if(trim((string)($row[$k]??''))!=='') return strtoupper((string)$row[$k]);
+      if($product!=='—') return $product.' context'; return $reference ?: 'Journal'; }
     private function first(array $row, array $columns, array $wanted): mixed { foreach($wanted as $name) if(in_array($name,$columns,true) && isset($row[$name]) && trim((string)$row[$name])!=='') return $row[$name]; return null; }
 }
