@@ -11,6 +11,7 @@ use Throwable;
 /** Read-only, cached business-context projection for a journal row. */
 final class PartyStatementEnrichmentResolver
 {
+    // Client display labels: Customer Advance Receipt / Supplier Advance Payment -> Advance.
     // Legacy alias authority retained for compatibility with established report checks:
     // 'PNR '.strtoupper, origin','origin_code','from','from_airport, destination','destination_code','to','to_airport
     private array $sourceCache = [];
@@ -54,8 +55,8 @@ final class PartyStatementEnrichmentResolver
         $kind = strtolower((string) (($source['row']['voucher_type'] ?? '') ?: ''));
         if (str_contains($sourceType, 'cash_voucher') || str_contains($sourceType, 'receipt') || str_contains($sourceType, 'payment')) {
             if (str_contains($kind, 'refund')) return 'Refund';
-            if ($kind === 'supplier_advance' || (str_contains($kind, 'supplier') && str_contains($kind, 'advance'))) return 'Supplier Advance Payment';
-            if ($kind === 'customer_advance' || (str_contains($kind, 'customer') && str_contains($kind, 'advance'))) return 'Customer Advance Receipt';
+            if ($kind === 'supplier_advance' || (str_contains($kind, 'supplier') && str_contains($kind, 'advance'))) return 'Advance';
+            if ($kind === 'customer_advance' || (str_contains($kind, 'customer') && str_contains($kind, 'advance'))) return 'Advance';
             if ($kind === 'payment') return 'Payment';
             if ($kind === 'receipt') return 'Receipt';
             if (str_contains($kind, 'payment')) return 'Payment';
@@ -204,11 +205,11 @@ final class PartyStatementEnrichmentResolver
             $out = [];
             foreach ($passengers as $passenger) {
                 $name = trim((string) (($passenger['full_name'] ?? '') ?: ($passenger['passenger_name'] ?? '') ?: ($passenger['name'] ?? '') ?: trim(($passenger['first_name'] ?? '').' '.($passenger['last_name'] ?? ''))));
-                $pid = (int) ($passenger['id'] ?? $passenger['passenger_id'] ?? $passenger['booking_passenger_id'] ?? 0);
+                $passengerIds = $this->identityIds($passenger, ['id', 'passenger_id', 'booking_passenger_id', 'passenger_detail_id', 'detail_id']);
                 $ticket = '';
                 foreach ($tickets as $candidate) {
-                    $candidatePid = (int) ($candidate['passenger_id'] ?? $candidate['booking_passenger_id'] ?? $candidate['passenger_detail_id'] ?? 0);
-                    if ($pid > 0 && $candidatePid === $pid) { $ticket = (string) ($candidate['ticket_number'] ?? $candidate['ticket_no'] ?? $candidate['e_ticket_number'] ?? $candidate['document_number'] ?? ''); break; }
+                    $candidateIds = $this->identityIds($candidate, ['id', 'passenger_id', 'booking_passenger_id', 'passenger_detail_id', 'detail_id']);
+                    if ($passengerIds !== [] && $candidateIds !== [] && array_intersect($passengerIds, $candidateIds) !== []) { $ticket = (string) ($candidate['ticket_number'] ?? $candidate['ticket_no'] ?? $candidate['e_ticket_number'] ?? $candidate['document_number'] ?? ''); break; }
                 }
                 $out[] = ['party' => $name !== '' ? $name : '—', 'service_ref' => $ticket !== '' ? $ticket : '—'];
             }
@@ -316,7 +317,7 @@ final class PartyStatementEnrichmentResolver
             if (!$origin || !$destination) continue;
             $route = strtoupper(trim((string)$origin).'-'.trim((string)$destination));
             $flightLabel = $flight ? strtoupper(str_replace(' ', '-', trim((string)$flight))) : '';
-            $parts[] = implode(' ', array_filter([(string)$airline, $route, $flightLabel]));
+            $parts[] = implode(' · ', array_filter([(string)$airline, $route, $flightLabel]));
         }
         if ($parts) return implode(' / ', array_values(array_unique($parts))).($pnr !== '' ? ' · PNR '.$pnr : '');
       }
@@ -339,6 +340,7 @@ final class PartyStatementEnrichmentResolver
         foreach ($this->familyRows($family, $bookingId) as $item) { $parts=[]; foreach($keys as $key) if(trim((string)($item[$key]??''))!=='') $parts[]=(string)$item[$key]; if($parts)return implode(' · ',$parts); }
       }
       foreach (['description','narration','remarks','memo','notes'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k];
+      if (in_array(strtolower((string) (($row['voucher_type'] ?? ($source['row']['voucher_type'] ?? '')))), ['customer_advance', 'supplier_advance'], true)) return 'Advance';
       if (str_contains((string)($source['table'] ?? ''), 'advance_adjust')) {
         $target = (string)($row['target_number'] ?? $row['target_reference'] ?? '');
         if ($target !== '') return 'Advance adjustment · '.$target;
@@ -346,6 +348,11 @@ final class PartyStatementEnrichmentResolver
       $descriptions = ['hotel'=>['hotel_name','property_name','hotel','city'], 'visa'=>['visa_type','country','destination_country'], 'transport'=>['route','vehicle','transport_company'], 'umrah_package'=>['package_name','package','vendor']];
       foreach (($descriptions[$family] ?? []) as $k) if (trim((string)($row[$k] ?? '')) !== '') return (string)$row[$k];
       foreach (['origin','origin_code','from','destination','destination_code','to','sector','route'] as $k) if(trim((string)($row[$k]??''))!=='') return strtoupper((string)$row[$k]);
+      $voucherKind = strtolower((string) ($source['row']['voucher_type'] ?? ''));
+      if (str_contains($voucherKind, 'receipt')) return 'Receipt';
+      if (str_contains($voucherKind, 'payment')) return 'Payment';
       if($product!=='—') return $product.' context'; return $reference ?: 'Journal'; }
+    private function identityIds(array $row, array $keys): array
+    { $ids=[]; foreach($keys as $key){ $value=(int)($row[$key]??0); if($value>0) $ids[]=$value; } return array_values(array_unique($ids)); }
     private function first(array $row, array $columns, array $wanted): mixed { foreach($wanted as $name) if(in_array($name,$columns,true) && isset($row[$name]) && trim((string)$row[$name])!=='') return $row[$name]; return null; }
 }
