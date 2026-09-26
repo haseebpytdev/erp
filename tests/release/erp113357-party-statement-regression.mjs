@@ -52,5 +52,15 @@ ok(service.includes('array_merge($row, $this->enrichment->resolve($row))'), 'Enr
 ok(service.includes("$grouped[$key]['debit'] +=") && service.includes("$grouped[$key]['credit'] +="), 'Financial rows and amounts remain journal-netted');
 ok(controller.includes("view('accounting.party-statement.index'") && controller.includes("view('accounting.party-statement.print'"), 'Screen and print remain on the same service projection');
 ok(!enrichment.includes('insert(') && !enrichment.includes('update(') && !enrichment.includes('delete('), 'Enrichment performs no database writes');
+ok(enrichment.includes('cash_voucher_allocations') && enrichment.includes('cash_voucher_id'), 'Cash allocations query by cash_voucher_id');
+ok(enrichment.includes('RECEIPT') && enrichment.includes('PAYMENT') && enrichment.includes('ADVANCE') && enrichment.includes('voucher_type'), 'Voucher type maps to truthful direct-cash products');
+ok(enrichment.includes('booking_services') && enrichment.includes('booking_service_id') && enrichment.includes('air_ticket_details'), 'Air resolves booking to booking service to ticket details');
+ok(enrichment.includes('canonicalProduct') && enrichment.includes("'air'") && enrichment.includes("'hotel'"), 'Canonical product identities prevent false multi-product results');
+ok(enrichment.includes("count($identities) > 1") && enrichment.includes('MULTI PRODUCT'), 'Distinct Air plus Hotel identities become multi-product');
+ok(enrichment.includes('full_name') && enrichment.includes('passenger_name') && enrichment.includes('given_name') && enrichment.includes('surname'), 'Passenger name field authority is complete');
+ok(enrichment.includes('$families') && enrichment.includes('serviceTables'), 'Multi-product references aggregate by product family');
+ok(enrichment.includes('origin_code') && enrichment.includes('destination_code') && enrichment.includes('context'), 'Description resolves business sector/context before fallback');
+ok(enrichment.includes('sourceTables') && enrichment.includes('return []'), 'Unknown source types fail closed without cash-voucher guessing');
+ok(service.includes("$row['debit'] = round($debit, 2)") && service.includes('array_merge($row, $this->enrichment->resolve($row))'), 'Enrichment occurs after immutable financial calculations');
 
 console.log(`PASS ${pass} ERP-11.3.357 Party Statement assertions`);
