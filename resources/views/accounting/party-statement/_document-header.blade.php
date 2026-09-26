@@ -1,0 +1,4 @@
+<div class="et-ps-shared-document-header">
+ <div class="et-ps-company">@if(!empty($companyProfile['logo']))<img src="{{ $companyProfile['logo'] }}" alt="Company logo">@endif<div><strong>{{ $companyProfile['name'] ?? '' }}</strong><small>{{ $companyProfile['subtitle'] ?? '' }}</small><small>{{ implode(' · ', array_filter([$companyProfile['address'] ?? '',$companyProfile['phone'] ?? '',$companyProfile['email'] ?? '',$companyProfile['website'] ?? ''])) }}</small></div></div>
+ <div class="et-ps-report-identity"><h2>{{ ($filters['type'] ?? 'customer')==='vendor' ? 'VENDOR ACCOUNT STATEMENT' : 'CUSTOMER ACCOUNT STATEMENT' }}</h2><p>{{ $party['name'] ?? '—' }}{{ !empty($party['code']) ? ' · '.$party['code'] : '' }} · Currency: PKR</p><p>{{ $filters['from'] ?? '' }} to {{ $filters['to'] ?? '' }} · Generated {{ now()->format('d M Y H:i') }}</p></div>
+</div>

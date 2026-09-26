@@ -164,7 +164,7 @@ final class PartyStatementService
             $dateColumn = Schema::hasColumn('journal_entries', 'journal_date') ? 'journal_date' : 'date';
             if ($scope === [] || ! in_array('party_type', $columns, true) || ! in_array('party_id', $columns, true)) return $this->financialYearStart($asOf);
             $date = DB::table('journal_lines as jl')->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')
-                ->where('je.status', 'posted')->where('jl.party_type', $type)->where('jl.party_id', $partyId)
+                ->where('je.status', 'posted')->whereDate('je.'.$dateColumn, '<=', $asOf)->where('jl.party_type', $type)->where('jl.party_id', $partyId)
                 ->whereIn('jl.account_id', array_keys($scope))->min('je.'.$dateColumn);
             return $date ? Carbon::parse($date)->toDateString() : $this->financialYearStart($asOf);
         } catch (Throwable) { return $this->financialYearStart($asOf); }

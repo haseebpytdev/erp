@@ -53,8 +53,12 @@ final class PartyStatementEnrichmentResolver
         $kind = strtolower((string) (($source['row']['voucher_type'] ?? '') ?: ''));
         if (str_contains($sourceType, 'cash_voucher') || str_contains($sourceType, 'receipt') || str_contains($sourceType, 'payment')) {
             if (str_contains($kind, 'refund')) return 'Refund';
-            if (str_contains($kind, 'payment')) return str_contains($kind, 'advance') ? 'Advance Payment' : 'Payment';
-            if (str_contains($kind, 'receipt')) return str_contains($kind, 'advance') ? 'Advance Receipt' : 'Receipt';
+            if ($kind === 'supplier_advance' || (str_contains($kind, 'supplier') && str_contains($kind, 'advance'))) return 'Supplier Advance Payment';
+            if ($kind === 'customer_advance' || (str_contains($kind, 'customer') && str_contains($kind, 'advance'))) return 'Customer Advance Receipt';
+            if ($kind === 'payment') return 'Payment';
+            if ($kind === 'receipt') return 'Receipt';
+            if (str_contains($kind, 'payment')) return 'Payment';
+            if (str_contains($kind, 'receipt')) return 'Receipt';
             if (str_contains($kind, 'advance')) return 'Advance';
             return $fallback === 'Journal' ? 'Cash Voucher' : $fallback;
         }

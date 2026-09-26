@@ -2,6 +2,7 @@
 @section($layoutMeta['title_section'] ?? 'title', 'Party Statement')
 @section($layoutMeta['content_section'] ?? 'content')
 <div class="et-party-statement">
+<style>.et-ps-ledger-table{font-size:9px}.et-ps-ledger-table th,.et-ps-ledger-table td{padding:3px 4px}</style>
  <header class="et-ps-page-head"><div class="et-kicker">Accounting</div><h1>Party Statement</h1><p>Combined customer/vendor commercial statement across posted receivables, payables and advances.</p></header>
  <form method="get" action="{{ route('accounting.party-statement.index') }}" class="et-ps-filters">
   <label>Party Type<select name="party_type" onchange="this.form.submit()"><option value="customer" @selected($filters['type']==='customer')>Customer</option><option value="vendor" @selected($filters['type']==='vendor')>Vendor</option></select></label>
@@ -10,6 +11,7 @@
   <div class="et-ps-actions"><button type="submit">Apply &amp; Preview</button><button type="submit" formaction="{{ route('accounting.party-statement.print') }}" formtarget="_blank">Print</button><a href="{{ route('accounting.party-statement.index') }}">Reset</a></div>
  </form>
  @if($statement)
+ @include('accounting.party-statement._document-header')
  <section class="et-ps-kpis"><div>Opening Balance<strong>{{ number_format(abs($statement['opening']),2) }} {{ $statement['opening'] < 0 ? 'Cr' : 'Dr' }}</strong></div><div>Total Debit<strong>{{ number_format($statement['total_debit'],2) }}</strong></div><div>Total Credit<strong>{{ number_format($statement['total_credit'],2) }}</strong></div><div>Closing Balance<strong>{{ number_format(abs($statement['closing']),2) }} {{ $statement['closing_side'] }}</strong><small>{{ $statement['caption'] }}</small></div></section>
  <article class="et-ps-document"><div class="et-ps-document-head"><div class="et-ps-company">@if(!empty($companyProfile['logo']))<img src="{{ $companyProfile['logo'] }}" alt="Company logo">@endif<div><strong>{{ $companyProfile['name'] ?? '' }}</strong><small>{{ $companyProfile['subtitle'] ?? '' }}</small></div></div><div><h2>{{ $filters['type']==='vendor' ? 'VENDOR ACCOUNT STATEMENT' : 'CUSTOMER ACCOUNT STATEMENT' }}</h2><p>{{ $filters['from'] }} to {{ $filters['to'] }}</p></div></div>
  <div class="et-ps-party"><strong>{{ $party['name'] ?? '—' }}</strong><span>{{ $filters['type']==='vendor' ? 'Vendor' : 'Customer' }}{{ !empty($party['code']) ? ' · '.$party['code'] : '' }}</span><span>Currency: PKR</span></div>
