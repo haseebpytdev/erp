@@ -1,13 +1,15 @@
-ERP-11.3.358 Party Statement Live-UAT Corrective
+ERP-11.3.359 Party Statement Client Document Corrective
 
-ERP-11.3.358 refines the client-sendable Party Statement header, table geometry,
-landscape print and Air ticket/PNR, airline, sector and flight presentation.
-The accepted 357 financial projection, accounting authority, posting logic,
-database schema and migrations remain unchanged. ERP-11.3.357 remains the
-current live production release.
+ERP-11.3.359 refines the client-sendable Party Statement into a compact
+portrait ledger-style document. It removes Booking No. from the visible table,
+keeps accounting document references authoritative, presents Air ticket-only
+service references and concise airline/sector/flight/PNR descriptions, and
+adds product-aware Hotel, Visa, Transport and Umrah summaries. ERP-11.3.358
+financial projection and financial-year advance visibility remain unchanged.
+No posting, database schema or migration changes are included.
 
-Active release: v1.1.33.358-ERP11.3.358
-CURRENT_LIVE_RELEASE=ERP-11.3.357
+Active release: v1.1.33.359-ERP11.3.359
+CURRENT_LIVE_RELEASE=ERP-11.3.358
 NEW_MIGRATION_REQUIRED=NO
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT

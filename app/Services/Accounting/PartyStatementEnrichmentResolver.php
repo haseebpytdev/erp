@@ -187,9 +187,21 @@ final class PartyStatementEnrichmentResolver
             if ($tickets !== [] || $pnrs !== []) {
                 $label = $tickets !== [] ? implode(' + ', $tickets) : '';
                 if (count($tickets) > 1) $label = $tickets[0].' + '.(count($tickets)-1).' tickets';
-                if ($pnrs !== []) $label .= ($label !== '' ? ' · ' : '').'PNR '.implode('/', $pnrs);
-                return $label;
+                return $label !== '' ? $label : '—';
             }
+            return '—';
+        }
+        $family = $this->canonicalProduct($product);
+        if (in_array($family, ['hotel','visa','transport','umrah_package'], true)) {
+            $wanted = match ($family) {
+                'hotel' => ['confirmation_no','confirmation_number','brn','voucher_no','booking_reference'],
+                'visa' => ['visa_number','application_reference','visa_no'],
+                'transport' => ['brn','voucher_no','supplier_reference','booking_reference'],
+                'umrah_package' => ['vendor_booking_no','vendor_voucher_no','package_reference','voucher_no'],
+            };
+            $refs = [];
+            foreach ($this->familyRows($family, $bookingId) as $item) foreach ($wanted as $key) if (trim((string)($item[$key] ?? '')) !== '') { $refs[] = trim((string)$item[$key]); break; }
+            if ($refs !== []) return implode(' + ', array_values(array_unique($refs)));
         }
         $refs=[]; $lower=strtolower($product);
         $families = $product === 'MULTI PRODUCT' ? ['air','hotel','visa','transport','umrah_package'] : [$this->canonicalProduct($product)];
@@ -200,6 +212,16 @@ final class PartyStatementEnrichmentResolver
     private function serviceTables(string $family, int $bookingId): array
     { if ($family === 'air') { $out=[]; if (Schema::hasTable('booking_services')) try { $ids=DB::table('booking_services')->where('booking_id',$bookingId)->whereIn('product_service_id',array_values($this->nativeProductIds()))->pluck('id')->all(); if($ids && Schema::hasTable('air_ticket_details')) $out[]=['air_ticket_details','booking_service_id']; } catch(Throwable){} return $out; } return match($family) { 'hotel'=>array_map(fn($t)=>[$t,'booking_id'],['booking_hotel_stays','booking_hotels','hotel_stays','booking_hotel_details','booking_accommodations','hotel_booking_details']), 'transport'=>array_map(fn($t)=>[$t,'booking_id'],['booking_transport_segments','booking_transports','transport_booking_details','booking_transport_details']), 'visa'=>[['booking_visa_services','booking_id']], 'umrah_package'=>[['booking_group_umrah_contexts','booking_id'],['booking_group_umrah_services','booking_id']], default=>[] }; }
     private function cashRef(array $source): string { $row=(array)($source['row']??[]); foreach(['transaction_reference','instrument_no','posting_reference','voucher_no'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k]; return '—'; }
+
+    private function familyRows(string $family, int $bookingId): array
+    {
+        $rows = [];
+        foreach ($this->serviceTables($family, $bookingId) as [$table, $key]) {
+            if (!Schema::hasTable($table)) continue;
+            try { foreach (DB::table($table)->where($key, $bookingId)->get() as $row) $rows[] = (array)$row; } catch (Throwable) { }
+        }
+        return $rows;
+    }
 
     private function airRows(int $bookingId, array $source = []): array
     {
@@ -231,11 +253,30 @@ final class PartyStatementEnrichmentResolver
             $origin = $this->first($air, array_keys($air), ['origin','origin_code','from','from_airport','departure_airport']);
             $destination = $this->first($air, array_keys($air), ['destination','destination_code','to','to_airport','arrival_airport']);
             $flight = $this->first($air, array_keys($air), ['flight_number','flight_no','flight']);
+            $pnr = $this->first($air, array_keys($air), ['pnr','booking_reference','booking_ref']);
             $route = ($origin && $destination) ? strtoupper(trim((string)$origin).'-'.trim((string)$destination)) : '';
-            $label = array_filter([(string)$airline, $route, $flight ? strtoupper((string)$flight) : '']);
+            $label = array_filter([(string)$airline, $route, $flight ? strtoupper((string)$flight) : '', $pnr ? 'PNR '.strtoupper((string)$pnr) : '']);
             if ($label) $parts[] = implode(' · ', $label);
         }
         if ($parts) return implode(' / ', array_values(array_unique($parts)));
+      }
+      if ($family === 'hotel' && $bookingId > 0) {
+        $stays = [];
+        foreach ($this->familyRows('hotel', $bookingId) as $stay) {
+            $name = $this->first($stay, array_keys($stay), ['hotel_name','property_name','hotel','name']);
+            $city = $this->first($stay, array_keys($stay), ['city','hotel_city','destination']);
+            $checkIn = $this->first($stay, array_keys($stay), ['check_in','checkin','check_in_date']);
+            $checkOut = $this->first($stay, array_keys($stay), ['check_out','checkout','check_out_date']);
+            $nights = $this->first($stay, array_keys($stay), ['nights','total_nights']);
+            if (!$nights && $checkIn && $checkOut) { try { $nights = (new \DateTime((string)$checkIn))->diff(new \DateTime((string)$checkOut))->days; } catch (Throwable) { } }
+            $counts=[]; foreach (['adult_count'=>'ADT','adults'=>'ADT','child_count'=>'CHD','children'=>'CHD','infant_count'=>'INF','infants'=>'INF'] as $key=>$label) if (array_key_exists($key,$stay) && $stay[$key] !== null && $stay[$key] !== '') $counts[$label]=(string)$stay[$key];
+            $parts=array_filter([(string)$name,(string)$city,($checkIn||$checkOut)?trim((string)$checkIn.'–'.(string)$checkOut):'', $nights!==null?(string)$nights.' Nights':'']); foreach(['ADT','CHD','INF'] as $k) if(isset($counts[$k])) $parts[]=$k.' '.$counts[$k]; if($parts)$stays[]=implode(' · ',$parts);
+        }
+        if ($stays) return implode(' · ', array_values(array_unique($stays)));
+      }
+      if (in_array($family, ['visa','transport','umrah_package'], true)) {
+        $keys = ['visa'=>['country','visa_type'], 'transport'=>['route','vehicle','transport_company'], 'umrah_package'=>['package_name','package_code','package']][$family];
+        foreach ($this->familyRows($family, $bookingId) as $item) { $parts=[]; foreach($keys as $key) if(trim((string)($item[$key]??''))!=='') $parts[]=(string)$item[$key]; if($parts)return implode(' · ',$parts); }
       }
       foreach (['description','narration','remarks','memo','notes'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k];
       $descriptions = ['hotel'=>['hotel_name','property_name','hotel','city'], 'visa'=>['visa_type','country','destination_country'], 'transport'=>['route','vehicle','transport_company'], 'umrah_package'=>['package_name','package','vendor']];

@@ -1,20 +1,42 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.358
-CURRENT_LIVE_RELEASE=ERP-11.3.357
-CURRENT_VERSION=ERP-11.3.358
-APPLICATION_VERSION=v1.1.33.358-ERP11.3.358
-CURRENT_LIVE_VERSION=v1.1.33.357-ERP11.3.357
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.359
+CURRENT_LIVE_RELEASE=ERP-11.3.358
+CURRENT_VERSION=ERP-11.3.359
+APPLICATION_VERSION=v1.1.33.359-ERP11.3.359
+CURRENT_LIVE_VERSION=v1.1.33.358-ERP11.3.358
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.357 LIVE; ERP-11.3.358 FINALIZED / NOT DEPLOYED.
-LAST_PACKAGED_RELEASE=ERP-11.3.357
+PRODUCTION_STATUS=ERP-11.3.358 LIVE; ERP-11.3.359 DEVELOPMENT / NOT DEPLOYED.
+LAST_PACKAGED_RELEASE=ERP-11.3.358
 ```
+
+ERP-11.3.359 Party Statement Client Document Corrective
+
+ERP-11.3.359 removes the internal Booking No. column from the client statement,
+keeps accounting document references authoritative, presents Air ticket-only
+service references and concise airline/sector/flight/PNR descriptions, and
+adds compact product-aware Hotel, Visa, Transport and Umrah summaries. The
+financial-year default, opening/period movement separation, posted journal
+authority, Customer 1130 + 2120, Vendor 2110 + 1140, journal netting and
+financial formulas remain unchanged. The statement uses a normal portrait
+ledger-style print layout with compact columns. No posting, schema or
+migration changes are included. NEW_MIGRATION_REQUIRED=NO.
+
+359_PARTY_STATEMENT_REGRESSION=PENDING
+ACCOUNTING_LOGIC_CHANGED=NO
+JOURNAL_POSTING_CHANGED=NO
+DATABASE_SCHEMA_CHANGED=NO
+NEW_MIGRATION_REQUIRED=NO
+REPORT_DATABASE_WRITES=0
+PHP_RUNTIME=UNAVAILABLE
+LIVE_RUNTIME_UAT=PENDING
+LIVE_UI_UAT=PENDING
 
 ERP-11.3.358 Party Statement Live-UAT Corrective
 
