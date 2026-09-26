@@ -63,8 +63,10 @@ final class PresentAccountingReportsWorkspace
              * Keep only the native main report host when the controller
              * returns a complete shell; never inject the index filter/nav into
              * that document response.
-             */
+            */
             $html = $this->extractPreviewDocument($html);
+            $html = $this->enrichCashVoucherRows($html);
+            $html = $this->enrichSupplierCostingRows($html);
             $html = $this->reconcilePartyControlLedger($request, $html);
             $html = $this->reconcileGeneralLedgerAccountFilter($request, $html);
             $html = $this->formatLedgerAmounts($html);

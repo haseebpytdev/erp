@@ -917,19 +917,18 @@ HTML;
             }
 
             foreach ($products as $product) {
-                $identity = strtolower(trim(implode(' ', array_filter([
-                    (string) ($product['product_name'] ?? ''),
-                    (string) ($product['key'] ?? ''),
-                ]))));
+                $key = strtolower(trim((string) ($product['key'] ?? '')));
+                $name = strtoupper(trim((string) ($product['product_name'] ?? '')));
+                $legacyAirNames = [
+                    'AIR',
+                    'AIR TICKET',
+                    'AIR TICKETS',
+                    'FLIGHT',
+                    'FLIGHT TICKET',
+                    'FLIGHT TICKETS',
+                ];
 
-                if (
-                    $identity === ''
-                    || (
-                        ! str_contains($identity, 'air')
-                        && ! str_contains($identity, 'ticket')
-                        && ! str_contains($identity, 'flight')
-                    )
-                ) {
+                if ($key !== 'air' && ! in_array($name, $legacyAirNames, true)) {
                     return false;
                 }
             }
