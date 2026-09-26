@@ -22,13 +22,14 @@ final class PartyStatementService
     {
         $type = strtolower((string) $request->query('party_type', 'customer')) === 'vendor' ? 'vendor' : 'customer';
         $to = $this->date((string) $request->query('to', now()->toDateString()));
-        // A client statement defaults to the active financial year, not the
-        // current month, so material advances/receipts remain visible as rows.
-        $from = $this->date((string) $request->query('from', $this->financialYearStart($to)));
-        if ($from > $to) [$from, $to] = [$to, $from];
         $parties = $type === 'vendor' ? $this->bookingData->vendors() : $this->bookingData->customers();
         $partyId = (int) $request->query('party_id', 0);
         if ($partyId > 0 && ! collect($parties)->contains(fn (array $row): bool => (int) ($row['id'] ?? 0) === $partyId)) $partyId = 0;
+        $rawFrom = $request->query('from');
+        $from = is_string($rawFrom) && trim($rawFrom) !== ''
+            ? $this->date($rawFrom)
+            : ($partyId > 0 ? $this->earliestPartyMovement($type, $partyId, $to) : $this->financialYearStart($to));
+        if ($from > $to) [$from, $to] = [$to, $from];
         return compact('type', 'from', 'to', 'parties', 'partyId');
     }
 
@@ -153,6 +154,20 @@ final class PartyStatementService
             } catch (Throwable) { continue; }
         }
         return Carbon::parse($asOf)->startOfYear()->toDateString();
+    }
+    private function earliestPartyMovement(string $type, int $partyId, string $asOf): string
+    {
+        try {
+            $accounts = $this->chartAccounts($this->chart->schema());
+            $scope = $this->scopeIds($accounts, $type);
+            $columns = Schema::getColumnListing('journal_lines');
+            $dateColumn = Schema::hasColumn('journal_entries', 'journal_date') ? 'journal_date' : 'date';
+            if ($scope === [] || ! in_array('party_type', $columns, true) || ! in_array('party_id', $columns, true)) return $this->financialYearStart($asOf);
+            $date = DB::table('journal_lines as jl')->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')
+                ->where('je.status', 'posted')->where('jl.party_type', $type)->where('jl.party_id', $partyId)
+                ->whereIn('jl.account_id', array_keys($scope))->min('je.'.$dateColumn);
+            return $date ? Carbon::parse($date)->toDateString() : $this->financialYearStart($asOf);
+        } catch (Throwable) { return $this->financialYearStart($asOf); }
     }
     private function first(array $columns, array $wanted): ?string { foreach ($wanted as $name) if (in_array($name, $columns, true)) return $name; return null; }
 }

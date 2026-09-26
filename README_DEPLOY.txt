@@ -1,6 +1,9 @@
-ERP-11.3.359 Party Statement Client Document Corrective
+ERP-11.3.360 Party Statement Combined Live Fix
 
-ERP-11.3.359 refines the client-sendable Party Statement into a compact
+ERP-11.3.360 corrects combined Party Statement live data enrichment, party-period
+defaults and compact ten-column presentation. It preserves the posted-journal
+authority, account scopes, formulas, schema and migrations of ERP-11.3.359.
+ERP-11.3.359 refined the client-sendable Party Statement into a compact
 portrait ledger-style document. It removes Booking No. from the visible table,
 keeps accounting document references authoritative, presents Air ticket-only
 service references and concise airline/sector/flight/PNR descriptions, and
@@ -8,8 +11,8 @@ adds product-aware Hotel, Visa, Transport and Umrah summaries. ERP-11.3.358
 financial projection and financial-year advance visibility remain unchanged.
 No posting, database schema or migration changes are included.
 
-Active release: v1.1.33.359-ERP11.3.359
-CURRENT_LIVE_RELEASE=ERP-11.3.358
+Active release: v1.1.33.360-ERP11.3.360
+CURRENT_LIVE_RELEASE=ERP-11.3.359
 NEW_MIGRATION_REQUIRED=NO
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT

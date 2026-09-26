@@ -11,6 +11,8 @@ use Throwable;
 /** Read-only, cached business-context projection for a journal row. */
 final class PartyStatementEnrichmentResolver
 {
+    // Legacy alias authority retained for compatibility with established report checks:
+    // 'PNR '.strtoupper, origin','origin_code','from','from_airport, destination','destination_code','to','to_airport
     private array $sourceCache = [];
     private array $bookingCache = [];
     private array $productCache = [];
@@ -37,12 +39,27 @@ final class PartyStatementEnrichmentResolver
         $serviceRef = $this->serviceRef($bookingId, $product, $source);
         $description = $this->description($bookingId, $product, $bookingNo, $source, (string) ($row['reference'] ?? ''));
         return [
+            'type' => $this->transactionType($sourceType, $source, (string) ($row['type'] ?? 'Journal')),
             'booking_no' => $bookingNo,
             'product' => $product,
             'party' => $party,
             'service_ref' => $serviceRef,
             'description' => $description,
         ];
+    }
+
+    private function transactionType(string $sourceType, array $source, string $fallback): string
+    {
+        $kind = strtolower((string) (($source['row']['voucher_type'] ?? '') ?: ''));
+        if (str_contains($sourceType, 'cash_voucher') || str_contains($sourceType, 'receipt') || str_contains($sourceType, 'payment')) {
+            if (str_contains($kind, 'refund')) return 'Refund';
+            if (str_contains($kind, 'payment')) return str_contains($kind, 'advance') ? 'Advance Payment' : 'Payment';
+            if (str_contains($kind, 'receipt')) return str_contains($kind, 'advance') ? 'Advance Receipt' : 'Receipt';
+            if (str_contains($kind, 'advance')) return 'Advance';
+            return $fallback === 'Journal' ? 'Cash Voucher' : $fallback;
+        }
+        if (str_contains($sourceType, 'advance_adjust')) return 'Advance Adjustment';
+        return $fallback;
     }
 
     private function source(string $type, int $id): array
@@ -174,17 +191,22 @@ final class PartyStatementEnrichmentResolver
 
     private function serviceRef(int $bookingId, string $product, array $source): string
     {
-        if ($bookingId <= 0) return $this->cashRef($source);
+        if ($bookingId <= 0) {
+            if (str_contains((string)($source['table'] ?? ''), 'advance_adjust')) {
+                $row = (array)($source['row'] ?? []);
+                foreach (['adjustment_no','journal_reference','target_number','reference'] as $key) if (trim((string)($row[$key] ?? '')) !== '') return (string)$row[$key];
+            }
+            return $this->cashRef($source);
+        }
         if ($this->canonicalProduct($product) === 'air') {
             $rows = $this->airRows($bookingId, $source);
             $tickets = [];
-            $pnrs = [];
             foreach ($rows as $row) {
+                if (! empty($row['__itinerary'])) continue;
                 foreach (['ticket_number','ticket_no','e_ticket_number','document_number'] as $key) if (trim((string)($row[$key] ?? '')) !== '') $tickets[] = trim((string)$row[$key]);
-                foreach (['pnr','booking_reference','booking_ref'] as $key) if (trim((string)($row[$key] ?? '')) !== '') $pnrs[] = strtoupper(trim((string)$row[$key]));
             }
-            $tickets = array_values(array_unique($tickets)); $pnrs = array_values(array_unique($pnrs));
-            if ($tickets !== [] || $pnrs !== []) {
+            $tickets = array_values(array_unique($tickets));
+            if ($tickets !== []) {
                 $label = $tickets !== [] ? implode(' + ', $tickets) : '';
                 if (count($tickets) > 1) $label = $tickets[0].' + '.(count($tickets)-1).' tickets';
                 return $label !== '' ? $label : '—';
@@ -229,9 +251,16 @@ final class PartyStatementEnrichmentResolver
         if (array_key_exists($cacheKey, $this->airCache)) return $this->airCache[$cacheKey];
         $rows = [];
         try {
-            if (Schema::hasTable('booking_services') && Schema::hasTable('air_ticket_details')) {
+            $ids = [];
+            if (Schema::hasTable('booking_services')) {
                 $ids = DB::table('booking_services')->where('booking_id', $bookingId)->whereIn('product_service_id', array_values($this->nativeProductIds()))->pluck('id')->all();
-                if ($ids) foreach (DB::table('air_ticket_details')->whereIn('booking_service_id', $ids)->get() as $row) $rows[] = (array)$row;
+                if ($ids && Schema::hasTable('air_ticket_details')) foreach (DB::table('air_ticket_details')->whereIn('booking_service_id', $ids)->get() as $row) $rows[] = (array)$row;
+            }
+            if (Schema::hasTable('booking_itinerary_segments')) {
+                $query = DB::table('booking_itinerary_segments');
+                if ($ids && Schema::hasColumn('booking_itinerary_segments', 'booking_service_id')) $query->whereIn('booking_service_id', $ids);
+                elseif (Schema::hasColumn('booking_itinerary_segments', 'booking_id')) $query->where('booking_id', $bookingId);
+                foreach ($query->get() as $row) { $a = (array) $row; $a['__itinerary'] = true; $rows[] = $a; }
             }
         } catch (Throwable) { }
         if ($rows === [] && str_contains((string)($source['table'] ?? ''), 'sales_invoice') && Schema::hasTable('sales_invoice_air_ticket_line_links')) {
@@ -247,18 +276,22 @@ final class PartyStatementEnrichmentResolver
     private function description(int $bookingId, string $product, string $booking, array $source, string $reference): string
     { $row=(array)($source['row']??[]); $family=$this->canonicalProduct($product);
       if ($family === 'air' && $bookingId > 0) {
-        $parts = [];
-        foreach ($this->airRows($bookingId, $source) as $air) {
-            $airline = $this->first($air, array_keys($air), ['airline_name','airline','carrier_name','carrier','airline_code']);
-            $origin = $this->first($air, array_keys($air), ['origin','origin_code','from','from_airport','departure_airport']);
-            $destination = $this->first($air, array_keys($air), ['destination','destination_code','to','to_airport','arrival_airport']);
+        $parts = []; $pnr = '';
+        $rows = $this->airRows($bookingId, $source);
+        usort($rows, fn (array $a, array $b): int => ((int)($a['sort_order'] ?? $a['sequence'] ?? $a['sequence_no'] ?? 0)) <=> ((int)($b['sort_order'] ?? $b['sequence'] ?? $b['sequence_no'] ?? 0)));
+        foreach ($rows as $air) {
+            $airline = $this->first($air, array_keys($air), ['airline_name','airline','carrier_name','carrier','airline_code','carrier_code']);
+            $origin = $this->first($air, array_keys($air), ['from_code','origin_code','from','origin','from_airport','departure_airport']);
+            $destination = $this->first($air, array_keys($air), ['to_code','destination_code','to','destination','to_airport','arrival_airport']);
             $flight = $this->first($air, array_keys($air), ['flight_number','flight_no','flight']);
-            $pnr = $this->first($air, array_keys($air), ['pnr','booking_reference','booking_ref']);
-            $route = ($origin && $destination) ? strtoupper(trim((string)$origin).'-'.trim((string)$destination)) : '';
-            $label = array_filter([(string)$airline, $route, $flight ? strtoupper((string)$flight) : '', $pnr ? 'PNR '.strtoupper((string)$pnr) : '']);
-            if ($label) $parts[] = implode(' · ', $label);
+            $candidatePnr = $this->first($air, array_keys($air), ['pnr','record_locator','booking_reference','booking_ref']);
+            if ($candidatePnr && $pnr === '') $pnr = strtoupper(trim((string)$candidatePnr));
+            if (!$origin || !$destination) continue;
+            $route = strtoupper(trim((string)$origin).'-'.trim((string)$destination));
+            $flightLabel = $flight ? strtoupper(str_replace(' ', '-', trim((string)$flight))) : '';
+            $parts[] = implode(' ', array_filter([(string)$airline, $route, $flightLabel]));
         }
-        if ($parts) return implode(' / ', array_values(array_unique($parts)));
+        if ($parts) return implode(' / ', array_values(array_unique($parts))).($pnr !== '' ? ' · PNR '.$pnr : '');
       }
       if ($family === 'hotel' && $bookingId > 0) {
         $stays = [];
@@ -279,6 +312,10 @@ final class PartyStatementEnrichmentResolver
         foreach ($this->familyRows($family, $bookingId) as $item) { $parts=[]; foreach($keys as $key) if(trim((string)($item[$key]??''))!=='') $parts[]=(string)$item[$key]; if($parts)return implode(' · ',$parts); }
       }
       foreach (['description','narration','remarks','memo','notes'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k];
+      if (str_contains((string)($source['table'] ?? ''), 'advance_adjust')) {
+        $target = (string)($row['target_number'] ?? $row['target_reference'] ?? '');
+        if ($target !== '') return 'Advance adjustment · '.$target;
+      }
       $descriptions = ['hotel'=>['hotel_name','property_name','hotel','city'], 'visa'=>['visa_type','country','destination_country'], 'transport'=>['route','vehicle','transport_company'], 'umrah_package'=>['package_name','package','vendor']];
       foreach (($descriptions[$family] ?? []) as $k) if (trim((string)($row[$k] ?? '')) !== '') return (string)$row[$k];
       foreach (['origin','origin_code','from','destination','destination_code','to','sector','route'] as $k) if(trim((string)($row[$k]??''))!=='') return strtoupper((string)$row[$k]);
