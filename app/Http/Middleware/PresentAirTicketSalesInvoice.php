@@ -52,15 +52,6 @@ class PresentAirTicketSalesInvoice
             return $response;
         }
 
-        /*
-         * The native page itself is also a reliable Air Ticket signal. This
-         * prevents old invoices from missing the focused presenter solely
-         * because one legacy booking-link column is absent.
-         */
-        $htmlLooksAirTicket =
-            stripos($content, 'AIR_TICKET') !== false
-            || stripos($content, 'Air Ticket') !== false;
-
         try {
             $snapshot =
                 $this->sync->snapshot(
@@ -72,10 +63,12 @@ class PresentAirTicketSalesInvoice
             ];
         }
 
-        if (
-            ! ($snapshot['supported'] ?? false)
-            && ! $htmlLooksAirTicket
-        ) {
+        if (! ($snapshot['supported'] ?? false)) {
+            return $response;
+        }
+
+        $bookingId = (int) ($snapshot['booking_id'] ?? 0);
+        if (! $this->isAirOnlyInvoice($snapshot, $bookingId)) {
             return $response;
         }
 
@@ -120,12 +113,6 @@ class PresentAirTicketSalesInvoice
                         ? 'draft'
                         : ''
                 );
-
-        $bookingId =
-            (int) (
-                $snapshot['booking_id']
-                ?? 0
-            );
 
         if ($bookingId <= 0) {
             /*
@@ -903,6 +890,54 @@ HTML;
         $response->setContent($content);
 
         return $response;
+    }
+
+    /**
+     * Text such as "Air Ticket" in a line description is not an ownership
+     * authority: GENERAL invoices may contain an Air line alongside Hotel,
+     * Transport or Visa. Present the focused Air workspace only when the
+     * resolved native invoice product summary is exclusively Air.
+     */
+    private function isAirOnlyInvoice(array $snapshot, int $bookingId): bool
+    {
+        if ($bookingId <= 0 || ! ($snapshot['supported'] ?? false)) {
+            return false;
+        }
+
+        try {
+            $invoice = $snapshot['invoice'] ?? null;
+            if (! $invoice instanceof Model) {
+                return false;
+            }
+
+            $summary = $this->commercialSummary->resolve($invoice, $bookingId);
+            $products = array_values((array) ($summary['products'] ?? []));
+            if ($products === []) {
+                return false;
+            }
+
+            foreach ($products as $product) {
+                $identity = strtolower(trim(implode(' ', array_filter([
+                    (string) ($product['product_name'] ?? ''),
+                    (string) ($product['key'] ?? ''),
+                ]))));
+
+                if (
+                    $identity === ''
+                    || (
+                        ! str_contains($identity, 'air')
+                        && ! str_contains($identity, 'ticket')
+                        && ! str_contains($identity, 'flight')
+                    )
+                ) {
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private function nativeInvoiceTotal(Model $invoice): float

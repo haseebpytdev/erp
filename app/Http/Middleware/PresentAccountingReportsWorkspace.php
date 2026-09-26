@@ -55,6 +55,27 @@ final class PresentAccountingReportsWorkspace
             return $response;
         }
 
+        $mode = $this->routeMode($request);
+
+        if ($mode === 'preview') {
+            /*
+             * Preview is a document boundary, not another application page.
+             * Keep only the native main report host when the controller
+             * returns a complete shell; never inject the index filter/nav into
+             * that document response.
+             */
+            $html = $this->extractPreviewDocument($html);
+            $html = $this->reconcilePartyControlLedger($request, $html);
+            $html = $this->reconcileGeneralLedgerAccountFilter($request, $html);
+            $html = $this->formatLedgerAmounts($html);
+            $html = $this->finalizePartyLedgerTotalBalance($request, $html);
+            $html = $this->presentAccountLedgerStatement($request, $html);
+            $html = $this->presentTrialBalanceStatement($request, $html);
+            $response->setContent($html);
+            $response->headers->remove('Content-Length');
+            return $response;
+        }
+
         $html = $this->enrichCashVoucherRows($html);
         $html = $this->enrichSupplierCostingRows($html);
         $html = $this->replaceNativeFilter($request, $html);
@@ -67,6 +88,32 @@ final class PresentAccountingReportsWorkspace
         $html = $this->presentTrialBalanceStatement($request, $html);
         $response->setContent($html);
         return $response;
+    }
+
+    private function routeMode(Request $request): string
+    {
+        $route = $request->route();
+        $name = strtolower((string) ($route?->getName() ?? ''));
+        $uri = strtolower(trim((string) ($route?->uri() ?? $request->path()), '/'));
+
+        if ($name === 'accounting.reports.preview' || $uri === 'accounting/reports/preview') {
+            return 'preview';
+        }
+
+        if ($name === 'accounting.reports.print' || $uri === 'accounting/reports/print') {
+            return 'print';
+        }
+
+        return 'index';
+    }
+
+    private function extractPreviewDocument(string $html): string
+    {
+        if (preg_match('/<main\b[^>]*>([\s\S]*?)<\/main>/i', $html, $match) === 1) {
+            return trim($match[1]);
+        }
+
+        return $html;
     }
 
     private function bindPartyLedgerControlAccount(Request $request): void

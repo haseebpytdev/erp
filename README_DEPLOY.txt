@@ -1,14 +1,14 @@
-ERP-11.3.355 Operating Expense Parent-Key Runtime Hotfix
+ERP-11.3.356 Sales Invoice & Reports Presentation Corrective
 
-ERP-11.3.355 fixes the Operating Expense migration failure caused by numeric PHP
-array keys being compared strictly to string group codes. It preserves all 130
-COA targets and fails closed when a child parent group is undefined. ERP-11.3.353
-failed during PHP migration load; ERP-11.3.354 failed during COA target generation;
-ERP-11.3.355 is not deployed.
+ERP-11.3.356 restores native Sales Invoice presentation for GENERAL
+multi-product invoices and keeps report preview documents within their native
+document boundary without index workspace chrome. No accounting formulas,
+journal data, database schema or migration changes are included. ERP-11.3.355
+remains the current live production release.
 
-Active release: v1.1.33.355-ERP11.3.355
-CURRENT_LIVE_RELEASE=ERP-11.3.352
-NEW_MIGRATION_REQUIRED=YES
+Active release: v1.1.33.356-ERP11.3.356
+CURRENT_LIVE_RELEASE=ERP-11.3.355
+NEW_MIGRATION_REQUIRED=NO
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT
 DEPLOYMENT AUTHORITY IS THE HEADER ABOVE.

@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.355-ERP11.3.355',
-    'release' => 'ERP-11.3.355',
-    'package' => 'ERP-11.3.355 Operating Expense Parent-Key Runtime Hotfix',
-    'package_detail' => 'ERP-11.3.355 normalizes numeric PHP child-parent keys before strict group resolution, preserving all 130 operating expense targets and failing closed for undefined parent groups. NEW_MIGRATION_REQUIRED=YES.',
+    'version' => 'v1.1.33.356-ERP11.3.356',
+    'release' => 'ERP-11.3.356',
+    'package' => 'ERP-11.3.356 Sales Invoice & Reports Presentation Corrective',
+    'package_detail' => 'ERP-11.3.356 restores native Sales Invoice presentation for GENERAL multi-product invoices and keeps report preview documents free of index workspace chrome. No accounting logic, database schema or migration changes are included. NEW_MIGRATION_REQUIRED=NO.',
 ];
 
