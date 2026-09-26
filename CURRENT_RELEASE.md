@@ -6,26 +6,38 @@ CURRENT_LIVE_RELEASE=ERP-11.3.356
 CURRENT_VERSION=ERP-11.3.357
 APPLICATION_VERSION=v1.1.33.357-ERP11.3.357
 CURRENT_LIVE_VERSION=v1.1.33.356-ERP11.3.356
-CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.356 LIVE; ERP-11.3.357 DEVELOPMENT / NOT DEPLOYED.
+PRODUCTION_STATUS=ERP-11.3.356 LIVE; ERP-11.3.357 FINALIZED / NOT DEPLOYED.
 LAST_PACKAGED_RELEASE=ERP-11.3.356
 ```
 
 ERP-11.3.357 Combined Party Statement
 
-ERP-11.3.357 adds a read-only combined customer/vendor Party Statement over
-posted journal movements. Existing Customer Ledger 1130 and Vendor Ledger 2110
-semantics remain unchanged; the new view combines the relevant advance control
-account only in the statement projection. No accounting posting, database
-schema or migration changes are included. NEW_MIGRATION_REQUIRED=NO.
+ERP-11.3.357 adds a read-only combined Customer/Vendor Party Statement over
+posted journal movements. Customer combines 1130 Receivables and 2120 Customer
+Advances; Vendor combines 2110 Payables and 1140 Vendor Advances. These remain
+separate in the GL and are combined only in the commercial party-statement
+projection. Posted journals remain the accounting authority and journal-level
+netting prevents double-counting internal advance reclassification.
+Business enrichment supplies booking, product, passenger/group, service
+reference and description context. Existing Customer Ledger and Vendor Ledger
+semantics remain unchanged. No posting, database schema or migration changes
+are included. NEW_MIGRATION_REQUIRED=NO.
 
-357_PARTY_STATEMENT_REGRESSION=PASS (21 assertions)
+357_PARTY_STATEMENT_REGRESSION=PASS (46 assertions)
+356_UI_REGRESSION=PASS (39 assertions)
+CUSTOMER_LEDGER_REGRESSION=PASS (37 assertions)
+A_B_BASELINE_FAIL=38
+A_B_357_FAIL=38
+A_B_357_ONLY_FAILURES=0
 NEW_NODE_FAILURES=0
+PHP_RUNTIME=UNAVAILABLE
+LIVE_RUNTIME_UAT=PENDING
 
 ERP-11.3.356 Sales Invoice & Reports Presentation Corrective
 
