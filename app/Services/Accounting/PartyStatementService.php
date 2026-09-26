@@ -15,6 +15,7 @@ final class PartyStatementService
     public function __construct(
         private readonly ChartOfAccountsWorkspaceService $chart,
         private readonly UnifiedGroupPackageDataSource $bookingData,
+        private readonly PartyStatementEnrichmentResolver $enrichment,
     ) {}
 
     public function filters(Request $request): array
@@ -54,6 +55,9 @@ final class PartyStatementService
             $credit = $row['net'] < 0 ? abs($row['net']) : 0.0;
             $totalDebit += $debit; $totalCredit += $credit;
             $row['debit'] = round($debit, 2); $row['credit'] = round($credit, 2); $row['balance'] = $balance;
+            // Enrichment is deliberately applied after journal netting and balance
+            // calculation: it can only add display metadata, never financial data.
+            $row = array_merge($row, $this->enrichment->resolve($row));
             $out[] = $row;
         }
         $closing = round($opening + $totalDebit - $totalCredit, 2);

@@ -9,6 +9,7 @@ const controller = read('app/Http/Controllers/Accounting/PartyStatementControlle
 const routes = read('routes/erp103179.php');
 const index = read('resources/views/accounting/party-statement/index.blade.php');
 const print = read('resources/views/accounting/party-statement/print.blade.php');
+const enrichment = read('app/Services/Accounting/PartyStatementEnrichmentResolver.php');
 
 ok(routes.includes("accounting.party-statement.index") && routes.includes("/accounting/reports/party-statement"), 'Party Statement route exists');
 ok(routes.includes("accounting.party-statement.print") && routes.includes("/accounting/reports/party-statement/print"), 'Party Statement print route exists');
@@ -33,5 +34,23 @@ ok(signed(0, [{ debit: 100000, credit: 100000 }]) === 0, 'Advance reclassificati
 ok(signed(0, [{ debit: 0, credit: 500000 }, { debit: 200000, credit: 0 }]) === -300000, 'Vendor example closes 300000 Cr');
 ok(signed(0, [{ debit: 0, credit: 100000 }, { debit: 150000, credit: 0 }]) === 50000, 'Vendor advance example closes 50000 Dr');
 ok(service.includes("$type = strtolower((string) $request->query('party_type', 'customer'))"), 'Customer is the default party type');
+
+// ERP-11.3.357 enrichment contract: these are source-level guards for the
+// read-only projection. Runtime DB/browser evidence remains environment-owned.
+ok(enrichment.includes('journal_id') || enrichment.includes('source_type'), 'Enrichment is keyed by journal source metadata');
+ok(enrichment.includes("sales_invoices") && enrichment.includes("cash_vouchers"), 'Sales invoice and cash voucher authorities are resolved');
+ok(enrichment.includes("supplier_costings") && enrichment.includes("advance_adjustments"), 'Supplier costing and advance adjustment authorities are resolved');
+ok(enrichment.includes("cash_vouchers") && enrichment.includes('target_type') && enrichment.includes('target_id'), 'Cash voucher and reversal booking targets are resolved');
+ok(enrichment.includes("booking_no") && enrichment.includes("booking_number") && enrichment.includes("Booking #"), 'Booking number uses adaptive persisted fields with ID fallback');
+ok(enrichment.includes('NativeProductServiceResolver') && enrichment.includes('MULTI PRODUCT'), 'Product identity uses native resolver and explicit multi-product policy');
+ok(enrichment.includes('ActiveBookingPassengerResolver') && enrichment.includes(" + "), 'Passenger authority uses active resolver with single/multi policy');
+ok(enrichment.includes('air_ticket_details') && enrichment.includes('booking_hotel_stays') && enrichment.includes('booking_transport_segments'), 'Air, Hotel and Transport service references are supported');
+ok(enrichment.includes('booking_visa_services') && enrichment.includes('visa_number'), 'Visa service references are supported');
+ok(enrichment.includes('description') && enrichment.includes('narration') && enrichment.includes('reference'), 'Description priority is persisted business context then journal reference');
+ok(enrichment.includes('sourceCache') && enrichment.includes('bookingCache') && enrichment.includes('productCache'), 'Enrichment caches source, booking and product lookups');
+ok(service.includes('array_merge($row, $this->enrichment->resolve($row))'), 'Enrichment merges display metadata after financial calculations');
+ok(service.includes("$grouped[$key]['debit'] +=") && service.includes("$grouped[$key]['credit'] +="), 'Financial rows and amounts remain journal-netted');
+ok(controller.includes("view('accounting.party-statement.index'") && controller.includes("view('accounting.party-statement.print'"), 'Screen and print remain on the same service projection');
+ok(!enrichment.includes('insert(') && !enrichment.includes('update(') && !enrichment.includes('delete('), 'Enrichment performs no database writes');
 
 console.log(`PASS ${pass} ERP-11.3.357 Party Statement assertions`);
