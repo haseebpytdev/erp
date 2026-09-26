@@ -61,7 +61,17 @@ final class PartyStatementService
             // Enrichment is deliberately applied after journal netting and balance
             // calculation: it can only add display metadata, never financial data.
             $row = array_merge($row, $this->enrichment->resolve($row));
-            $out[] = $row;
+            $passengerRows = $row['passenger_rows'] ?? [];
+            unset($row['passenger_rows']);
+            if (count($passengerRows) < 2) { $out[] = $row; continue; }
+            foreach ($passengerRows as $index => $passengerRow) {
+                $display = $row;
+                $display['party'] = $passengerRow['party'];
+                $display['service_ref'] = $passengerRow['service_ref'];
+                $display['is_continuation_row'] = $index > 0;
+                if ($index > 0) { $display['debit'] = null; $display['credit'] = null; }
+                $out[] = $display;
+            }
         }
         $closing = round($opening + $totalDebit - $totalCredit, 2);
         return [

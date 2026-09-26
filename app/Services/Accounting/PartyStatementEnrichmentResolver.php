@@ -45,6 +45,7 @@ final class PartyStatementEnrichmentResolver
             'party' => $party,
             'service_ref' => $serviceRef,
             'description' => $description,
+            'passenger_rows' => $this->passengerRows($bookingId, $product, $source),
         ];
     }
 
@@ -191,6 +192,28 @@ final class PartyStatementEnrichmentResolver
             if ($names->count() > 1) return $this->passengerCache[$bookingId] = (string) $names->first().' + '.($names->count()-1);
         } catch (Throwable) { }
         return $this->passengerCache[$bookingId] = '—';
+    }
+
+    private function passengerRows(int $bookingId, string $product, array $source): array
+    {
+        if ($bookingId <= 0 || $this->canonicalProduct($product) !== 'air') return [];
+        try {
+            $passengers = $this->passengers->rows($bookingId)->map(fn (object $row): array => (array) $row)->values()->all();
+            if (count($passengers) < 2) return [];
+            $tickets = array_values(array_filter($this->airRows($bookingId, $source), fn (array $row): bool => empty($row['__itinerary'])));
+            $out = [];
+            foreach ($passengers as $passenger) {
+                $name = trim((string) (($passenger['full_name'] ?? '') ?: ($passenger['passenger_name'] ?? '') ?: ($passenger['name'] ?? '') ?: trim(($passenger['first_name'] ?? '').' '.($passenger['last_name'] ?? ''))));
+                $pid = (int) ($passenger['id'] ?? $passenger['passenger_id'] ?? $passenger['booking_passenger_id'] ?? 0);
+                $ticket = '';
+                foreach ($tickets as $candidate) {
+                    $candidatePid = (int) ($candidate['passenger_id'] ?? $candidate['booking_passenger_id'] ?? $candidate['passenger_detail_id'] ?? 0);
+                    if ($pid > 0 && $candidatePid === $pid) { $ticket = (string) ($candidate['ticket_number'] ?? $candidate['ticket_no'] ?? $candidate['e_ticket_number'] ?? $candidate['document_number'] ?? ''); break; }
+                }
+                $out[] = ['party' => $name !== '' ? $name : '—', 'service_ref' => $ticket !== '' ? $ticket : '—'];
+            }
+            return $out;
+        } catch (Throwable) { return []; }
     }
 
     private function serviceRef(int $bookingId, string $product, array $source): string

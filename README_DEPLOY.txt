@@ -11,8 +11,8 @@ adds product-aware Hotel, Visa, Transport and Umrah summaries. ERP-11.3.358
 financial projection and financial-year advance visibility remain unchanged.
 No posting, database schema or migration changes are included.
 
-Active release: v1.1.33.360-ERP11.3.360
-CURRENT_LIVE_RELEASE=ERP-11.3.359
+Active release: v1.1.33.361-ERP11.3.361
+CURRENT_LIVE_RELEASE=ERP-11.3.360
 NEW_MIGRATION_REQUIRED=NO
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT
