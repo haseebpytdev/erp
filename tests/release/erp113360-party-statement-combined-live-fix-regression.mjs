@@ -9,6 +9,10 @@ const screen = fs.readFileSync(path.join(root, 'resources/views/accounting/party
 const print = fs.readFileSync(path.join(root, 'resources/views/accounting/party-statement/print.blade.php'), 'utf8');
 const header = fs.readFileSync(path.join(root, 'resources/views/accounting/party-statement/_document-header.blade.php'), 'utf8');
 const checks = [
+  ['exact screen width contract', screen.includes('width:7%') && screen.includes('width:9%') && screen.includes('width:10%') && screen.includes('width:11%')],
+  ['exact print width contract', print.includes('width:7%') && print.includes('width:9%') && print.includes('width:10%') && print.includes('width:11%')],
+  ['width total is 100', [7,9,10,7,11,9,20,8,8,11].reduce((a,b)=>a+b,0) === 100],
+  ['screen print width parity', screen.match(/width:(\d+)%/g)?.slice(-10).join('/') === print.match(/width:(\d+)%/g)?.slice(-10).join('/')],
   ['party default resolves earliest posted movement', service.includes('earliestPartyMovement') && service.includes("where('je.status', 'posted')")],
   ['explicit from remains authoritative', service.includes("$rawFrom = $request->query('from')")],
   ['customer account scopes', service.includes("['CUSTOMER_AR', '1130']") && service.includes("['CUSTOMER_ADVANCE', '2120']")],
