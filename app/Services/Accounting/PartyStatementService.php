@@ -21,8 +21,10 @@ final class PartyStatementService
     public function filters(Request $request): array
     {
         $type = strtolower((string) $request->query('party_type', 'customer')) === 'vendor' ? 'vendor' : 'customer';
-        $from = $this->date((string) $request->query('from', now()->startOfMonth()->toDateString()));
         $to = $this->date((string) $request->query('to', now()->toDateString()));
+        // A client statement defaults to the active financial year, not the
+        // current month, so material advances/receipts remain visible as rows.
+        $from = $this->date((string) $request->query('from', $this->financialYearStart($to)));
         if ($from > $to) [$from, $to] = [$to, $from];
         $parties = $type === 'vendor' ? $this->bookingData->vendors() : $this->bookingData->customers();
         $partyId = (int) $request->query('party_id', 0);
@@ -137,5 +139,20 @@ final class PartyStatementService
     }
 
     private function date(string $value): string { try { return Carbon::parse($value)->toDateString(); } catch (Throwable) { return now()->toDateString(); } }
+    private function financialYearStart(string $asOf): string
+    {
+        foreach (['fiscal_years', 'financial_years', 'fiscal_year'] as $table) {
+            if (! Schema::hasTable($table)) continue;
+            try {
+                $columns = Schema::getColumnListing($table);
+                $start = $this->first($columns, ['start_date', 'date_from', 'from_date', 'starts_on', 'year_start', 'period_start', 'start_on']);
+                $end = $this->first($columns, ['end_date', 'date_to', 'to_date', 'ends_on', 'year_end', 'period_end', 'end_on']);
+                if (!$start || !$end) continue;
+                $row = DB::table($table)->whereDate($start, '<=', $asOf)->whereDate($end, '>=', $asOf)->first();
+                if ($row) return Carbon::parse($row->{$start})->toDateString();
+            } catch (Throwable) { continue; }
+        }
+        return Carbon::parse($asOf)->startOfYear()->toDateString();
+    }
     private function first(array $columns, array $wanted): ?string { foreach ($wanted as $name) if (in_array($name, $columns, true)) return $name; return null; }
 }

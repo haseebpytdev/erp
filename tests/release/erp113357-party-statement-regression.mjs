@@ -34,6 +34,18 @@ ok(signed(0, [{ debit: 100000, credit: 100000 }]) === 0, 'Advance reclassificati
 ok(signed(0, [{ debit: 0, credit: 500000 }, { debit: 200000, credit: 0 }]) === -300000, 'Vendor example closes 300000 Cr');
 ok(signed(0, [{ debit: 0, credit: 100000 }, { debit: 150000, credit: 0 }]) === 50000, 'Vendor advance example closes 50000 Dr');
 ok(service.includes("$type = strtolower((string) $request->query('party_type', 'customer'))"), 'Customer is the default party type');
+ok(!service.includes("now()->startOfMonth()->toDateString()") && service.includes('financialYearStart'), 'Default Date From uses financial-year authority rather than current-month start');
+ok(service.includes("['fiscal_years', 'financial_years', 'fiscal_year']") && service.includes('whereDate($start'), 'Financial-year start resolves from installed ERP period tables');
+ok(service.includes("if ($row['date'] < $filters['from'])") && service.includes("if ($row['date'] <= $filters['to']) $period[]"), 'Pre-period movements are opening-only and selected-period movements are rows');
+ok(service.includes('journal_id') && service.includes('$grouped[$key]'), 'Each selected journal movement remains one financial statement row');
+const periodFixture = [{ id: 1, date: '2026-01-01', debit: 0, credit: 922420 }, { id: 2, date: '2026-02-01', debit: 0, credit: 100000 }];
+const openingFixture = periodFixture.filter(r => r.date < '2026-02-01');
+const rowsFixture = periodFixture.filter(r => r.date >= '2026-02-01' && r.date <= '2026-12-31');
+ok(openingFixture.length === 1 && rowsFixture.length === 1 && rowsFixture.every(r => !openingFixture.some(o => o.id === r.id)), 'Advance is never duplicated between opening and period rows');
+const openingAmount = openingFixture.reduce((n, r) => n + r.debit - r.credit, 0);
+const periodAmount = rowsFixture.reduce((n, r) => n + r.debit - r.credit, 0);
+ok(openingAmount + periodAmount === -1022420, 'Opening plus period debit minus credit equals closing');
+ok(enrichment.includes("'voucher_no'") && enrichment.includes('narration'), 'Advance and receipt rows expose voucher reference and actual narration');
 
 // ERP-11.3.357 enrichment contract: these are source-level guards for the
 // read-only projection. Runtime DB/browser evidence remains environment-owned.
