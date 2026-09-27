@@ -1,13 +1,20 @@
-ERP-11.3.362 Party Statement Live UI / Print / Drilldown Corrective
+ERP-11.3.363 Party Statement ERP Screen Fit Corrective
 
-Active release: v1.1.33.362-ERP11.3.362
-CURRENT_LIVE_RELEASE=ERP-11.3.361
-CURRENT_LIVE_VERSION=v1.1.33.361-ERP11.3.361
+Active release: v1.1.33.363-ERP11.3.363
+CURRENT_LIVE_RELEASE=ERP-11.3.362
+CURRENT_LIVE_VERSION=v1.1.33.362-ERP11.3.362
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.362 is FINALIZED / NOT DEPLOYED. It has NOT yet been packaged.
-ERP-11.3.361 remains current production.
-LAST_PACKAGED_RELEASE=ERP-11.3.361
+ERP-11.3.363 is NOT FINALIZED / NOT DEPLOYED. It has NOT yet been packaged.
+ERP-11.3.362 remains current production.
+LAST_PACKAGED_RELEASE=ERP-11.3.362
+
+ERP-11.3.363 keeps the established Party Statement financial and source-link
+authority while fitting the screen preview to the ERP workspace. Verify the
+responsive filter grid, full-width KPI and preview card, readable nine-column
+statement, and controlled narrow-screen table scrolling after certification.
+The A4 portrait print view remains unchanged. No accounting, posting, schema or
+migration change is included.
 
 ERP-11.3.360 Party Statement Combined Live Fix
 
