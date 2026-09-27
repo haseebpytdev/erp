@@ -1,24 +1,23 @@
-ERP-11.3.366 Visa Workspace UI & Interaction
+ERP-11.3.367 Visa Runtime Stabilization
 
-Active release: v1.1.33.366-ERP11.3.366
+Active release: v1.1.33.367-ERP11.3.367
 CURRENT_LIVE_RELEASE=ERP-11.3.365
 CURRENT_LIVE_VERSION=v1.1.33.365-ERP11.3.365
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.366 is FINALIZED / NOT DEPLOYED.
+ERP-11.3.367 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED.
 ERP-11.3.365 remains current production.
 LAST_PACKAGED_RELEASE=ERP-11.3.365
 
-ERP-11.3.366 completes explicit passenger and Visa Rate selection,
-multi-passenger Add Visa, duplicate prevention, smart tri-state checkbox
-selection, contextual bulk status actions, row Details/Edit, 25/50/100
-pagination, compact checkbox/action controls, Margin heading,
-responsive/mobile behavior, Save dirty/loading/double-submit protection and
-the dedicated Visa runtime. No new migration is required. DIRECT_VENDOR live
-UAT has not been claimed; production verification remains pending.
+ERP-11.3.367 stabilizes the dedicated Visa runtime, versioned asset/cache
+identity, Visa fast navigation, transactional fragment mounting, complete
+response cache preservation and full/sparse draft hydration. Existing provider,
+financial and accounting behavior remains unchanged. No new migration is
+required. DIRECT_VENDOR live UAT has not been claimed; production verification
+remains pending.
 
-ERP-11.3.366 is finalized but not deployed. Do not mark it live before
-deployment and production verification.
+ERP-11.3.367 must not be marked live before deployment and production
+verification.
 
 VISA_WORKSPACE_UI_REGRESSION=PASS (35 assertions)
 VISA_PROVIDER_REGRESSION=PASS (30 assertions)

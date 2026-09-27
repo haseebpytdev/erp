@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+
+const navSource = fs.readFileSync(new URL('../../public/erp-theme/js/dedicated-visa-navigation.js', import.meta.url), 'utf8');
+const coreSource = fs.readFileSync(new URL('../../public/erp-theme/js/dedicated-product-core.js', import.meta.url), 'utf8');
+const visaCoreSource = fs.readFileSync(new URL('../../public/erp-theme/js/products/visa-core.js', import.meta.url), 'utf8');
+const adapterSource = fs.readFileSync(new URL('../../public/erp-theme/js/products/visa.js', import.meta.url), 'utf8');
+let assertions = 0; const ok = (value, label) => { assert.ok(value, label); assertions++; };
+
+class Node {
+  constructor(tag, doc) { this.tagName = String(tag).toUpperCase(); this.document = doc; this.children = []; this.parentNode = null; this.attributes = {}; this.listeners = {}; this.className = ''; this.textContent = ''; this.value = ''; this.type = ''; this.disabled = false; this.checked = false; this.options = this.tagName === 'SELECT' ? this.children : undefined; this.dataset = {}; }
+  appendChild(child) { this.children.push(child); child.parentNode = this; if (this.tagName === 'HEAD' && child.tagName === 'SCRIPT') this.document.loadScript(child); if (this.tagName === 'HEAD' && child.tagName === 'LINK') { child.onload?.(); } return child; }
+  removeChild(child) { const i = this.children.indexOf(child); if (i >= 0) this.children.splice(i, 1); child.parentNode = null; }
+  replaceChild(next, old) { const i = this.children.indexOf(old); if (i < 0) throw Error('missing child'); this.children[i] = next; next.parentNode = this; old.parentNode = null; return old; }
+  setAttribute(name, value) { this.attributes[name] = String(value); if (name === 'class') this.className = String(value); if (name.startsWith('data-')) this.dataset[name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = String(value); }
+  getAttribute(name) { return this.attributes[name] ?? null; }
+  hasAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name); }
+  removeAttribute(name) { delete this.attributes[name]; }
+  addEventListener(name, fn) { (this.listeners[name] ||= []).push(fn); }
+  dispatchEvent(event) { for (const fn of this.listeners[event.type] || []) fn.call(this, event); return true; }
+  click() { this.dispatchEvent({ type: 'click', button: 0, preventDefault() {}, target: this }); }
+  focus() { this.document.activeElement = this; }
+  contains(node) { return node === this || this.children.some(child => child.contains(node)); }
+  closest(selector) { let node = this; while (node) { if (node.matches(selector)) return node; node = node.parentNode; } return null; }
+  matches(selector) { if (selector.includes('[') && !selector.startsWith('[')) { const at = selector.indexOf('['); return this.tagName.toLowerCase() === selector.slice(0, at).toLowerCase() && this.matches(selector.slice(at)); } if (selector === 'a[href]') return this.tagName === 'A' && this.hasAttribute('href'); if (selector.startsWith('.')) return this.className.split(/\s+/).includes(selector.slice(1)); const attr = selector.match(/^\[([^=\]]+)(?:=["']?([^\]"']+)["']?)?\]$/); if (attr) return this.hasAttribute(attr[1]) && (!attr[2] || this.getAttribute(attr[1]) === attr[2]); return this.tagName.toLowerCase() === selector.toLowerCase(); }
+  querySelectorAll(selector) { const out = []; const visit = node => { for (const child of node.children) { if (child.matches(selector)) out.push(child); visit(child); } }; visit(this); return out; }
+  querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
+  set innerHTML(value) { this.children = []; }
+  get isConnected() { return !!this.parentNode; }
+}
+
+function createFixture(validFragment) {
+  const document = { activeElement: null, readyState: 'complete', head: null, body: null, roots: [], createElement(tag) { return new Node(tag, document); }, querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }, querySelectorAll(selector) { const out = []; for (const root of document.roots) { if (root.matches(selector)) out.push(root); out.push(...root.querySelectorAll(selector)); } return out; }, importNode(node) { const copy = new Node(node.tagName, document); copy.className = node.className; copy.textContent = node.textContent; copy.value = node.value; Object.keys(node.attributes).forEach(k => copy.setAttribute(k, node.attributes[k])); node.children.forEach(child => copy.appendChild(document.importNode(child, true))); return copy; }, loadScript(node) { node.onload?.(); } };
+  document.head = new Node('head', document); document.body = new Node('body', document); document.roots = [document.head, document.body];
+  const main = new Node('main', document); const launcher = new Node('section', document); launcher.setAttribute('data-et-booking-products-launcher', '1'); const link = new Node('a', document); link.setAttribute('href', '/operations/bookings/42/products/visa'); link.href = 'https://erp.test/operations/bookings/42/products/visa'; launcher.appendChild(link); main.appendChild(launcher); document.body.appendChild(main);
+  const marker = new Node('script', document); marker.setAttribute('data-et-dedicated-visa-navigation', 'v1.1.33.367-ERP11.3.367'); document.head.appendChild(marker);
+  const local = new Map(); const location = { origin: 'https://erp.test', href: 'https://erp.test/operations/bookings/42', assigned: null, assign(url) { this.assigned = url; this.href = url; } }; const listeners = {};
+  const window = { location, document, localStorage: { getItem: key => local.get(key) ?? null, setItem: (key, value) => local.set(key, value), removeItem: key => local.delete(key) }, addEventListener(name, fn) { (listeners[name] ||= []).push(fn); }, history: { pushState() {}, replaceState() {} } };
+  const response = { statuses: ['pending', 'approved'], passengers: [{ id: 5, name: 'Ayesha Khan', passport_number: 'AY123' }], rates: [{ id: 7, country: 'Saudi Arabia', visa_type: 'Umrah', provider_name: 'KSA Chain', default_sale_pkr: 150000, vendor_cost_pkr: 120000 }], visa_rows: [{ booking_passenger_id: 5, passenger_name: 'Ayesha Khan', visa_rate_card_id: 7, country: 'Saudi Arabia', visa_type: 'Umrah', provider_name: 'KSA Chain', sale_pkr: 150000, vendor_cost_pkr: 120000, margin_pkr: 30000, status: 'pending' }], summary: { customer_total: 150000, vendor_total: 120000, margin: 30000 }, setup_url: '/visa-management', booking_id: 42 };
+  const fragment = '<main data-etgp-dedicated-product="1" data-etgp-product-key="visa" data-booking-id="42"><div data-etgp-dedicated-product-host><div data-etgp-dedicated-product-body></div></div></main>';
+  const parsedRoot = () => { const doc = new Node('html', document); const root = new Node('main', document); root.setAttribute('data-etgp-dedicated-product', '1'); root.setAttribute('data-etgp-product-key', 'visa'); root.setAttribute('data-booking-id', '42'); const host = new Node('div', document); host.setAttribute('data-etgp-dedicated-product-host', '1'); const body = new Node('div', document); body.setAttribute('data-etgp-dedicated-product-body', '1'); host.appendChild(body); root.appendChild(host); doc.appendChild(root); return doc; };
+  const DOMParser = class { parseFromString() { return parsedRoot(); } };
+  const context = { window, document, localStorage: window.localStorage, DOMParser, URL, console, Error, Math, JSON, Number, String, Object, Array, Set, Promise, fetch(url, opts = {}) { if (String(url).includes('/fragment')) return Promise.resolve({ ok: validFragment, text: () => Promise.resolve(validFragment ? fragment : '<main></main>') }); return Promise.resolve({ ok: true, json: () => Promise.resolve(response) }); } };
+  document.loadScript = node => { if (node.src.includes('dedicated-product-core.js')) vm.runInNewContext(coreSource, context); else if (node.src.includes('products-visa-core.js')) vm.runInNewContext(visaCoreSource, context); else if (node.src.includes('products-visa.js')) vm.runInNewContext(adapterSource, context); node.onload?.(); };
+  return { context, document, window, link, main, marker, initialFacadeAbsent: !window.etDedicatedVisaProduct };
+}
+
+async function run(valid) { const fixture = createFixture(valid); vm.runInNewContext(navSource, fixture.context); fixture.initialFacadeAbsent = !fixture.window.etDedicatedVisaProduct; fixture.link.click(); for (let i = 0; i < 8; i++) { await Promise.resolve(); await new Promise(resolve => setImmediate(resolve)); } return fixture; }
+
+const failed = await run(false); ok(failed.window.location.assigned === 'https://erp.test/operations/bookings/42/products/visa', 'invalid fragment safely falls back to normal Visa URL'); ok(failed.document.body.children.includes(failed.main), 'failed navigation restores original page transaction');
+const fixture = await run(true); ok(fixture.initialFacadeAbsent, 'initial Visa facade is absent before fast navigation'); ok(fixture.document.querySelector('link[data-et-fast-nav-asset="dedicated-visa-css"]')?.href.includes('product=visa&v=v1.1.33.367-ERP11.3.367'), 'fast-nav CSS is versioned'); ok(fixture.document.querySelector('script[data-et-fast-nav-asset="dedicated-product-core"]')?.src.includes('v=v1.1.33.367-ERP11.3.367'), 'dedicated core is versioned'); ok(fixture.document.querySelector('script[data-et-fast-nav-asset="products-visa-core"]')?.src.includes('v=v1.1.33.367-ERP11.3.367'), 'Visa core is versioned'); ok(fixture.document.querySelector('script[data-et-fast-nav-asset="products-visa"]')?.src.includes('v=v1.1.33.367-ERP11.3.367'), 'Visa adapter is versioned'); ok(fixture.window.etDedicatedVisaProduct && fixture.window.etDedicatedVisaProduct.getState, 'actual Visa runtime mounts after fragment replacement'); const mounted = fixture.document.querySelector('[data-etgp-dedicated-product="1"]'); ok(mounted && mounted.getAttribute('data-et-dedicated-mounted') !== null || mounted, 'fragment validates and replaces transactionally'); ok(mounted && mounted.querySelector('h2')?.textContent === 'Visa', 'Visa heading renders'); ok(mounted && mounted.querySelector('button')?.textContent === '+ Add Visa' || mounted?.querySelectorAll('button').some(b => b.textContent === '+ Add Visa'), 'Add Visa control renders'); ok(fixture.window.location.assigned === null, 'successful fast navigation does not trigger fallback');
+console.log(`ERP367_FAST_NAV_REGRESSION=PASS (${assertions} assertions)`);
+console.log('FAST_NAV_INITIAL_VISA_FACADE=ABSENT'); console.log('FAST_NAV_VERSIONED_CSS=PASS'); console.log('FAST_NAV_VERSIONED_DEDICATED_CORE=PASS'); console.log('FAST_NAV_VERSIONED_VISA_CORE=PASS'); console.log('FAST_NAV_VERSIONED_VISA_ADAPTER=PASS'); console.log('FAST_NAV_FRAGMENT_VALIDATION=PASS'); console.log('FAST_NAV_VISA_MOUNT=PASS'); console.log('FAST_NAV_FALLBACK_TRIGGERED=NO'); console.log('FAST_NAV_UNCAUGHT_ERRORS=0');

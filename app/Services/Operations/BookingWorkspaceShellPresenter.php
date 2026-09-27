@@ -206,6 +206,16 @@ final class BookingWorkspaceShellPresenter
         }
 
         $assetVersion = rawurlencode((string) config('et_erp_release.version', 'ERP-11.3'));
+        if (preg_match('#^operations/bookings/\d+/products/visa$#', $path) === 1
+            && ! str_contains($html, 'data-et-dedicated-visa-css="')
+            && stripos($html, '</head>') !== false
+        ) {
+            $visaDedicatedStyle = '<link rel="stylesheet" href="'
+                .e(route('system.erp-assets.erp-professional-css'))
+                .'?module=operations&role=focused&dedicated=1&product=visa&v='.$assetVersion
+                .'" data-et-dedicated-visa-css="'.$assetVersion.'">';
+            $html = preg_replace('/<\/head>/i', $visaDedicatedStyle."\n</head>", $html, 1) ?? $html;
+        }
         $script = '<script src="'
             .e(route('system.erp-assets.booking-focus'))
             .'?v=11.3.98" defer data-et-booking-focus-js="ERP-11.3.98"></script>';
