@@ -1,0 +1,47 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = p => fs.readFileSync(new URL('../../' + p, import.meta.url), 'utf8');
+let pass = 0;
+const ok = (condition, label) => { assert.ok(condition, label); pass++; };
+const core = read('public/erp-theme/js/products/visa-core.js');
+const css = read('public/erp-theme/css/products/visa.css');
+const adapter = read('public/erp-theme/js/products/visa.js');
+
+ok(core.includes("ui={query:'',status:'',page:1,pageSize:25"), 'pagination defaults to 25 rows');
+ok(core.includes('[25,50,100]'), 'page-size options are 25/50/100');
+ok(core.includes('filtered()') && core.includes('slice(start,start+ui.pageSize)'), 'filtering precedes pagination');
+ok(core.includes('Showing '+"'+from+'–'+to+' of '+list.length"), 'pagination reports visible range');
+ok(core.includes("placeholder='Search passengers'"), 'Add Visa passenger search exists');
+ok(core.includes("placeholder='Search country, type or provider'"), 'Add Visa rate search exists');
+ok(core.includes("c.type='checkbox'"), 'Add Visa uses explicit passenger selection');
+ok(core.includes("c.type='radio'"), 'Add Visa uses explicit rate selection');
+ok(!core.includes('(data.rates||[])[0]'), 'Add Visa never auto-selects the first rate');
+ok(!core.includes('Select a passenger and Visa Rate before adding.'), 'obsolete impossible Add Visa instruction is absent');
+ok(core.includes('No eligible passengers. Existing Visa passengers are already added.'), 'existing Visa passengers are disabled/excluded');
+ok(core.includes('ui.modal.passengers.forEach'), 'multi-passenger Add Visa is supported');
+ok(core.includes('rows.some(function(r){return Number(r.booking_passenger_id)===Number(p.id);})'), 'duplicate passenger Visa rows are prevented');
+ok(core.includes('selected=new Set()'), 'selection uses a stable set');
+ok(core.includes('headCheck.indeterminate='), 'header checkbox supports indeterminate state');
+ok(core.includes('visible.forEach(function(r){var k=String(r.booking_passenger_id||\'\')'), 'header selects visible page only');
+ok(core.includes('selected.size+\' selected\''), 'selected count is displayed');
+ok(core.includes('Clear Selection'), 'clear selection control exists');
+ok(core.includes('selected.has(String(r.booking_passenger_id||\'\'))'), 'selection persists across renders and filters');
+ok(core.includes('Set status…') && core.includes('Array.isArray(data.statuses)'), 'bulk status uses authoritative statuses');
+ok(core.includes('Status updated for selected Visa rows.'), 'bulk status feedback exists');
+ok(core.includes("'Details'"), 'row Details action exists');
+ok(core.includes('Application Ref') && core.includes('Visa No.') && core.includes('Issue Date') && core.includes('Expiry Date') && core.includes('Notes'), 'expanded details retain existing fields');
+ok(!core.includes("'·'"), 'placeholder action dot is removed');
+ok(core.includes('Customer Total') && core.includes('Vendor Total') && core.includes('Margin'), 'summary totals are presented');
+ok(core.includes('etgp-visa-mobile-card-366'), 'mobile card presentation exists');
+ok(css.includes('@media(max-width:600px)') && css.includes('.etgp-visa-mobile-card-366'), 'mobile responsive layout exists');
+ok(css.includes('grid-template-columns:32px') && css.includes('76px'), 'desktop grid provides ten aligned tracks');
+ok(css.includes('font-variant-numeric:tabular-nums') && css.includes('white-space:nowrap'), 'financial columns use compact numeric styling');
+ok(core.includes('saveInFlight') && core.includes('save.disabled=!state.dirty||state.saveInFlight'), 'save loading and clean-state protection exists');
+ok(core.includes('clearDraft(id)') && core.includes('setProductResponse'), 'successful save clears draft and refreshes cache');
+ok(core.includes('catch(function(e){ui.feedback={kind:\'error\''), 'save errors preserve draft and show feedback');
+ok(adapter.includes('beforeunload') && adapter.includes('popstate'), 'unsaved navigation guard remains');
+ok(!adapter.includes('general-progressive-step1') && !core.includes('general-progressive-step1'), 'dedicated Visa excludes GENERAL progressive runtime');
+ok(core.includes('request(id,\'PUT\',body)') && !core.includes('request(id,\'GET\') inside'), 'save and load use centralized request authority');
+
+console.log(`VISA_WORKSPACE_UI_REGRESSION=PASS (${pass} assertions)`);
