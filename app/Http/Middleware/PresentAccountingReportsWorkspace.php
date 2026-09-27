@@ -81,7 +81,8 @@ final class PresentAccountingReportsWorkspace
         $html = $this->enrichCashVoucherRows($html);
         $html = $this->enrichSupplierCostingRows($html);
         $html = $this->replaceNativeFilter($request, $html);
-        $html = $this->injectManagementReportingNavigation($html);
+        $html = $this->removeLegacyReportsHeading($html);
+        $html = $this->injectManagementReportingNavigation($request, $html);
         $html = $this->reconcilePartyControlLedger($request, $html);
         $html = $this->reconcileGeneralLedgerAccountFilter($request, $html);
         $html = $this->formatLedgerAmounts($html);
@@ -467,7 +468,6 @@ final class PresentAccountingReportsWorkspace
 .et-rf-actions{display:grid;grid-template-columns:minmax(125px,1fr) 74px;gap:8px;min-width:0}
 .et-rf-btn{height:42px;min-width:0;padding:0 12px;border:1px solid #ccd7e4;border-radius:7px;background:#fff;color:#26384e!important;text-decoration:none!important;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;cursor:pointer}
 .et-rf-btn.primary{background:#0964df;border-color:#0964df;color:#fff!important}
-.et-rf-note{margin-top:8px;font-size:9.5px;color:#7a899b;line-height:1.45}
 .et-rf-balance{white-space:nowrap!important;font-weight:800!important}
 .et-rf-subject-hidden{display:none!important}
 @media(max-width:1180px){
@@ -486,7 +486,13 @@ HTML;
             ? ' et-rf-subject-hidden'
             : '';
 
+        $emptyPreview = stripos($html, '<table') === false
+            ? '<section class="et-rf-empty-preview" data-et-report-empty-preview="1"><h2>Report Preview</h2><p>Choose a report type and filters, then click Apply &amp; Preview.</p></section>'
+            : '';
+
         $form = $style
+            .'<section class="et-accounting-reports-workspace" data-et-accounting-reports-workspace="1">'
+            .'<h1 class="et-accounting-reports-title">Accounting Reports</h1>'
             .'<form class="et-rf" data-et-report-filter="ERP-11.3.34"'
             .' data-party-field="'.e($partyName).'"'
             .' data-account-field="'.e($accountName).'"'
@@ -507,9 +513,10 @@ HTML;
             .'<a class="et-rf-btn" href="'.e(route('accounting.reports.index')).'">Reset</a>'
             .'</div>'
             .'</div>'
-            .'<div class="et-rf-note">Choose the report, then the matching Vendor, Customer or Account. The second list changes instantly; no preliminary Apply step is required.</div>'
             .'<script type="application/json" data-et-report-datasets="ERP-11.3.34">'.$json.'</script>'
-            .'</form>';
+            .'</form>'
+            .$emptyPreview
+            .'</section>';
 
         $html = substr_replace(
             $html,
@@ -530,7 +537,22 @@ HTML;
         return $html;
     }
 
-    private function injectManagementReportingNavigation(string $html): string
+    private function removeLegacyReportsHeading(string $html): string
+    {
+        $html = preg_replace(
+            '/<h1\b[^>]*>\s*ERP-09\.3\s*[·•-]\s*REPORTS\s*&amp;\s*PRINT\s+CENTER\s*<\/h1>/is',
+            '',
+            $html
+        ) ?? $html;
+
+        return preg_replace(
+            '/<p\b[^>]*>\s*Report headers use\s+Organization\s*&\s*Fiscal\s+Context\s*\/\s*Company\s*Profile\s*data\.[\s\S]*?original source document\.\s*<\/p>/is',
+            '',
+            $html
+        ) ?? $html;
+    }
+
+    private function injectManagementReportingNavigation(Request $request, string $html): string
     {
         if (str_contains($html, 'data-et-management-report-nav=')) {
             return $html;
@@ -557,21 +579,33 @@ HTML;
         $release = (string) config('et_erp_release.release', 'ERP-11.3');
         $navigation = <<<'HTML'
 <style data-et-management-report-nav-style="__RELEASE__">
-.et-management-report-nav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 13px;padding:10px;border:1px solid #dbe4ef;border-radius:9px;background:#f8fafc}
-.et-management-report-nav a{display:inline-flex;align-items:center;min-height:34px;padding:7px 11px;border:1px solid #d3deea;border-radius:7px;background:#fff;color:#29415f!important;text-decoration:none!important;font-size:10px;font-weight:850}
+.et-management-report-nav{display:flex;flex-wrap:nowrap;gap:6px;width:100%;margin:0 0 13px;padding:10px;border:1px solid #dbe4ef;border-radius:9px;background:#f8fafc;overflow-x:auto;white-space:nowrap;box-sizing:border-box}
+.et-management-report-nav a{display:inline-flex;flex:0 0 auto;align-items:center;min-height:34px;padding:7px 11px;border:1px solid #d3deea;border-radius:7px;background:#fff;color:#29415f!important;text-decoration:none!important;font-size:10px;font-weight:850}
+.et-management-report-nav a.active{border-color:#1769d2;color:#1769d2!important;box-shadow:inset 0 -2px 0 #1769d2}
 .et-management-report-nav a:hover{border-color:#1769d2;color:#1769d2!important}
-@media(max-width:650px){.et-management-report-nav a{flex:1 1 calc(50% - 6px);justify-content:center;text-align:center}}
 @media print{.et-management-report-nav{display:none!important}}
 </style>
 <nav class="et-management-report-nav" data-et-management-report-nav="__RELEASE__" aria-label="Management accounting reports">__LINKS__</nav>
 HTML;
+        $items = str_replace(
+            'href="'.e(route('accounting.reports.index')).'"',
+            'class="active" href="'.e(route('accounting.reports.index')).'"',
+            $items
+        );
         $navigation = str_replace(['__LINKS__', '__RELEASE__'], [$items, e($release)], $navigation);
 
-        if (preg_match('/<form\b/i', $html, $match, PREG_OFFSET_CAPTURE)) {
-            return substr_replace($html, $navigation, $match[0][1], 0);
+        if (! preg_match(
+            '/(<section\b[^>]*data-et-accounting-reports-workspace="1"[^>]*>\s*<h1\b[^>]*>Accounting Reports<\/h1>)/is',
+            $html,
+            $match,
+            PREG_OFFSET_CAPTURE
+        )) {
+            return $html;
         }
 
-        return $navigation.$html;
+        $position = $match[0][1] + strlen($match[0][0]);
+
+        return substr_replace($html, $navigation, $position, 0);
     }
 
     private function controlAfterLabel(string $form, callable $matches): ?array

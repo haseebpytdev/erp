@@ -1,14 +1,21 @@
-ERP-11.3.363 Party Statement ERP Screen Fit Corrective
+ERP-11.3.364 Accounting Reports Workspace UI Corrective
 
-Active release: v1.1.33.363-ERP11.3.363
-CURRENT_LIVE_RELEASE=ERP-11.3.362
-CURRENT_LIVE_VERSION=v1.1.33.362-ERP11.3.362
+Active release: v1.1.33.364-ERP11.3.364
+CURRENT_LIVE_RELEASE=ERP-11.3.363
+CURRENT_LIVE_VERSION=v1.1.33.363-ERP11.3.363
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.363 is FINALIZED / NOT DEPLOYED.
-ERP-11.3.363 has NOT yet been packaged.
-ERP-11.3.362 remains current production.
-LAST_PACKAGED_RELEASE=ERP-11.3.362
+ERP-11.3.364 is NOT FINALIZED / NOT DEPLOYED.
+ERP-11.3.364 has NOT yet been packaged.
+ERP-11.3.363 remains current production.
+LAST_PACKAGED_RELEASE=ERP-11.3.363
+
+ERP-11.3.364 keeps the global ERP header unchanged. Accounting Reports
+navigation appears inside the content workspace below the single Accounting
+Reports heading. Verify the six-link navigation, responsive filter card,
+compact Report Preview empty state, and Ledger Reports active state. Party
+Statement screen/print and source-document drilldowns remain unchanged. No
+accounting, posting, schema or migration change is included.
 
 ERP-11.3.363 keeps the established Party Statement financial and source-link
 authority while fitting the screen preview to the ERP workspace. Verify after
