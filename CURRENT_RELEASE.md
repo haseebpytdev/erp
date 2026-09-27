@@ -6,13 +6,13 @@ CURRENT_LIVE_RELEASE=ERP-11.3.362
 CURRENT_VERSION=ERP-11.3.363
 APPLICATION_VERSION=v1.1.33.363-ERP11.3.363
 CURRENT_LIVE_VERSION=v1.1.33.362-ERP11.3.362
-CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.362 LIVE; ERP-11.3.363 DEVELOPMENT / NOT DEPLOYED.
+PRODUCTION_STATUS=ERP-11.3.362 LIVE; ERP-11.3.363 FINALIZED / NOT DEPLOYED.
 LAST_PACKAGED_RELEASE=ERP-11.3.362
 ```
 
@@ -20,11 +20,22 @@ ERP-11.3.363 Party Statement ERP Screen Fit Corrective
 
 ERP-11.3.363 makes the on-screen Party Statement preview use the full ERP
 workspace width with responsive filters, readable table cells and controlled
-narrow-screen table scrolling. A4 portrait print geometry, source-document
+narrow-screen table scrolling. Physical A4 constraints are removed from the
+ERP screen only, avoiding a large blank screen tail. The 9-column screen
+layout remains 8 / 4 / 9 / 11 / 13 / 26 / 9 / 9 / 11 with improved font
+readability and vertical separation. A4 portrait print geometry, source-document
 links, period/type filters, journal authority, accounting formulas, posting,
 schema and migration behavior remain unchanged. NEW_MIGRATION_REQUIRED=NO.
 
 363_PARTY_STATEMENT_SCREEN_FIT_REGRESSION=PASS (37 assertions)
+362_PARTY_STATEMENT_REGRESSION=PASS (57)
+356_UI_REGRESSION=PASS (39)
+CUSTOMER_LEDGER_REGRESSION=PASS (37)
+357_PARTY_STATEMENT_REGRESSION=PASS (53)
+UNEXPECTED_FAILURES=0
+PRINT_VIEW_CHANGED=NO
+PRINT_PRESENTATION_REGRESSION=NO
+SOURCE_DRILLDOWN_LOGIC_CHANGED=NO
 ACCOUNTING_LOGIC_CHANGED=NO
 JOURNAL_POSTING_CHANGED=NO
 DATABASE_SCHEMA_CHANGED=NO

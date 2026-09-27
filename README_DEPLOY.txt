@@ -5,16 +5,18 @@ CURRENT_LIVE_RELEASE=ERP-11.3.362
 CURRENT_LIVE_VERSION=v1.1.33.362-ERP11.3.362
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.363 is NOT FINALIZED / NOT DEPLOYED. It has NOT yet been packaged.
+ERP-11.3.363 is FINALIZED / NOT DEPLOYED.
+ERP-11.3.363 has NOT yet been packaged.
 ERP-11.3.362 remains current production.
 LAST_PACKAGED_RELEASE=ERP-11.3.362
 
 ERP-11.3.363 keeps the established Party Statement financial and source-link
-authority while fitting the screen preview to the ERP workspace. Verify the
-responsive filter grid, full-width KPI and preview card, readable nine-column
-statement, and controlled narrow-screen table scrolling after certification.
-The A4 portrait print view remains unchanged. No accounting, posting, schema or
-migration change is included.
+authority while fitting the screen preview to the ERP workspace. Verify after
+certification that the Party Statement fills the ERP workspace, filters/KPIs/
+preview align, the large blank A4 screen tail is gone, the nine-column ledger is
+readable with no cell overlap, AIR descriptions do not collide with Debit, and
+valid source links remain operational. Print/PDF remains identical to accepted
+.362 behavior. No accounting, posting, schema or migration change is included.
 
 ERP-11.3.360 Party Statement Combined Live Fix
 
