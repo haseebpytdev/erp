@@ -208,7 +208,7 @@ final class PartyStatementEnrichmentResolver
                 $passengerIds = $this->identityIds($passenger, ['id', 'passenger_id', 'booking_passenger_id', 'passenger_detail_id', 'detail_id']);
                 $ticket = '';
                 foreach ($tickets as $candidate) {
-                    $candidateIds = $this->identityIds($candidate, ['id', 'passenger_id', 'booking_passenger_id', 'passenger_detail_id', 'detail_id']);
+                    $candidateIds = $this->identityIds($candidate, ['passenger_id', 'booking_passenger_id', 'passenger_detail_id', 'detail_id', 'booking_traveller_id', 'booking_traveler_id', 'traveller_id', 'traveler_id']);
                     if ($passengerIds !== [] && $candidateIds !== [] && array_intersect($passengerIds, $candidateIds) !== []) { $ticket = (string) ($candidate['ticket_number'] ?? $candidate['ticket_no'] ?? $candidate['e_ticket_number'] ?? $candidate['document_number'] ?? ''); break; }
                 }
                 $out[] = ['party' => $name !== '' ? $name : '—', 'service_ref' => $ticket !== '' ? $ticket : '—'];
@@ -339,8 +339,16 @@ final class PartyStatementEnrichmentResolver
         $keys = ['visa'=>['country','visa_type'], 'transport'=>['route','vehicle','transport_company'], 'umrah_package'=>['package_name','package_code','package']][$family];
         foreach ($this->familyRows($family, $bookingId) as $item) { $parts=[]; foreach($keys as $key) if(trim((string)($item[$key]??''))!=='') $parts[]=(string)$item[$key]; if($parts)return implode(' · ',$parts); }
       }
+      $voucherKind = strtolower(trim((string) ($source['row']['voucher_type'] ?? $row['voucher_type'] ?? '')));
+      $isAdvance = in_array($voucherKind, ['customer_advance', 'supplier_advance'], true) || str_contains($voucherKind, 'advance');
+      if ($isAdvance) {
+        foreach (['description','narration','remarks','memo','notes'] as $k) {
+            $value = trim((string) ($row[$k] ?? $source['row'][$k] ?? ''));
+            if ($value !== '' && ! preg_match('/^advance\s+context$/i', preg_replace('/\s+/', ' ', $value))) return $value;
+        }
+        return 'Advance';
+      }
       foreach (['description','narration','remarks','memo','notes'] as $k) if(trim((string)($row[$k]??''))!=='') return (string)$row[$k];
-      if (in_array(strtolower((string) (($row['voucher_type'] ?? ($source['row']['voucher_type'] ?? '')))), ['customer_advance', 'supplier_advance'], true)) return 'Advance';
       if (str_contains((string)($source['table'] ?? ''), 'advance_adjust')) {
         $target = (string)($row['target_number'] ?? $row['target_reference'] ?? '');
         if ($target !== '') return 'Advance adjustment · '.$target;
@@ -348,7 +356,6 @@ final class PartyStatementEnrichmentResolver
       $descriptions = ['hotel'=>['hotel_name','property_name','hotel','city'], 'visa'=>['visa_type','country','destination_country'], 'transport'=>['route','vehicle','transport_company'], 'umrah_package'=>['package_name','package','vendor']];
       foreach (($descriptions[$family] ?? []) as $k) if (trim((string)($row[$k] ?? '')) !== '') return (string)$row[$k];
       foreach (['origin','origin_code','from','destination','destination_code','to','sector','route'] as $k) if(trim((string)($row[$k]??''))!=='') return strtoupper((string)$row[$k]);
-      $voucherKind = strtolower((string) ($source['row']['voucher_type'] ?? ''));
       if (str_contains($voucherKind, 'receipt')) return 'Receipt';
       if (str_contains($voucherKind, 'payment')) return 'Payment';
       if($product!=='—') return $product.' context'; return $reference ?: 'Journal'; }
