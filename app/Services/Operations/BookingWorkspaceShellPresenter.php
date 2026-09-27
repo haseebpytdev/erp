@@ -215,6 +215,7 @@ final class BookingWorkspaceShellPresenter
             if (preg_match('#^operations/bookings/\d+/products/air$#', $path) === 1) {
                 $script .= '<script src="'.e(route('system.erp-assets.products-air')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-air="'.$assetVersion.'"></script>';
             } elseif (preg_match('#^operations/bookings/\d+/products/visa$#', $path) === 1) {
+                $script .= '<script src="'.e(route('system.erp-assets.products-visa-core')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-visa-core="'.$assetVersion.'"></script>';
                 $script .= '<script src="'.e(route('system.erp-assets.products-visa')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-visa="'.$assetVersion.'"></script>';
             }
         }

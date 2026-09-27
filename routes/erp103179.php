@@ -208,6 +208,8 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         ->name('system.erp-assets.products-air');
     Route::get('/system/erp-assets/products-visa.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisa'])
         ->name('system.erp-assets.products-visa');
+    Route::get('/system/erp-assets/products-visa-core.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisaCore'])
+        ->name('system.erp-assets.products-visa-core');
     Route::get('/system/erp-assets/dedicated-product-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedNavigation'])
         ->name('system.erp-assets.dedicated-product-navigation');
     Route::get('/system/erp-assets/dedicated-visa-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisaNavigation'])

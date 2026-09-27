@@ -28,6 +28,8 @@ final class GeneralBookingVisaProductController extends Controller
 
     /** @var list<array{id:int,name:string}>|null */
     private ?array $vendorOptionsCache = null;
+    /** @var array{saudi:array<int,string>,iata:array<int,string>}|null */
+    private ?array $legacyProviderSnapshots = null;
 
     public function __construct(
         private readonly LegacyVisaTravelMasterRepository $visaMasters,
@@ -42,15 +44,16 @@ final class GeneralBookingVisaProductController extends Controller
         $this->assertSchema();
 
         $passengers = $timing?->measure('visa_passengers', fn (): array => $this->bookingPassengers($booking)) ?? $this->bookingPassengers($booking);
-        $rows = DB::table('booking_visa_services')
+        $rows = $timing?->measure('visa_rows', fn (): array => DB::table('booking_visa_services')
             ->where('booking_id', $booking)
             ->orderBy('id')
             ->get()
             ->map(fn (object $row): array => $this->presentRow((array) $row, $passengers))
             ->values()
-            ->all();
+            ->all()) ?? DB::table('booking_visa_services')->where('booking_id', $booking)->orderBy('id')->get()->map(fn (object $row): array => $this->presentRow((array) $row, $passengers))->values()->all();
+        $timing?->addDuration('visa_fx', 0.0);
 
-        $response = response()->json([
+        $response = $timing?->measure('visa_presentation', fn (): JsonResponse => response()->json([
             'ok' => true,
             'booking_id' => $booking,
             'currency' => 'PKR',
@@ -65,6 +68,11 @@ final class GeneralBookingVisaProductController extends Controller
             'statuses' => $this->statusOptions(),
             'summary' => $this->summary($rows),
             'setup_url' => route('travel-masters.visa-management', ['booking' => $booking]),
+        ])) : response()->json([
+            'ok' => true, 'booking_id' => $booking, 'currency' => 'PKR', 'passengers' => $passengers,
+            'visa_rows' => $rows, 'saudi_companies' => [], 'pakistani_iatas' => [],
+            'rates' => $this->rateCards(), 'vendors' => $this->vendorOptions(), 'statuses' => $this->statusOptions(),
+            'summary' => $this->summary($rows), 'setup_url' => route('travel-masters.visa-management', ['booking' => $booking]),
         ]);
         $timing?->stop('visa_controller_total');
         return $timing ? $timing->finishResponse($response) : $response;
@@ -315,8 +323,7 @@ final class GeneralBookingVisaProductController extends Controller
                 $currency = $this->normalizeCurrency((string) ($data['cost_currency'] ?? 'SAR'));
                 $fx = $this->exchangeRateToPkr($currency);
                 $costRate = round((float) ($data['cost_rate'] ?? 0), 4);
-                $saudiName = trim((string) ($data['saudi_company_name_snapshot'] ?? ''));
-                $iataName = trim((string) ($data['pakistani_iata_name_snapshot'] ?? ''));
+                [$saudiName, $iataName] = $this->providerSnapshots($data);
                 return [
                     'id' => (int) $data['id'], 'country' => (string) $data['country'], 'visa_type' => (string) $data['visa_type'],
                     'provider_type' => $provider, 'provider_name' => $provider === 'DIRECT_VENDOR' ? $vendorName : $saudiName,
@@ -339,8 +346,7 @@ final class GeneralBookingVisaProductController extends Controller
         $vendorRow = collect($this->vendorOptions())->firstWhere('id', (int) ($row['vendor_id'] ?? 0));
         $vendorName = is_array($vendorRow) ? (string) ($vendorRow['name'] ?? '') : '';
         $provider = strtoupper(trim((string) ($row['provider_type'] ?? 'KSA_CHAIN')));
-        $saudiName = trim((string) ($row['saudi_company_name_snapshot'] ?? ''));
-        $iataName = trim((string) ($row['pakistani_iata_name_snapshot'] ?? ''));
+        [$saudiName, $iataName] = $this->providerSnapshots($row);
         $vendorName = trim((string) ($row['vendor_name_snapshot'] ?? '')) ?: $vendorName;
         return $row + [
             'passenger_name' => (string) ($pax['name'] ?? ''),
@@ -376,6 +382,26 @@ final class GeneralBookingVisaProductController extends Controller
         } catch (Throwable) {
             return $this->vendorOptionsCache = [];
         }
+    }
+
+    /** Resolve incomplete legacy KSA snapshots once per request, never per row. */
+    private function providerSnapshots(array $row): array
+    {
+        $saudi = trim((string) ($row['saudi_company_name_snapshot'] ?? ''));
+        $iata = trim((string) ($row['pakistani_iata_name_snapshot'] ?? ''));
+        if ($saudi !== '' && $iata !== '') return [$saudi, $iata];
+        if ($this->legacyProviderSnapshots === null) {
+            $this->legacyProviderSnapshots = ['saudi' => [], 'iata' => []];
+            try {
+                foreach ($this->visaMasters->saudiCompanies() as $item) {
+                    $id = (int) ($item['id'] ?? 0); if ($id > 0) $this->legacyProviderSnapshots['saudi'][$id] = trim((string) ($item['name'] ?? ''));
+                    $iataId = (int) ($item['pakistani_iata_id'] ?? 0); if ($iataId > 0) $this->legacyProviderSnapshots['iata'][$iataId] = trim((string) ($item['pakistani_iata_name'] ?? ''));
+                }
+            } catch (Throwable) { /* snapshots remain authoritative when legacy tables are unavailable */ }
+        }
+        $saudi = $saudi ?: (string) ($this->legacyProviderSnapshots['saudi'][(int) ($row['saudi_company_id'] ?? 0)] ?? '');
+        $iata = $iata ?: (string) ($this->legacyProviderSnapshots['iata'][(int) ($row['pakistani_iata_id'] ?? 0)] ?? '');
+        return [$saudi, $iata];
     }
 
     /** @return list<string> */

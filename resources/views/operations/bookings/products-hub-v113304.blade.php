@@ -17,6 +17,7 @@
  <section class="etgp-step1 et-products-runtime-root" data-etgp-products-runtime="1" data-booking-id="{{ $bookingId }}" data-booking-reference="{{ $booking['booking_reference'] ?? $booking['booking_no'] ?? ('Booking #'.$bookingId) }}" data-currency="{{ $booking['currency'] ?? 'PKR' }}" data-etgp-booking-locked="{{ $lock['locked'] ? '1' : '0' }}" data-etgp-selected-products="{{ implode(',', $selected) }}"><div data-etgp-product-buttons></div><div data-etgp-product-shells></div></section>
 </main>
 <link rel="stylesheet" href="{{ url('/system/erp-assets/general-progressive-step1.css') }}">
+<script src="{{ url('/system/erp-assets/products-visa-core.js') }}?v={{ rawurlencode(config('et_erp_release.version', 'ERP-11.3')) }}"></script>
 <script src="{{ url('/system/erp-assets/general-progressive-step1.js') }}"></script>
 <script>document.addEventListener('DOMContentLoaded',function(){var root=document.querySelector('[data-etgp-products-runtime]');if(root&&window.etgpRenderProducts113305){window.etgpRenderProducts113305(root,root.dataset.bookingReference,0);}document.querySelectorAll('.et-ph-card a[href*="#"]').forEach(function(link){var hash=link.hash;if(hash)link.href=window.location.pathname+hash;});});</script>
 @endsection

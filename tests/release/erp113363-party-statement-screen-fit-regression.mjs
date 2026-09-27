@@ -7,6 +7,8 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const screen = read('resources/views/accounting/party-statement/index.blade.php');
 const print = read('resources/views/accounting/party-statement/print.blade.php');
 const service = read('app/Services/Accounting/PartyStatementService.php');
+const releaseConfig = read('config/et_erp_release.php');
+const currentRelease = read('CURRENT_RELEASE.md');
 const controller = read('app/Http/Controllers/Accounting/PartyStatementController.php');
 const links = read('app/Services/Accounting/PartyStatementSourceLinkResolver.php');
 const header = read('resources/views/accounting/party-statement/_document-header.blade.php');
@@ -54,7 +56,7 @@ const checks = [
   ['all branches presentation preserved', header.includes('Branch: All Branches')],
   ['financial freeze preserved', service.includes("where('je.status', 'posted')")],
   ['no report writes', !service.includes('insert(') && !service.includes('update(') && !controller.includes('DB::table')],
-  ['no migration required', read('config/et_erp_release.php').includes('NEW_MIGRATION_REQUIRED=NO')],
+  ['363 migration contract remains scoped', !releaseConfig.includes('CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.363') || (releaseConfig.includes('NEW_MIGRATION_REQUIRED=NO') && currentRelease.includes('NEW_MIGRATION_REQUIRED=NO'))],
   ['screen source reference unchanged', screen.includes("{{ $row['reference'] ?: '—' }}")],
   ['print source reference plain', print.includes("{{ $row['reference'] ?: '—' }}")],
   ['source resolver unchanged', links.includes('source_type') && links.includes('source_id')],

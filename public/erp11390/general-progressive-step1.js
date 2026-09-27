@@ -2350,15 +2350,17 @@ var etgpAirFlushVisibleDraft113126=function(){
  * Approved two-step Add Visa wizard + compact main-row operations.
  * Saudi Company -> Pakistani IATA -> Vendor is authoritative and reporting-only.
  * ====================================================================== */
-var etgpVisaDraftKey113142=function(bookingId){return 'etgp-visa-product-draft-v113142:'+String(bookingId||'');};
-var etgpVisaDraftRead113142=function(bookingId){try{var raw=localStorage.getItem(etgpVisaDraftKey113142(bookingId));return raw?JSON.parse(raw):null;}catch(e){return null;}};
-var etgpVisaDraftWrite113142=function(bookingId,payload){try{localStorage.setItem(etgpVisaDraftKey113142(bookingId),JSON.stringify(payload||{}));}catch(e){}};
-var etgpVisaDraftClear113142=function(bookingId){try{localStorage.removeItem(etgpVisaDraftKey113142(bookingId));}catch(e){}};
+var etgpVisaShared113142=window.etVisaCore||{};
+var etgpVisaDraftKey113142=function(bookingId){return etgpVisaShared113142.draftKey?etgpVisaShared113142.draftKey(bookingId):'etgp-visa-product-draft-v113142:'+String(bookingId||'');};
+var etgpVisaDraftRead113142=function(bookingId){if(etgpVisaShared113142.readDraft)return etgpVisaShared113142.readDraft(bookingId);try{var raw=localStorage.getItem(etgpVisaDraftKey113142(bookingId));return raw?JSON.parse(raw):null;}catch(e){return null;}};
+var etgpVisaDraftWrite113142=function(bookingId,payload){if(etgpVisaShared113142.writeDraft){etgpVisaShared113142.writeDraft(bookingId,payload);return;}try{localStorage.setItem(etgpVisaDraftKey113142(bookingId),JSON.stringify(payload||{}));}catch(e){}};
+var etgpVisaDraftClear113142=function(bookingId){if(etgpVisaShared113142.clearDraft){etgpVisaShared113142.clearDraft(bookingId);return;}try{localStorage.removeItem(etgpVisaDraftKey113142(bookingId));}catch(e){}};
 var etgpVisaSignature113142=function(payload){try{return JSON.stringify(payload||{});}catch(e){return '';}};
 var etgpVisaMoney113142=function(v){var n=Number(String(v===undefined||v===null?'0':v).replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;};
 var etgpVisaMoneyText113142=function(v){return 'PKR '+etgpVisaMoney113142(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});};
 var etgpVisaError113142=function(data,fallback){if(data&&data.errors){var keys=Object.keys(data.errors);if(keys.length){var v=data.errors[keys[0]];return Array.isArray(v)?String(v[0]||fallback):String(v||fallback);}}return String((data&&data.message)||fallback||'Visa request failed.');};
 var etgpVisaRequest113142=function(bookingId,method,payload){
+  if(etgpVisaShared113142.request)return etgpVisaShared113142.request(bookingId,method,payload);
   var options={method:method||'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}};
   if(method&&method!=='GET'){options.headers['Content-Type']='application/json';options.headers['X-CSRF-TOKEN']=etgpCsrf11397();options.body=JSON.stringify(payload||{});}
   return fetch('/system/erp-bookings/'+bookingId+'/visa-product',options).then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||data.ok===false)throw new Error(etgpVisaError113142(data,'Visa request failed.'));return data;});});
