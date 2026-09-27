@@ -11,12 +11,12 @@ adds product-aware Hotel, Visa, Transport and Umrah summaries. ERP-11.3.358
 financial projection and financial-year advance visibility remain unchanged.
 No posting, database schema or migration changes are included.
 
-Active release: v1.1.33.361-ERP11.3.361
-CURRENT_LIVE_RELEASE=ERP-11.3.360
+Active release: v1.1.33.362-ERP11.3.362
+CURRENT_LIVE_RELEASE=ERP-11.3.361
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.361 is FINALIZED / NOT DEPLOYED. It has not been packaged; do not
-claim package creation or deployment until the separate package gate passes.
+ERP-11.3.362 is the active development release. It is not finalized, packaged,
+or deployed. ERP-11.3.361 is currently live.
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT
 DEPLOYMENT AUTHORITY IS THE HEADER ABOVE.

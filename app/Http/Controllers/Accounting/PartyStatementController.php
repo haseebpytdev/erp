@@ -29,6 +29,6 @@ final class PartyStatementController extends Controller
         $filters = $this->statements->filters($request);
         abort_if($filters['partyId'] <= 0, 422, 'Select a party before printing.');
         $party = collect($filters['parties'])->first(fn (array $row): bool => (int) ($row['id'] ?? 0) === (int) $filters['partyId']);
-        return view('accounting.party-statement.print', ['statement' => $this->statements->statement($filters), 'party' => $party, 'companyProfile' => $this->companyProfile->get()]);
+        return view('accounting.party-statement.print', ['statement' => $this->statements->statement($filters), 'filters' => $filters, 'party' => $party, 'companyProfile' => $this->companyProfile->get()]);
     }
 }

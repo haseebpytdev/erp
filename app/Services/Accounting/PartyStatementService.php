@@ -16,6 +16,7 @@ final class PartyStatementService
         private readonly ChartOfAccountsWorkspaceService $chart,
         private readonly UnifiedGroupPackageDataSource $bookingData,
         private readonly PartyStatementEnrichmentResolver $enrichment,
+        private readonly PartyStatementSourceLinkResolver $sourceLinks,
     ) {}
 
     public function filters(Request $request): array
@@ -61,6 +62,7 @@ final class PartyStatementService
             // Enrichment is deliberately applied after journal netting and balance
             // calculation: it can only add display metadata, never financial data.
             $row = array_merge($row, $this->enrichment->resolve($row));
+            $row = array_merge($row, $this->sourceLinks->resolve($row) ?? ['source_url' => null, 'source_linkable' => false]);
             $passengerRows = $row['passenger_rows'] ?? [];
             unset($row['passenger_rows']);
             if (count($passengerRows) < 2) { $out[] = $row; continue; }
