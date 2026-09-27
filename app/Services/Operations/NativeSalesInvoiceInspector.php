@@ -97,6 +97,33 @@ class NativeSalesInvoiceInspector
         return $this->summary($bookingId)['latest'] ?? null;
     }
 
+    /** Resolve one native Sales Invoice by an exact authoritative document number. */
+    public function findExactByNumber(string $reference): ?array
+    {
+        $reference = trim($reference);
+        if ($reference === '') return null;
+
+        $matches = [];
+        foreach ($this->candidateTables() as $table) {
+            if (! Schema::hasTable($table)) continue;
+            try { $columns = Schema::getColumnListing($table); } catch (\Throwable) { continue; }
+            $idColumn = $this->first($columns, ['id', 'sales_invoice_id', 'invoice_id']);
+            if (! $idColumn) continue;
+            foreach (['invoice_number','invoice_no','invoice_reference','reference_no','reference','number','document_no'] as $numberColumn) {
+                if (! in_array($numberColumn, $columns, true)) continue;
+                try { $rows = DB::table($table)->where($numberColumn, '=', $reference)->get([$idColumn, $numberColumn]); }
+                catch (\Throwable) { continue; }
+                foreach ($rows as $row) {
+                    $id = (int) (($row->{$idColumn} ?? null));
+                    if ($id <= 0) continue;
+                    $key = $table.'#'.$id;
+                    $matches[$key] = ['table' => $table, 'id' => $id, 'number' => trim((string) ($row->{$numberColumn} ?? $reference))];
+                }
+            }
+        }
+        return count($matches) === 1 ? array_values($matches)[0] : null;
+    }
+
     public function action(int $bookingId): array
     {
         $invoice = $this->find($bookingId);
