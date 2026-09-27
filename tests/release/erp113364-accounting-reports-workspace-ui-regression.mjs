@@ -12,6 +12,18 @@ const current = read('CURRENT_RELEASE.md');
 const base = '35f47ac17a9ebe635ff839e8e21666eaf6606d5d';
 const changed = execFileSync('git', ['diff', '--name-only', `${base}..HEAD`], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean);
 const inject = middleware.slice(middleware.indexOf('private function injectManagementReportingNavigation'), middleware.indexOf('private function controlAfterLabel'));
+const resolveBoundary = (html) => {
+  const workspaces = [...html.matchAll(/<section\b[^>]*data-et-accounting-reports-workspace(?:="[^"]*")?[^>]*>/gi)];
+  if (workspaces.length !== 1) return null;
+  const start = workspaces[0].index;
+  const rest = html.slice(start);
+  const end = rest.indexOf('</section>');
+  if (end < 0) return null;
+  const workspace = rest.slice(0, end + '</section>'.length);
+  const filters = [...workspace.matchAll(/<form\b[^>]*data-et-report-filter(?:="[^"]*")?[^>]*>/gi)];
+  return filters.length === 1 ? workspace : null;
+};
+const validFixture = '<section data-et-accounting-reports-workspace="1"><h1>Accounting Reports</h1><form data-et-report-filter="1"></form></section>';
 
 const checks = [
   ['global layout untouched', changed.every((file) => !file.startsWith('resources/views/layouts/'))],
@@ -48,6 +60,16 @@ const checks = [
   ['no accounting writes', !middleware.includes('DB::insert') && !middleware.includes('DB::update')],
   ['no migration', release.includes('NEW_MIGRATION_REQUIRED=NO') && current.includes('NEW_MIGRATION_REQUIRED=NO')],
   ['target metadata', release.includes('ERP-11.3.364') && current.includes('CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.364')],
+  ['strict workspace count', middleware.includes('preg_match_all($markerPattern') && middleware.includes('!== 1')],
+  ['strict filter count', middleware.includes('preg_match_all($filterPattern') && middleware.includes('!== 1')],
+  ['scoped filter boundary', middleware.includes('$workspaceHtml') && middleware.includes('sectionRange')],
+  ['zero workspace fail closed', resolveBoundary('<main><form data-et-report-filter="1"></form></main>') === null],
+  ['single workspace proceeds', resolveBoundary(validFixture) !== null],
+  ['multiple workspace fail closed', resolveBoundary(`${validFixture}${validFixture}`) === null],
+  ['zero filter fail closed', resolveBoundary('<section data-et-accounting-reports-workspace="1"><h1>Accounting Reports</h1></section>') === null],
+  ['multiple filter fail closed', resolveBoundary('<section data-et-accounting-reports-workspace="1"><form data-et-report-filter="1"></form><form data-et-report-filter="2"></form></section>') === null],
+  ['unrelated filter cannot satisfy scope', resolveBoundary('<form data-et-report-filter="outside"></form><section data-et-accounting-reports-workspace="1"><h1>Accounting Reports</h1></section>') === null],
+  ['repeat invocation idempotent', middleware.includes('data-et-management-report-nav=') && middleware.includes('return $html;')],
 ];
 
 for (const [name, value] of checks) assert.ok(value, name);

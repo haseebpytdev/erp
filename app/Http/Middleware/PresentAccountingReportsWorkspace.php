@@ -81,7 +81,6 @@ final class PresentAccountingReportsWorkspace
         $html = $this->enrichCashVoucherRows($html);
         $html = $this->enrichSupplierCostingRows($html);
         $html = $this->replaceNativeFilter($request, $html);
-        $html = $this->removeLegacyReportsHeading($html);
         $html = $this->injectManagementReportingNavigation($request, $html);
         $html = $this->reconcilePartyControlLedger($request, $html);
         $html = $this->reconcileGeneralLedgerAccountFilter($request, $html);
@@ -558,6 +557,36 @@ HTML;
             return $html;
         }
 
+        $markerPattern = '/<[^>]+\bdata-et-accounting-reports-workspace(?:\s*=\s*["\'][^"\']*["\'])?[^>]*>/i';
+
+        if (
+            preg_match_all($markerPattern, $html, $workspaceMatches, PREG_OFFSET_CAPTURE) !== 1
+        ) {
+            return $html;
+        }
+
+        $workspaceRange = $this->sectionRange(
+            $html,
+            $workspaceMatches[0][0][1]
+        );
+
+        if ($workspaceRange === null) {
+            return $html;
+        }
+
+        $workspaceHtml = substr(
+            $html,
+            $workspaceRange[0],
+            $workspaceRange[1] - $workspaceRange[0]
+        );
+        $filterPattern = '/<[^>]+\bdata-et-report-filter(?:\s*=\s*["\'][^"\']*["\'])?[^>]*>/i';
+
+        if (preg_match_all($filterPattern, $workspaceHtml, $filterMatches) !== 1) {
+            return $html;
+        }
+
+        $html = $this->removeLegacyReportsHeading($html);
+
         try {
             $links = [
                 ['Management Overview', route('accounting.management-reports.management')],
@@ -606,6 +635,41 @@ HTML;
         $position = $match[0][1] + strlen($match[0][0]);
 
         return substr_replace($html, $navigation, $position, 0);
+    }
+
+    /** @return array{0:int,1:int}|null */
+    private function sectionRange(string $html, int $start): ?array
+    {
+        if (! preg_match_all(
+            '/<\/?section\b[^>]*>/i',
+            $html,
+            $tags,
+            PREG_OFFSET_CAPTURE,
+            $start
+        )) {
+            return null;
+        }
+
+        $depth = 0;
+
+        foreach ($tags[0] as $tag) {
+            $text = $tag[0];
+            $offset = $tag[1];
+
+            if (str_starts_with(strtolower($text), '</')) {
+                $depth--;
+
+                if ($depth === 0) {
+                    return [$start, $offset + strlen($text)];
+                }
+
+                continue;
+            }
+
+            $depth++;
+        }
+
+        return null;
     }
 
     private function controlAfterLabel(string $form, callable $matches): ?array
