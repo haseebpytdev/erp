@@ -28,6 +28,8 @@ ok(resolver.includes('private array $resolved'), 'native resolver request-local 
 ok(sync.includes('$this->products->visa()') && !sync.includes('private function resolveVisaMaster'), 'duplicate Visa master scan removed');
 ok(controller.includes('$submittedRateIds') && controller.includes('$ratesById'), 'submitted Visa rates are bulk loaded');
 ok(controller.includes('$rate = $rateId > 0 ? $ratesById->get($rateId) : null'), 'rate query is not inside passenger loop');
+ok(controller.includes('$response = $timing ? $timing->measure('), 'Visa presentation timing uses a valid conditional expression');
+ok(!controller.includes('$response = $timing?->measure('), 'Visa controller has no malformed null-safe conditional');
 ok(controller.includes("$providerType === 'DIRECT_VENDOR'") && controller.includes("vendor_id"), 'Direct Vendor snapshot path exists');
 ok(master.includes("'provider_type' => ['required', 'in:KSA_CHAIN,DIRECT_VENDOR']") && master.includes("if ($data['provider_type'] === 'DIRECT_VENDOR')"), 'rate management persists both provider modes');
 ok(presenter.includes('products-visa') && !presenter.match(/products\/visa[^]*general-progressive-step1\.js/), 'dedicated Visa page gets product-scoped JS');

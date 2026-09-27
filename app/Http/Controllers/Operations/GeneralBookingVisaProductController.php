@@ -53,7 +53,7 @@ final class GeneralBookingVisaProductController extends Controller
             ->all()) ?? DB::table('booking_visa_services')->where('booking_id', $booking)->orderBy('id')->get()->map(fn (object $row): array => $this->presentRow((array) $row, $passengers))->values()->all();
         $timing?->addDuration('visa_fx', 0.0);
 
-        $response = $timing?->measure('visa_presentation', fn (): JsonResponse => response()->json([
+        $response = $timing ? $timing->measure('visa_presentation', fn (): JsonResponse => response()->json([
             'ok' => true,
             'booking_id' => $booking,
             'currency' => 'PKR',
