@@ -227,6 +227,7 @@ final class BookingWorkspaceShellPresenter
         $stepOneScript = '<script src="'
             .e(route('system.erp-assets.general-progressive-step1-js'))
             .'?v='.$assetVersion.'" defer data-et-general-progressive-js="'.$assetVersion.'"></script>';
+        $visaCoreScript = '<script src="'.e(route('system.erp-assets.products-visa-core')).'?v='.$assetVersion.'" data-et-visa-core="'.$assetVersion.'"></script>';
 
         if (
             str_contains($html, 'et-general-progressive-step1-11390')
@@ -249,6 +250,9 @@ final class BookingWorkspaceShellPresenter
             $scripts = $script;
 
             if (str_contains($html, 'et-general-progressive-step1-11390') && ! preg_match('#^operations/bookings/\d+/products/(?:air|visa)$#', $path)) {
+                if (! str_contains($html, 'data-et-visa-core=')) {
+                    $scripts .= "\n".$visaCoreScript;
+                }
                 $scripts .= "\n".$stepOneScript;
             }
 

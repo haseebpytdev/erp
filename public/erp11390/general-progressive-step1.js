@@ -2345,11 +2345,14 @@ var etgpAirFlushVisibleDraft113126=function(){
 };
 
 
+/* The historical GENERAL Visa implementation below is intentionally inert;
+ * the active entry point delegates to etVisaProductCore. */
 /* ======================================================================
  * ERP-11.3.154 — GENERAL VISA PRODUCT
  * Approved two-step Add Visa wizard + compact main-row operations.
  * Saudi Company -> Pakistani IATA -> Vendor is authoritative and reporting-only.
  * ====================================================================== */
+/*
 var etgpVisaShared113142=window.etVisaCore||{};
 var etgpVisaDraftKey113142=function(bookingId){return etgpVisaShared113142.draftKey?etgpVisaShared113142.draftKey(bookingId):'etgp-visa-product-draft-v113142:'+String(bookingId||'');};
 var etgpVisaDraftRead113142=function(bookingId){if(etgpVisaShared113142.readDraft)return etgpVisaShared113142.readDraft(bookingId);try{var raw=localStorage.getItem(etgpVisaDraftKey113142(bookingId));return raw?JSON.parse(raw):null;}catch(e){return null;}};
@@ -2487,8 +2490,11 @@ var etgpVisaRender113142=function(host,data,bookingId){
   refreshSummary();render();
 };
 
+*/
 var renderVisaProductWorkspace113142=function(shell){
-  var bookingId=etgpBookingId11397();var host=create('div','etgp-visa-workspace-113142 is-loading');host.setAttribute('data-etgp-visa-workspace-113142','1');host.appendChild(create('div','etgp-visa-loading-113142','Loading saved Visa data…'));shell.appendChild(host);if(!bookingId){host.innerHTML='';host.appendChild(create('div','etgp-visa-feedback-113142 is-error','Booking ID could not be resolved from this page.'));return;}etgpVisaLoad113142(bookingId).then(function(data){etgpVisaRender113142(host,data,bookingId);}).catch(function(error){host.innerHTML='';host.classList.remove('is-loading');host.appendChild(create('div','etgp-visa-feedback-113142 is-error',error&&error.message?error.message:'Visa Data could not be loaded.'));});
+  /* ERP-11.3.365: GENERAL Visa is a thin adapter; the shared core owns all
+     Visa rendering, add/bulk actions, payload/save and draft lifecycle. */
+  var bookingId=etgpBookingId11397(),host=create('div','etgp-visa-workspace-113142 is-loading');host.setAttribute('data-etgp-visa-workspace-113142','1');shell.appendChild(host);if(!window.etVisaProductCore||typeof window.etVisaProductCore.mount!=='function'){host.textContent='Visa runtime unavailable.';return;}window.etVisaProductCore.mount({mode:'general',root:host,host:host,bookingId:bookingId});
 };
 
 /* Native Transport forms live directly under body, never inside the host

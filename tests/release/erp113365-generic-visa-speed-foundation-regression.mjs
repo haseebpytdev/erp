@@ -16,6 +16,8 @@ const routes = read('routes/erp103179.php');
 const visaJs = read('public/erp-theme/js/products/visa.js');
 const visaCss = read('public/erp-theme/css/products/visa.css');
 const nav = read('public/erp-theme/js/dedicated-visa-navigation.js');
+const visaCore = read('public/erp-theme/js/products/visa-core.js');
+const generalRuntime = read('public/erp11390/general-progressive-step1.js');
 
 ok(migration.includes("provider_type', 24") && migration.includes("default('KSA_CHAIN')"), 'provider_type defaults KSA_CHAIN');
 ok(migration.includes("vendor_name_snapshot', 180"), 'vendor snapshot column exists');
@@ -32,11 +34,20 @@ ok(presenter.includes('products-visa') && !presenter.match(/products\/visa[^]*ge
 ok(assets.includes("$product === 'visa'") && assets.includes('css/products/visa.css'), 'dedicated Visa CSS route is selected');
 ok(timing.includes('system/erp-bookings/\\d+/visa-product') && timing.includes('visa_controller_total'), 'Visa JSON timing coverage exists');
 ok(routes.includes("products-visa.js") && routes.includes("products/visa/fragment"), 'Visa asset and fragment routes exist');
-ok(visaJs.includes('getProductResponse') && visaJs.includes('getProductPromise') && visaJs.includes('setProductResponse'), 'Visa response and promise caches are used');
-ok(visaJs.includes('Loading saved Visa data') || visaJs.includes('Loading'), 'Visa loading skeleton exists');
+ok(visaCore.includes('getProductResponse') && visaCore.includes('getProductPromise') && visaCore.includes('setProductResponse'), 'Visa response and promise caches are used');
+ok(visaCore.includes('Loading saved Visa data') || visaCore.includes('Loading'), 'Visa loading skeleton exists');
 ok(nav.includes('products/visa/fragment') && nav.includes('location.assign(normal)'), 'Visa fast navigation validates fragment and falls back');
 ok(visaCss.includes('etgp-visa-dedicated-365'), 'Visa product-specific CSS exists');
-ok(visaJs.includes('Checkbox') && visaJs.includes('Provider'), 'generic Visa columns include checkbox and provider');
+ok(visaCore.includes('Checkbox') && visaCore.includes('Provider'), 'generic Visa columns include checkbox and provider');
 ok(controller.includes("'vendor_name_snapshot' =>") && controller.includes("'provider_type' => $providerType"), 'booking rows snapshot provider identity');
+ok(migration.includes("['saudi_company_id', 'pakistani_iata_id']") && migration.includes('ALTER TABLE visa_rate_cards MODIFY'), 'nullability alters exactly two intended IDs');
+ok(!migration.includes('saudi_master_table', migration.indexOf('ALTER TABLE')), 'master compatibility columns are not altered');
+ok(visaCore.includes('function mount') && visaCore.includes('etVisaProductCore'), 'shared Visa core owns mount authority');
+ok(generalRuntime.includes('etVisaProductCore.mount') && generalRuntime.includes('GENERAL Visa is a thin adapter'), 'GENERAL Visa delegates to shared core');
+ok(visaCore.includes("'+ Add Visa'") && visaCore.includes('Bulk Actions'), 'shared core owns Add and bulk actions');
+ok(visaCore.includes('function payload') && visaCore.includes("request(id,'PUT'"), 'shared core owns save payload and request');
+ok(visaCore.includes('draftPending') && visaCore.includes('saveInFlight'), 'shared core owns Visa state');
+ok(visaJs.includes('etVisaProductCore.mount') && !visaJs.includes('function render('), 'dedicated Visa is a thin adapter');
+ok(!visaJs.includes('general-progressive-step1'), 'dedicated Visa excludes GENERAL progressive runtime');
 
 console.log(`VISA_PROVIDER_REGRESSION=PASS (${pass} assertions)`);

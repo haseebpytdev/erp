@@ -24,10 +24,10 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('visa_rate_cards')) {
-            foreach (['saudi_company_id', 'pakistani_iata_id', 'saudi_master_table', 'saudi_master_id', 'pakistani_iata_master_table', 'pakistani_iata_master_id'] as $column) {
+            foreach (['saudi_company_id', 'pakistani_iata_id'] as $column) {
                 if (Schema::hasColumn('visa_rate_cards', $column)) {
                     try {
-                        DB::statement("ALTER TABLE visa_rate_cards MODIFY {$column} " . ($column === 'saudi_master_table' || $column === 'pakistani_iata_master_table' ? 'VARCHAR(255)' : ($column === 'saudi_master_id' || $column === 'pakistani_iata_master_id' ? 'BIGINT UNSIGNED' : 'BIGINT UNSIGNED')) . ' NULL');
+                        DB::statement("ALTER TABLE visa_rate_cards MODIFY {$column} BIGINT UNSIGNED NULL");
                     } catch (Throwable) {
                         // Safe Database Upgrade may run on a driver that does not
                         // support MODIFY; the additive columns remain usable.
