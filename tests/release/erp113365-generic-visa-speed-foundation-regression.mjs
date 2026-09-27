@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = p => fs.readFileSync(new URL('../../' + p, import.meta.url), 'utf8');
+let pass = 0;
+const ok = (condition, label) => { assert.ok(condition, label); pass++; };
+const migration = read('database/migrations/2026_09_27_000000_add_generic_visa_provider_contract.php');
+const resolver = read('app/Services/Operations/NativeProductServiceResolver.php');
+const sync = read('app/Services/Operations/VisaBookingServiceSynchronizer.php');
+const controller = read('app/Http/Controllers/Operations/GeneralBookingVisaProductController.php');
+const master = read('app/Http/Controllers/Operations/VisaMasterController.php');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const assets = read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
+const timing = read('app/Services/Operations/DedicatedProductTimingContext.php');
+const routes = read('routes/erp103179.php');
+const visaJs = read('public/erp-theme/js/products/visa.js');
+const visaCss = read('public/erp-theme/css/products/visa.css');
+const nav = read('public/erp-theme/js/dedicated-visa-navigation.js');
+
+ok(migration.includes("provider_type', 24") && migration.includes("default('KSA_CHAIN')"), 'provider_type defaults KSA_CHAIN');
+ok(migration.includes("vendor_name_snapshot', 180"), 'vendor snapshot column exists');
+ok(migration.includes('saudi_company_id') && migration.includes('pakistani_iata_id'), 'Saudi/IATA compatibility columns handled');
+ok(migration.includes("whereNull('provider_type')->update(['provider_type' => 'KSA_CHAIN'])"), 'existing rows backfill KSA_CHAIN');
+ok(resolver.includes('findVisa') && resolver.includes("['VISA']"), 'native Visa resolver uses exact semantic identity');
+ok(resolver.includes('private array $resolved'), 'native resolver request-local cache exists');
+ok(sync.includes('$this->products->visa()') && !sync.includes('private function resolveVisaMaster'), 'duplicate Visa master scan removed');
+ok(controller.includes('$submittedRateIds') && controller.includes('$ratesById'), 'submitted Visa rates are bulk loaded');
+ok(controller.includes('$rate = $rateId > 0 ? $ratesById->get($rateId) : null'), 'rate query is not inside passenger loop');
+ok(controller.includes("$providerType === 'DIRECT_VENDOR'") && controller.includes("vendor_id"), 'Direct Vendor snapshot path exists');
+ok(master.includes("'provider_type' => ['required', 'in:KSA_CHAIN,DIRECT_VENDOR']") && master.includes("if ($data['provider_type'] === 'DIRECT_VENDOR')"), 'rate management persists both provider modes');
+ok(presenter.includes('products-visa') && !presenter.match(/products\/visa[^]*general-progressive-step1\.js/), 'dedicated Visa page gets product-scoped JS');
+ok(assets.includes("$product === 'visa'") && assets.includes('css/products/visa.css'), 'dedicated Visa CSS route is selected');
+ok(timing.includes('system/erp-bookings/\\d+/visa-product') && timing.includes('visa_controller_total'), 'Visa JSON timing coverage exists');
+ok(routes.includes("products-visa.js") && routes.includes("products/visa/fragment"), 'Visa asset and fragment routes exist');
+ok(visaJs.includes('getProductResponse') && visaJs.includes('getProductPromise') && visaJs.includes('setProductResponse'), 'Visa response and promise caches are used');
+ok(visaJs.includes('Loading saved Visa data') || visaJs.includes('Loading'), 'Visa loading skeleton exists');
+ok(nav.includes('products/visa/fragment') && nav.includes('location.assign(normal)'), 'Visa fast navigation validates fragment and falls back');
+ok(visaCss.includes('etgp-visa-dedicated-365'), 'Visa product-specific CSS exists');
+ok(visaJs.includes('Checkbox') && visaJs.includes('Provider'), 'generic Visa columns include checkbox and provider');
+ok(controller.includes("'vendor_name_snapshot' =>") && controller.includes("'provider_type' => $providerType"), 'booking rows snapshot provider identity');
+
+console.log(`VISA_PROVIDER_REGRESSION=PASS (${pass} assertions)`);

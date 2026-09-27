@@ -128,10 +128,11 @@ final class BookingWorkspaceShellPresenter
         $html = $this->addHtmlClass($html, 'et-booking-focus-prepaint');
         if ($isProductsWorkspacePath) {
             $html = $this->addHtmlClass($html, 'et-booking-products-prepaint');
-            // Dedicated product workspaces use the same progressive runtime as
-            // the native GENERAL booking page, even when their visible title
-            // does not contain the historical GENERAL marker.
-            $html = $this->addHtmlClass($html, 'et-general-progressive-step1-11390');
+            // Dedicated Visa owns its runtime; Air and legacy products retain
+            // their established progressive behavior.
+            if (! preg_match('#^operations/bookings/\d+/products/visa$#', $path)) {
+                $html = $this->addHtmlClass($html, 'et-general-progressive-step1-11390');
+            }
         }
         $html = $this->addHtmlClass($html, 'et-booking-unified-canvas-11375');
         $html = $this->addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75');
@@ -213,6 +214,8 @@ final class BookingWorkspaceShellPresenter
             $script = '<script src="'.e(route('system.erp-assets.dedicated-product-core')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-core="'.$assetVersion.'"></script>'.$script;
             if (preg_match('#^operations/bookings/\d+/products/air$#', $path) === 1) {
                 $script .= '<script src="'.e(route('system.erp-assets.products-air')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-air="'.$assetVersion.'"></script>';
+            } elseif (preg_match('#^operations/bookings/\d+/products/visa$#', $path) === 1) {
+                $script .= '<script src="'.e(route('system.erp-assets.products-visa')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-visa="'.$assetVersion.'"></script>';
             }
         }
 
@@ -226,7 +229,7 @@ final class BookingWorkspaceShellPresenter
 
         if (
             str_contains($html, 'et-general-progressive-step1-11390')
-            && ! preg_match('#^operations/bookings/\d+/products/air$#', $path)
+            && ! preg_match('#^operations/bookings/\d+/products/(?:air|visa)$#', $path)
             && ! str_contains($html, 'data-et-general-progressive-css="'.$assetVersion.'"')
             && stripos($html, '</head>') !== false
         ) {
@@ -244,7 +247,7 @@ final class BookingWorkspaceShellPresenter
         ) {
             $scripts = $script;
 
-            if (str_contains($html, 'et-general-progressive-step1-11390') && ! preg_match('#^operations/bookings/\d+/products/air$#', $path)) {
+            if (str_contains($html, 'et-general-progressive-step1-11390') && ! preg_match('#^operations/bookings/\d+/products/(?:air|visa)$#', $path)) {
                 $scripts .= "\n".$stepOneScript;
             }
 
@@ -290,6 +293,8 @@ HTML;
         ) {
             $navigationScript = '<script src="'.e(route('system.erp-assets.dedicated-product-navigation')).'?v='.rawurlencode($assetVersion). '" defer data-et-dedicated-product-navigation="'.$assetVersion.'"></script>';
             $html = preg_replace('/<\/body>/i', $navigationScript."\n</body>", $html, 1) ?? $html;
+            $visaNavigation = '<script src="'.e(route('system.erp-assets.dedicated-visa-navigation')).'?v='.rawurlencode($assetVersion).'" defer data-et-dedicated-visa-navigation="'.$assetVersion.'"></script>';
+            $html = preg_replace('/<\/body>/i', $visaNavigation."\n</body>", $html, 1) ?? $html;
         }
 
         $response->setContent($html);

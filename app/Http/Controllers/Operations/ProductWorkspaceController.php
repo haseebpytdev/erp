@@ -32,6 +32,12 @@ final class ProductWorkspaceController extends Controller
         return view('operations.bookings.partials.product-workspace-v113305', $data);
     }
 
+    public function visaFragment(Request $request, int $booking, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): View
+    {
+        $data = $this->workspaceData($request, $booking, 'visa', $layout, $customer, $locks, false);
+        return view('operations.bookings.partials.product-workspace-v113305', $data);
+    }
+
     private function workspaceData(Request $request, int $booking, string $product, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks, bool $resolveLayout): array
     {
         $timing = DedicatedProductTimingContext::forRequest($request);

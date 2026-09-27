@@ -53,6 +53,8 @@ final class ErpProfessionalUiAssetController extends Controller
             $product = strtolower((string) request()->query('product', ''));
             if ($product === 'air') {
                 $freshTheme[] = base_path('public/erp-theme/css/products/air.css');
+            } elseif ($product === 'visa') {
+                $freshTheme[] = base_path('public/erp-theme/css/products/visa.css');
             }
         }
 
@@ -120,9 +122,23 @@ final class ErpProfessionalUiAssetController extends Controller
         return $this->textAsset(file_get_contents($path), 'application/javascript; charset=UTF-8');
     }
 
+    public function dedicatedVisa(): Response
+    {
+        $path = base_path('public/erp-theme/js/products/visa.js');
+        abort_unless(is_file($path), 404);
+        return $this->textAsset(file_get_contents($path), 'application/javascript; charset=UTF-8');
+    }
+
     public function dedicatedNavigation(): Response
     {
         $path = base_path('public/erp-theme/js/dedicated-product-navigation.js');
+        abort_unless(is_file($path), 404);
+        return $this->textAsset(file_get_contents($path), 'application/javascript; charset=UTF-8');
+    }
+
+    public function dedicatedVisaNavigation(): Response
+    {
+        $path = base_path('public/erp-theme/js/dedicated-visa-navigation.js');
         abort_unless(is_file($path), 404);
         return $this->textAsset(file_get_contents($path), 'application/javascript; charset=UTF-8');
     }

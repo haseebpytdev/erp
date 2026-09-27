@@ -206,8 +206,12 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
 
     Route::get('/system/erp-assets/products-air.js', [ErpProfessionalUiAssetController::class, 'dedicatedAir'])
         ->name('system.erp-assets.products-air');
+    Route::get('/system/erp-assets/products-visa.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisa'])
+        ->name('system.erp-assets.products-visa');
     Route::get('/system/erp-assets/dedicated-product-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedNavigation'])
         ->name('system.erp-assets.dedicated-product-navigation');
+    Route::get('/system/erp-assets/dedicated-visa-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisaNavigation'])
+        ->name('system.erp-assets.dedicated-visa-navigation');
 
     // ERP-11.3.102 GENERAL Passenger quick-add: direct JSON lookup/master-update/booking-snapshot bridge; no native Saved Passenger DOM dependency
     // lookup + booking snapshot write, independent of unstable native editor DOM.
@@ -300,6 +304,10 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         '/system/erp-bookings/{booking}/visa-product',
         [GeneralBookingVisaProductController::class, 'store']
     )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.visa-product.store');
+
+    Route::get('/operations/bookings/{booking}/products/visa/fragment', [ProductWorkspaceController::class, 'visaFragment'])
+        ->whereNumber('booking')->middleware([DedicatedProductEarlyTiming::class, EnforceErpRoleScopedAccess::class])
+        ->name('bookings.products.visa.fragment');
 
     // ERP-11.3.153: one persisted commercial/readiness summary for every product workspace.
     Route::get(

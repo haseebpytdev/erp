@@ -47,9 +47,11 @@
                 <div class="vm147-fields">
                     <div><label>Country *</label><input name="country" value="{{ old('country','Saudi Arabia') }}" required></div>
                     <div><label>Visa Type *</label><input name="visa_type" value="{{ old('visa_type','Umrah') }}" required></div>
-                    <div class="vm147-field w2"><label>Saudi Company *</label><select id="visa-rate-saudi" name="saudi_master_key" required><option value="" data-iata="" data-vendor="">Select existing Saudi Company</option>@foreach($saudis as $s)<option value="{{ $s['master_key'] }}" data-iata="{{ $s['pakistani_iata_name'] }}" data-vendor="{{ $s['vendor_name'] }}" @selected(old('saudi_master_key')===$s['master_key']) @disabled(!($s['link_complete']??false))>{{ $s['name'] }}{{ !($s['link_complete']??false)?' · '.$s['status']:'' }}</option>@endforeach</select></div>
+                    <div><label>Provider Type *</label><select id="visa-provider-type" name="provider_type" required><option value="KSA_CHAIN" @selected(old('provider_type','KSA_CHAIN')==='KSA_CHAIN')>KSA / Umrah Chain</option><option value="DIRECT_VENDOR" @selected(old('provider_type')==='DIRECT_VENDOR')>Direct Vendor</option></select></div>
+                    <div class="vm147-field w2" data-visa-ksa><label>Saudi Company *</label><select id="visa-rate-saudi" name="saudi_master_key"><option value="" data-iata="" data-vendor="">Select existing Saudi Company</option>@foreach($saudis as $s)<option value="{{ $s['master_key'] }}" data-iata="{{ $s['pakistani_iata_name'] }}" data-vendor="{{ $s['vendor_name'] }}" @selected(old('saudi_master_key')===$s['master_key']) @disabled(!($s['link_complete']??false))>{{ $s['name'] }}{{ !($s['link_complete']??false)?' · '.$s['status']:'' }}</option>@endforeach</select></div>
                     <div><label>Pakistani IATA (resolved)</label><input id="visa-rate-iata" value="" readonly aria-readonly="true"></div>
                     <div><label>Vendor Account (resolved)</label><input id="visa-rate-vendor" value="" readonly aria-readonly="true"></div>
+                    <div data-visa-direct><label>Vendor Account *</label><select name="vendor_id"><option value="">Select ERP Vendor</option>@foreach($vendors as $vendor)<option value="{{ $vendor['id'] ?? '' }}" @selected((string)old('vendor_id')===(string)($vendor['id'] ?? ''))>{{ $vendor['name'] ?? '' }}</option>@endforeach</select></div>
                     <div><label>Cost Currency *</label><select name="cost_currency"><option>SAR</option><option>USD</option><option>AED</option><option>PKR</option></select></div>
                     <div><label>Cost Rate *</label><input name="cost_rate" type="number" step="0.01" min="0" required value="{{ old('cost_rate') }}"></div>
                     <div><label>Default Sale PKR *</label><input name="default_sale_pkr" type="number" step="0.01" min="0" required value="{{ old('default_sale_pkr') }}"></div>
@@ -62,8 +64,8 @@
                 <div class="vm147-save"><button class="vm147-btn primary" type="submit">+ Add Visa Rate</button></div>
             </form></div>
         </section>
-        <section class="vm147-card"><div class="vm147-head"><div><h2>Current Visa Rates</h2><p>Effective-dated rates used by GENERAL / MULTI-SERVICE Visa booking.</p></div></div><div class="vm147-table-wrap"><table><thead><tr><th>Country</th><th>Visa Type</th><th>Saudi Company</th><th>Pakistani IATA</th><th>Vendor Account</th><th>Cost</th><th>Default Sale</th><th>Effective</th><th>Status</th></tr></thead><tbody>
-        @forelse($rates as $r)<tr><td>{{ $r['country'] }}</td><td>{{ $r['visa_type'] }}</td><td><strong>{{ $r['saudi_company_name'] }}</strong></td><td>{{ $r['pakistani_iata_name'] }}</td><td>{{ $r['vendor_name'] }}</td><td>{{ $r['cost_currency'] }} {{ number_format((float)$r['cost_rate'],2) }}</td><td>PKR {{ number_format((float)$r['default_sale_pkr'],2) }}</td><td>{{ $r['effective_from'] }} → {{ $r['effective_to'] ?: 'Open' }}</td><td><span class="vm147-pill">{{ $r['is_active']?'Active':'Inactive' }}</span></td></tr>@empty<tr><td class="vm147-empty" colspan="9">No Visa rates yet.</td></tr>@endforelse
+        <section class="vm147-card"><div class="vm147-head"><div><h2>Current Visa Rates</h2><p>Effective-dated rates used by GENERAL / MULTI-SERVICE Visa booking.</p></div></div><div class="vm147-table-wrap"><table><thead><tr><th>Country</th><th>Visa Type</th><th>Provider Type</th><th>Provider</th><th>Vendor Account</th><th>Cost</th><th>Default Sale</th><th>Effective</th><th>Status</th></tr></thead><tbody>
+        @forelse($rates as $r)<tr><td>{{ $r['country'] }}</td><td>{{ $r['visa_type'] }}</td><td>{{ ($r['provider_type'] ?? 'KSA_CHAIN') === 'DIRECT_VENDOR' ? 'Direct Vendor' : 'KSA / Umrah Chain' }}</td><td><strong>{{ $r['provider_name'] ?? $r['saudi_company_name'] }}</strong>@if(($r['provider_type'] ?? 'KSA_CHAIN') !== 'DIRECT_VENDOR')<div class="vm147-source">via {{ $r['pakistani_iata_name'] }}</div>@endif</td><td>{{ $r['vendor_name'] }}</td><td>{{ $r['cost_currency'] }} {{ number_format((float)$r['cost_rate'],2) }}</td><td>PKR {{ number_format((float)$r['default_sale_pkr'],2) }}</td><td>{{ $r['effective_from'] }} → {{ $r['effective_to'] ?: 'Open' }}</td><td><span class="vm147-pill">{{ $r['is_active']?'Active':'Inactive' }}</span></td></tr>@empty<tr><td class="vm147-empty" colspan="9">No Visa rates yet.</td></tr>@endforelse
         </tbody></table></div></section>
     @endif
 </div>
@@ -73,9 +75,13 @@ document.addEventListener('DOMContentLoaded',function(){
     var select=document.getElementById('visa-rate-saudi');
     var iata=document.getElementById('visa-rate-iata');
     var vendor=document.getElementById('visa-rate-vendor');
-    if(!select||!iata||!vendor)return;
+    var type=document.getElementById('visa-provider-type');
+    var ksa=document.querySelectorAll('[data-visa-ksa]');
+    var direct=document.querySelectorAll('[data-visa-direct]');
+    var toggle=function(){var isDirect=type&&type.value==='DIRECT_VENDOR';ksa.forEach(function(e){e.hidden=isDirect});direct.forEach(function(e){e.hidden=!isDirect});if(select)select.required=!isDirect;};
+    if(!select||!iata||!vendor){if(type)type.addEventListener('change',toggle);toggle();return;}
     var refresh=function(){var option=select.options[select.selectedIndex];iata.value=option?String(option.dataset.iata||''):'';vendor.value=option?String(option.dataset.vendor||''):'';};
-    select.addEventListener('change',refresh);refresh();
+    select.addEventListener('change',refresh);if(type)type.addEventListener('change',toggle);refresh();toggle();
 });
 </script>
 @endif

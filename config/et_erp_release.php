@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'version' => 'v1.1.33.364-ERP11.3.364',
-    'release' => 'ERP-11.3.364',
-    'package' => 'ERP-11.3.364 Accounting Reports Workspace UI Corrective',
-    'package_detail' => 'ERP-11.3.364 moves Accounting Reports navigation into the semantic report workspace, restores a single content heading, and presents a compact responsive filter/preview surface while preserving report calculations, Party Statement screen/print/drilldowns, posting logic, schema and migrations. NEW_MIGRATION_REQUIRED=NO.',
+    'version' => 'v1.1.33.365-ERP11.3.365',
+    'release' => 'ERP-11.3.365',
+    'package' => 'ERP-11.3.365 Generic Visa + Dedicated Runtime Foundation',
+    'package_detail' => 'ERP-11.3.365 adds generic KSA_CHAIN and DIRECT_VENDOR Visa providers, additive provider snapshots, bounded rate loading, native Visa Product/Service resolution and a dedicated Visa runtime. Existing financial values and accounting behavior remain unchanged. NEW_MIGRATION_REQUIRED=YES.',
 ];
 

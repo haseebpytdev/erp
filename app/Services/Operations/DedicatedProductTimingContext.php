@@ -55,10 +55,9 @@ final class DedicatedProductTimingContext
 
     public static function isDedicatedProductRequest(Request $request): bool
     {
-        return preg_match(
-            '#^operations/bookings/\d+/products/(?:air|hotel|transport|visa|other-services)$#i',
-            trim($request->path(), '/')
-        ) === 1;
+        $path = trim($request->path(), '/');
+        return preg_match('#^operations/bookings/\d+/products/(?:air|hotel|transport|visa|other-services)$#i', $path) === 1
+            || preg_match('#^system/erp-bookings/\d+/visa-product$#i', $path) === 1;
     }
 
     public function start(string $name): void
@@ -155,6 +154,13 @@ final class DedicatedProductTimingContext
             'passenger_links' => 'passenger-links',
             'passenger_links_response' => 'passenger-links-response',
             'focused_workspace' => 'focused-workspace',
+            'visa_controller_total' => 'visa-controller',
+            'visa_passengers' => 'visa-passengers',
+            'visa_rows' => 'visa-rows',
+            'visa_rates' => 'visa-rates',
+            'visa_vendors' => 'visa-vendors',
+            'visa_fx' => 'visa-fx',
+            'visa_presentation' => 'visa-presentation',
         ] as $key => $label) {
             if (isset($this->durations[$key])) {
                 $serverTiming[] = $label.';dur='.$this->durations[$key];

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\LegacyVisaTravelMasterRepository;
 use App\Services\Operations\NativeErpLayoutResolver;
+use App\Services\Operations\UnifiedGroupPackageDataSource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,7 @@ final class VisaMasterController extends Controller
             'iatas' => $iatas,
             'saudis' => $saudis,
             'rates' => $rates,
+            'vendors' => app(UnifiedGroupPackageDataSource::class)->vendors()->values()->all(),
             'returnBooking' => max(0, (int) $request->query('booking', 0)),
             'activeTab' => in_array((string) $request->query('tab', 'rates'), ['iata', 'saudi', 'rates'], true)
                 ? (string) $request->query('tab', 'rates')
@@ -73,7 +75,9 @@ final class VisaMasterController extends Controller
         $data = $request->validate([
             'country' => ['required', 'string', 'max:120'],
             'visa_type' => ['required', 'string', 'max:120'],
-            'saudi_master_key' => ['required', 'string', 'max:255'],
+            'provider_type' => ['required', 'in:KSA_CHAIN,DIRECT_VENDOR'],
+            'saudi_master_key' => ['nullable', 'string', 'max:255'],
+            'vendor_id' => ['nullable', 'integer', 'min:1'],
             'cost_currency' => ['required', 'string', 'max:12'],
             'cost_rate' => ['required', 'numeric', 'min:0'],
             'default_sale_pkr' => ['required', 'numeric', 'min:0'],
@@ -83,26 +87,29 @@ final class VisaMasterController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $saudi = $this->masters->findSaudiByKey((string) $data['saudi_master_key']);
-        abort_unless($saudi, 422, 'Selected Saudi Company was not found in the existing Travel Masters.');
-        abort_unless((bool) ($saudi['is_active'] ?? true), 422, 'Selected Saudi Company is inactive in Travel Masters.');
-        $relationshipStatus = (string) ($saudi['status'] ?? 'IATA LINK REQUIRED');
-        abort_unless(
-            (bool) ($saudi['link_complete'] ?? false),
-            422,
-            $relationshipStatus === 'VENDOR LINK REQUIRED'
-                ? 'The linked Pakistani IATA has no valid Vendor Account. Complete that Vendor link in Travel Masters before adding a Visa Rate.'
-                : 'The selected Saudi Company has no valid Pakistani IATA link. Complete that IATA link in Travel Masters before adding a Visa Rate.'
-        );
+        $saudi = null;
+        $vendor = null;
+        if ($data['provider_type'] === 'DIRECT_VENDOR') {
+            $vendor = collect(app(UnifiedGroupPackageDataSource::class)->vendors())->firstWhere('id', (int) ($data['vendor_id'] ?? 0));
+            abort_unless(is_array($vendor) && (int) ($vendor['id'] ?? 0) > 0, 422, 'Select a valid ERP Vendor for a Direct Vendor Visa Rate.');
+        } else {
+            abort_unless(trim((string) ($data['saudi_master_key'] ?? '')) !== '', 422, 'Select a Saudi Company for a KSA / Umrah Chain Visa Rate.');
+            $saudi = $this->masters->findSaudiByKey((string) $data['saudi_master_key']);
+            abort_unless($saudi, 422, 'Selected Saudi Company was not found in the existing Travel Masters.');
+            abort_unless((bool) ($saudi['is_active'] ?? true), 422, 'Selected Saudi Company is inactive in Travel Masters.');
+            abort_unless((bool) ($saudi['link_complete'] ?? false), 422, 'The selected Saudi Company has no complete Pakistani IATA → Vendor link.');
+        }
 
         $now = now();
         $row = [
             'country' => trim((string) $data['country']),
             'visa_type' => trim((string) $data['visa_type']),
             // Compatibility IDs intentionally store the native Travel Master ids.
-            'saudi_company_id' => (int) ($saudi['id'] ?? 0),
-            'pakistani_iata_id' => (int) ($saudi['pakistani_iata_id'] ?? 0),
-            'vendor_id' => (int) ($saudi['vendor_id'] ?? 0),
+            'provider_type' => $data['provider_type'],
+            'saudi_company_id' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (int) ($saudi['id'] ?? 0),
+            'pakistani_iata_id' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (int) ($saudi['pakistani_iata_id'] ?? 0),
+            'vendor_id' => $data['provider_type'] === 'DIRECT_VENDOR' ? (int) $vendor['id'] : (int) ($saudi['vendor_id'] ?? 0),
+            'vendor_name_snapshot' => $data['provider_type'] === 'DIRECT_VENDOR' ? trim((string) ($vendor['name'] ?? '')) : trim((string) ($saudi['vendor_name'] ?? '')),
             'cost_currency' => $this->normalizeCurrency((string) $data['cost_currency']),
             'cost_rate' => round((float) $data['cost_rate'], 4),
             'default_sale_pkr' => round((float) $data['default_sale_pkr'], 2),
@@ -115,12 +122,12 @@ final class VisaMasterController extends Controller
         ];
 
         foreach ([
-            'saudi_master_table' => (string) ($saudi['source_table'] ?? ''),
-            'saudi_master_id' => (int) ($saudi['id'] ?? 0),
-            'pakistani_iata_master_table' => (string) ($saudi['pakistani_iata_source_table'] ?? ''),
-            'pakistani_iata_master_id' => (int) ($saudi['pakistani_iata_id'] ?? 0),
-            'saudi_company_name_snapshot' => (string) ($saudi['name'] ?? ''),
-            'pakistani_iata_name_snapshot' => (string) ($saudi['pakistani_iata_name'] ?? ''),
+            'saudi_master_table' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (string) ($saudi['source_table'] ?? ''),
+            'saudi_master_id' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (int) ($saudi['id'] ?? 0),
+            'pakistani_iata_master_table' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (string) ($saudi['pakistani_iata_source_table'] ?? ''),
+            'pakistani_iata_master_id' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (int) ($saudi['pakistani_iata_id'] ?? 0),
+            'saudi_company_name_snapshot' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (string) ($saudi['name'] ?? ''),
+            'pakistani_iata_name_snapshot' => $data['provider_type'] === 'DIRECT_VENDOR' ? null : (string) ($saudi['pakistani_iata_name'] ?? ''),
         ] as $column => $value) {
             if (Schema::hasColumn('visa_rate_cards', $column)) {
                 $row[$column] = $value ?: null;
@@ -144,6 +151,14 @@ final class VisaMasterController extends Controller
             ->orderByDesc('effective_from')->orderBy('country')->orderBy('visa_type')->get()
             ->map(function (object $object) use ($saudiByKey, $saudiById, $iataById): array {
                 $row = (array) $object;
+                $row['provider_type'] = strtoupper(trim((string) ($row['provider_type'] ?? 'KSA_CHAIN')));
+                if ($row['provider_type'] === 'DIRECT_VENDOR') {
+                    $row['provider_name'] = (string) ($row['vendor_name_snapshot'] ?? '—');
+                    $row['saudi_company_name'] = '—';
+                    $row['pakistani_iata_name'] = '—';
+                    $row['vendor_name'] = (string) ($row['vendor_name_snapshot'] ?? '—');
+                    return $row;
+                }
                 $saudiKey = trim((string) ($row['saudi_master_table'] ?? '')) !== ''
                     ? (string) $row['saudi_master_table'] . ':' . (int) ($row['saudi_master_id'] ?? 0)
                     : '';

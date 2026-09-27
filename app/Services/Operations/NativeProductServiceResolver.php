@@ -9,18 +9,24 @@ use Illuminate\Validation\ValidationException;
 /** Read-only, schema-aware Product/Service Master authority. */
 final class NativeProductServiceResolver
 {
+    private array $resolved = [];
+
     public function air(): array { return $this->require($this->findAir(), 'Air'); }
     public function hotel(): array { return $this->require($this->findHotel(), 'Hotel'); }
     public function transport(): array { return $this->require($this->findTransport(), 'Transport'); }
+    public function visa(): array { return $this->require($this->findVisa(), 'Visa'); }
     public function findAir(): ?array { return $this->find('Air', ['AIR','AIRTICKET','AIR_TICKET'], ['AIR_TICKET'], ['AIR TICKET','AIR TICKETS','FLIGHT TICKET']); }
     public function findHotel(): ?array { return $this->find('Hotel', ['HOTEL'], ['HOTEL','ACCOMMODATION'], ['HOTEL','HOTELS','ACCOMMODATION']); }
     public function findTransport(): ?array { return $this->find('Transport', ['TRANSPORT'], ['TRANSPORT','TRANSFER'], ['TRANSPORT','TRANSPORTATION','TRANSFER']); }
+    public function findVisa(): ?array { return $this->find('Visa', ['VISA'], ['VISA'], ['VISA PROCESSING', 'VISA']); }
 
     private function require(?array $match, string $label): array
     { if ($match) return $match; throw ValidationException::withMessages(['product' => "No active native {$label} Product/Service master matched."]); }
 
     private function find(string $label, array $codes, array $categories, array $names): ?array
     {
+        $cacheKey = $label . ':' . implode(',', $codes);
+        if (array_key_exists($cacheKey, $this->resolved)) return $this->resolved[$cacheKey];
         $tables = $this->tables(); $matches = [];
         foreach ($tables as $table) foreach (DB::table($table)->get() as $row) {
             $a = (array) $row; if (isset($a['deleted_at']) && $a['deleted_at'] !== null) continue; if (isset($a['active']) && ! $a['active']) continue; if (isset($a['is_active']) && ! $a['is_active']) continue; if (in_array(strtolower((string) ($a['status'] ?? '')), ['inactive','deleted','removed','cancelled','canceled'], true)) continue;
@@ -30,11 +36,11 @@ final class NativeProductServiceResolver
             $score = in_array($code, $codes, true) ? 3 : (in_array($category, $categories, true) ? 2 : (in_array($name, $names, true) ? 1 : 0));
             if ($score) $matches[] = compact('table','a','code','category','name','score');
         }
-        if (! $matches) return null;
+        if (! $matches) return $this->resolved[$cacheKey] = null;
         $best = max(array_column($matches, 'score')); $matches = array_values(array_filter($matches, fn (array $m): bool => $m['score'] === $best));
         if (count($matches) !== 1) throw ValidationException::withMessages(['product' => "Multiple active native {$label} Product/Service masters matched; no Product identity was guessed."]);
         $m = $matches[0]; $r = $m['a'];
-        return ['id'=>(int) ($r['id'] ?? $r['product_service_id'] ?? 0), 'table'=>$m['table'], 'row'=>$r, 'code'=>$m['code'], 'name'=>$m['name'], 'category'=>$m['category'], 'pricing_basis'=>strtoupper((string) ($r['pricing_basis'] ?? $r['pricing_basis_code'] ?? '')), 'passenger_link_mode'=>strtoupper((string) ($r['passenger_link_mode'] ?? $r['passenger_link'] ?? '')), 'customer_sale_currency'=>strtoupper((string) ($r['customer_sale_currency'] ?? $r['sale_currency'] ?? $r['currency_code'] ?? '')), 'supplier_cost_currency'=>strtoupper((string) ($r['supplier_cost_currency'] ?? $r['cost_currency'] ?? '')), 'revenue_mapping'=>(string) ($r['revenue_mapping'] ?? $r['revenue_mapping_key'] ?? ''), 'cost_mapping'=>(string) ($r['cost_mapping'] ?? $r['cost_mapping_key'] ?? '')];
+        return $this->resolved[$cacheKey] = ['id'=>(int) ($r['id'] ?? $r['product_service_id'] ?? 0), 'table'=>$m['table'], 'row'=>$r, 'code'=>$m['code'], 'name'=>$m['name'], 'category'=>$m['category'], 'pricing_basis'=>strtoupper((string) ($r['pricing_basis'] ?? $r['pricing_basis_code'] ?? '')), 'passenger_link_mode'=>strtoupper((string) ($r['passenger_link_mode'] ?? $r['passenger_link'] ?? '')), 'customer_sale_currency'=>strtoupper((string) ($r['customer_sale_currency'] ?? $r['sale_currency'] ?? $r['currency_code'] ?? '')), 'supplier_cost_currency'=>strtoupper((string) ($r['supplier_cost_currency'] ?? $r['cost_currency'] ?? '')), 'revenue_mapping'=>(string) ($r['revenue_mapping'] ?? $r['revenue_mapping_key'] ?? ''), 'cost_mapping'=>(string) ($r['cost_mapping'] ?? $r['cost_mapping_key'] ?? '')];
     }
 
     private function tables(): array

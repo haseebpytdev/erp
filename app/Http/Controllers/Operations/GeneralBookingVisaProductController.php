@@ -36,10 +36,12 @@ final class GeneralBookingVisaProductController extends Controller
 
     public function show(Request $request, int $booking): JsonResponse
     {
+        $timing = \App\Services\Operations\DedicatedProductTimingContext::forRequest($request);
+        $timing?->start('visa_controller_total');
         $this->assertBooking($booking);
         $this->assertSchema();
 
-        $passengers = $this->bookingPassengers($booking);
+        $passengers = $timing?->measure('visa_passengers', fn (): array => $this->bookingPassengers($booking)) ?? $this->bookingPassengers($booking);
         $rows = DB::table('booking_visa_services')
             ->where('booking_id', $booking)
             ->orderBy('id')
@@ -48,20 +50,24 @@ final class GeneralBookingVisaProductController extends Controller
             ->values()
             ->all();
 
-        return response()->json([
+        $response = response()->json([
             'ok' => true,
             'booking_id' => $booking,
             'currency' => 'PKR',
             'passengers' => $passengers,
             'visa_rows' => $rows,
-            'saudi_companies' => $this->saudiCompanies(),
-            'pakistani_iatas' => $this->pakistaniIatas(),
-            'rates' => $this->rateCards(),
-            'vendors' => $this->vendorOptions(),
+            // Existing booking rows and saved rate snapshots are authoritative;
+            // Travel Master discovery is reserved for rate creation/editing.
+            'saudi_companies' => [],
+            'pakistani_iatas' => [],
+            'rates' => $timing?->measure('visa_rates', fn (): array => $this->rateCards()) ?? $this->rateCards(),
+            'vendors' => $timing?->measure('visa_vendors', fn (): array => $this->vendorOptions()) ?? $this->vendorOptions(),
             'statuses' => $this->statusOptions(),
             'summary' => $this->summary($rows),
             'setup_url' => route('travel-masters.visa-management', ['booking' => $booking]),
         ]);
+        $timing?->stop('visa_controller_total');
+        return $timing ? $timing->finishResponse($response) : $response;
     }
 
     public function store(Request $request, int $booking): JsonResponse
@@ -90,6 +96,14 @@ final class GeneralBookingVisaProductController extends Controller
         ]);
 
         $passengers = collect($this->bookingPassengers($booking))->keyBy('id');
+        $today = now()->toDateString();
+        $submittedRateIds = collect((array) $data['visas'])->pluck('visa_rate_card_id')->map(static fn ($id): int => (int) $id)->filter()->unique()->values();
+        $ratesById = $submittedRateIds->isEmpty() ? collect() : DB::table('visa_rate_cards')
+            ->whereIn('id', $submittedRateIds->all())
+            ->where('is_active', true)
+            ->where('effective_from', '<=', $today)
+            ->where(function ($query) use ($today): void { $query->whereNull('effective_to')->orWhere('effective_to', '>=', $today); })
+            ->get()->keyBy('id');
         if ($passengers->isEmpty()) {
             throw ValidationException::withMessages(['visa' => 'Add at least one booking passenger before saving Visa data.']);
         }
@@ -107,37 +121,37 @@ final class GeneralBookingVisaProductController extends Controller
             $seen[$passengerId] = true;
 
             $rateId = max(0, (int) ($raw['visa_rate_card_id'] ?? 0));
-            $today = now()->toDateString();
-            $rate = $rateId > 0
-                ? DB::table('visa_rate_cards')
-                    ->where('id', $rateId)
-                    ->where('is_active', true)
-                    ->where('effective_from', '<=', $today)
-                    ->where(function ($query) use ($today): void {
-                        $query->whereNull('effective_to')->orWhere('effective_to', '>=', $today);
-                    })
-                    ->first()
-                : null;
+            $rate = $rateId > 0 ? $ratesById->get($rateId) : null;
 
             if (! $rate) {
                 throw ValidationException::withMessages(["visas.$index.visa_rate_card_id" => 'Select a currently effective Visa Rate from Travel Masters → Visa Management.']);
             }
 
+            $providerType = strtoupper(trim((string) ($rate->provider_type ?? 'KSA_CHAIN')));
             $saudiMasterTable = trim((string) ($rate->saudi_master_table ?? ''));
             $saudiMasterId = (int) ($rate->saudi_master_id ?? 0);
-            $saudi = $saudiMasterTable !== '' && $saudiMasterId > 0
-                ? $this->visaMasters->findSaudiByKey($saudiMasterTable.':'.$saudiMasterId)
-                : null;
-            if (! $saudi || ! (bool) ($saudi['is_active'] ?? true) || ! (bool) ($saudi['link_complete'] ?? false)) {
-                throw ValidationException::withMessages(["visas.$index.visa_rate_card_id" => 'Visa Rate does not have a complete Saudi Company → Pakistani IATA → Vendor link. Update the native Travel Masters link and recreate the Visa Rate.']);
+            $saudi = null;
+            if ($providerType !== 'DIRECT_VENDOR') {
+                $saudi = $saudiMasterTable !== '' && $saudiMasterId > 0 ? $this->visaMasters->findSaudiByKey($saudiMasterTable.':'.$saudiMasterId) : null;
+                if (! $saudi || ! (bool) ($saudi['is_active'] ?? true) || ! (bool) ($saudi['link_complete'] ?? false)) {
+                    throw ValidationException::withMessages(["visas.$index.visa_rate_card_id" => 'Visa Rate does not have a complete Saudi Company → Pakistani IATA → Vendor link.']);
+                }
             }
 
-            $saudiId = (int) ($saudi['id'] ?? 0);
-            $iataId = (int) ($saudi['pakistani_iata_id'] ?? 0);
-            $vendorId = (int) ($saudi['vendor_id'] ?? 0);
+            $saudiId = $providerType === 'DIRECT_VENDOR' ? null : (int) ($saudi['id'] ?? 0);
+            $iataId = $providerType === 'DIRECT_VENDOR' ? null : (int) ($saudi['pakistani_iata_id'] ?? 0);
+            $vendorId = (int) ($rate->vendor_id ?? ($saudi['vendor_id'] ?? 0));
+            if ($providerType === 'DIRECT_VENDOR' && $vendorId <= 0) {
+                throw ValidationException::withMessages(["visas.$index.visa_rate_card_id" => 'Direct Vendor Visa Rates require a valid ERP Vendor.']);
+            }
 
-            $saudiName = trim((string) ($rate->saudi_company_name_snapshot ?? '')) ?: trim((string) ($saudi['name'] ?? ''));
-            $iataName = trim((string) ($rate->pakistani_iata_name_snapshot ?? '')) ?: trim((string) ($saudi['pakistani_iata_name'] ?? ''));
+            $saudiName = $providerType === 'DIRECT_VENDOR' ? '' : (trim((string) ($rate->saudi_company_name_snapshot ?? '')) ?: trim((string) ($saudi['name'] ?? '')));
+            $iataName = $providerType === 'DIRECT_VENDOR' ? '' : (trim((string) ($rate->pakistani_iata_name_snapshot ?? '')) ?: trim((string) ($saudi['pakistani_iata_name'] ?? '')));
+            $vendorName = trim((string) ($rate->vendor_name_snapshot ?? ''));
+            if ($vendorName === '' && $vendorId > 0) {
+                $vendorRow = collect($this->vendorOptions())->firstWhere('id', $vendorId);
+                $vendorName = is_array($vendorRow) ? trim((string) ($vendorRow['name'] ?? '')) : '';
+            }
 
             $country = trim((string) ($rate->country ?? ($raw['country'] ?? 'Saudi Arabia')));
             $visaType = trim((string) ($rate->visa_type ?? ($raw['visa_type'] ?? 'Umrah')));
@@ -157,11 +171,13 @@ final class GeneralBookingVisaProductController extends Controller
                 'booking_id' => $booking,
                 'booking_passenger_id' => $passengerId,
                 'visa_rate_card_id' => $rateId,
+                'provider_type' => $providerType,
                 'country' => $country,
                 'visa_type' => $visaType,
                 'saudi_company_id' => $saudiId,
                 'pakistani_iata_id' => $iataId,
                 'vendor_id' => $vendorId,
+                'vendor_name_snapshot' => $vendorName !== '' ? $vendorName : null,
                 'application_reference' => trim((string) ($raw['application_reference'] ?? '')) ?: null,
                 'visa_number' => trim((string) ($raw['visa_number'] ?? '')) ?: null,
                 'status' => $this->normalizeStatus((string) ($raw['status'] ?? 'pending')),
@@ -176,9 +192,9 @@ final class GeneralBookingVisaProductController extends Controller
                 'notes' => trim((string) ($raw['notes'] ?? '')) ?: null,
             ];
             foreach ([
-                'saudi_master_table' => (string) ($saudi['source_table'] ?? $saudiMasterTable),
+                'saudi_master_table' => $providerType === 'DIRECT_VENDOR' ? null : (string) ($saudi['source_table'] ?? $saudiMasterTable),
                 'saudi_master_id' => $saudiId,
-                'pakistani_iata_master_table' => (string) ($saudi['pakistani_iata_source_table'] ?? ''),
+                'pakistani_iata_master_table' => $providerType === 'DIRECT_VENDOR' ? null : (string) ($saudi['pakistani_iata_source_table'] ?? ''),
                 'pakistani_iata_master_id' => $iataId,
                 'saudi_company_name_snapshot' => $saudiName,
                 'pakistani_iata_name_snapshot' => $iataName,
@@ -238,6 +254,11 @@ final class GeneralBookingVisaProductController extends Controller
         if (! Schema::hasTable('booking_visa_services') || ! Schema::hasTable('visa_rate_cards')) {
             throw ValidationException::withMessages(['visa' => 'Visa product schema is not installed. Open System Health & Updates and run Safe Database Upgrade.']);
         }
+        foreach (['provider_type', 'vendor_id', 'vendor_name_snapshot'] as $column) {
+            if (! Schema::hasColumn('booking_visa_services', $column) || ! Schema::hasColumn('visa_rate_cards', $column)) {
+                throw ValidationException::withMessages(['visa' => 'Generic Visa provider schema is not installed. Run Safe Database Upgrade.']);
+            }
+        }
     }
 
     /** @return list<array<string,mixed>> */
@@ -282,31 +303,26 @@ final class GeneralBookingVisaProductController extends Controller
     private function rateCards(): array
     {
         $today = now()->toDateString();
+        $vendors = collect($this->vendorOptions())->keyBy('id');
         return DB::table('visa_rate_cards')->where('is_active', true)
             ->where('effective_from', '<=', $today)
             ->where(function ($q) use ($today): void { $q->whereNull('effective_to')->orWhere('effective_to', '>=', $today); })
-            ->orderBy('country')->orderBy('visa_type')->orderByDesc('effective_from')->get()->map(function (object $row): ?array {
+            ->orderBy('country')->orderBy('visa_type')->orderByDesc('effective_from')->get()->map(function (object $row) use ($vendors): ?array {
                 $data = (array) $row;
-                $saudiTable = trim((string) ($data['saudi_master_table'] ?? ''));
-                $saudiId = (int) ($data['saudi_master_id'] ?? 0);
-                $saudi = $saudiTable !== '' && $saudiId > 0
-                    ? $this->visaMasters->findSaudiByKey($saudiTable.':'.$saudiId)
-                    : null;
-                if (! $saudi || ! (bool) ($saudi['is_active'] ?? true) || ! (bool) ($saudi['link_complete'] ?? false)) {
-                    return null;
-                }
+                $provider = strtoupper(trim((string) ($data['provider_type'] ?? 'KSA_CHAIN')));
+                $vendor = $vendors->get((int) ($data['vendor_id'] ?? 0));
+                $vendorName = trim((string) ($data['vendor_name_snapshot'] ?? '')) ?: (string) ($vendor['name'] ?? '');
                 $currency = $this->normalizeCurrency((string) ($data['cost_currency'] ?? 'SAR'));
                 $fx = $this->exchangeRateToPkr($currency);
                 $costRate = round((float) ($data['cost_rate'] ?? 0), 4);
-                $saudiName = trim((string) ($data['saudi_company_name_snapshot'] ?? '')) ?: trim((string) ($saudi['name'] ?? ''));
-                $iataName = trim((string) ($data['pakistani_iata_name_snapshot'] ?? '')) ?: trim((string) ($saudi['pakistani_iata_name'] ?? ''));
-                $vendor = collect($this->vendorOptions())->firstWhere('id', (int) ($saudi['vendor_id'] ?? 0));
-                $vendorName = is_array($vendor) ? (string) ($vendor['name'] ?? '') : '';
+                $saudiName = trim((string) ($data['saudi_company_name_snapshot'] ?? ''));
+                $iataName = trim((string) ($data['pakistani_iata_name_snapshot'] ?? ''));
                 return [
                     'id' => (int) $data['id'], 'country' => (string) $data['country'], 'visa_type' => (string) $data['visa_type'],
-                    'saudi_company_id' => (int) ($saudi['id'] ?? 0), 'saudi_company_name' => $saudiName,
-                    'pakistani_iata_id' => (int) ($saudi['pakistani_iata_id'] ?? 0), 'pakistani_iata_name' => $iataName,
-                    'vendor_id' => (int) ($saudi['vendor_id'] ?? 0), 'vendor_name' => $vendorName,
+                    'provider_type' => $provider, 'provider_name' => $provider === 'DIRECT_VENDOR' ? $vendorName : $saudiName,
+                    'saudi_company_id' => (int) ($data['saudi_company_id'] ?? 0), 'saudi_company_name' => $saudiName,
+                    'pakistani_iata_id' => (int) ($data['pakistani_iata_id'] ?? 0), 'pakistani_iata_name' => $iataName,
+                    'vendor_id' => (int) ($data['vendor_id'] ?? 0), 'vendor_name' => $vendorName,
                     'cost_currency' => $currency, 'cost_rate' => $costRate, 'exchange_rate' => $fx !== null ? round($fx, 8) : null,
                     'vendor_cost_pkr' => $fx !== null ? round($costRate * $fx, 2) : null,
                     'default_sale_pkr' => round((float) ($data['default_sale_pkr'] ?? 0), 2),
@@ -322,25 +338,20 @@ final class GeneralBookingVisaProductController extends Controller
         $pax = collect($passengers)->firstWhere('id', (int) ($row['booking_passenger_id'] ?? 0)) ?: [];
         $vendorRow = collect($this->vendorOptions())->firstWhere('id', (int) ($row['vendor_id'] ?? 0));
         $vendorName = is_array($vendorRow) ? (string) ($vendorRow['name'] ?? '') : '';
-        $saudi = null;
-        $saudiTable = trim((string) ($row['saudi_master_table'] ?? ''));
-        $saudiId = (int) ($row['saudi_master_id'] ?? $row['saudi_company_id'] ?? 0);
-        if ($saudiTable !== '' && $saudiId > 0) {
-            $saudi = $this->visaMasters->findSaudiByKey($saudiTable.':'.$saudiId);
-        } elseif ($saudiId > 0) {
-            $matches = array_values(array_filter(
-                $this->visaMasters->saudiCompanies(),
-                static fn (array $candidate): bool => (int) ($candidate['id'] ?? 0) === $saudiId
-            ));
-            if (count($matches) === 1) $saudi = $matches[0];
-        }
+        $provider = strtoupper(trim((string) ($row['provider_type'] ?? 'KSA_CHAIN')));
+        $saudiName = trim((string) ($row['saudi_company_name_snapshot'] ?? ''));
+        $iataName = trim((string) ($row['pakistani_iata_name_snapshot'] ?? ''));
+        $vendorName = trim((string) ($row['vendor_name_snapshot'] ?? '')) ?: $vendorName;
         return $row + [
             'passenger_name' => (string) ($pax['name'] ?? ''),
             'passport_number' => (string) ($pax['passport_number'] ?? ''),
-            'saudi_company_name' => trim((string) ($row['saudi_company_name_snapshot'] ?? '')),
-            'pakistani_iata_name' => trim((string) ($row['pakistani_iata_name_snapshot'] ?? '')),
+            'provider_type' => $provider,
+            'provider_name' => $provider === 'DIRECT_VENDOR' ? $vendorName : $saudiName,
+            'provider_secondary' => $provider === 'DIRECT_VENDOR' ? '' : $iataName,
+            'saudi_company_name' => $saudiName,
+            'pakistani_iata_name' => $iataName,
             'vendor_name' => (string) $vendorName,
-            'saudi_company_footer' => trim((string) ($saudi['voucher_footer'] ?? '')),
+            'saudi_company_footer' => '',
         ];
     }
 

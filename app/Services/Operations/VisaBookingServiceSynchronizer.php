@@ -23,6 +23,7 @@ final class VisaBookingServiceSynchronizer
 
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
+        private readonly NativeProductServiceResolver $products,
     ) {}
 
     /** @return array<string,mixed> */
@@ -59,7 +60,12 @@ final class VisaBookingServiceSynchronizer
             ];
         }
 
-        $master = $this->resolveVisaMaster();
+        // NativeProductServiceResolver is the sole Visa identity authority;
+        // physical product_services/service_products resolution remains dynamic.
+        // It follows the physical booking-service foreign key (the legacy
+        // Schema::getForeignKeys(self::SERVICE_TABLE) path) and exact Visa
+        // token semantics (preg_match('/(^|[^a-z0-9])visa([^a-z0-9]|$)/i')).
+        $master = $this->products->visa();
         $services = $this->visaServices($bookingId, (int) $master['id']);
         $active = array_values(array_filter($services, fn (array $row): bool => $this->isActive($row)));
         if (count($active) > 1) {
@@ -168,58 +174,6 @@ final class VisaBookingServiceSynchronizer
         }
 
         return [$ids, round($customer, 2), round($vendor, 2), $vendorIds[0] ?? null];
-    }
-
-    /** @return array{id:int,table:string,row:array<string,mixed>} */
-    private function resolveVisaMaster(): array
-    {
-        $tables = [];
-        try {
-            foreach (Schema::getForeignKeys(self::SERVICE_TABLE) as $foreign) {
-                $locals = (array) ($foreign['columns'] ?? $foreign['local_columns'] ?? []);
-                if (! in_array('product_service_id', $locals, true)) continue;
-                $table = (string) ($foreign['foreign_table'] ?? $foreign['foreign_table_name'] ?? $foreign['table'] ?? '');
-                if ($table !== '' && Schema::hasTable($table)) $tables[] = $table;
-            }
-        } catch (Throwable) {
-        }
-        if ($tables === []) {
-            foreach (['product_services', 'product_service_master', 'product_service_masters', 'travel_product_services', 'service_products'] as $table) {
-                if (Schema::hasTable($table)) $tables[] = $table;
-            }
-        }
-
-        $matches = [];
-        foreach (array_values(array_unique($tables)) as $table) {
-            $columns = Schema::getColumnListing($table);
-            $idColumn = $this->firstColumn($columns, ['id', 'product_service_id']);
-            if (! $idColumn) continue;
-            $semantic = array_values(array_intersect($columns, [
-                'name', 'service_name', 'title', 'label', 'description',
-                'code', 'service_code', 'product_code', 'slug',
-                'type', 'service_type', 'product_type', 'category',
-            ]));
-            if ($semantic === []) continue;
-
-            foreach (DB::table($table)->get() as $object) {
-                $row = (array) $object;
-                if (! $this->isActive($row)) continue;
-                $haystack = strtolower(implode(' ', array_map(
-                    static fn (string $field): string => trim((string) ($row[$field] ?? '')),
-                    $semantic,
-                )));
-                if (! preg_match('/(^|[^a-z0-9])visa([^a-z0-9]|$)/i', $haystack)) continue;
-                $id = (int) ($row[$idColumn] ?? 0);
-                if ($id > 0) $matches[$table.':'.$id] = ['id' => $id, 'table' => $table, 'row' => $row];
-            }
-        }
-
-        if (count($matches) !== 1) {
-            $this->fail(count($matches) === 0
-                ? 'The active native Visa Product/Service master could not be resolved.'
-                : 'Multiple active native Visa Product/Service masters matched; no product identity was guessed.');
-        }
-        return array_values($matches)[0];
     }
 
     /** @param array{id:int,table:string,row:array<string,mixed>} $master @return array{name:string,code:string,revenue_mapping_key:string,passenger_link_mode:string,pricing_basis:string} */
@@ -486,13 +440,6 @@ final class VisaBookingServiceSynchronizer
     private function putAll(array &$row, array $columns, array $fields, mixed $value): void
     {
         foreach ($fields as $field) if (in_array($field, $columns, true)) $row[$field] = $value;
-    }
-
-    /** @param list<string> $columns @param list<string> $candidates */
-    private function firstColumn(array $columns, array $candidates): ?string
-    {
-        foreach ($candidates as $candidate) if (in_array($candidate, $columns, true)) return $candidate;
-        return null;
     }
 
     private function fail(string $message): never
