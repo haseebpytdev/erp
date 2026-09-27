@@ -6,25 +6,36 @@ CURRENT_LIVE_RELEASE=ERP-11.3.364
 CURRENT_VERSION=ERP-11.3.365
 APPLICATION_VERSION=v1.1.33.365-ERP11.3.365
 CURRENT_LIVE_VERSION=v1.1.33.364-ERP11.3.364
-CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=YES
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.364 LIVE; ERP-11.3.365 DEVELOPMENT / NOT DEPLOYED.
+PRODUCTION_STATUS=ERP-11.3.364 LIVE; ERP-11.3.365 FINALIZED / NOT DEPLOYED.
 LAST_PACKAGED_RELEASE=ERP-11.3.364
 ```
 
 ERP-11.3.365 Generic Visa + Dedicated Runtime Foundation
 
-ERP-11.3.365 adds the generic Visa provider foundation with KSA_CHAIN and
-DIRECT_VENDOR modes, additive provider snapshots, bounded Visa rate loading,
-native Visa Product/Service resolution and a dedicated Visa runtime. Existing
-financial values, vendor identity authority, booking snapshots, accounting,
-reports and historical Visa behavior remain unchanged. NEW_MIGRATION_REQUIRED=YES.
+ERP-11.3.365 adds generic Visa provider architecture for KSA_CHAIN and
+DIRECT_VENDOR, existing KSA/Umrah compatibility, native Visa Product/Service
+resolution, a dedicated Visa runtime, shared client authority, dedicated fast
+navigation, response/promise caching, and removal of the GENERAL progressive
+runtime from dedicated Visa. Normal Visa GET schema-wide Travel Master discovery
+and Visa Rate N+1 loading are removed; submitted-rate lookup is bulk-loaded and
+Visa JSON timing is instrumented. Existing financial values, vendor identity
+authority, booking snapshots, accounting, reports and historical Visa behavior
+remain unchanged. NEW_MIGRATION_REQUIRED=YES.
 
-VISA_PROVIDER_REGRESSION=PASS (21 assertions)
+Migration: database/migrations/2026_09_27_000000_add_generic_visa_provider_contract.php
+Deployment requires the normal Safe Database Upgrade, then Clear Application
+Cache when required. PHP and migration runtimes were unavailable locally.
+Dedicated Visa product JS is 9481 bytes total; Visa CSS is 1093 bytes; the
+former GENERAL progressive JS baseline was 283290 bytes. These are static
+architecture measurements, not live timing claims.
+
+VISA_PROVIDER_REGRESSION=PASS (30 assertions)
 VISA_RUNTIME_REGRESSION=PASS (static architecture)
 VISA_FAST_NAV_REGRESSION=PASS (static architecture)
 VISA_PRODUCT_SPECIFIC_JS=YES
