@@ -1,47 +1,30 @@
-ERP-11.3.365 Generic Visa + Dedicated Runtime Foundation
+ERP-11.3.366 Visa Workspace UI & Interaction
 
-Active release: v1.1.33.365-ERP11.3.365
-CURRENT_LIVE_RELEASE=ERP-11.3.364
-CURRENT_LIVE_VERSION=v1.1.33.364-ERP11.3.364
-NEW_MIGRATION_REQUIRED=YES
+Active release: v1.1.33.366-ERP11.3.366
+CURRENT_LIVE_RELEASE=ERP-11.3.365
+CURRENT_LIVE_VERSION=v1.1.33.365-ERP11.3.365
+NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.365 is FINALIZED / NOT DEPLOYED.
-ERP-11.3.364 remains current production.
-LAST_PACKAGED_RELEASE=ERP-11.3.364
+ERP-11.3.366 is FINALIZED / NOT DEPLOYED.
+ERP-11.3.365 remains current production.
+LAST_PACKAGED_RELEASE=ERP-11.3.365
 
-ERP-11.3.365 adds generic Visa provider architecture for KSA_CHAIN and
-DIRECT_VENDOR, existing KSA/Umrah compatibility, native Visa Product/Service
-resolution, a dedicated Visa runtime, shared client authority, dedicated fast
-navigation, response/promise caching, and removal of the GENERAL progressive
-runtime from dedicated Visa. Normal Visa GET schema-wide Travel Master discovery
-and Visa Rate N+1 loading are removed; submitted-rate lookup is bulk-loaded and
-Visa JSON timing is instrumented. An additive migration is required:
-database/migrations/2026_09_27_000000_add_generic_visa_provider_contract.php.
-Run the normal Safe Database Upgrade, then Clear Application Cache when required.
-PHP runtime and migration runtime were not available for local verification.
-Dedicated Visa product JS is 9481 bytes total; Visa CSS is 1093 bytes; the
-former GENERAL progressive JS baseline was 283290 bytes. These are static
-architecture measurements, not live timing claims.
+ERP-11.3.366 completes explicit passenger and Visa Rate selection,
+multi-passenger Add Visa, duplicate prevention, smart tri-state checkbox
+selection, contextual bulk status actions, row Details/Edit, 25/50/100
+pagination, compact checkbox/action controls, Margin heading,
+responsive/mobile behavior, Save dirty/loading/double-submit protection and
+the dedicated Visa runtime. No new migration is required. DIRECT_VENDOR live
+UAT has not been claimed; production verification remains pending.
 
-ERP-11.3.365 is finalized but not deployed. Do not mark it live before
+ERP-11.3.366 is finalized but not deployed. Do not mark it live before
 deployment and production verification.
 
-ERP363_REGRESSION=PASS (37)
-ERP364_REGRESSION=PASS (44)
-VISA_PROVIDER_REGRESSION=PASS (30)
-VISA_SHARED_AUTHORITY_REGRESSION=PASS
-DEDICATED_VISA_RUNTIME_REGRESSION=PASS
-VISA_FAST_NAV_REGRESSION=PASS
+VISA_WORKSPACE_UI_REGRESSION=PASS (35 assertions)
+VISA_PROVIDER_REGRESSION=PASS (30 assertions)
+VISA_RUNTIME_REGRESSION=PASS (static architecture)
+VISA_FAST_NAV_REGRESSION=PASS (static architecture)
 HISTORICAL_VISA_REGRESSIONS=PASS (386,14,59,23,45)
-AIR_FAST_NAV_REGRESSIONS=PASS (12,36,21,114)
-AIR_DOM_REGRESSION=PASS (45)
-BASE_COMMON_TOTAL=116
-BASE_COMMON_PASS=74
-BASE_COMMON_FAIL=42
-CANDIDATE_COMMON_TOTAL=116
-CANDIDATE_COMMON_PASS=74
-CANDIDATE_COMMON_FAIL=42
-BASELINE_FAILURE_SET_EQUALS_CANDIDATE_FAILURE_SET=YES
 RELEASE_ONLY_FAILURES=0
 UNEXPECTED_FAILURES=0
 
