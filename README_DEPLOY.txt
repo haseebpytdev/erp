@@ -1,3 +1,14 @@
+ERP-11.3.362 Party Statement Live UI / Print / Drilldown Corrective
+
+Active release: v1.1.33.362-ERP11.3.362
+CURRENT_LIVE_RELEASE=ERP-11.3.361
+CURRENT_LIVE_VERSION=v1.1.33.361-ERP11.3.361
+NEW_MIGRATION_REQUIRED=NO
+
+ERP-11.3.362 is FINALIZED / NOT DEPLOYED. It has NOT yet been packaged.
+ERP-11.3.361 remains current production.
+LAST_PACKAGED_RELEASE=ERP-11.3.361
+
 ERP-11.3.360 Party Statement Combined Live Fix
 
 ERP-11.3.360 corrects combined Party Statement live data enrichment, party-period
@@ -11,12 +22,8 @@ adds product-aware Hotel, Visa, Transport and Umrah summaries. ERP-11.3.358
 financial projection and financial-year advance visibility remain unchanged.
 No posting, database schema or migration changes are included.
 
-Active release: v1.1.33.362-ERP11.3.362
-CURRENT_LIVE_RELEASE=ERP-11.3.361
-NEW_MIGRATION_REQUIRED=NO
-
-ERP-11.3.362 is the active development release. It is not finalized, packaged,
-or deployed. ERP-11.3.361 is currently live.
+Historical ERP-11.3.362 source-review snapshot: the release is finalized but
+not deployed and has not yet been packaged. ERP-11.3.361 remains current live.
 
 HISTORICAL RELEASE NOTES BELOW ARE POINT-IN-TIME RECORDS. THE CURRENT
 DEPLOYMENT AUTHORITY IS THE HEADER ABOVE.
