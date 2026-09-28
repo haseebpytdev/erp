@@ -1,27 +1,28 @@
-ERP-11.3.367 Visa Runtime Stabilization
+ERP-11.3.368 Visa Add Modal & Sale Price UI
 
-Active release: v1.1.33.367-ERP11.3.367
-CURRENT_LIVE_RELEASE=ERP-11.3.366
-CURRENT_LIVE_VERSION=v1.1.33.366-ERP11.3.366
+Active release: v1.1.33.368-ERP11.3.368
+CURRENT_LIVE_RELEASE=ERP-11.3.367
+CURRENT_LIVE_VERSION=v1.1.33.367-ERP11.3.367
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.367 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION VERIFIED.
-ERP-11.3.366 remains current production but has the known Visa runtime defect
-that .367 corrects.
-LAST_PACKAGED_RELEASE=ERP-11.3.366
+ERP-11.3.368 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION VERIFIED.
+ERP-11.3.367 remains current production.
+LAST_PACKAGED_RELEASE=ERP-11.3.367
 
-ERP-11.3.367 stabilizes the dedicated Visa runtime, versioned asset/cache
-identity, Visa fast navigation, transactional fragment mounting, complete
-response cache preservation and full/sparse draft hydration. Existing provider,
-financial and accounting behavior remains unchanged. No new migration is
-required. DIRECT_VENDOR live UAT has not been claimed; production verification
-remains pending.
+ERP-11.3.368 completes the Visa Add modal and editable Sale Price workspace
+with explicit passenger and Visa Rate selection, multi-passenger custom sale
+pricing, duplicate prevention, responsive/mobile presentation and protected
+save behavior. Existing provider, financial and accounting behavior remains
+unchanged. No new migration is required. DIRECT_VENDOR live UAT has not been
+claimed; production verification remains pending.
 
-ERP-11.3.367 must not be marked live before deployment and production
+ERP-11.3.368 must not be marked live before deployment and production
 verification.
 
+ERP368_MODAL_REGRESSION=PASS (19 assertions)
+ERP368_SALE_PRICE_REGRESSION=PASS (19 assertions)
 VISA_WORKSPACE_UI_REGRESSION=PASS (35 assertions)
-VISA_PROVIDER_REGRESSION=PASS (30 assertions)
+VISA_PROVIDER_REGRESSION=PASS (32 assertions)
 VISA_RUNTIME_REGRESSION=PASS (static architecture)
 VISA_FAST_NAV_REGRESSION=PASS (static architecture)
 HISTORICAL_VISA_REGRESSIONS=PASS (386,14,59,23,45)

@@ -1,39 +1,40 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.367
-CURRENT_LIVE_RELEASE=ERP-11.3.366
-CURRENT_VERSION=ERP-11.3.367
-APPLICATION_VERSION=v1.1.33.367-ERP11.3.367
-CURRENT_LIVE_VERSION=v1.1.33.366-ERP11.3.366
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.368
+CURRENT_LIVE_RELEASE=ERP-11.3.367
+CURRENT_VERSION=ERP-11.3.368
+APPLICATION_VERSION=v1.1.33.368-ERP11.3.368
+CURRENT_LIVE_VERSION=v1.1.33.367-ERP11.3.367
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.366 is current production with the known Visa runtime defect being corrected by ERP-11.3.367; ERP-11.3.367 FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
-LAST_PACKAGED_RELEASE=ERP-11.3.366
+PRODUCTION_STATUS=ERP-11.3.367 is current production; ERP-11.3.368 NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+LAST_PACKAGED_RELEASE=ERP-11.3.367
 ```
 
-ERP-11.3.367 Visa Runtime Stabilization
+ERP-11.3.368 Visa Add Modal & Sale Price UI
 
-ERP-11.3.367 stabilizes the dedicated Visa runtime with a new versioned asset
-and cache identity, safe fast navigation from the normal Booking Workspace,
-transactional fragment replacement, real Visa runtime mounting, complete
-response-cache preservation and full draft/sparse-draft state hydration.
-Existing Visa provider, financial, accounting and persistence behavior remains
-unchanged. NEW_MIGRATION_REQUIRED=NO. ERP-11.3.367 is FINALIZED / NOT
+ERP-11.3.368 completes the Visa Add modal and editable Sale Price workspace
+with explicit passenger and Visa Rate selection, multi-passenger custom sale
+pricing, duplicate prevention, responsive/mobile presentation and protected
+save behavior. Existing provider, financial and accounting behavior remains
+unchanged. NEW_MIGRATION_REQUIRED=NO. ERP-11.3.368 is NOT FINALIZED / NOT
 PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
 
 RUNTIME_SCOPE_REGRESSION=PASS (11 assertions)
 INTERACTION_RUNTIME_REGRESSION=PASS (17 assertions)
 STATE_CACHE_DRAFT_REGRESSION=PASS (13 assertions)
+ERP368_MODAL_REGRESSION=PASS (19 assertions)
+ERP368_SALE_PRICE_REGRESSION=PASS (19 assertions)
 VISA_WORKSPACE_UI_REGRESSION=PASS (35 assertions)
 VISA_PROVIDER_REGRESSION=PASS (32 assertions)
 ERP367_FAST_NAV_REGRESSION=PASS (12 assertions)
 ERP367_LOCK_REGRESSION=PASS (16 assertions)
-FULL_NODE_RESULT=123 total / 81 pass / 42 historical/environment failures
+FULL_NODE_RESULT=125 total / 83 pass / 42 historical/environment failures
 RELEASE_ONLY_FAILURES=0
 NEW_NODE_FAILURES=0
 VISA_LOCK_AUTHORITY_PRESENT=YES
