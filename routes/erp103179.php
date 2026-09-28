@@ -39,6 +39,7 @@ use App\Http\Controllers\Sales\StableBookingSalesInvoiceController;
 use App\Http\Middleware\PresentAirTicketSalesInvoice;
 use App\Http\Middleware\EnsureAirTicketCommercialIntegrityBeforeNativeWorkflow;
 use App\Http\Middleware\PresentSalesInvoiceFocusedWorkspace;
+use App\Http\Middleware\PresentSalesInvoicePrintV2;
 use App\Http\Controllers\System\ProductionDataResetController;
 use App\Http\Controllers\System\PostResetFinancialCleanupController;
 use App\Http\Controllers\System\ReportsFilterAssetController;
@@ -620,6 +621,21 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     }
 
     $route->middleware(PresentAccountingReportsWorkspace::class);
+});
+
+// Attach the .370 print presentation to the existing native route only.
+Event::listen(RouteMatched::class, function (RouteMatched $event): void {
+    $route = $event->route;
+    $uri = strtolower(trim((string) $route->uri(), '/'));
+
+    if (
+        ! in_array('GET', $route->methods(), true)
+        || preg_match('#^sales/invoices/\{[^}]+\}/print$#', $uri) !== 1
+    ) {
+        return;
+    }
+
+    $route->middleware(PresentSalesInvoicePrintV2::class);
 });
 
 /* The installed host may already own /voucher/{voucher}. Its different route

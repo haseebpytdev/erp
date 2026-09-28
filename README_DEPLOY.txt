@@ -1,3 +1,39 @@
+ERP-11.3.370 Sales Invoice Print V2
+
+Active release: v1.1.33.370-ERP11.3.370
+CURRENT_LIVE_RELEASE=ERP-11.3.368
+CURRENT_LIVE_VERSION=v1.1.33.368-ERP11.3.368
+NEW_MIGRATION_REQUIRED=NO
+
+ERP-11.3.370 adds a compact, presentation-only A4 Sales Invoice Print V2
+through the native host print response. Existing invoice identity, customer
+details, line values, subtotal, tax, discount, grand total, status, notes and
+accounting authorities remain native and unchanged. The print action remains
+browser-native; no posting, financial calculation, database or migration
+change is included.
+
+ERP-11.3.370 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
+VERIFIED. Browser print-preview and live production verification remain
+pending.
+
+ERP370_INVOICE_PRINT_REGRESSION=PASS (34 assertions)
+PRINT_ROUTE_RUNTIME_HOOK=PASS
+MIDDLEWARE_SCOPE_PRINT_ONLY=PASS
+NATIVE_RESPONSE_CONTENT_PRESERVED=PASS
+NO_FINANCIAL_ARITHMETIC=PASS
+NO_FINANCIAL_DATABASE_QUERY=PASS
+A4_PAGE_RULE=PASS
+PRINT_MEDIA_RULE=PASS
+PRINT_BUTTON_HIDDEN=PASS
+TABLE_HEADER_REPEAT=PASS
+ROW_BREAK_PROTECTION=PASS
+TOTALS_BREAK_PROTECTION=PASS
+LONG_TEXT_SAFE=PASS
+NEW_RELEASE_FAILURES=0
+UNEXPECTED_NEW_FAILURES=0
+PHP_RUNTIME=UNAVAILABLE
+DIRECT_VENDOR_LIVE_UAT=PENDING
+
 ERP-11.3.369 Visa Live Header & Sale UI Hotfix
 
 Active release: v1.1.33.369-ERP11.3.369
