@@ -35,6 +35,10 @@ const button = (host, label) => host.querySelectorAll('button').find(item => ite
 const modalInput = (host, kind) => host.querySelectorAll('input').find(input => input.getAttribute('data-etgp-visa-search') === kind);
 const modal = makeRoot(3685); context.window.etVisaProductCore.mount({ root: modal.root, bookingId: 3685 }); await nextTick(); button(modal.host, '+ Add Visa').click();
 ok(Boolean(modal.host.querySelector('.etgp-visa-dialog-366')), 'modal opens');
+const passengerOption = modal.host.querySelector('.etgp-visa-passenger-choice-368');
+ok(passengerOption.children.length === 3 && passengerOption.children[0].type === 'checkbox' && passengerOption.children[1].className.includes('etgp-visa-passenger-name-368') && passengerOption.children[2].className.includes('etgp-visa-passport-368'), 'passenger options use separate checkbox, name and passport columns');
+ok(passengerOption.children[1].textContent === 'Ayesha Khan' && passengerOption.children[2].textContent === 'AY123456', 'passenger name and passport remain paired');
+ok(Boolean(modal.host.querySelector('.etgp-visa-rate-identity-368')) && Boolean(modal.host.querySelector('.etgp-visa-rate-commercial-368')), 'rate identity and commercial details use readable semantic layout');
 ok(modal.host.querySelectorAll('input').filter(input => input.type === 'checkbox').every(input => !input.checked), 'no passenger selected automatically');
 ok(modal.host.querySelectorAll('input').filter(input => input.type === 'radio').every(input => !input.checked), 'no rate selected automatically');
 button(modal.host, 'Select All Eligible').click();
@@ -68,3 +72,4 @@ ok(context.window.etVisaProductCore.mount({ root: modal.root, bookingId: 3685 })
 locked = true; button(modal.host, '+ Add Visa').click();
 ok(!modal.host.querySelector('.etgp-visa-dialog-366') || button(modal.host, 'Select All Eligible')?.disabled === true, 'locked modal mutation is blocked');
 console.log(`ERP368_MODAL_REGRESSION=PASS (${assertions} assertions)`);
+console.log('PASSENGER_DOM_ALIGNMENT_REGRESSION=PASS');

@@ -19,8 +19,8 @@ claimed; production verification remains pending.
 ERP-11.3.368 must not be marked live before deployment and production
 verification.
 
-ERP368_MODAL_REGRESSION=PASS (19 assertions)
-ERP368_SALE_PRICE_REGRESSION=PASS (19 assertions)
+ERP368_MODAL_REGRESSION=PASS (22 assertions)
+ERP368_SALE_PRICE_REGRESSION=PASS (23 assertions)
 VISA_WORKSPACE_UI_REGRESSION=PASS (35 assertions)
 VISA_PROVIDER_REGRESSION=PASS (32 assertions)
 VISA_RUNTIME_REGRESSION=PASS (static architecture)
