@@ -1,13 +1,14 @@
 ERP-11.3.367 Visa Runtime Stabilization
 
 Active release: v1.1.33.367-ERP11.3.367
-CURRENT_LIVE_RELEASE=ERP-11.3.365
-CURRENT_LIVE_VERSION=v1.1.33.365-ERP11.3.365
+CURRENT_LIVE_RELEASE=ERP-11.3.366
+CURRENT_LIVE_VERSION=v1.1.33.366-ERP11.3.366
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.367 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED.
-ERP-11.3.365 remains current production.
-LAST_PACKAGED_RELEASE=ERP-11.3.365
+ERP-11.3.367 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION VERIFIED.
+ERP-11.3.366 remains current production but has the known Visa runtime defect
+that .367 corrects.
+LAST_PACKAGED_RELEASE=ERP-11.3.366
 
 ERP-11.3.367 stabilizes the dedicated Visa runtime, versioned asset/cache
 identity, Visa fast navigation, transactional fragment mounting, complete
