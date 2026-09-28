@@ -1,8 +1,8 @@
 ERP-11.3.370 Sales Invoice Print V2
 
 Active release: v1.1.33.370-ERP11.3.370
-CURRENT_LIVE_RELEASE=ERP-11.3.368
-CURRENT_LIVE_VERSION=v1.1.33.368-ERP11.3.368
+CURRENT_LIVE_RELEASE=ERP-11.3.369
+CURRENT_LIVE_VERSION=v1.1.33.369-ERP11.3.369
 NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.370 adds a compact, presentation-only A4 Sales Invoice Print V2
@@ -37,13 +37,12 @@ DIRECT_VENDOR_LIVE_UAT=PENDING
 ERP-11.3.369 Visa Live Header & Sale UI Hotfix
 
 Active release: v1.1.33.369-ERP11.3.369
-CURRENT_LIVE_RELEASE=ERP-11.3.368
-CURRENT_LIVE_VERSION=v1.1.33.368-ERP11.3.368
+CURRENT_LIVE_RELEASE=ERP-11.3.369
+CURRENT_LIVE_VERSION=v1.1.33.369-ERP11.3.369
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.368 remains current production with known Visa live UI defects: Sale Price input collapsed, row Margin missing on initial render, and Visa header/Review Booking shell inconsistency.
-ERP-11.3.369 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION VERIFIED.
-LAST_PACKAGED_RELEASE=ERP-11.3.368
+ERP-11.3.369 is DEPLOYED / NOT YET FULLY PRODUCTION-UAT-VERIFIED.
+LAST_PACKAGED_RELEASE=ERP-11.3.369
 
 ERP-11.3.369 corrects the Visa live header and Review Booking shell parity,
 Sale Price presentation, and initial row Margin rendering while preserving
@@ -59,8 +58,8 @@ financial and accounting behavior remains
 unchanged. No new migration is required. DIRECT_VENDOR live UAT has not been
 claimed; production verification remains pending.
 
-ERP-11.3.369 must not be marked live before deployment and production
-verification.
+ERP-11.3.369 is the current live release; full production UAT verification
+remains pending.
 
 ERP369_VISA_LIVE_UI_REGRESSION=PASS (12 assertions)
 ERP368_MODAL_REGRESSION=PASS (22 assertions)
