@@ -1,15 +1,17 @@
-ERP-11.3.368 Visa Add Modal & Sale Price UI
+ERP-11.3.369 Visa Live Header & Sale UI Hotfix
 
-Active release: v1.1.33.368-ERP11.3.368
-CURRENT_LIVE_RELEASE=ERP-11.3.367
-CURRENT_LIVE_VERSION=v1.1.33.367-ERP11.3.367
+Active release: v1.1.33.369-ERP11.3.369
+CURRENT_LIVE_RELEASE=ERP-11.3.368
+CURRENT_LIVE_VERSION=v1.1.33.368-ERP11.3.368
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.368 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION VERIFIED.
-ERP-11.3.367 remains current production.
-LAST_PACKAGED_RELEASE=ERP-11.3.367
+ERP-11.3.368 remains current production with known Visa live UI defects: Sale Price input collapsed, row Margin missing on initial render, and Visa header/Review Booking shell inconsistency.
+ERP-11.3.369 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION VERIFIED.
+LAST_PACKAGED_RELEASE=ERP-11.3.368
 
-ERP-11.3.368 completes the Visa Add modal and editable Sale Price workspace
+ERP-11.3.369 corrects the Visa live header and Review Booking shell parity,
+Sale Price presentation, and initial row Margin rendering while preserving
+the existing Visa Add modal and editable Sale Price workspace
 with an enlarged responsive modal, 320px passenger list, Select All/Clear
 Selection, filtered selection persistence, existing-passenger exclusion,
 aligned checkbox/name/passport columns, structured Visa Rate details,
@@ -21,9 +23,10 @@ financial and accounting behavior remains
 unchanged. No new migration is required. DIRECT_VENDOR live UAT has not been
 claimed; production verification remains pending.
 
-ERP-11.3.368 must not be marked live before deployment and production
+ERP-11.3.369 must not be marked live before deployment and production
 verification.
 
+ERP369_VISA_LIVE_UI_REGRESSION=PASS (12 assertions)
 ERP368_MODAL_REGRESSION=PASS (22 assertions)
 ERP368_SALE_PRICE_REGRESSION=PASS (23 assertions)
 NATIVE_NODELIST_COMPATIBILITY_REGRESSION=PASS (10 assertions)
@@ -37,7 +40,7 @@ STATE_CACHE_DRAFT_REGRESSION=PASS (13 assertions)
 ERP367_FAST_NAV_REGRESSION=PASS (12 assertions)
 ERP367_LOCK_REGRESSION=PASS (16 assertions)
 HISTORICAL_VISA_REGRESSIONS=PASS (386,14,59,23,45)
-FULL_NODE_RESULT=126 total / 84 pass / 42 historical/environment failures
+FULL_NODE_RESULT=127 total / 85 pass / 42 historical/environment failures
 NEW_NODE_FAILURES=0
 RELEASE_ONLY_FAILURES=0
 UNEXPECTED_FAILURES=0

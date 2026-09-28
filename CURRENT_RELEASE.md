@@ -1,35 +1,32 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.368
-CURRENT_LIVE_RELEASE=ERP-11.3.367
-CURRENT_VERSION=ERP-11.3.368
-APPLICATION_VERSION=v1.1.33.368-ERP11.3.368
-CURRENT_LIVE_VERSION=v1.1.33.367-ERP11.3.367
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.369
+CURRENT_LIVE_RELEASE=ERP-11.3.368
+CURRENT_VERSION=ERP-11.3.369
+APPLICATION_VERSION=v1.1.33.369-ERP11.3.369
+CURRENT_LIVE_VERSION=v1.1.33.368-ERP11.3.368
 CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.367 is current production; ERP-11.3.368 FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
-LAST_PACKAGED_RELEASE=ERP-11.3.367
+PRODUCTION_STATUS=ERP-11.3.368 is current production with known Visa live UI defects: Sale Price input collapsed, row Margin missing on initial render, and Visa header/Review Booking shell inconsistency. ERP-11.3.369 is FINALIZED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+LAST_PACKAGED_RELEASE=ERP-11.3.368
 ```
 
-ERP-11.3.368 Visa Add Modal & Sale Price UI
+ERP-11.3.369 Visa Live Header & Sale UI Hotfix
 
-ERP-11.3.368 completes the Visa Add modal and editable Sale Price workspace
-with an enlarged responsive modal, 320px passenger list, Select All/Clear
-Selection, filtered selection persistence, existing-passenger exclusion,
-aligned checkbox/name/passport columns, structured Visa Rate details,
-multi-passenger custom sale pricing, per-passenger Sale editing,
-desktop/mobile Sale and Margin synchronization, immediate totals, protected
-save behavior, read-only Vendor Cost, invalid-sale blocking, booking lock
-authority and browser-native NodeList compatibility. Existing provider,
-financial and accounting behavior remains
-unchanged. NEW_MIGRATION_REQUIRED=NO. ERP-11.3.368 is FINALIZED / NOT
-PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+ERP-11.3.369 corrects the live Visa header and Review Booking shell parity,
+Sale Price presentation, initial row Margin rendering, responsive Sale and
+Margin synchronization, and preserves the .368 modal, lock, draft, cache,
+provider and NodeList authorities. Existing provider, financial and
+accounting behavior remains unchanged. NEW_MIGRATION_REQUIRED=NO.
+ERP-11.3.369 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT
+PRODUCTION-VERIFIED.
 
+ERP369_VISA_LIVE_UI_REGRESSION=PASS (12 assertions)
 RUNTIME_SCOPE_REGRESSION=PASS (11 assertions)
 INTERACTION_RUNTIME_REGRESSION=PASS (17 assertions)
 STATE_CACHE_DRAFT_REGRESSION=PASS (13 assertions)
@@ -42,7 +39,7 @@ VISA_WORKSPACE_UI_REGRESSION=PASS (35 assertions)
 VISA_PROVIDER_REGRESSION=PASS (32 assertions)
 ERP367_FAST_NAV_REGRESSION=PASS (12 assertions)
 ERP367_LOCK_REGRESSION=PASS (16 assertions)
-FULL_NODE_RESULT=126 total / 84 pass / 42 historical/environment failures
+FULL_NODE_RESULT=127 total / 85 pass / 42 historical/environment failures
 RELEASE_ONLY_FAILURES=0
 NEW_NODE_FAILURES=0
 VISA_LOCK_AUTHORITY_PRESENT=YES
