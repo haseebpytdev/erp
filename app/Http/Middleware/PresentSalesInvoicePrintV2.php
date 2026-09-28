@@ -30,7 +30,7 @@ class PresentSalesInvoicePrintV2
             return $response;
         }
 
-        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.370"')) {
+        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.371"')) {
             return $response;
         }
 
@@ -63,7 +63,7 @@ class PresentSalesInvoicePrintV2
         } else {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.370"',
+                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.371"',
                 $tag,
                 1
             ) ?? $tag;
@@ -72,7 +72,7 @@ class PresentSalesInvoicePrintV2
         if (! str_contains($replacement, 'data-et-sales-invoice-print-v2=')) {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body data-et-sales-invoice-print-v2="ERP-11.3.370"',
+                '<body data-et-sales-invoice-print-v2="ERP-11.3.371"',
                 $replacement,
                 1
             ) ?? $replacement;
@@ -84,7 +84,7 @@ class PresentSalesInvoicePrintV2
     private function injectStyle(string $html): string
     {
         $style = <<<'CSS'
-<style id="et-sales-invoice-print-v2-370">
+<style id="et-sales-invoice-print-v2-371">
 body.et-si-print-370{background:#edf3f8;color:#13233d;font-family:Arial,Helvetica,sans-serif}
 body.et-si-print-370 .actions{width:210mm;margin:12px auto 10px;display:flex;gap:8px}
 body.et-si-print-370 .sheet{width:210mm;min-height:297mm;margin:0 auto 22px;background:#fff;padding:10mm 11mm 9mm;box-shadow:0 6px 22px rgba(15,41,70,.12)}
@@ -138,6 +138,7 @@ body.et-si-print-370 .thanks{margin-top:7px;font-size:8px}
     body.et-si-print-370 .doc-header{grid-template-columns:64px minmax(0,1fr);}
     body.et-si-print-370 .doc-meta{grid-column:1/-1;border-left:0;border-top:1px solid #d9e3ef;padding:8px 0 0}
 }
+</style>
 CSS;
 
         if (stripos($html, '</head>') !== false) {

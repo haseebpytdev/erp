@@ -1,20 +1,33 @@
-ERP-11.3.370 Sales Invoice Print V2
+ERP-11.3.371 Sales Invoice Print Blank Page Corrective
 
-Active release: v1.1.33.370-ERP11.3.370
-CURRENT_LIVE_RELEASE=ERP-11.3.369
-CURRENT_LIVE_VERSION=v1.1.33.369-ERP11.3.369
+Active release: v1.1.33.371-ERP11.3.371
+CURRENT_LIVE_RELEASE=ERP-11.3.370
+CURRENT_LIVE_VERSION=v1.1.33.370-ERP11.3.370
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.370 adds a compact, presentation-only A4 Sales Invoice Print V2
-through the native host print response. Existing invoice identity, customer
-details, line values, subtotal, tax, discount, grand total, status, notes and
-accounting authorities remain native and unchanged. The print action remains
-browser-native; no posting, financial calculation, database or migration
-change is included.
+ERP-11.3.371 closes the blank-page defect by explicitly closing the injected
+Sales Invoice Print V2 style element before the native head/body boundary.
+The approved .370 compact A4 presentation, native invoice identity and
+financial/accounting authorities remain unchanged. No posting, database or
+migration change is included.
 
-ERP-11.3.370 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
+ERP-11.3.371 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
 VERIFIED. Browser print-preview and live production verification remain
 pending.
+
+ERP371_INVOICE_PRINT_REGRESSION=PASS (22 assertions)
+STYLE_TAG_BOUNDARY=PASS
+BODY_STRUCTURE_PRESERVED=PASS
+SHEET_STRUCTURE_PRESERVED=PASS
+NEW_RELEASE_FAILURES=0
+UNEXPECTED_NEW_FAILURES=0
+PHP_RUNTIME=UNAVAILABLE
+DIRECT_VENDOR_LIVE_UAT=PENDING
+
+ERP-11.3.370 was deployed, but production UAT failed because the injected
+style element was not closed and the native print body rendered blank.
+ERP-11.3.370 remains the current live release until .371 is certified and
+deployed.
 
 ERP370_INVOICE_PRINT_REGRESSION=PASS (34 assertions)
 PRINT_ROUTE_RUNTIME_HOOK=PASS
