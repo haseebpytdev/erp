@@ -33,8 +33,7 @@
 .et-fin-filter{background:#fff;border:1px solid #dce5ef;border-radius:11px;padding:0;box-shadow:0 5px 16px rgba(28,45,68,.05);margin-bottom:16px}
 .et-fin-filter-head{min-height:47px;padding:12px 14px;border-bottom:1px solid #e8edf3;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .et-fin-filter-head strong{font-size:14px}.et-fin-filter-head a{font-size:11px;font-weight:800;text-decoration:none;color:#0b63d8}
-.et-fin-filter-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;padding:14px 14px 10px}
-.et-fin-filter-actions{display:flex;justify-content:flex-end;gap:10px;padding:0 14px 14px}
+.et-fin-filter-fields{display:grid;grid-template-columns:minmax(180px,1.55fr) minmax(105px,.70fr) minmax(115px,.78fr) minmax(120px,.72fr) minmax(120px,.72fr) minmax(140px,.95fr) minmax(90px,.55fr);gap:10px;align-items:end;padding:14px}
 .et-field label{display:block;margin:0 0 5px;font-size:10px;font-weight:850;color:#5e6e83;text-transform:uppercase;letter-spacing:.035em}
 .et-field input,.et-field select{width:100%;height:38px;padding:7px 11px;border:1px solid #d4dde8;border-radius:7px;background:#fff;color:#24354c;font-size:12px;outline:none}
 .et-field input:focus,.et-field select:focus{border-color:#4e8fe2;box-shadow:0 0 0 2px rgba(42,118,218,.08)}
@@ -98,7 +97,7 @@
 .et-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
 .et-dot.blue{background:#0b63d8}.et-dot.green{background:#48bf84}
 .et-insight-total{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border-top:1px solid #edf1f5;font-size:10px;font-weight:900}
-@media(max-width:1280px){
+@media(max-width:1120px){
   .et-fin-filter-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
   .et-summary-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
@@ -231,8 +230,8 @@
         @endforeach
       </select>
     </div>
+      <button class="et-fin-btn primary" type="submit">⌕ Filter</button>
     </div>
-    <div class="et-fin-filter-actions"><button class="et-fin-btn primary" type="submit">⌕ Filter</button></div>
   </form>
 
   <section class="et-summary-strip" aria-label="Voucher summary">
