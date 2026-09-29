@@ -50,8 +50,8 @@ Sales Invoice presentation for Air, Hotel, Visa, Transport, Umrah Package and
 other services. It preserves native line amounts, totals, accounting, posting,
 supplier costing, provider and database authorities. NEW_MIGRATION_REQUIRED=NO.
 
-ERP-11.3.374 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT
-PRODUCTION-VERIFIED.
+ERP-11.3.374 is FINALIZED / PACKAGED / DEPLOYED /
+AIR TARGETED LIVE UAT PASS / BROADER PRODUCTION UAT PARTIAL.
 EXTERNAL_SOURCE_REVIEW=PASS
 
 ERP374_PRODUCT_DESCRIPTION_REGRESSION=PASS (65 assertions)
