@@ -414,6 +414,7 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::get('/accounting/cash-vouchers', [CashVoucherController::class, 'index'])->name('accounting.cash-vouchers.index');
     Route::get('/accounting/cash-vouchers/create', [CashVoucherController::class, 'create'])->name('accounting.cash-vouchers.create');
     Route::get('/accounting/cash-vouchers/documents', [CashVoucherController::class, 'documents'])->name('accounting.cash-vouchers.documents');
+    Route::get('/accounting/cash-vouchers/bookings', [CashVoucherController::class, 'bookings'])->name('accounting.cash-vouchers.bookings');
     Route::post('/accounting/cash-vouchers', [CashVoucherController::class, 'store'])->name('accounting.cash-vouchers.store');
     Route::get('/accounting/cash-vouchers/{voucher}', [CashVoucherController::class, 'show'])->whereNumber('voucher')->name('accounting.cash-vouchers.show');
     Route::get('/accounting/cash-vouchers/{voucher}/edit', [CashVoucherController::class, 'edit'])->whereNumber('voucher')->name('accounting.cash-vouchers.edit');

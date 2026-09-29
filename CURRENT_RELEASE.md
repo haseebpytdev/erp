@@ -1,20 +1,32 @@
 # Easy Ticket ERP — Current Local Authority
 
 ```text
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.376
-CURRENT_LIVE_RELEASE=ERP-11.3.375
-CURRENT_VERSION=ERP-11.3.376
-APPLICATION_VERSION=v1.1.33.376-ERP11.3.376
-CURRENT_LIVE_VERSION=v1.1.33.375-ERP11.3.375
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.377
+CURRENT_LIVE_RELEASE=ERP-11.3.376
+CURRENT_VERSION=ERP-11.3.377
+APPLICATION_VERSION=v1.1.33.377-ERP11.3.377
+CURRENT_LIVE_VERSION=v1.1.33.376-ERP11.3.376
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 DEPLOYED=NO
 NEW_MIGRATION_REQUIRED=NO
 SOURCE_BASELINE=ERP-11.3.156 FINAL
 BASELINE_SHA256=82d6a91af3256a94babbdc907fee89f77af2fc48c98ce341d92b7f8c10b87c83
 WORKSPACE=D:\Easy Ticket\ERP\CURRENT
-PRODUCTION_STATUS=ERP-11.3.375 is DEPLOYED / VERSION GATE PASS / ACCOUNTING LIVE UAT PARTIAL: party option selectors require the native party_roles authority. ERP-11.3.376 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
-LAST_PACKAGED_RELEASE=ERP-11.3.375
+PRODUCTION_STATUS=ERP-11.3.376 is DEPLOYED / VERSION GATE PASS / ACCOUNTING LIVE UAT PARTIAL: Customer/Vendor role authority and party-scoped allocation are live; Booking Reference scoping remains the identified follow-up gap. ERP-11.3.377 is IMPLEMENTED / NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+LAST_PACKAGED_RELEASE=ERP-11.3.376
 ```
+
+ERP-11.3.377 Voucher Booking Scope & Expense Entry UX
+
+ERP-11.3.377 scopes Customer and Supplier Booking References through proven
+native relationships, rejects forged cross-party references on create/update
+and workflow, preserves historical print lookup, and streamlines Expense
+Voucher entry with compact Payment Proof, line-derived totals, a searchable
+real Expense Account picker, and focused repeated-line entry. Accounting
+formulas, journal authority and database schema remain unchanged.
+ERP-11.3.377 is IMPLEMENTED / NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED /
+NOT PRODUCTION-VERIFIED.
+NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.376 Accounting Voucher Options
 

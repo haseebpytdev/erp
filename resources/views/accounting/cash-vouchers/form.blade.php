@@ -6,6 +6,7 @@
     $isExpense = $type === 'expense';
     $isContra = $type === 'contra';
     $partyLabel = $definition['party_type'] === 'supplier' ? 'Supplier' : 'Customer';
+    $bookingPlaceholder = $isContra ? 'Not applicable' : ($isExpense ? 'Optional' : ($row && $row->party_id ? 'Optional' : 'Select '.strtolower($partyLabel).' first'));
     $subtitle = $isContra
         ? 'Internal transfer between active posting Cash / Bank accounts'
         : ($isExpense
@@ -28,6 +29,7 @@
 .cvf27-field input,.cvf27-field select,.cvf27-field textarea{width:100%;min-height:40px;border:1px solid #d4deea;border-radius:7px;background:#fff;padding:8px 10px;color:#24354c;font-size:11.5px;outline:none}
 .cvf27-field textarea{height:72px;resize:vertical}.cvf27-span2{grid-column:span 2}.cvf27-span4{grid-column:1/-1}
 .cvf27-upload{position:relative;min-height:72px;border:1px dashed #bfd0e5;border-radius:7px;background:#fbfdff;display:flex;align-items:center;justify-content:center;text-align:center;padding:9px;color:#60738b}
+.cvf27-upload-compact{min-height:40px;height:40px;justify-content:flex-start;text-align:left;padding:6px 10px}.cvf27-upload-compact strong{display:inline;margin-right:8px}.cvf27-upload-compact span{font-size:10px}
 .cvf27-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}.cvf27-upload strong{display:block;color:#0964df;font-size:11px}.cvf27-upload span{font-size:9.5px}
 .cvf27-table{width:100%;border-collapse:collapse;table-layout:fixed}.cvf27-table th,.cvf27-table td{border-bottom:1px solid #e9eef4;padding:8px;text-align:left;vertical-align:middle;font-size:10.5px;overflow-wrap:anywhere}
 .cvf27-table th{background:#f8fafc;color:#526174;font-size:8.8px;text-transform:uppercase;letter-spacing:.02em}
@@ -39,6 +41,7 @@
 .cvf27-bottom{padding:11px 13px;background:#fff;border:1px solid #dce5ef;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}.cvf27-bottom-actions{display:flex;gap:8px;flex-wrap:wrap}
 .cvf27-note{padding:10px 12px;border:1px solid #dbe5f1;background:#f7faff;border-radius:8px;font-size:10.5px;color:#52687f;margin-bottom:13px}
 .cvf27-warning{display:none;grid-column:1/-1;padding:8px 10px;border:1px solid #edcf88;background:#fff9e8;border-radius:7px;color:#805b09;font-size:10px}
+.cvf27-accountPicker{position:relative}.cvf27-accountPicker input.accountSearch{border:1px solid #d4deea;background:#fff;padding:7px 8px;border-radius:6px;width:100%}.cvf27-accountResults{position:absolute;z-index:20;left:0;right:0;top:100%;background:#fff;border:1px solid #cfdbea;border-radius:6px;box-shadow:0 8px 18px rgba(19,43,73,.16);max-height:210px;overflow:auto}.cvf27-account-option{display:block;width:100%;border:0;background:#fff;text-align:left;padding:7px 9px;font-size:10.5px;cursor:pointer}.cvf27-account-option:hover,.cvf27-account-option:focus{background:#eef5ff}.cvf27-account-empty{display:block;padding:8px;color:#74849a;font-size:10px}
 @media(max-width:1050px){.cvf27-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cvf27-span4{grid-column:1/-1}}
 @media(max-width:650px){.cvf27-head{display:block}.cvf27-actions{justify-content:flex-start;margin-top:10px}.cvf27-grid{grid-template-columns:1fr}.cvf27-span2,.cvf27-span4{grid-column:span 1}.cvf27-bottom{display:block}.cvf27-bottom-actions{margin-top:9px}.cvf27-bottom-actions .cvf27-btn{flex:1}}
 </style>
@@ -102,8 +105,8 @@
           @unless($isContra)
             <div class="cvf27-field">
               <label>Booking Reference</label>
-              <select name="booking_id">
-                <option value="">Optional</option>
+              <select name="booking_id" id="bookingSelect" data-booking-domain="{{ $isExpense ? 'expense' : $definition['party_type'] }}">
+                <option value="">{{ $bookingPlaceholder }}</option>
                 @foreach($bookings as $b)
                   <option value="{{ $b['id'] }}" @selected((string)old('booking_id',$row->booking_id ?? '')===(string)$b['id'])>{{ $b['reference'] }}</option>
                 @endforeach
@@ -121,10 +124,14 @@
             <input type="date" name="value_date" value="{{ old('value_date',$row->value_date ?? '') }}">
           </div>
 
-          <div class="cvf27-field">
-            <label>{{ $isContra ? 'Transfer Amount' : ($isExpense ? 'Total Expense' : 'Total Amount') }} *</label>
-            <input type="number" id="voucherAmount" step="0.01" min="0.01" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}" required @readonly($isExpense)>
-          </div>
+          @unless($isExpense)
+            <div class="cvf27-field">
+              <label>{{ $isContra ? 'Transfer Amount' : 'Total Amount' }} *</label>
+              <input type="number" id="voucherAmount" step="0.01" min="0.01" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}" required>
+            </div>
+          @else
+            <input type="hidden" id="voucherAmount" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}">
+          @endunless
 
           <div class="cvf27-field">
             <label>Currency *</label>
@@ -196,9 +203,9 @@
 
           <div class="cvf27-field cvf27-span2">
             <label>Payment Proof (PDF/JPG/PNG/WEBP, max 5MB)</label>
-            <div class="cvf27-upload">
+            <div class="cvf27-upload cvf27-upload-compact">
               <input type="file" name="payment_proof" accept=".pdf,.jpg,.jpeg,.png,.webp">
-              <div><strong>Choose payment proof</strong><span>Click or drop a file here</span></div>
+              <div><strong>Attach File</strong><span class="cvf27-proof-name">No file selected</span></div>
             </div>
             @if($row && $row->payment_proof_original_name)
               <div style="font-size:9.5px;color:#65758a;margin-top:4px">Current: {{ $row->payment_proof_original_name }}</div>
@@ -309,6 +316,19 @@ calc();updateEmpty();
 })();
 </script>
 @endif
+@if(!$isExpense && !$isContra)
+<script>
+(()=>{
+ const party=document.getElementById('partySelect'); const booking=document.getElementById('bookingSelect');
+ if(!party||!booking)return;
+ const type=@json($type); const endpoint=@json(route('accounting.cash-vouchers.bookings'));
+ const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+ async function loadBookings(){const partyId=Number(party.value||0);booking.innerHTML='<option value="">'+(partyId?'Loading related bookings…':'Select '+(type==='payment'||type==='supplier_advance'?'supplier':'customer')+' first')+'</option>';booking.disabled=!partyId;if(!partyId)return;const response=await fetch(endpoint+'?voucher_type='+encodeURIComponent(type)+'&party_id='+partyId,{headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}});const payload=response.ok?await response.json():{};const rows=Array.isArray(payload.bookings)?payload.bookings:[];booking.innerHTML='<option value="">'+(rows.length?'Optional':'No related bookings available')+'</option>'+rows.map(b=>'<option value="'+Number(b.id)+'">'+esc(b.reference)+'</option>').join('');booking.disabled=false}
+ party.addEventListener('change',loadBookings);
+ if(!party.value)loadBookings();
+})();
+</script>
+@endif
 @if($isExpense)
 <script>
 (()=>{
@@ -319,12 +339,14 @@ const empty=document.getElementById('expenseLineEmpty');
 const amount=document.getElementById('voucherAmount');
 const currency=document.querySelector('[name="currency_code"]');
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function options(selected){return '<option value="">Select expense account</option>'+accounts.map(a=>`<option value="${a.id}" ${Number(selected)===Number(a.id)?'selected':''}>${esc(a.code)} · ${esc(a.name)}</option>`).join('')}
+ function accountLabel(a){return `${a.code} · ${a.name}`}
+ function matches(term){term=String(term||'').trim().toLowerCase();return accounts.filter(a=>!term||String(a.code).toLowerCase().includes(term)||String(a.name).toLowerCase().includes(term)).slice(0,12)}
+ function picker(tr,selected){const input=tr.querySelector('.accountSearch');const hidden=tr.querySelector('.accountId');const results=tr.querySelector('.accountResults');const current=accounts.find(a=>Number(a.id)===Number(selected));if(current)input.value=accountLabel(current);function render(){results.innerHTML=matches(input.value).map(a=>`<button type="button" class="cvf27-account-option" data-id="${a.id}">${esc(accountLabel(a))}</button>`).join('')||'<span class="cvf27-account-empty">No eligible expense account</span>';results.hidden=false}function choose(id){const a=accounts.find(x=>Number(x.id)===Number(id));if(!a)return;hidden.value=a.id;input.value=accountLabel(a);results.hidden=true}input.addEventListener('input',()=>{hidden.value='';render()});input.addEventListener('focus',render);input.addEventListener('keydown',e=>{const options=[...results.querySelectorAll('.cvf27-account-option')];let index=options.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();(options[index+1]||options[0])?.focus()}else if(e.key==='ArrowUp'){e.preventDefault();(options[index-1]||options[options.length-1])?.focus()}else if(e.key==='Escape'){results.hidden=true}});results.addEventListener('click',e=>{if(e.target.dataset.id)choose(e.target.dataset.id)});tr.querySelector('.accountPicker').addEventListener('focusout',()=>setTimeout(()=>{if(!tr.querySelector('.accountPicker').contains(document.activeElement))results.hidden=true},0))}
 function renumber(){[...body.children].forEach((tr,i)=>{tr.querySelector('.lineNo').textContent=i+1;tr.querySelectorAll('[name]').forEach(el=>el.name=el.name.replace(/expense_lines\[\d+\]/,`expense_lines[${i}]`))})}
 function calculate(){const total=[...body.querySelectorAll('.expenseAmount')].reduce((sum,input)=>sum+Number(input.value||0),0);amount.value=total.toFixed(2);document.getElementById('expenseTotal').textContent=total.toFixed(2);document.getElementById('expenseCurrency').textContent=String(currency.value||'PKR').toUpperCase();empty.style.display=body.children.length?'none':'block'}
-function addLine(value={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=`<td class="lineNo">${i+1}</td><td><select name="expense_lines[${i}][expense_account_id]" required>${options(value.expense_account_id)}</select></td><td><input name="expense_lines[${i}][description]" value="${esc(value.description||'')}" placeholder="Purpose of expense"></td><td><input class="expenseAmount" type="number" name="expense_lines[${i}][amount]" min="0.01" step="0.01" value="${Number(value.amount||0).toFixed(2)}" required></td><td class="cvf27-action"><button type="button" class="cvf27-rm" aria-label="Remove expense line">×</button></td>`;body.appendChild(tr);calculate()}
-existing.forEach(addLine);if(!body.children.length)addLine();
-document.getElementById('addExpenseLine').addEventListener('click',()=>addLine());
+ function addLine(value={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=`<td class="lineNo">${i+1}</td><td><div class="cvf27-accountPicker"><input class="accountSearch" type="search" placeholder="Search code or name" autocomplete="off" role="combobox"><input class="accountId" type="hidden" name="expense_lines[${i}][expense_account_id]" value="${Number(value.expense_account_id||0)||''}" required><div class="accountResults" hidden></div></div></td><td><input name="expense_lines[${i}][description]" value="${esc(value.description||'')}" placeholder="Purpose of expense"></td><td><input class="expenseAmount" type="number" name="expense_lines[${i}][amount]" min="0.01" step="0.01" value="${Number(value.amount||0).toFixed(2)}" required></td><td class="cvf27-action"><button type="button" class="cvf27-rm" aria-label="Remove expense line">×</button></td>`;body.appendChild(tr);picker(tr,value.expense_account_id);calculate();return tr}
+ existing.forEach(addLine);if(!body.children.length)addLine();
+ document.getElementById('addExpenseLine').addEventListener('click',()=>{const tr=addLine();tr.querySelector('.accountSearch')?.focus()});
 body.addEventListener('input',calculate);
 body.addEventListener('click',event=>{if(event.target.classList.contains('cvf27-rm')){event.target.closest('tr').remove();renumber();calculate()}});
 currency.addEventListener('input',calculate);calculate();

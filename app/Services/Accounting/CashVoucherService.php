@@ -190,8 +190,25 @@ class CashVoucherService
         return null;
     }
 
-    public function bookingOptions(): array
+    /**
+     * Return booking references for the requested domain. Party-controlled
+     * vouchers must always pass a canonical party; only Expense may request
+     * the legacy global list because it has no accounting party.
+     */
+    public function bookingOptions(?int $partyId = null, ?string $partyType = null, ?string $voucherType = null): array
     {
+        $partyType = $partyType ? strtolower(trim($partyType)) : null;
+        if ($voucherType !== null && in_array($voucherType, ['receipt', 'customer_advance'], true)) {
+            $partyType = 'customer';
+        } elseif ($voucherType !== null && in_array($voucherType, ['payment', 'supplier_advance'], true)) {
+            $partyType = 'supplier';
+        }
+        if ($partyType !== null && in_array($partyType, ['customer', 'supplier'], true)) {
+            if (! $partyId) {
+                return [];
+            }
+            $this->assertPartyRole($partyId, $partyType);
+        }
         foreach (['bookings', 'travel_bookings', 'booking_group_package_unified'] as $table) {
             if (! Schema::hasTable($table)) {
                 continue;
@@ -206,18 +223,88 @@ class CashVoucherService
             if ($ref) {
                 $select[] = $ref.' as reference';
             }
-            return DB::table($table)
+            $query = DB::table($table)
                 ->select($select)
                 ->orderByDesc($id)
-                ->limit(500)
-                ->get()
-                ->map(fn ($r): array => [
+                ->limit(500);
+            if ($partyType === 'customer' && in_array('customer_party_id', $cols, true)) {
+                $query->where('customer_party_id', $partyId);
+            } elseif ($partyType === 'customer') {
+                return [];
+            } elseif ($partyType === 'supplier') {
+                if (! Schema::hasTable('supplier_costings') || ! Schema::hasColumn('supplier_costings', 'supplier_id') || ! Schema::hasColumn('supplier_costings', 'booking_id')) {
+                    return [];
+                }
+                $related = DB::table('supplier_costings')
+                    ->where('supplier_id', $partyId)
+                    ->whereNotNull('booking_id')
+                    ->distinct()
+                    ->pluck('booking_id')
+                    ->map(fn ($value): int => (int) $value)
+                    ->all();
+                if ($related === []) {
+                    return [];
+                }
+                $query->whereIn($id, $related);
+            }
+            return $query->get()->map(fn ($r): array => [
                     'id' => (int) $r->id,
                     'reference' => (string) ($r->reference ?? ('Booking #'.$r->id)),
                 ])->all();
         }
 
         return [];
+    }
+
+    public function bookingSnapshot(int $bookingId): array
+    {
+        if ($bookingId < 1) {
+            throw new RuntimeException('A valid Booking Reference is required.');
+        }
+        foreach (['bookings', 'travel_bookings', 'booking_group_package_unified'] as $table) {
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+            $cols = Schema::getColumnListing($table);
+            $id = $this->first($cols, ['id', 'booking_id']);
+            $ref = $this->first($cols, ['booking_no', 'booking_number', 'booking_ref', 'reference', 'booking_reference']);
+            if (! $id) {
+                continue;
+            }
+            $row = DB::table($table)->where($id, $bookingId)->first();
+            if ($row) {
+                return ['id' => $bookingId, 'reference' => (string) ($ref && isset($row->{$ref}) ? $row->{$ref} : ('Booking #'.$bookingId))];
+            }
+        }
+        throw new RuntimeException('Selected Booking Reference does not exist.');
+    }
+
+    public function assertBookingRelationship(?int $bookingId, string $voucherType, ?int $partyId = null): void
+    {
+        if (! $bookingId) {
+            return;
+        }
+        if ($voucherType === 'expense') {
+            $this->bookingSnapshot($bookingId);
+            return;
+        }
+        if ($voucherType === 'contra') {
+            throw new RuntimeException('Contra Vouchers cannot contain a Booking Reference.');
+        }
+        $definition = $this->voucherDefinition($voucherType);
+        if (! $partyId) {
+            throw new RuntimeException('Select a canonical party before selecting a Booking Reference.');
+        }
+        $this->assertPartyRole($partyId, $definition['party_type']);
+        $options = $this->bookingOptions($partyId, $definition['party_type'], $voucherType);
+        foreach ($options as $option) {
+            if ((int) $option['id'] === $bookingId) {
+                return;
+            }
+        }
+        throw new RuntimeException($definition['party_type'] === 'supplier'
+            ? 'Selected Booking Reference is not related to the selected Supplier.'
+            : 'Selected Booking Reference does not belong to the selected Customer.');
     }
 
     public function cashBankAccounts(): array
@@ -1017,6 +1104,11 @@ class CashVoucherService
         if (! in_array($type, ['expense', 'contra'], true)) {
             $this->assertPartyRole((int) ($voucher->party_id ?? 0), (string) $definition['party_type']);
         }
+        $this->assertBookingRelationship(
+            $voucher->booking_id ? (int) $voucher->booking_id : null,
+            $type,
+            $voucher->party_id ? (int) $voucher->party_id : null
+        );
         $allocations = DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->orderBy('line_no')->get();
         if ($type === 'contra') {
             if ($allocations->isNotEmpty()) {

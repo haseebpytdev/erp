@@ -1,17 +1,19 @@
-ERP-11.3.376 Accounting Voucher Options
+ERP-11.3.377 Voucher Booking Scope & Expense Entry UX
 
-Active release: v1.1.33.376-ERP11.3.376
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.376
-CURRENT_LIVE_RELEASE=ERP-11.3.375
-CURRENT_LIVE_VERSION=v1.1.33.375-ERP11.3.375
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
-LAST_PACKAGED_RELEASE=ERP-11.3.375
+Active release: v1.1.33.377-ERP11.3.377
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.377
+CURRENT_LIVE_RELEASE=ERP-11.3.376
+CURRENT_LIVE_VERSION=v1.1.33.376-ERP11.3.376
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+LAST_PACKAGED_RELEASE=ERP-11.3.376
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.376 aligns Cash Voucher, Supplier Costing and Advance Adjustment
-party selectors with active CUSTOMER / VENDOR roles, preserves party-scoped
-allocation and fail-closed account safety, and adds responsive voucher filters.
-ERP-11.3.376 is FINALIZED / NOT PACKAGED / NOT DEPLOYED /
+ERP-11.3.377 scopes party-controlled Booking References through native
+Customer and Supplier relationships, guards cross-party references on every
+write/workflow path, preserves historical print lookup, and streamlines
+Expense Voucher entry with compact proof, derived totals, a searchable real
+Expense Account picker and focused repeated-line entry.
+ERP-11.3.377 is IMPLEMENTED / NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED /
 NOT PRODUCTION-VERIFIED.
 
 EXTERNAL_SOURCE_REVIEW=PASS

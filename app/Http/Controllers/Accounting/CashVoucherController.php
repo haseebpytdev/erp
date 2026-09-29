@@ -183,6 +183,21 @@ class CashVoucherController extends Controller
         return response()->json(['documents' => $this->service->documentOptions($definition['target_type'], $partyId, $definition['party_type'])]);
     }
 
+    public function bookings(Request $request)
+    {
+        $type = (string) $request->query('voucher_type', '');
+        abort_unless(in_array($type, ['receipt', 'payment', 'customer_advance', 'supplier_advance'], true), 404);
+        abort_unless($this->service->canUseType($request->user(), $type, 'view'), 403);
+        $partyId = (int) $request->query('party_id', 0);
+        $definition = $this->service->voucherDefinition($type);
+        try {
+            $this->service->assertPartyRole($partyId, $definition['party_type']);
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['party_id' => $e->getMessage()]);
+        }
+        return response()->json(['bookings' => $this->service->bookingOptions($partyId, $definition['party_type'], $type)]);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validateHeader($request);
@@ -448,11 +463,10 @@ class CashVoucherController extends Controller
         $bookingReference = null;
 
         if ($row->booking_id) {
-            foreach ($this->service->bookingOptions() as $booking) {
-                if ((int) $booking['id'] === (int) $row->booking_id) {
-                    $bookingReference = (string) $booking['reference'];
-                    break;
-                }
+            try {
+                $bookingReference = $this->service->bookingSnapshot((int) $row->booking_id)['reference'];
+            } catch (RuntimeException) {
+                $bookingReference = 'Booking #'.(int) $row->booking_id;
             }
         }
 
@@ -500,7 +514,13 @@ class CashVoucherController extends Controller
             'parties' => in_array($type, ['expense', 'contra'], true)
                 ? []
                 : $this->service->partyOptions($definition['party_type']),
-            'bookings' => $type === 'contra' ? [] : $this->service->bookingOptions(),
+            'bookings' => $type === 'contra'
+                ? []
+                : ($type === 'expense'
+                    ? $this->service->bookingOptions()
+                    : (! empty($row?->party_id)
+                        ? $this->service->bookingOptions((int) $row->party_id, $definition['party_type'], $type)
+                        : [])),
             'cashBankAccounts' => $this->service->cashBankAccounts(),
             'paymentMethods' => $type === 'contra'
                 ? $this->service->transferMethods()
@@ -544,6 +564,15 @@ class CashVoucherController extends Controller
             } catch (RuntimeException $e) {
                 throw ValidationException::withMessages(['party_id' => $e->getMessage()]);
             }
+        }
+        try {
+            $this->service->assertBookingRelationship(
+                ! empty($data['booking_id']) ? (int) $data['booking_id'] : null,
+                (string) $data['voucher_type'],
+                ! empty($data['party_id']) ? (int) $data['party_id'] : null
+            );
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['booking_id' => $e->getMessage()]);
         }
         return $data;
     }
