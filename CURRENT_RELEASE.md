@@ -33,8 +33,10 @@ ERP-11.3.376 Accounting Voucher Options
 ERP-11.3.376 aligns Cash Voucher, Supplier Costing and Advance Adjustment
 party selectors with active CUSTOMER / VENDOR roles, preserves party-scoped
 allocation and fail-closed account safety, and adds responsive voucher filters.
-ERP-11.3.376 is FINALIZED / NOT PACKAGED / NOT DEPLOYED /
-NOT PRODUCTION-VERIFIED.
+ERP-11.3.376 is FINALIZED / PACKAGED / DEPLOYED / VERSION_GATE=PASS /
+ACCOUNTING_LIVE_UAT=PARTIAL; Customer/Vendor role authority and party-scoped
+allocation are live, while Booking Reference scoping remains the identified
+follow-up gap.
 EXTERNAL_SOURCE_REVIEW=PASS
 REMOTE_SOURCE_VERIFICATION=PASS
 ERP376_ACCOUNTING_VOUCHER_OPTIONS_REGRESSION=PASS (55 assertions)

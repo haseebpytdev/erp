@@ -296,9 +296,26 @@ class CashVoucherService
             throw new RuntimeException('Select a canonical party before selecting a Booking Reference.');
         }
         $this->assertPartyRole($partyId, $definition['party_type']);
-        $options = $this->bookingOptions($partyId, $definition['party_type'], $voucherType);
-        foreach ($options as $option) {
-            if ((int) $option['id'] === $bookingId) {
+        if ($definition['party_type'] === 'customer') {
+            foreach (['bookings', 'travel_bookings', 'booking_group_package_unified'] as $table) {
+                if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'customer_party_id')) {
+                    continue;
+                }
+                $columns = Schema::getColumnListing($table);
+                $id = $this->first($columns, ['id', 'booking_id']);
+                if ($id && DB::table($table)->where($id, $bookingId)->where('customer_party_id', $partyId)->exists()) {
+                    return;
+                }
+            }
+        } elseif ($definition['party_type'] === 'supplier') {
+            $this->bookingSnapshot($bookingId);
+            if (Schema::hasTable('supplier_costings')
+                && Schema::hasColumn('supplier_costings', 'supplier_id')
+                && Schema::hasColumn('supplier_costings', 'booking_id')
+                && DB::table('supplier_costings')
+                    ->where('supplier_id', $partyId)
+                    ->where('booking_id', $bookingId)
+                    ->exists()) {
                 return;
             }
         }

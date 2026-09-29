@@ -21,6 +21,7 @@ function block(source, start, end) {
 }
 
 const bookingOptions = block(service, 'public function bookingOptions', 'public function bookingSnapshot');
+const bookingGuard = block(service, 'public function assertBookingRelationship', 'public function cashBankAccounts');
 const supplierBranch = block(bookingOptions, "} elseif ($partyType === 'supplier')", 'return $query->get');
 const bookingEndpoint = block(controller, 'public function bookings', 'public function store');
 const validateHeader = block(controller, 'private function validateHeader', 'private function validateAllocations');
@@ -28,6 +29,7 @@ const transition = block(service, 'public function transition', 'public function
 const postingValidation = block(service, 'private function validateVoucherForPosting', 'public function reverseVoucher');
 const partyBookingJs = block(view, "@if(!$isExpense && !$isContra)", '@endif\n@if($isExpense)');
 const expenseJs = block(view, 'const accounts=@json($expenseAccounts);', '</script>');
+const expenseMarkup = block(view, '@elseif($isExpense)', '@else');
 const calculate = block(expenseJs, 'function calculate', 'function addLine');
 const addLine = block(expenseJs, 'function addLine', 'existing.forEach');
 const expenseLinesValidation = block(controller, 'private function validateExpenseLines', 'private function replaceExpenseLines');
@@ -67,7 +69,11 @@ check('historical print avoids scoped options', !block(controller, 'public funct
 check('party change clears booking options', has(partyBookingJs, "booking.innerHTML='<option value=\"\">"));
 check('party change reloads booking endpoint', has(partyBookingJs, 'fetch(endpoint+'));
 check('party change clears allocations', has(view, "party.addEventListener('change',()=>loadDocuments({restoreExisting:false}))"));
-check('expense grid row one is exact', ['payee','booking','voucher-date','value-date'].every((x) => has(view, `data-expense-field="${x}"`)));
+check('expense grid payee marker is scoped', has(expenseMarkup, 'data-expense-field="payee"') && !/<select name="party_id"/.test(expenseMarkup));
+check('expense booking marker is on booking field', /data-expense-field="booking"[\s\S]*id="bookingSelect"/.test(view));
+check('nonexpense party field has no expense marker', !/@else\s*<div class="cvf27-field" data-expense-field="booking"/.test(view));
+check('expense bank name marker is on bank field', /data-expense-field="bank-name"[\s\S]*name="bank_name"/.test(view));
+check('contra destination has no bank-name marker', /<div class="cvf27-field">\s*<label>To Cash \/ Bank Account/.test(view) && !/<div class="cvf27-field" data-expense-field="bank-name">\s*<label>To Cash \/ Bank Account/.test(view));
 check('expense grid row two is exact', ['currency','exchange','payment-method','cash-bank'].every((x) => has(view, `data-expense-field="${x}"`)));
 check('expense grid row three is exact', ['bank-name','transaction-reference','instrument','payment-proof'].every((x) => has(view, `data-expense-field="${x}"`)));
 check('expense grid row four is narration', has(view, 'data-expense-field="narration"'));
@@ -78,6 +84,7 @@ check('no horizontal scrolling was added', !has(view, 'overflow-x:auto'));
 check('proof control is compact', has(view, 'cvf27-upload-compact') && has(view, 'min-height:40px;height:40px'));
 check('proof keeps accepted formats', has(view, 'accept=".pdf,.jpg,.jpeg,.png,.webp"'));
 check('proof preserves current filename', has(view, 'Current: {{ $row->payment_proof_original_name }}'));
+check('payment proof change updates filename', has(expenseJs, "proof?.addEventListener('change'") && has(expenseJs, 'proof.files?.[0]?.name'));
 check('expense header amount is hidden', has(view, 'type="hidden" id="voucherAmount"'));
 check('line calculator sums amounts', has(calculate, 'reduce((sum,input)=>sum+Number(input.value||0),0)'));
 check('line calculator writes voucher amount', has(calculate, 'amount.value=total.toFixed(2)'));
@@ -95,12 +102,23 @@ check('picker supports ArrowDown', has(expenseJs, "e.key==='ArrowDown'"));
 check('picker supports ArrowUp', has(expenseJs, "e.key==='ArrowUp'"));
 check('picker supports Enter selection', has(expenseJs, "e.key==='Enter'"));
 check('picker supports Escape close', has(expenseJs, "e.key==='Escape'"));
+check('picker container selector matches generated markup', has(expenseJs, "tr.querySelector('.cvf27-accountPicker')"));
+check('result keyboard ArrowDown', /results\.addEventListener\('keydown'[\s\S]*e\.key==='ArrowDown'/.test(expenseJs));
+check('result keyboard ArrowUp', /results\.addEventListener\('keydown'[\s\S]*e\.key==='ArrowUp'/.test(expenseJs));
+check('result keyboard Enter', /results\.addEventListener\('keydown'[\s\S]*e\.key==='Enter'/.test(expenseJs));
+check('result keyboard Escape restores focus', /results\.addEventListener\('keydown'[\s\S]*e\.key==='Escape'[\s\S]*input\.focus\(\)/.test(expenseJs));
 check('new line focuses account search', has(expenseJs, "tr.querySelector('.accountSearch')?.focus()"));
 check('sales invoice authority remains customer_party_id', has(service, "['customer_party_id', 'customer_id', 'party_id', 'client_id']"));
 check('advance lock remains before posting validation', has(transition, '$this->lockAllocationTargets($voucherId)') && transition.indexOf('$this->lockAllocationTargets') < transition.indexOf('validateVoucherForPosting'));
+check('booking guard does not use capped booking options', !has(bookingGuard, 'bookingOptions('));
+check('customer guard directly queries booking ownership', has(bookingGuard, 'where($id, $bookingId)') && has(bookingGuard, "where('customer_party_id', $partyId)"));
+check('supplier guard directly queries costing relation', has(bookingGuard, "where('supplier_id', $partyId)") && has(bookingGuard, "where('booking_id', $bookingId)"));
 check('synthetic cash fallback remains absent', !has(service, 'synthetic'));
 check('register retains Search and Filter', has(register, 'Search') && has(register, 'Filter'));
 check('release identity is .377', version === 'v1.1.33.377-ERP11.3.377' && has(config, "'release' => 'ERP-11.3.377'"));
+const currentRelease = read('CURRENT_RELEASE.md');
+check('ERP376 metadata is packaged and deployed', /ERP-11\.3\.376 is FINALIZED \/ PACKAGED \/ DEPLOYED/.test(currentRelease));
+check('ERP377 review metadata remains pending', has(read('README_DEPLOY.txt'), 'EXTERNAL_SOURCE_REVIEW=PENDING') && has(read('README_DEPLOY.txt'), 'REMOTE_SOURCE_VERIFICATION=NOT_RUN'));
 check('no migration was introduced', !fs.readdirSync(path.join(root, 'database', 'migrations')).some((name) => name.includes('377')));
 
 const failures = results.filter(([, pass]) => !pass);

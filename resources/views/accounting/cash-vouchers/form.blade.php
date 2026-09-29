@@ -89,7 +89,7 @@
               <input name="party_name" value="{{ old('party_name',$row->party_name ?? '') }}" placeholder="Optional person or organization paid">
             </div>
           @else
-            <div class="cvf27-field" data-expense-field="booking">
+            <div class="cvf27-field">
               <label>{{ $partyLabel }} *</label>
               <select name="party_id" id="partySelect" required>
                 <option value="">Select {{ strtolower($partyLabel) }}</option>
@@ -104,7 +104,7 @@
           @endif
 
           @unless($isContra)
-            <div class="cvf27-field">
+            <div class="cvf27-field" data-expense-field="booking">
               <label>Booking Reference</label>
               <select name="booking_id" id="bookingSelect" data-booking-domain="{{ $isExpense ? 'expense' : $definition['party_type'] }}">
                 <option value="">{{ $bookingPlaceholder }}</option>
@@ -165,7 +165,7 @@
           </div>
 
           @if($isContra)
-            <div class="cvf27-field" data-expense-field="bank-name">
+            <div class="cvf27-field">
               <label>To Cash / Bank Account *</label>
               <select name="destination_account" id="destinationAccount" required>
                 <option value="">Select destination account</option>
@@ -179,7 +179,7 @@
           @if($isContra)
             <input type="hidden" name="bank_name" value="">
           @else
-            <div class="cvf27-field">
+            <div class="cvf27-field" data-expense-field="bank-name">
               <label>Bank Name</label>
               <input name="bank_name" value="{{ old('bank_name',$row->bank_name ?? '') }}">
             </div>
@@ -342,7 +342,7 @@ const currency=document.querySelector('[name="currency_code"]');
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  function accountLabel(a){return `${a.code} · ${a.name}`}
  function matches(term){term=String(term||'').trim().toLowerCase();return accounts.filter(a=>!term||String(a.code).toLowerCase().includes(term)||String(a.name).toLowerCase().includes(term)).slice(0,12)}
- function picker(tr,selected){const input=tr.querySelector('.accountSearch');const hidden=tr.querySelector('.accountId');const results=tr.querySelector('.accountResults');const current=accounts.find(a=>Number(a.id)===Number(selected));if(current)input.value=accountLabel(current);function render(){results.innerHTML=matches(input.value).map(a=>`<button type="button" class="cvf27-account-option" data-id="${a.id}">${esc(accountLabel(a))}</button>`).join('')||'<span class="cvf27-account-empty">No eligible expense account</span>';results.hidden=false}function choose(id){const a=accounts.find(x=>Number(x.id)===Number(id));if(!a)return;hidden.value=a.id;input.value=accountLabel(a);results.hidden=true}input.addEventListener('input',()=>{hidden.value='';render()});input.addEventListener('focus',render);input.addEventListener('keydown',e=>{const options=[...results.querySelectorAll('.cvf27-account-option')];let index=options.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();(options[index+1]||options[0])?.focus()}else if(e.key==='ArrowUp'){e.preventDefault();(options[index-1]||options[options.length-1])?.focus()}else if(e.key==='Escape'){results.hidden=true}});results.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.id){e.preventDefault();choose(e.target.dataset.id)}});results.addEventListener('click',e=>{if(e.target.dataset.id)choose(e.target.dataset.id)});tr.querySelector('.accountPicker').addEventListener('focusout',()=>setTimeout(()=>{if(!tr.querySelector('.accountPicker').contains(document.activeElement))results.hidden=true},0))}
+ function picker(tr,selected){const input=tr.querySelector('.accountSearch');const hidden=tr.querySelector('.accountId');const results=tr.querySelector('.accountResults');const current=accounts.find(a=>Number(a.id)===Number(selected));if(current)input.value=accountLabel(current);function render(){results.innerHTML=matches(input.value).map(a=>`<button type="button" class="cvf27-account-option" data-id="${a.id}">${esc(accountLabel(a))}</button>`).join('')||'<span class="cvf27-account-empty">No eligible expense account</span>';results.hidden=false}function choose(id){const a=accounts.find(x=>Number(x.id)===Number(id));if(!a)return;hidden.value=a.id;input.value=accountLabel(a);results.hidden=true}function focusResult(delta){const options=[...results.querySelectorAll('.cvf27-account-option')];const index=options.indexOf(document.activeElement);(options[index+delta]||options[delta>0?0:options.length-1])?.focus()}input.addEventListener('input',()=>{hidden.value='';render()});input.addEventListener('focus',render);input.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){e.preventDefault();focusResult(1)}else if(e.key==='ArrowUp'){e.preventDefault();focusResult(-1)}else if(e.key==='Escape'){results.hidden=true}});results.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();focusResult(e.key==='ArrowDown'?1:-1)}else if(e.key==='Enter'&&e.target.dataset.id){e.preventDefault();choose(e.target.dataset.id)}else if(e.key==='Escape'){e.preventDefault();results.hidden=true;input.focus()}});results.addEventListener('click',e=>{if(e.target.dataset.id)choose(e.target.dataset.id)});tr.querySelector('.cvf27-accountPicker').addEventListener('focusout',()=>setTimeout(()=>{if(!tr.querySelector('.cvf27-accountPicker').contains(document.activeElement))results.hidden=true},0))}
 function renumber(){[...body.children].forEach((tr,i)=>{tr.querySelector('.lineNo').textContent=i+1;tr.querySelectorAll('[name]').forEach(el=>el.name=el.name.replace(/expense_lines\[\d+\]/,`expense_lines[${i}]`))})}
 function calculate(){const total=[...body.querySelectorAll('.expenseAmount')].reduce((sum,input)=>sum+Number(input.value||0),0);amount.value=total.toFixed(2);document.getElementById('expenseTotal').textContent=total.toFixed(2);document.getElementById('expenseCurrency').textContent=String(currency.value||'PKR').toUpperCase();empty.style.display=body.children.length?'none':'block'}
  function addLine(value={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=`<td class="lineNo">${i+1}</td><td><div class="cvf27-accountPicker"><input class="accountSearch" type="search" placeholder="Search code or name" autocomplete="off" role="combobox"><input class="accountId" type="hidden" name="expense_lines[${i}][expense_account_id]" value="${Number(value.expense_account_id||0)||''}" required><div class="accountResults" hidden></div></div></td><td><input name="expense_lines[${i}][description]" value="${esc(value.description||'')}" placeholder="Purpose of expense"></td><td><input class="expenseAmount" type="number" name="expense_lines[${i}][amount]" min="0.01" step="0.01" value="${Number(value.amount||0).toFixed(2)}" required></td><td class="cvf27-action"><button type="button" class="cvf27-rm" aria-label="Remove expense line">×</button></td>`;body.appendChild(tr);picker(tr,value.expense_account_id);calculate();return tr}
@@ -351,6 +351,7 @@ function calculate(){const total=[...body.querySelectorAll('.expenseAmount')].re
 body.addEventListener('input',calculate);
 body.addEventListener('click',event=>{if(event.target.classList.contains('cvf27-rm')){event.target.closest('tr').remove();renumber();calculate()}});
 currency.addEventListener('input',calculate);calculate();
+const proof=document.querySelector('input[name="payment_proof"]');const proofName=document.querySelector('.cvf27-proof-name');proof?.addEventListener('change',()=>{proofName.textContent=proof.files?.[0]?.name||'No file selected'});
 })();
 </script>
 @endif
