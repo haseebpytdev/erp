@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class SupplierCostingController extends Controller
 {
@@ -122,7 +123,7 @@ class SupplierCostingController extends Controller
     {
         abort_unless(in_array($action, ['submit', 'approve', 'post'], true), 404);
         try { $this->service->transition($costing, $action, $request->user()); }
-        catch (\Throwable $e) { return back()->withErrors(['workflow' => $e->getMessage()]); }
+        catch (RuntimeException $e) { return back()->withErrors(['workflow' => $e->getMessage()]); }
         return back()->with('success', 'Supplier costing workflow updated.');
     }
 
@@ -130,7 +131,7 @@ class SupplierCostingController extends Controller
     {
         $data = $request->validate([
             'booking_id' => [$bookingDriven ? 'required' : 'nullable', 'integer', 'min:1'],
-            'supplier_id' => [$bookingDriven ? 'required' : 'nullable', 'integer', 'min:1'],
+            'supplier_id' => ['required', 'integer', 'min:1'],
             'supplier_name' => ['nullable', 'string', 'max:255'],
             'service_type' => [$bookingDriven ? 'nullable' : 'required', 'string', 'max:60'],
             'cost_date' => ['required', 'date'], 'due_date' => ['nullable', 'date', 'after_or_equal:cost_date'],
@@ -141,6 +142,11 @@ class SupplierCostingController extends Controller
         $data['currency_code'] = strtoupper(trim((string) $data['currency_code']));
         if ($bookingDriven && ($data['currency_code'] !== 'PKR' || abs((float) $data['exchange_rate'] - 1.0) > 0.000000005)) {
             throw ValidationException::withMessages(['currency_code' => 'Booking product cost obligations are persisted in PKR; use PKR with exchange rate 1.']);
+        }
+        try {
+            $this->service->assertSupplierRole((int) $data['supplier_id']);
+        } catch (RuntimeException $exception) {
+            throw ValidationException::withMessages(['supplier_id' => $exception->getMessage()]);
         }
         return $data;
     }

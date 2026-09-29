@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class CashVoucherController extends Controller
 {
@@ -176,7 +177,7 @@ class CashVoucherController extends Controller
         $partyId = (int) $request->query('party_id', 0);
         try {
             $this->service->assertPartyRole($partyId, $definition['party_type']);
-        } catch (\Throwable $e) {
+        } catch (RuntimeException $e) {
             throw ValidationException::withMessages(['party_id' => $e->getMessage()]);
         }
         return response()->json(['documents' => $this->service->documentOptions($definition['target_type'], $partyId, $definition['party_type'])]);
@@ -256,7 +257,7 @@ class CashVoucherController extends Controller
                 $this->service->transition($id, 'submit', $request->user());
                 return redirect()->route('accounting.cash-vouchers.show', $id)
                     ->with('success', 'Voucher saved and submitted for approval.');
-            } catch (\Throwable $e) {
+            } catch (RuntimeException $e) {
                 return redirect()->route('accounting.cash-vouchers.show', $id)
                     ->withErrors(['workflow' => $e->getMessage()]);
             }
@@ -540,7 +541,7 @@ class CashVoucherController extends Controller
             if (empty($data['party_id'])) abort(422, 'Select a canonical party from the authorized party list.');
             try {
                 $this->service->assertPartyRole((int) $data['party_id'], $this->service->voucherDefinition($data['voucher_type'])['party_type']);
-            } catch (\Throwable $e) {
+            } catch (RuntimeException $e) {
                 throw ValidationException::withMessages(['party_id' => $e->getMessage()]);
             }
         }

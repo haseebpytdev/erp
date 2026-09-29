@@ -43,6 +43,11 @@ final class SupplierCostingService
         if(!$user)return false;foreach(['is_super_admin','is_admin'] as $flag)if(!empty($user->{$flag}))return true;$role=strtolower((string)($user->role??$user->role_name??''));if(in_array($role,['super admin','super_admin','admin','administrator'],true))return true;foreach(['approve supplier costing','manage supplier costing','post supplier costing'] as $ability){try{if(method_exists($user,'can')&&$user->can($ability))return true;}catch(\Throwable){}}return false;
     }
 
+    public function assertSupplierRole(int $supplierId): array
+    {
+        return $this->partyRoles->resolveSupplier($supplierId);
+    }
+
     /** @return list<object> */
     public function accountingPreview(int $id): array
     {
