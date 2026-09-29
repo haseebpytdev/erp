@@ -25,8 +25,9 @@ neutral zero-balance Party Statement captions. It preserves posted/reversed
 history, journal authority, posting mathematics, locking and transaction
 atomicity. NEW_MIGRATION_REQUIRED=NO.
 
-ERP-11.3.375 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT
-PRODUCTION-VERIFIED.
+ERP-11.3.375 is FINALIZED / PACKAGED / DEPLOYED / VERSION_GATE=PASS /
+ACCOUNTING_LIVE_UAT=PARTIAL because Customer/Vendor selectors exposed the
+party_roles integration defect now being corrected by ERP-11.3.376.
 EXTERNAL_SOURCE_REVIEW=PASS
 
 ERP375_ACCOUNTING_INTEGRITY_GUARDS_REGRESSION=PASS (71 assertions)

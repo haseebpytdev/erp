@@ -30,7 +30,9 @@ ERP-11.3.375 introduces canonical Customer / Vendor role enforcement, strict
 party identity for party-controlled vouchers, customer-scoped Receipt and
 supplier-scoped Payment allocation, server-side cross-party rejection,
 fail-closed control-account resolution and neutral zero-balance statements.
-ERP-11.3.375 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+ERP-11.3.375 is FINALIZED / PACKAGED / DEPLOYED / VERSION_GATE=PASS /
+ACCOUNTING_LIVE_UAT=PARTIAL because Customer/Vendor selectors exposed the
+party_roles integration defect now being corrected by ERP-11.3.376.
 EXTERNAL_SOURCE_REVIEW=PASS
 
 ERP375_ACCOUNTING_INTEGRITY_GUARDS_REGRESSION=PASS (71 assertions)

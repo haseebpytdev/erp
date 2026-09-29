@@ -16,6 +16,10 @@ const adjustment = read('app/Http/Controllers/Accounting/AdvanceAdjustmentContro
 const form = read('resources/views/accounting/cash-vouchers/form.blade.php');
 const index = read('resources/views/accounting/cash-vouchers/index.blade.php');
 const release = read('config/et_erp_release.php');
+const currentRelease = read('CURRENT_RELEASE.md');
+const transitionStart = voucher.indexOf('public function transitionAdjustment(');
+const transitionEnd = voucher.indexOf('public function reverseAdjustment(', transitionStart);
+const transition = transitionStart >= 0 && transitionEnd > transitionStart ? voucher.slice(transitionStart, transitionEnd) : '';
 
 ok(resolver.includes("join('party_roles as pr'"), 'party_roles is the shared role authority');
 ok(resolver.includes("'CUSTOMER'") && resolver.includes("'VENDOR'"), 'customer and supplier roles map to native role values');
@@ -54,6 +58,10 @@ ok(voucher.includes('Stored advance adjustment party identity'), 'workflow rejec
 ok(adjustmentController.includes("canUseType($request->user(), (string) $newSource->voucher_type, 'update')"), 'update checks permission for newly submitted source voucher');
 ok(!voucher.includes('journal_entries') && !voucher.includes('journal_lines'), 'canonical journal authority is unchanged');
 ok(voucher.includes('recalculate(int $voucherId)') && voucher.includes('postingLine('), 'posting formulas remain in the existing service authority');
+const lockAt = transition.indexOf('lockTarget(');
+const snapshotAt = transition.indexOf('documentSnapshot(');
+ok(lockAt >= 0 && snapshotAt > lockAt, 'advance post locks target before authoritative snapshot');
+ok(transition.includes("$outstanding = (float) $target['outstanding']") && snapshotAt >= 0, 'post uses outstanding from the post-lock target snapshot');
 ok(form.includes("'Customer'"), 'customer voucher label is not Customer / Agent');
 ok(form.includes('No eligible') && form.includes('Customers'), 'empty Customer options have controlled message');
 ok(form.includes('Vendors / Suppliers'), 'empty Supplier options have controlled message');
@@ -72,6 +80,7 @@ ok(index.includes('Search') && index.includes('Type') && index.includes('Status'
 ok(index.includes('et-fin-filter-fields') && index.includes('et-fin-filter-head'), 'Filter and Reset are separated into grid and header');
 ok(release.includes("v1.1.33.376-ERP11.3.376") && release.includes("ERP-11.3.376"), 'release identity is .376');
 ok(read('VERSION.txt').trim() === 'v1.1.33.376-ERP11.3.376', 'VERSION.txt is .376');
+ok(currentRelease.includes('ERP-11.3.375 is FINALIZED / PACKAGED / DEPLOYED') && currentRelease.includes('ACCOUNTING_LIVE_UAT=PARTIAL'), 'live .375 metadata is internally consistent');
 
 console.log(`ERP376_REGRESSION=${fail ? 'FAIL' : 'PASS'} (${pass} assertions)`);
 if (fail) process.exitCode = 1;

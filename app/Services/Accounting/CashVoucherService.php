@@ -869,11 +869,11 @@ class CashVoucherService
                 throw new RuntimeException('You are not authorized for this advance adjustment workflow action.');
             }
 
+            if ($action === 'post') $this->lockTarget($derivedTargetType, (int) $adjustment->target_id);
             $target = $this->documentSnapshot($derivedTargetType, (int) $adjustment->target_id, (int) $voucher->party_id, (string) $voucher->party_type);
             if (strtoupper((string) ($target['currency_code'] ?: 'PKR')) !== strtoupper((string) ($voucher->currency_code ?: 'PKR'))) {
                 throw new RuntimeException('Advance and target document currencies must match.');
             }
-            if ($action === 'post') $this->lockTarget($derivedTargetType, (int) $adjustment->target_id);
             $available = $this->availableAdvance((int) $adjustment->advance_voucher_id);
             if ((float) $adjustment->amount <= 0 || (float) $adjustment->amount > $available + 0.005) {
                 throw new RuntimeException('Adjustment amount exceeds the currently available advance balance.');
