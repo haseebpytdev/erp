@@ -4,7 +4,7 @@ Active release: v1.1.33.374-ERP11.3.374
 CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.374
 CURRENT_LIVE_RELEASE=ERP-11.3.373
 CURRENT_LIVE_VERSION=v1.1.33.373-ERP11.3.373
-CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 LAST_PACKAGED_RELEASE=ERP-11.3.373
 NEW_MIGRATION_REQUIRED=NO
 
@@ -14,9 +14,10 @@ booking/service authority. Invoice amounts, totals, accounting, posting,
 supplier costing, provider and database behavior remain unchanged. No new
 migration is required.
 
-ERP-11.3.374 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
+ERP-11.3.374 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
 VERIFIED. Browser print-preview and live production verification remain
 pending.
+EXTERNAL_SOURCE_REVIEW=PASS
 
 ERP374_PRODUCT_DESCRIPTION_REGRESSION=PASS (65 assertions)
 FULL_NODE_RESULT=132 total / 90 pass / 42 historical/environment failures
