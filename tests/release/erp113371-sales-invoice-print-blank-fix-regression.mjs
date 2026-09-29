@@ -6,7 +6,7 @@ const ok = (condition, label) => { assert.ok(condition, label); pass++; };
 const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 
 const middleware = read('app/Http/Middleware/PresentSalesInvoicePrintV2.php');
-const sourceStyleOpen = '<style id="et-sales-invoice-print-v2-371">';
+const sourceStyleOpen = '<style id="et-sales-invoice-print-v2-372">';
 const sourceStyleClose = '</style>';
 
 ok(middleware.includes(sourceStyleOpen), '371 style opening tag is present');
@@ -14,8 +14,8 @@ ok(middleware.includes(sourceStyleClose), '371 style closing tag is present');
 ok(middleware.indexOf(sourceStyleOpen) < middleware.indexOf(sourceStyleClose), 'style closes after opening');
 ok((middleware.match(/<style\b/gi) || []).length === (middleware.match(/<\/style>/gi) || []).length, 'style tags are balanced');
 ok(middleware.indexOf(sourceStyleClose) < middleware.indexOf('CSS;'), 'style closes before heredoc terminator');
-ok(middleware.includes('data-et-sales-invoice-print-v2="ERP-11.3.371"'), '371 response marker is present');
-ok(middleware.includes('str_contains($html, \'data-et-sales-invoice-print-v2="ERP-11.3.371"\')'), '371 idempotence marker is authoritative');
+ok(middleware.includes('data-et-sales-invoice-print-v2="ERP-11.3.372"'), '372 response marker is present');
+ok(middleware.includes('str_contains($html, \'data-et-sales-invoice-print-v2="ERP-11.3.372"\')'), '372 idempotence marker is authoritative');
 ok(middleware.includes('$html = $this->markBody($html);'), 'body marker transformation remains in the pipeline');
 ok(middleware.includes('$html = $this->injectStyle($html);'), 'style transformation remains in the pipeline');
 ok(middleware.includes("preg_replace('/<\\/head>/i', $style.'</head>'"), 'style is injected before the native head close');

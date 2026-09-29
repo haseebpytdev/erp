@@ -30,10 +30,11 @@ class PresentSalesInvoicePrintV2
             return $response;
         }
 
-        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.371"')) {
+        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.372"')) {
             return $response;
         }
 
+        $html = $this->refineContent($html);
         $html = $this->markBody($html);
         $html = $this->injectStyle($html);
 
@@ -63,7 +64,7 @@ class PresentSalesInvoicePrintV2
         } else {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.371"',
+                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.372"',
                 $tag,
                 1
             ) ?? $tag;
@@ -72,7 +73,7 @@ class PresentSalesInvoicePrintV2
         if (! str_contains($replacement, 'data-et-sales-invoice-print-v2=')) {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body data-et-sales-invoice-print-v2="ERP-11.3.371"',
+                '<body data-et-sales-invoice-print-v2="ERP-11.3.372"',
                 $replacement,
                 1
             ) ?? $replacement;
@@ -81,10 +82,76 @@ class PresentSalesInvoicePrintV2
         return preg_replace('/'.preg_quote($tag, '/').'/', $replacement, $html, 1) ?? $html;
     }
 
+    private function refineContent(string $html): string
+    {
+        $html = preg_replace('/(>\s*)TICKET\s+NUMBER(\s*<)/i', '$1TICKET / REF$2', $html) ?? $html;
+        $html = preg_replace('/This Sales Invoice is the customer commercial\/accounting document\.\s*Booking Confirmation, Receipt Voucher, Hotel\/Umrah\/Travel Voucher and supplier documents remain separate controlled documents in the ERP\.?/is', '', $html) ?? $html;
+
+        return preg_replace_callback('/<tr\b[^>]*>.*?<\/tr>/is', function (array $rowMatch): string {
+            $row = $rowMatch[0];
+            $pnr = '';
+
+            $row = preg_replace_callback('/<td\b[^>]*>.*?<\/td>/is', function (array $cellMatch) use (&$pnr): string {
+                $cell = $cellMatch[0];
+                $openEnd = strpos($cell, '>');
+                if ($openEnd === false) {
+                    return $cell;
+                }
+
+                $open = substr($cell, 0, $openEnd + 1);
+                $inner = substr($cell, $openEnd + 1, -5);
+                if (! $this->hasClass($open, 'desc')) {
+                    return $cell;
+                }
+
+                if (preg_match('/\bPNR\s*:\s*([^<\r\n]+)/i', strip_tags($inner), $pnrMatch) === 1) {
+                    $pnr = trim($pnrMatch[1]);
+                    $inner = preg_replace('/\s*(?:<br\s*\/?>(?:\s*)?)?PNR\s*:\s*[^<\r\n]+/i', '', $inner) ?? $inner;
+                }
+
+                if (stripos(strip_tags($inner), 'air ticket') !== false) {
+                    $inner = preg_replace('/(?:Adult\s+)?Air Ticket/i', 'Air Ticket', $inner, 1) ?? $inner;
+                }
+
+                return $open.$inner.'</td>';
+            }, $row) ?? $row;
+
+            if ($pnr === '') {
+                return $row;
+            }
+
+            return preg_replace_callback('/<td\b[^>]*>.*?<\/td>/is', function (array $cellMatch) use ($pnr): string {
+                $cell = $cellMatch[0];
+                $openEnd = strpos($cell, '>');
+                if ($openEnd === false) {
+                    return $cell;
+                }
+                $open = substr($cell, 0, $openEnd + 1);
+                if (! $this->hasClass($open, 'ticket')) {
+                    return $cell;
+                }
+                $safePnr = htmlspecialchars($pnr, ENT_QUOTES, 'UTF-8');
+                if (stripos(strip_tags($cell), 'PNR:') !== false) {
+                    return $cell;
+                }
+                return substr($cell, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
+            }, $row, 1) ?? $row;
+        }, $html) ?? $html;
+    }
+
+    private function hasClass(string $tag, string $class): bool
+    {
+        if (preg_match('/\bclass\s*=\s*(["\'])(.*?)\1/is', $tag, $match) !== 1) {
+            return false;
+        }
+
+        return in_array($class, preg_split('/\s+/', trim($match[2])) ?: [], true);
+    }
+
     private function injectStyle(string $html): string
     {
         $style = <<<'CSS'
-<style id="et-sales-invoice-print-v2-371">
+<style id="et-sales-invoice-print-v2-372">
 body.et-si-print-370{background:#edf3f8;color:#13233d;font-family:Arial,Helvetica,sans-serif}
 body.et-si-print-370 .actions{width:210mm;margin:12px auto 10px;display:flex;gap:8px}
 body.et-si-print-370 .sheet{width:210mm;min-height:297mm;margin:0 auto 22px;background:#fff;padding:10mm 11mm 9mm;box-shadow:0 6px 22px rgba(15,41,70,.12)}
@@ -123,7 +190,7 @@ body.et-si-print-370 .notes{margin-top:11px;border-radius:6px}
 body.et-si-print-370 .notes .info-head{padding:5px 9px}
 body.et-si-print-370 .notes-body{padding:7px 9px;font-size:8.5px;line-height:1.35}
 body.et-si-print-370 .foot{margin-top:11px;padding-top:8px;font-size:7.75px;line-height:1.35}
-body.et-si-print-370 .thanks{margin-top:7px;font-size:8px}
+body.et-si-print-370 .thanks{margin-top:7px;font-size:8px;text-align:right;white-space:normal}
 @page{size:A4 portrait;margin:10mm}
 @media print{
     body.et-si-print-370{background:#fff}

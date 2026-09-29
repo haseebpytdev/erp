@@ -1,33 +1,35 @@
-ERP-11.3.371 Sales Invoice Print Blank Page Corrective
+ERP-11.3.372 Sales Invoice Smart Description + Footer Refinement
 
-Active release: v1.1.33.371-ERP11.3.371
-CURRENT_LIVE_RELEASE=ERP-11.3.370
-CURRENT_LIVE_VERSION=v1.1.33.370-ERP11.3.370
+Active release: v1.1.33.372-ERP11.3.372
+CURRENT_LIVE_RELEASE=ERP-11.3.371
+CURRENT_LIVE_VERSION=v1.1.33.371-ERP11.3.371
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.371 closes the blank-page defect by explicitly closing the injected
-Sales Invoice Print V2 style element before the native head/body boundary.
-The approved .370 compact A4 presentation, native invoice identity and
-financial/accounting authorities remain unchanged. No posting, database or
-migration change is included.
+ERP-11.3.372 refines the native Sales Invoice print content mapping using
+truthful rendered values, moving PNR into Ticket / Ref., preserving the Air
+Ticket fallback, removing the long commercial-document disclaimer, and
+right-aligning the normal-flow thank-you line. The approved .371 compact A4
+layout, invoice identity and financial/accounting authorities remain unchanged.
+No posting, database or migration change is included.
 
-ERP-11.3.371 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
+ERP-11.3.372 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
 VERIFIED. Browser print-preview and live production verification remain
 pending.
 
-ERP371_INVOICE_PRINT_REGRESSION=PASS (22 assertions)
-STYLE_TAG_BOUNDARY=PASS
-BODY_STRUCTURE_PRESERVED=PASS
-SHEET_STRUCTURE_PRESERVED=PASS
+ERP372_SMART_DESCRIPTION_REGRESSION=PASS (39 assertions)
+TICKET_REF_HEADER=PASS
+PNR_NOT_IN_DESCRIPTION=PASS
+PNR_IN_TICKET_REF=PASS
+COMMERCIAL_ACCOUNTING_DISCLAIMER_VISIBLE=NO
+THANK_YOU_RIGHT_ALIGNED=PASS
+LOWER_DOCUMENT_ORDER=TOTALS > NOTES > THANK_YOU
 NEW_RELEASE_FAILURES=0
 UNEXPECTED_NEW_FAILURES=0
 PHP_RUNTIME=UNAVAILABLE
 DIRECT_VENDOR_LIVE_UAT=PENDING
 
-ERP-11.3.370 was deployed, but production UAT failed because the injected
-style element was not closed and the native print body rendered blank.
-ERP-11.3.370 remains the current live release until .371 is certified and
-deployed.
+ERP-11.3.371 is deployed; visual blank-page correction is confirmed on
+available evidence, while full production UAT remains pending.
 
 ERP370_INVOICE_PRINT_REGRESSION=PASS (34 assertions)
 PRINT_ROUTE_RUNTIME_HOOK=PASS
