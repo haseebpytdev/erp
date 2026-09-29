@@ -267,6 +267,14 @@ class CashVoucherService
             if ($s['posting']) {
                 $query->where($s['posting'], 1);
             }
+            if ($s['control_flag']) {
+                $query->where(function ($q) use ($s): void {
+                    $q->whereNull($s['control_flag'])->orWhere($s['control_flag'], 0);
+                });
+            }
+            if ($s['type']) {
+                $query->whereRaw('LOWER('.$s['type'].') = ?', ['asset']);
+            }
 
             $query->where(function ($q) use ($s): void {
                 $hasFirst = false;
@@ -336,10 +344,9 @@ class CashVoucherService
             report($e);
         }
 
-        return (array) config('cash_vouchers.fallback_cash_bank_accounts', [
-            ['code' => '1010', 'name' => 'Cash'],
-            ['code' => '1020', 'name' => 'Bank'],
-        ]);
+        // Never synthesize accounting accounts when the live Chart is absent or
+        // contains no eligible posting Cash/Bank rows. Posting must fail closed.
+        return [];
     }
 
     public function paymentMethods(): array
@@ -599,6 +606,14 @@ class CashVoucherService
 
         $result = [];
         foreach ($query->orderByDesc('id')->limit(500)->get() as $row) {
+            if (! $row->party_id || ! in_array((string) $row->party_type, ['customer', 'supplier'], true)) {
+                continue;
+            }
+            try {
+                $this->assertPartyRole((int) $row->party_id, (string) $row->party_type);
+            } catch (\Throwable) {
+                continue;
+            }
             $available = $this->availableAdvance((int) $row->id);
             if ($available <= 0) {
                 continue;

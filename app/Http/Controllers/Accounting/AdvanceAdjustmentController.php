@@ -150,14 +150,16 @@ class AdvanceAdjustmentController extends Controller
     {
         $source = DB::table('cash_vouchers')->where('id', $data['advance_voucher_id'])->where('status', 'posted')->first();
         abort_unless($source, 422, 'Selected advance voucher is not Posted or no longer exists.');
+        abort_unless($source->party_id && in_array((string) $source->party_type, ['customer', 'supplier'], true), 422, 'A posted advance must have a canonical party.');
+        $this->service->assertPartyRole((int) $source->party_id, (string) $source->party_type);
         $available = $this->service->availableAdvance((int) $source->id);
         abort_if((float) $data['amount'] > $available + 0.005, 422, 'Adjustment amount exceeds the available advance balance.');
         $targetType = $source->party_type === 'supplier' ? 'supplier_costing' : 'sales_invoice';
-        $target = $this->service->documentSnapshot($targetType, (int) $data['target_id']);
+        $target = $this->service->documentSnapshot($targetType, (int) $data['target_id'], (int) $source->party_id, (string) $source->party_type);
         abort_if((float) $data['amount'] > (float) $target['outstanding'] + 0.005, 422, 'Adjustment amount exceeds the target outstanding balance.');
-        if ($source->party_id && $target['party_id'] && (int) $source->party_id !== (int) $target['party_id']) {
-            abort(422, 'Advance party does not match the selected target document party.');
-        }
+        abort_unless($target['party_id'], 422, 'The selected target document has no canonical party.');
+        abort_if((int) $source->party_id !== (int) $target['party_id'], 422, 'Advance party does not match the selected target document party.');
+        abort_if(strtoupper((string) ($source->currency_code ?: 'PKR')) !== strtoupper((string) ($target['currency_code'] ?: 'PKR')), 422, 'Advance and target document currencies must match.');
 
         return [
             'advance_voucher_id' => (int) $source->id,

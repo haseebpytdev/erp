@@ -5,7 +5,7 @@
     $isIncoming = $definition['direction'] === 'in';
     $isExpense = $type === 'expense';
     $isContra = $type === 'contra';
-    $partyLabel = $definition['party_type'] === 'supplier' ? 'Supplier' : 'Customer / Agent';
+    $partyLabel = $definition['party_type'] === 'supplier' ? 'Supplier' : 'Customer';
     $subtitle = $isContra
         ? 'Internal transfer between active posting Cash / Bank accounts'
         : ($isExpense

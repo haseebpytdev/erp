@@ -1,3 +1,21 @@
+ERP-11.3.376 Accounting Voucher Options
+
+Active release: v1.1.33.376-ERP11.3.376
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.376
+CURRENT_LIVE_RELEASE=ERP-11.3.375
+CURRENT_LIVE_VERSION=v1.1.33.375-ERP11.3.375
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+LAST_PACKAGED_RELEASE=ERP-11.3.375
+NEW_MIGRATION_REQUIRED=NO
+
+ERP-11.3.376 aligns Cash Voucher, Supplier Costing and Advance Adjustment
+party selectors with active CUSTOMER / VENDOR roles, preserves party-scoped
+allocation and fail-closed account safety, and adds responsive voucher filters.
+ERP-11.3.376 is IMPLEMENTED / NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED /
+NOT PRODUCTION-VERIFIED.
+
+ERP376_ACCOUNTING_VOUCHER_OPTIONS_REGRESSION=PENDING
+
 ERP-11.3.375 Accounting Integrity Guards
 
 Active release: v1.1.33.375-ERP11.3.375

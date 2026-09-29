@@ -15,63 +15,53 @@ final class AccountingPartyRoleResolver
     public function assertRole(int $partyId, string $role): array
     {
         if ($partyId <= 0) throw new RuntimeException('A canonical party is required for this accounting workflow.');
-        $role = $role === 'vendor' ? 'supplier' : $role;
-        foreach ($this->sources() as $source) {
-            if (! Schema::hasTable($source['table'])) continue;
-            $columns = Schema::getColumnListing($source['table']);
-            $id = $this->first($columns, ['id', 'party_id']);
-            $name = $this->first($columns, ['name', 'display_name', 'legal_name', 'party_name', 'customer_name']);
-            if (! $id || ! $name) continue;
-            $row = DB::table($source['table'])->where($id, $partyId)->first();
-            if ($row && $this->roleMatches($row, $columns, $role)) return ['party_id' => $partyId, 'party_name' => (string) $row->{$name}, 'role' => $role, 'source' => $source['table']];
+        $query = $this->eligibleQuery($role);
+        if ($query === null) throw new RuntimeException('The live party-role authority is unavailable.');
+        $row = $query->where('p.id', $partyId)->first();
+        if (! $row) {
+            $label = $this->normaliseRole($role) === 'CUSTOMER' ? 'Customer' : 'Vendor/Supplier';
+            throw new RuntimeException('Selected party is not configured as a '.$label.'.');
         }
-        $label = $role === 'customer' ? 'Customer' : 'Vendor/Supplier';
-        throw new RuntimeException('Selected party is not configured as a '.$label.'.');
+        return ['party_id' => (int) $row->party_id, 'party_name' => (string) $row->party_name,
+            'role' => strtolower($role) === 'vendor' ? 'supplier' : strtolower($role), 'source' => 'parties.party_roles'];
     }
 
     public function options(string $role): array
     {
-        $rows = [];
-        foreach ($this->sources() as $source) {
-            if (! Schema::hasTable($source['table'])) continue;
-            $columns = Schema::getColumnListing($source['table']);
-            $id = $this->first($columns, ['id', 'party_id']);
-            $name = $this->first($columns, ['name', 'display_name', 'legal_name', 'party_name', 'customer_name']);
-            if (! $id || ! $name) continue;
-            try {
-                foreach (DB::table($source['table'])->orderBy($name)->limit(1200)->get() as $row) {
-                    if (! $this->roleMatches($row, $columns, $role === 'vendor' ? 'supplier' : $role)) continue;
-                    $value = (int) $row->{$id}; $label = trim((string) $row->{$name});
-                    if ($value > 0 && $label !== '') $rows[$value] = ['id' => $value, 'name' => $label];
-                }
-            } catch (\Throwable) { continue; }
-        }
-        return array_values($rows);
+        $query = $this->eligibleQuery($role);
+        if ($query === null) return [];
+        try {
+            return $query->orderBy('party_name')->limit(1200)->get()->map(static fn ($row): array => [
+                'id' => (int) $row->party_id, 'name' => (string) $row->party_name,
+            ])->values()->all();
+        } catch (\Throwable) { return []; }
     }
 
-    private function sources(): array
+    private function eligibleQuery(string $role): ?\Illuminate\Database\Query\Builder
     {
-        // cash_vouchers.party_id is the unified Party identity. Dedicated
-        // table IDs are never accepted without a proven canonical FK.
-        return [['table' => 'parties']];
+        $roleValue = $this->normaliseRole($role);
+        if (! Schema::hasTable('parties') || ! Schema::hasTable('party_roles')) return null;
+        try { $partyColumns = Schema::getColumnListing('parties'); $roleColumns = Schema::getColumnListing('party_roles'); }
+        catch (\Throwable) { return null; }
+        foreach (['id', 'is_active'] as $column) if (! in_array($column, $partyColumns, true)) return null;
+        foreach (['party_id', 'role', 'is_active'] as $column) if (! in_array($column, $roleColumns, true)) return null;
+        $nameColumn = in_array('display_name', $partyColumns, true) ? 'display_name' : (in_array('legal_name', $partyColumns, true) ? 'legal_name' : null);
+        if ($nameColumn === null) return null;
+        $nameExpression = in_array('legal_name', $partyColumns, true)
+            ? "COALESCE(NULLIF(p.{$nameColumn}, ''), p.legal_name)"
+            : "NULLIF(p.{$nameColumn}, '')";
+        $query = DB::table('parties as p')->join('party_roles as pr', 'pr.party_id', '=', 'p.id')
+            ->where('p.is_active', 1)->where('pr.is_active', 1)->whereRaw('UPPER(pr.role) = ?', [$roleValue]);
+        if (in_array('starts_on', $roleColumns, true)) $query->where(function ($q): void { $q->whereNull('pr.starts_on')->orWhereDate('pr.starts_on', '<=', now()->toDateString()); });
+        if (in_array('ends_on', $roleColumns, true)) $query->where(function ($q): void { $q->whereNull('pr.ends_on')->orWhereDate('pr.ends_on', '>=', now()->toDateString()); });
+        return $query->select(['p.id as party_id', DB::raw($nameExpression.' as party_name')])->distinct();
     }
 
-    private function roleMatches(object $row, array $columns, string $role): bool
+    private function normaliseRole(string $role): string
     {
-        foreach ($role === 'customer' ? ['is_customer'] : ['is_supplier', 'is_vendor'] as $flag) {
-            if (in_array($flag, $columns, true) && (bool) ($row->{$flag} ?? false)) return true;
-        }
-        $column = $this->first($columns, ['party_type', 'type', 'category', 'role']);
-        if (! $column) return false;
-        $tokens = preg_split('/[^a-z]+/', strtolower(trim((string) ($row->{$column} ?? ''))), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        return $role === 'customer'
-            ? (in_array('customer', $tokens, true) || in_array('client', $tokens, true))
-            : (in_array('supplier', $tokens, true) || in_array('vendor', $tokens, true));
-    }
-
-    private function first(array $columns, array $candidates): ?string
-    {
-        foreach ($candidates as $candidate) if (in_array($candidate, $columns, true)) return $candidate;
-        return null;
+        return match (strtolower(trim($role))) {
+            'customer' => 'CUSTOMER', 'supplier', 'vendor' => 'VENDOR',
+            default => throw new RuntimeException('Unsupported accounting party role.'),
+        };
     }
 }
