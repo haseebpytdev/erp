@@ -138,8 +138,14 @@ class PresentSalesInvoicePrintV2
                 }
 
                 $destination = $cells[$destinationIndex];
-                if (preg_match('/\bPNR\s*:\s*'.preg_quote($pnr, '/').'\b/i', strip_tags($destination)) === 1) {
-                    return $row;
+                $destinationText = preg_replace('/<br\b[^>]*>/i', "\n", $destination) ?? $destination;
+                $destinationText = trim(preg_replace('/\s+/', ' ', strip_tags($destinationText)) ?? '');
+                $destinationPnr = null;
+                if (preg_match('/\bPNR\s*:\s*([A-Za-z0-9][A-Za-z0-9_-]*)\b/i', $destinationText, $destinationPnrMatch) === 1) {
+                    $destinationPnr = trim($destinationPnrMatch[1]);
+                    if (strcasecmp($destinationPnr, $pnr) !== 0) {
+                        return $row;
+                    }
                 }
 
                 $cleanInner = preg_replace('/\s*(?:<br\b[^>]*>\s*)?\bPNR\s*:\s*[A-Za-z0-9][A-Za-z0-9_-]*\b/i', '', $inner) ?? $inner;
@@ -147,9 +153,10 @@ class PresentSalesInvoicePrintV2
                     $cleanInner = preg_replace('/(?:Adult\s+)?Air Ticket/i', 'Air Ticket', $cleanInner, 1) ?? $cleanInner;
                 }
                 $safePnr = htmlspecialchars($pnr, ENT_QUOTES, 'UTF-8');
-                $destination = substr($destination, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
                 $cells[$descriptionIndex] = substr($description, 0, $openEnd + 1).$cleanInner.'</td>';
-                $cells[$destinationIndex] = $destination;
+                if ($destinationPnr === null) {
+                    $cells[$destinationIndex] = substr($destination, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
+                }
 
                 $cursor = 0;
                 return preg_replace_callback('/<td\b[^>]*>.*?<\/td>/is', function () use (&$cursor, $cells): string {

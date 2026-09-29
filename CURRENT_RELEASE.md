@@ -38,8 +38,10 @@ Air Ticket fallback, removal of the long commercial-document disclaimer, and
 a normal-flow right-aligned thank-you line. Invoice values, totals, accounting,
 posting, provider and database authorities remain unchanged. NEW_MIGRATION_REQUIRED=NO.
 
-ERP-11.3.372 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT
-PRODUCTION-VERIFIED.
+ERP-11.3.372 is FINALIZED / PACKAGED / DEPLOYED / NOT
+PRODUCTION-VERIFIED. Production UAT is PARTIAL: invoice rendering, blank-page
+correction, Ticket / Ref. heading, Air Ticket fallback, disclaimer removal and
+thank-you alignment pass, while PNR visibility in Ticket / Ref. fails.
 
 ERP372_SMART_DESCRIPTION_REGRESSION=PASS (39 assertions)
 COMMERCIAL_ACCOUNTING_DISCLAIMER_VISIBLE=NO
