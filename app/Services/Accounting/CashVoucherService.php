@@ -469,13 +469,13 @@ class CashVoucherService
         $result = [];
         foreach ($rows as $row) {
             $status = strtolower(trim((string) ($row->status ?? '')));
-            if (in_array($status, ['draft', 'new', 'pending', 'pending_approval', 'submitted', 'approved', 'authorized', 'authorised', 'cancelled', 'canceled', 'void', 'voided', 'rejected'], true)) {
+            if ($status !== 'posted') {
                 continue;
             }
             $id = (int) $row->id;
             $total = round((float) ($row->amount ?? 0), 2);
             $outstanding = $this->targetOutstanding('sales_invoice', $id, $total);
-            if ($total <= 0) {
+            if ($total <= 0 || $outstanding <= 0.005) {
                 continue;
             }
             $result[] = [
@@ -515,14 +515,14 @@ class CashVoucherService
                     'number' => (string) $row->costing_no,
                     'status' => (string) $row->status,
                     'total' => $total,
-                    'outstanding' => $this->targetOutstanding('supplier_costing', (int) $row->id, $total),
+                'outstanding' => $this->targetOutstanding('supplier_costing', (int) $row->id, $total),
                     'booking_id' => $row->booking_id ? (int) $row->booking_id : null,
                     'party_id' => $row->supplier_id ? (int) $row->supplier_id : null,
                     'party_name' => (string) ($row->supplier_name ?? ''),
                     'currency_code' => (string) ($row->currency_code ?: 'PKR'),
                     'target_type' => 'supplier_costing',
                 ];
-            })->all();
+            })->filter(fn (array $document): bool => $document['outstanding'] > 0.005)->values()->all();
     }
 
     public function documentSnapshot(string $targetType, int $targetId, ?int $partyId = null, ?string $partyType = null): array

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CashVoucherController extends Controller
 {
@@ -173,7 +174,11 @@ class CashVoucherController extends Controller
         abort_unless($this->service->canUseType($request->user(), $type, 'view'), 403);
         $definition = $this->service->voucherDefinition($type);
         $partyId = (int) $request->query('party_id', 0);
-        $this->service->assertPartyRole($partyId, $definition['party_type']);
+        try {
+            $this->service->assertPartyRole($partyId, $definition['party_type']);
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages(['party_id' => $e->getMessage()]);
+        }
         return response()->json(['documents' => $this->service->documentOptions($definition['target_type'], $partyId, $definition['party_type'])]);
     }
 
@@ -533,7 +538,11 @@ class CashVoucherController extends Controller
         }
         if (! in_array($data['voucher_type'], ['expense', 'contra'], true)) {
             if (empty($data['party_id'])) abort(422, 'Select a canonical party from the authorized party list.');
-            $this->service->assertPartyRole((int) $data['party_id'], $this->service->voucherDefinition($data['voucher_type'])['party_type']);
+            try {
+                $this->service->assertPartyRole((int) $data['party_id'], $this->service->voucherDefinition($data['voucher_type'])['party_type']);
+            } catch (\Throwable $e) {
+                throw ValidationException::withMessages(['party_id' => $e->getMessage()]);
+            }
         }
         return $data;
     }

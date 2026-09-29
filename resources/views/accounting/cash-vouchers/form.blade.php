@@ -294,14 +294,15 @@ function refreshRow(tr){const id=Number(tr.querySelector('.doc').value||0);const
 function renumber(){[...body.children].forEach((tr,i)=>tr.querySelectorAll('[name]').forEach(el=>el.name=el.name.replace(/allocations\[\d+\]/,`allocations[${i}]`)))}
 function calc(){const allocated=[...body.querySelectorAll('.alloc')].reduce((s,e)=>s+Number(e.value||0),0);const total=Number(amount.value||0);document.getElementById('allocatedTotal').textContent=allocated.toFixed(2);document.getElementById('unallocatedTotal').textContent=Math.max(0,total-allocated).toFixed(2)}
 const documentUrl=@json(route('accounting.cash-vouchers.documents'));
-async function loadDocuments(){const pid=Number(party.value||0);docs=[];[...body.children].forEach(tr=>tr.remove());calc();updateEmpty();if(!pid)return;const response=await fetch(documentUrl+'?voucher_type='+encodeURIComponent(@json($type))+'&party_id='+pid,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});if(!response.ok)return;const payload=await response.json();docs=Array.isArray(payload.documents)?payload.documents:[];existing.forEach(row);}
-if(Number(party.value||0))loadDocuments();
+let initialHydration=true;
+async function loadDocuments({restoreExisting=false}={}){const pid=Number(party.value||0);docs=[];[...body.children].forEach(tr=>tr.remove());calc();updateEmpty();if(!pid){initialHydration=false;return;}const response=await fetch(documentUrl+'?voucher_type='+encodeURIComponent(@json($type))+'&party_id='+pid,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});if(!response.ok){initialHydration=false;return;}const payload=await response.json();docs=Array.isArray(payload.documents)?payload.documents:[];if(restoreExisting&&initialHydration)existing.forEach(row);initialHydration=false;}
+if(Number(party.value||0))loadDocuments({restoreExisting:true});
 document.getElementById('addAllocation').onclick=()=>row();
 body.addEventListener('change',e=>{if(e.target.classList.contains('doc'))refreshRow(e.target.closest('tr'));calc()});
 body.addEventListener('input',calc);
 body.addEventListener('click',e=>{if(e.target.classList.contains('cvf27-rm')){e.target.closest('tr').remove();renumber();calc();updateEmpty()}});
 amount.addEventListener('input',calc);
-party.addEventListener('change',loadDocuments);
+party.addEventListener('change',()=>loadDocuments({restoreExisting:false}));
 calc();updateEmpty();
 })();
 </script>
