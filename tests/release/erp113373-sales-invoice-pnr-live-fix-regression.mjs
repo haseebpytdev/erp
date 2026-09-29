@@ -51,6 +51,6 @@ ok(source.includes('<td\\b[^>]*>.*?<\\/td>'), 'PASSENGER_PRESERVED=PASS');
 ok(source.includes('amount'), 'AMOUNT_PRESERVED=PASS');
 ok(source.includes('commercial\\/accounting'), 'DISCLAIMER_REMOVAL_PRESERVED=PASS');
 ok(source.includes('text-align:right'), 'THANK_YOU_RIGHT_ALIGNMENT_PRESERVED=PASS');
-ok(source.includes('<style id="et-sales-invoice-print-v2-373">') && (source.match(/<\/style>/g) || []).length === 1, 'STYLE_TAG_BALANCED=PASS');
+ok(source.includes('<style id="et-sales-invoice-print-v2-374">') && (source.match(/<\/style>/g) || []).length === 1, 'STYLE_TAG_BALANCED=PASS');
 
 console.log(`PASS ${pass} ERP-11.3.373 Sales Invoice PNR Live Fix assertions`);

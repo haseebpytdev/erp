@@ -31,7 +31,7 @@ class PresentSalesInvoicePrintV2
             return $response;
         }
 
-        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.373"')) {
+        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.374"')) {
             return $response;
         }
 
@@ -65,7 +65,7 @@ class PresentSalesInvoicePrintV2
         } else {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.373"',
+                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.374"',
                 $tag,
                 1
             ) ?? $tag;
@@ -74,7 +74,7 @@ class PresentSalesInvoicePrintV2
         if (! str_contains($replacement, 'data-et-sales-invoice-print-v2=')) {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body data-et-sales-invoice-print-v2="ERP-11.3.373"',
+                '<body data-et-sales-invoice-print-v2="ERP-11.3.374"',
                 $replacement,
                 1
             ) ?? $replacement;
@@ -86,10 +86,19 @@ class PresentSalesInvoicePrintV2
     /** @return list<string> */
     private function invoiceDescriptions(Request $request): array
     {
-        $routeInvoice = $request->route('invoice');
-        $invoiceId = is_object($routeInvoice) && method_exists($routeInvoice, 'getKey')
-            ? (int) $routeInvoice->getKey()
-            : (int) (is_scalar($routeInvoice) ? $routeInvoice : 0);
+        $route = $request->route();
+        $parameters = is_object($route) && method_exists($route, 'parameters') ? $route->parameters() : [];
+        if (! is_array($parameters)) return [];
+        $candidates = [];
+        foreach ($parameters as $key => $value) {
+            $id = is_object($value) && method_exists($value, 'getKey')
+                ? (int) $value->getKey()
+                : (is_scalar($value) ? (int) $value : 0);
+            if ($id > 0) $candidates[(string) $key] = $id;
+        }
+        $known = array_values(array_intersect_key($candidates, array_flip(['invoice', 'sales_invoice', 'salesInvoice', 'id'])));
+        $ids = $known !== [] ? array_values(array_unique($known)) : array_values(array_unique($candidates));
+        $invoiceId = count($ids) === 1 ? (int) $ids[0] : 0;
         if ($invoiceId <= 0) return [];
         try {
             return app(SalesInvoiceLineDescriptionResolver::class)->resolve($invoiceId);
@@ -105,9 +114,12 @@ class PresentSalesInvoicePrintV2
         $html = preg_replace('/(>\s*)TICKET\s+NUMBER(\s*<)/i', '$1TICKET / REF$2', $html) ?? $html;
         $html = preg_replace('/This Sales Invoice is the customer commercial\/accounting document\.\s*Booking Confirmation, Receipt Voucher, Hotel\/Umrah\/Travel Voucher and supplier documents remain separate controlled documents in the ERP\.?/is', '', $html) ?? $html;
 
-        return preg_replace_callback('/<table\b[^>]*class\s*=\s*(["\'])[^"\']*\binvoice-table\b[^"\']*\1[^>]*>.*?<\/table>/is', function (array $tableMatch): string {
+        return preg_replace_callback('/<table\b[^>]*class\s*=\s*(["\'])[^"\']*\binvoice-table\b[^"\']*\1[^>]*>.*?<\/table>/is', function (array $tableMatch) use ($lineDescriptions): string {
             $table = $tableMatch[0];
             $ticketColumn = $this->ticketColumnFromHeader($table);
+            if ($lineDescriptions !== [] && $this->invoiceDataRowCount($table) !== count($lineDescriptions)) {
+                $lineDescriptions = [];
+            }
 
             $lineIndex = 0;
             return preg_replace_callback('/<tr\b[^>]*>.*?<\/tr>/is', function (array $rowMatch) use ($ticketColumn, $lineDescriptions, &$lineIndex): string {
@@ -138,9 +150,11 @@ class PresentSalesInvoicePrintV2
                     return $row;
                 }
 
-                $descriptionContext = array_key_exists($lineIndex, $lineDescriptions)
-                    ? trim((string) $lineDescriptions[$lineIndex])
+                $descriptionRecord = array_key_exists($lineIndex, $lineDescriptions)
+                    ? (array) $lineDescriptions[$lineIndex]
                     : null;
+                $descriptionContext = $descriptionRecord === null ? null : trim((string) ($descriptionRecord['description'] ?? ''));
+                $referenceContext = $descriptionRecord === null ? '' : trim((string) ($descriptionRecord['reference'] ?? ''));
                 $lineIndex++;
 
                 $description = $cells[$descriptionIndex];
@@ -176,7 +190,7 @@ class PresentSalesInvoicePrintV2
 
                 $cleanInner = preg_replace('/\s*(?:<br\b[^>]*>\s*)?\bPNR\s*:\s*[A-Za-z0-9][A-Za-z0-9_-]*\b/i', '', $originalInner) ?? $originalInner;
                 if ($descriptionContext !== null && $descriptionContext !== '') {
-                    $cleanInner = '<div class="service-title">'.htmlspecialchars($descriptionContext, ENT_QUOTES, 'UTF-8').'</div>';
+                    $cleanInner = $this->descriptionHtml($descriptionContext);
                 } elseif (stripos(strip_tags($cleanInner), 'air ticket') !== false) {
                     $cleanInner = preg_replace('/(?:Adult\s+)?Air Ticket/i', 'Air Ticket', $cleanInner, 1) ?? $cleanInner;
                 }
@@ -184,6 +198,12 @@ class PresentSalesInvoicePrintV2
                 $cells[$descriptionIndex] = substr($description, 0, $openEnd + 1).$cleanInner.'</td>';
                 if ($hasPnr && $destinationPnr === null) {
                     $cells[$destinationIndex] = substr($destination, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
+                } elseif ($referenceContext !== '' && $destinationIndex !== null && isset($cells[$destinationIndex]) && $destinationIndex !== $descriptionIndex) {
+                    $existingReference = trim(preg_replace('/\s+/', ' ', strip_tags($destinationText)) ?? '');
+                    if ($existingReference === '' || preg_match('/^(?:—|-|N\/A|NONE)$/i', $existingReference) === 1) {
+                        $safeReference = htmlspecialchars($referenceContext, ENT_QUOTES, 'UTF-8');
+                        $cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).'<div class="service-detail">'.$safeReference.'</div></td>';
+                    }
                 }
 
                 $cursor = 0;
@@ -192,6 +212,23 @@ class PresentSalesInvoicePrintV2
                 }, $row) ?? $row;
             }, $table) ?? $table;
         }, $html) ?? $html;
+    }
+
+    private function invoiceDataRowCount(string $table): int
+    {
+        preg_match_all('/<tr\b[^>]*>.*?<td\b[^>]*class\s*=\s*(["\'])[^"\']*\bdesc\b[^"\']*\1[^>]*>.*?<\/tr>/is', $table, $rows);
+        return count($rows[0] ?? []);
+    }
+
+    private function descriptionHtml(string $description): string
+    {
+        $lines = preg_split('/\R+/', trim($description)) ?: [];
+        $html = '';
+        foreach (array_values(array_filter($lines, static fn (string $line): bool => trim($line) !== '')) as $index => $line) {
+            $safe = htmlspecialchars(trim($line), ENT_QUOTES, 'UTF-8');
+            $html .= '<div class="'.($index === 0 ? 'service-title' : 'service-detail').'">'.$safe.'</div>';
+        }
+        return $html;
     }
 
     private function ticketColumnFromHeader(string $table): ?int
@@ -224,7 +261,7 @@ class PresentSalesInvoicePrintV2
     private function injectStyle(string $html): string
     {
         $style = <<<'CSS'
-<style id="et-sales-invoice-print-v2-373">
+<style id="et-sales-invoice-print-v2-374">
 body.et-si-print-370{background:#edf3f8;color:#13233d;font-family:Arial,Helvetica,sans-serif}
 body.et-si-print-370 .actions{width:210mm;margin:12px auto 10px;display:flex;gap:8px}
 body.et-si-print-370 .sheet{width:210mm;min-height:297mm;margin:0 auto 22px;background:#fff;padding:10mm 11mm 9mm;box-shadow:0 6px 22px rgba(15,41,70,.12)}
