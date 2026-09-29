@@ -179,7 +179,8 @@ final class SalesInvoiceLineDescriptionResolver
 
     private function hotel(array $rows): string
     {
-        foreach ($rows as $row) {
+        $items = [];
+        foreach ($this->ordered($rows) as $row) {
             $parts = array_filter([$this->firstText($row, ['hotel_name', 'property_name', 'hotel', 'name']), $this->firstText($row, ['city', 'city_name', 'hotel_city', 'destination', 'location'])]);
             $in = $this->firstText($row, ['check_in', 'check_in_date', 'checkin', 'checkin_date']); $out = $this->firstText($row, ['check_out', 'check_out_date', 'checkout', 'checkout_date']);
             $dates = ($in !== '' || $out !== '') ? trim($this->dateLabel($in).' → '.$this->dateLabel($out), ' →') : '';
@@ -194,18 +195,46 @@ final class SalesInvoiceLineDescriptionResolver
             if ($parts !== []) {
                 $primary = array_slice($parts, 0, 2);
                 $secondary = array_slice($parts, 2);
-                return implode(' — ', $primary).($secondary !== [] ? "\n".implode(' · ', $secondary) : '');
+                $items[] = implode(' — ', $primary).($secondary !== [] ? "\n".implode(' · ', $secondary) : '');
             }
         }
-        return '';
+        return implode("\n", array_values(array_unique($items)));
     }
 
     private function visa(array $rows): string
-    { foreach ($rows as $row) { $country=$this->firstText($row,['country','destination_country']); $type=$this->firstText($row,['visa_type','type']); $duration=$this->firstText($row,['duration','stay_duration']); $validity=$this->firstText($row,['validity_days']); if($validity!=='')$duration=$validity.' Days'; $primary=trim($country.($country!==''&&$type!==''?' — ':'').$type); if($primary!==''||$duration!=='')return trim($primary.($duration!==''?"\n".$duration:'')); } return ''; }
+    {
+        $items = [];
+        foreach ($this->ordered($rows) as $row) {
+            $country=$this->firstText($row,['country','destination_country']); $type=$this->firstText($row,['visa_type','type']);
+            $duration=$this->firstText($row,['duration','stay_duration']); $validity=$this->firstText($row,['validity_days']);
+            if($validity!=='')$duration=$validity.' Days';
+            $primary=trim($country.($country!==''&&$type!==''?' — ':'').$type);
+            if($primary!==''||$duration!=='') $items[] = trim($primary.($duration!==''?"\n".$duration:''));
+        }
+        return implode("\n", array_values(array_unique($items)));
+    }
     private function transport(array $rows): string
-    { foreach ($rows as $row) { $route = $this->firstText($row, ['route_label','route_name','route']); if ($route === '') { $from=$this->firstText($row,['pickup_location','from_location','origin','from_city','from']); $to=$this->firstText($row,['dropoff_location','to_location','destination','to_city','to']); $route=trim($from.' → '.$to,' →'); } $vehicle=$this->firstText($row,['vehicle_type','vehicle_name','vehicle']); $date=$this->dateLabel($this->firstText($row,['travel_date','departure_date','start_date','booking_date','date','pickup_date'])); $primary=$route!==''?$route:'Transport'; $secondary=implode(' · ',array_filter([$vehicle,$date])); return $secondary!==''?$primary."\n".$secondary:$primary; } return ''; }
+    {
+        $items = [];
+        foreach ($this->ordered($rows) as $row) {
+            $route = $this->firstText($row, ['route_label','route_name','route']);
+            if ($route === '') { $from=$this->firstText($row,['pickup_location','from_location','origin','from_city','from']); $to=$this->firstText($row,['dropoff_location','to_location','destination','to_city','to']); $route=trim($from.' → '.$to,' →'); }
+            $vehicle=$this->firstText($row,['vehicle_type','vehicle_name','vehicle']); $date=$this->dateLabel($this->firstText($row,['travel_date','departure_date','start_date','booking_date','date','pickup_date']));
+            $primary=$route!==''?$route:'Transport'; $secondary=implode(' · ',array_filter([$vehicle,$date]));
+            $items[] = $secondary!==''?$primary."\n".$secondary:$primary;
+        }
+        return implode("\n", array_values(array_unique(array_filter($items))));
+    }
     private function umrah(array $rows): string
-    { foreach ($rows as $row) { $package=$this->firstText($row,['package_name','package','package_code','name']); $m=$this->firstText($row,['makkah_nights','makkah_night_count']); $d=$this->firstText($row,['madinah_nights','madinah_night_count']); $details=implode(' · ',array_filter([$m!==''?'Makkah '.$m.'N':'',$d!==''?'Madinah '.$d.'N':''])); if($package!==''||$details!=='')return trim(($package!==''?$package.' Umrah Package':'Umrah Package').($details!==''?"\n".$details:'')); } return ''; }
+    {
+        $items = [];
+        foreach ($this->ordered($rows) as $row) {
+            $package=$this->firstText($row,['package_name','package','package_code','name']); $m=$this->firstText($row,['makkah_nights','makkah_night_count']); $d=$this->firstText($row,['madinah_nights','madinah_night_count']);
+            $details=implode(' · ',array_filter([$m!==''?'Makkah '.$m.'N':'',$d!==''?'Madinah '.$d.'N':'']));
+            if($package!==''||$details!=='') $items[] = trim($this->packageTitle($package).($details!==''?"\n".$details:''));
+        }
+        return implode("\n", array_values(array_unique($items)));
+    }
 
     private function reference(string $family, int $bookingId, array $service, array $line = []): string
     {
@@ -221,11 +250,21 @@ final class SalesInvoiceLineDescriptionResolver
             'umrah' => ['package_reference', 'package_booking_no', 'voucher_no', 'booking_reference'],
             default => ['service_reference', 'customer_reference', 'reference_no'],
         };
+        $references = [];
         foreach ($rows as $row) foreach ($keys as $key) {
             $value = $this->firstText($row, [$key]);
-            if ($value !== '') return $value;
+            if ($value !== '' && ! in_array($value, $references, true)) $references[] = $value;
         }
-        return '';
+        return count($references) === 1 ? $references[0] : '';
+    }
+
+    private function packageTitle(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') return 'Umrah Package';
+        if (preg_match('/\bumrah\s+package\b/i', $value) || preg_match('/\bgroup\s+package\b/i', $value)) return $value;
+        if (preg_match('/\bumrah\b/i', $value)) return $value.' Package';
+        return $value.' Umrah Package';
     }
 
     /** @return list<array<string,mixed>> */

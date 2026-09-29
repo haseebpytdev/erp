@@ -56,5 +56,12 @@ ok(!middleware.includes('grand_total') && !middleware.includes('number_format(')
 ok(!resolver.includes('journal') && !resolver.includes('account_code'), 'ACCOUNTING_REFERENCE_VISIBLE=NO');
 ok(!resolver.includes('margin') && !resolver.includes('profit'), 'MARGIN_VISIBLE=NO');
 ok(!resolver.includes('migration'), 'NEW_MIGRATION_REQUIRED=NO');
+ok(resolver.includes('private function packageTitle') && resolver.includes('Umrah Package') && resolver.includes('group\\s+package'), 'UMRAH_PACKAGE_TITLE_DEDUPLICATED=PASS');
+ok(middleware.includes('preg_match(\'/^(?:—|-|N\\/A|NONE)$/i\', $existingReference)') && middleware.includes('$cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5)'), 'REFERENCE_PLACEHOLDER_REPLACED=PASS');
+ok(resolver.includes('private function hotel') && resolver.includes('$items') && resolver.includes('array_unique($items)'), 'HOTEL_MULTI_ROW_ALL_ROWS=PASS');
+ok(resolver.includes('private function transport') && resolver.includes('array_unique(array_filter($items))'), 'TRANSPORT_MULTI_ROW_ALL_ROWS=PASS');
+ok(resolver.includes('private function visa') && resolver.includes('array_unique($items)'), 'VISA_MULTI_ROW_ALL_ROWS=PASS');
+ok(resolver.includes('$references = []') && resolver.includes('count($references) === 1 ? $references[0] : \'\''), 'MULTI_REFERENCE_FAILS_CLOSED=PASS');
+ok(resolver.includes('! in_array($value, $references, true)'), 'SINGLE_REFERENCE_DEDUPLICATED=PASS');
 
 console.log(`PASS ${pass} ERP-11.3.374 Sales Invoice Product Description assertions`);
