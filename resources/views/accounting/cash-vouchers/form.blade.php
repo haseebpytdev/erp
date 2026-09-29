@@ -87,12 +87,13 @@
           @else
             <div class="cvf27-field">
               <label>{{ $partyLabel }} *</label>
-              <select name="party_id" id="partySelect">
+              <select name="party_id" id="partySelect" required>
                 <option value="">Select {{ strtolower($partyLabel) }}</option>
                 @foreach($parties as $p)
                   <option value="{{ $p['id'] }}" @selected((string)old('party_id',$row->party_id ?? '')===(string)$p['id'])>{{ $p['name'] }}</option>
                 @endforeach
               </select>
+              @if(empty($parties))<small class="text-muted">No eligible {{ $definition['party_type'] === 'supplier' ? 'Vendors / Suppliers' : 'Customers' }} are available from Party Master.</small>@endif
             </div>
 
             <input type="hidden" name="party_name" value="">
@@ -152,6 +153,7 @@
                 <option value="{{ $a['code'] }}" data-account-subtype="{{ $a['subtype'] ?? '' }}" @selected(old('cash_bank_account',$row->cash_bank_account_code ?? '')===$a['code'])>{{ $a['code'] }} · {{ $a['name'] }}</option>
               @endforeach
             </select>
+            @if(empty($cashBankAccounts))<small class="text-muted">No active posting Cash / Bank account is available.</small>@endif
           </div>
 
           @if($isContra)

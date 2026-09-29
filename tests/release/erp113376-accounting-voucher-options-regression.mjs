@@ -11,6 +11,7 @@ const resolver = read('app/Services/Accounting/AccountingPartyRoleResolver.php')
 const voucher = read('app/Services/Accounting/CashVoucherService.php');
 const controller = read('app/Http/Controllers/Accounting/CashVoucherController.php');
 const supplierService = read('app/Services/Purchase/SupplierCostingService.php');
+const adjustmentController = read('app/Http/Controllers/Accounting/AdvanceAdjustmentController.php');
 const adjustment = read('app/Http/Controllers/Accounting/AdvanceAdjustmentController.php');
 const form = read('resources/views/accounting/cash-vouchers/form.blade.php');
 const index = read('resources/views/accounting/cash-vouchers/index.blade.php');
@@ -30,7 +31,10 @@ ok(voucher.includes("'receipt' =>") && voucher.includes("'customer_advance' =>")
 ok(voucher.includes("'payment' =>") && voucher.includes("'supplier_advance' =>"), 'Payment and Supplier Advance use Vendor authority');
 ok(supplierService.includes('resolveSupplier'), 'Supplier Costing uses the shared Vendor authority');
 ok(controller.includes('documentOptions($definition[\'target_type\'], $partyId'), 'Receipt endpoint scopes Sales Invoice options by party');
-ok(controller.includes("'payment'"), 'Payment endpoint remains constrained to Supplier Costing authority');
+ok(voucher.includes("['customer_party_id', 'customer_id', 'party_id', 'client_id']"), 'customer_party_id is the canonical Sales Invoice party column with legacy priority');
+ok(!voucher.includes("'agent_id']),") && !voucher.includes("'agent_party_id']),"), 'Agent identity is not a Customer AR fallback');
+ok(voucher.includes("where($schema['party_id'], $partyId)"), 'Receipt Sales Invoice options bind parties.id to customer_party_id');
+ok(controller.includes("documentOptions($definition['target_type'], $partyId, $definition['party_type'])"), 'Payment endpoint passes selected party into scoped Supplier Costing lookup');
 ok(voucher.includes("$status !== 'posted'"), 'Sales Invoice options enforce Posted status');
 ok(voucher.includes("outstanding <= 0.005"), 'Sales Invoice and Supplier Costing exclude settled documents');
 ok(form.includes('party.addEventListener') && form.includes('restoreExisting:false'), 'party change clears existing allocations');
@@ -44,9 +48,17 @@ ok(adjustment.includes('assertPartyRole') && adjustment.includes('documentSnapsh
 ok(adjustment.includes('currencies') || adjustment.includes('currency_code'), 'advance adjustment preserves currency authority');
 ok(adjustment.includes('abort_unless($source->party_id') && adjustment.includes("abort_unless($target['party_id']"), 'missing source and target parties fail closed');
 ok(adjustment.includes('Advance party does not match') && adjustment.includes('currency_code'), 'cross-party and currency mismatch adjustments fail closed');
+ok(voucher.includes('derivedTargetType') && voucher.includes('documentSnapshot($derivedTargetType'), 'workflow derives and re-resolves target type from source party');
+ok(voucher.includes("$voucher->status !== 'posted'") && voucher.includes('target[\'outstanding\']'), 'workflow revalidates current Posted target and outstanding amount');
+ok(voucher.includes('Stored advance adjustment party identity'), 'workflow rejects stored party identity drift');
+ok(adjustmentController.includes("canUseType($request->user(), (string) $newSource->voucher_type, 'update')"), 'update checks permission for newly submitted source voucher');
 ok(!voucher.includes('journal_entries') && !voucher.includes('journal_lines'), 'canonical journal authority is unchanged');
 ok(voucher.includes('recalculate(int $voucherId)') && voucher.includes('postingLine('), 'posting formulas remain in the existing service authority');
 ok(form.includes("'Customer'"), 'customer voucher label is not Customer / Agent');
+ok(form.includes('No eligible') && form.includes('Customers'), 'empty Customer options have controlled message');
+ok(form.includes('Vendors / Suppliers'), 'empty Supplier options have controlled message');
+ok(form.includes('No active posting Cash / Bank account'), 'empty Cash/Bank options have controlled message');
+ok(form.includes('name="party_id" id="partySelect" required'), 'party selector remains required for party-controlled vouchers');
 ok(index.includes('grid-template-columns:minmax(180px,1.55fr)') && index.includes('et-fin-filter-fields'), 'desktop filter grid is seven columns');
 ok(index.includes('grid-template-columns:repeat(2') && index.includes('grid-template-columns:1fr'), 'tablet and mobile filter grids are responsive');
 const searchAt = index.indexOf('<label>Search</label>');

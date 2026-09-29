@@ -451,6 +451,13 @@ class CashVoucherService
 
     public function documentOptions(string $targetType, ?int $partyId = null, ?string $expectedPartyType = null): array
     {
+        $expected = $targetType === 'supplier_costing' ? 'supplier' : ($targetType === 'sales_invoice' ? 'customer' : null);
+        if ($expected !== null && $expectedPartyType !== null && strtolower($expectedPartyType) !== $expected) {
+            throw new RuntimeException('The selected document domain does not match the party role.');
+        }
+        if ($partyId !== null && $expected !== null) {
+            $this->assertPartyRole($partyId, $expected);
+        }
         return $targetType === 'supplier_costing'
             ? $this->supplierCostingOptions($partyId, $expectedPartyType)
             : $this->salesInvoiceOptions($partyId, $expectedPartyType);
@@ -458,6 +465,10 @@ class CashVoucherService
 
     public function salesInvoiceOptions(?int $partyId = null, ?string $expectedPartyType = null): array
     {
+        if ($expectedPartyType !== null && strtolower($expectedPartyType) !== 'customer') {
+            throw new RuntimeException('Sales Invoices require a Customer party.');
+        }
+        if ($partyId !== null) $this->assertPartyRole($partyId, 'customer');
         $schema = $this->salesInvoiceSchema();
         if (! $schema || ! $schema['party_id']) {
             return [];
@@ -504,6 +515,10 @@ class CashVoucherService
 
     public function supplierCostingOptions(?int $partyId = null, ?string $expectedPartyType = null): array
     {
+        if ($expectedPartyType !== null && strtolower($expectedPartyType) !== 'supplier') {
+            throw new RuntimeException('Supplier Costings require a Supplier party.');
+        }
+        if ($partyId !== null) $this->assertPartyRole($partyId, 'supplier');
         if (! Schema::hasTable('supplier_costings')) {
             return [];
         }
@@ -839,18 +854,31 @@ class CashVoucherService
             if (! $voucher) {
                 throw new RuntimeException('Source advance voucher not found.');
             }
+            if ((string) $voucher->status !== 'posted' || ! $voucher->party_id || ! in_array((string) $voucher->party_type, ['customer', 'supplier'], true)) {
+                throw new RuntimeException('The source advance is no longer a valid Posted party advance.');
+            }
+            $this->assertPartyRole((int) $voucher->party_id, (string) $voucher->party_type);
+            $derivedTargetType = $voucher->party_type === 'supplier' ? 'supplier_costing' : 'sales_invoice';
+            if ((string) $adjustment->target_type !== $derivedTargetType) {
+                throw new RuntimeException('Advance adjustment target domain does not match its source party.');
+            }
+            if ((string) $adjustment->party_type !== (string) $voucher->party_type || (int) $adjustment->party_id !== (int) $voucher->party_id) {
+                throw new RuntimeException('Stored advance adjustment party identity no longer matches its source.');
+            }
             if (! $this->canUseType($user, (string) $voucher->voucher_type, $action === 'submit' ? 'update' : $action)) {
                 throw new RuntimeException('You are not authorized for this advance adjustment workflow action.');
             }
 
-            if ($action === 'post') {
-                $this->lockTarget((string) $adjustment->target_type, (int) $adjustment->target_id);
+            $target = $this->documentSnapshot($derivedTargetType, (int) $adjustment->target_id, (int) $voucher->party_id, (string) $voucher->party_type);
+            if (strtoupper((string) ($target['currency_code'] ?: 'PKR')) !== strtoupper((string) ($voucher->currency_code ?: 'PKR'))) {
+                throw new RuntimeException('Advance and target document currencies must match.');
             }
+            if ($action === 'post') $this->lockTarget($derivedTargetType, (int) $adjustment->target_id);
             $available = $this->availableAdvance((int) $adjustment->advance_voucher_id);
             if ((float) $adjustment->amount <= 0 || (float) $adjustment->amount > $available + 0.005) {
                 throw new RuntimeException('Adjustment amount exceeds the currently available advance balance.');
             }
-            $outstanding = $this->targetOutstanding((string) $adjustment->target_type, (int) $adjustment->target_id);
+            $outstanding = (float) $target['outstanding'];
             if ((float) $adjustment->amount > $outstanding + 0.005) {
                 throw new RuntimeException('Adjustment amount exceeds the target document outstanding balance.');
             }
@@ -1413,7 +1441,7 @@ class CashVoucherService
                 'status' => $this->first($columns, ['status', 'invoice_status', 'document_status']),
                 'amount' => $amount,
                 'booking' => $this->first($columns, ['booking_id', 'travel_booking_id', 'source_booking_id']),
-                'party_id' => $this->first($columns, ['customer_id', 'party_id', 'client_id', 'agent_id']),
+                'party_id' => $this->first($columns, ['customer_party_id', 'customer_id', 'party_id', 'client_id']),
                 'party_name' => $this->first($columns, ['customer_name', 'party_name', 'client_name', 'agent_name']),
                 'currency' => $this->first($columns, ['currency_code', 'currency', 'currency_iso']),
             ];

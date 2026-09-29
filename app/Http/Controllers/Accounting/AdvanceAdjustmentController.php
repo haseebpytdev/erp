@@ -85,6 +85,9 @@ class AdvanceAdjustmentController extends Controller
         abort_unless($source, 404);
         abort_unless($this->service->canUseType($request->user(), (string) $source->voucher_type, 'update'), 403);
         $data = $this->validateData($request);
+        $newSource = DB::table('cash_vouchers')->where('id', $data['advance_voucher_id'])->first();
+        abort_unless($newSource, 422, 'Replacement advance voucher was not found.');
+        abort_unless($this->service->canUseType($request->user(), (string) $newSource->voucher_type, 'update'), 403);
         $payload = $this->resolvePayload($data);
         DB::table('advance_adjustments')->where('id', $adjustment)->update(array_merge($payload, [
             'adjustment_date' => $data['adjustment_date'],
