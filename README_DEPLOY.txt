@@ -11,7 +11,7 @@ The approved .370 compact A4 presentation, native invoice identity and
 financial/accounting authorities remain unchanged. No posting, database or
 migration change is included.
 
-ERP-11.3.371 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
+ERP-11.3.371 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
 VERIFIED. Browser print-preview and live production verification remain
 pending.
 

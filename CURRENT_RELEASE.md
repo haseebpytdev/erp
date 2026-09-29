@@ -23,7 +23,7 @@ the native document head boundary, retaining the approved .370 compact A4
 presentation and native invoice values, accounting, posting, provider and
 financial authorities. NEW_MIGRATION_REQUIRED=NO.
 
-ERP-11.3.371 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT
+ERP-11.3.371 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT
 PRODUCTION-VERIFIED.
 
 ERP371_INVOICE_PRINT_REGRESSION=PASS (22 assertions)
