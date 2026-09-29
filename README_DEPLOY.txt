@@ -4,7 +4,7 @@ Active release: v1.1.33.375-ERP11.3.375
 CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.375
 CURRENT_LIVE_RELEASE=ERP-11.3.374
 CURRENT_LIVE_VERSION=v1.1.33.374-ERP11.3.374
-CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 LAST_PACKAGED_RELEASE=ERP-11.3.374
 NEW_MIGRATION_REQUIRED=NO
 
@@ -12,7 +12,16 @@ ERP-11.3.375 introduces canonical Customer / Vendor role enforcement, strict
 party identity for party-controlled vouchers, customer-scoped Receipt and
 supplier-scoped Payment allocation, server-side cross-party rejection,
 fail-closed control-account resolution and neutral zero-balance statements.
-ERP-11.3.375 is NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+ERP-11.3.375 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+EXTERNAL_SOURCE_REVIEW=PASS
+
+ERP375_ACCOUNTING_INTEGRITY_GUARDS_REGRESSION=PASS (71 assertions)
+FULL_NODE_RESULT=133 total / 90 pass / 43 historical/environment failures
+ERP375_FAILURES=0
+NEW_FUNCTIONAL_FAILURES=0
+UNEXPECTED_NEW_FAILURES=0
+ERP364_SUPERSEDED_ACCOUNTING_UNCHANGED_FAILURE=EXPECTED
+ERP364_FAILURE_ASSERTION=accounting services unchanged
 
 ERP-11.3.374 Sales Invoice Smart Product Description Enrichment
 
@@ -30,9 +39,9 @@ booking/service authority. Invoice amounts, totals, accounting, posting,
 supplier costing, provider and database behavior remain unchanged. No new
 migration is required.
 
-ERP-11.3.374 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
-VERIFIED. Browser print-preview and live production verification remain
-pending.
+ERP-11.3.374 is DEPLOYED / AIR TARGETED LIVE UAT PASS / BROADER PRODUCTION
+UAT PARTIAL. Browser print-preview and broader product live verification
+remain pending.
 EXTERNAL_SOURCE_REVIEW=PASS
 
 ERP374_PRODUCT_DESCRIPTION_REGRESSION=PASS (65 assertions)
