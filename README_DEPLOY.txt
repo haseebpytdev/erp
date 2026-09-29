@@ -1,21 +1,24 @@
-ERP-11.3.372 Sales Invoice Smart Description + Footer Refinement
+ERP-11.3.373 Sales Invoice PNR Live Corrective
 
-Active release: v1.1.33.372-ERP11.3.372
-CURRENT_LIVE_RELEASE=ERP-11.3.371
-CURRENT_LIVE_VERSION=v1.1.33.371-ERP11.3.371
+Active release: v1.1.33.373-ERP11.3.373
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.373
+CURRENT_LIVE_RELEASE=ERP-11.3.372
+CURRENT_LIVE_VERSION=v1.1.33.372-ERP11.3.372
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+LAST_PACKAGED_RELEASE=ERP-11.3.372
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.372 refines the native Sales Invoice print content mapping using
-truthful rendered values, moving PNR into Ticket / Ref., preserving the Air
-Ticket fallback, removing the long commercial-document disclaimer, and
-right-aligning the normal-flow thank-you line. The approved .371 compact A4
-layout, invoice identity and financial/accounting authorities remain unchanged.
-No posting, database or migration change is included.
+ERP-11.3.373 preserves PNR values in Ticket / Ref. using a header-derived
+destination fallback when the native ticket class is absent. The approved
+.372 compact A4 layout, Air Ticket fallback, disclaimer removal and financial
+authorities remain unchanged. No posting, database or migration change is
+included.
 
-ERP-11.3.372 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
+ERP-11.3.373 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
 VERIFIED. Browser print-preview and live production verification remain
 pending.
 
+ERP373_PNR_LIVE_FIX_REGRESSION=PASS (17 assertions)
 ERP372_SMART_DESCRIPTION_REGRESSION=PASS (39 assertions)
 TICKET_REF_HEADER=PASS
 PNR_NOT_IN_DESCRIPTION=PASS
@@ -28,6 +31,8 @@ UNEXPECTED_NEW_FAILURES=0
 PHP_RUNTIME=UNAVAILABLE
 DIRECT_VENDOR_LIVE_UAT=PENDING
 
+ERP-11.3.372 is deployed / production-UAT partial: PNR was removed from
+Description but was not visible in Ticket / Ref. before .373.
 ERP-11.3.371 is deployed; visual blank-page correction is confirmed on
 available evidence, while full production UAT remains pending.
 

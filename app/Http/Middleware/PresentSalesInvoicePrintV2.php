@@ -30,7 +30,7 @@ class PresentSalesInvoicePrintV2
             return $response;
         }
 
-        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.372"')) {
+        if (str_contains($html, 'data-et-sales-invoice-print-v2="ERP-11.3.373"')) {
             return $response;
         }
 
@@ -64,7 +64,7 @@ class PresentSalesInvoicePrintV2
         } else {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.372"',
+                '<body class="et-si-print-370" data-et-sales-invoice-print-v2="ERP-11.3.373"',
                 $tag,
                 1
             ) ?? $tag;
@@ -73,7 +73,7 @@ class PresentSalesInvoicePrintV2
         if (! str_contains($replacement, 'data-et-sales-invoice-print-v2=')) {
             $replacement = preg_replace(
                 '/<body\b/i',
-                '<body data-et-sales-invoice-print-v2="ERP-11.3.372"',
+                '<body data-et-sales-invoice-print-v2="ERP-11.3.373"',
                 $replacement,
                 1
             ) ?? $replacement;
@@ -87,56 +87,94 @@ class PresentSalesInvoicePrintV2
         $html = preg_replace('/(>\s*)TICKET\s+NUMBER(\s*<)/i', '$1TICKET / REF$2', $html) ?? $html;
         $html = preg_replace('/This Sales Invoice is the customer commercial\/accounting document\.\s*Booking Confirmation, Receipt Voucher, Hotel\/Umrah\/Travel Voucher and supplier documents remain separate controlled documents in the ERP\.?/is', '', $html) ?? $html;
 
-        return preg_replace_callback('/<tr\b[^>]*>.*?<\/tr>/is', function (array $rowMatch): string {
-            $row = $rowMatch[0];
-            $pnr = '';
+        return preg_replace_callback('/<table\b[^>]*class\s*=\s*(["\'])[^"\']*\binvoice-table\b[^"\']*\1[^>]*>.*?<\/table>/is', function (array $tableMatch): string {
+            $table = $tableMatch[0];
+            $ticketColumn = $this->ticketColumnFromHeader($table);
 
-            $row = preg_replace_callback('/<td\b[^>]*>.*?<\/td>/is', function (array $cellMatch) use (&$pnr): string {
-                $cell = $cellMatch[0];
-                $openEnd = strpos($cell, '>');
+            return preg_replace_callback('/<tr\b[^>]*>.*?<\/tr>/is', function (array $rowMatch) use ($ticketColumn): string {
+                $row = $rowMatch[0];
+                if (stripos($row, '<td') === false) {
+                    return $row;
+                }
+
+                preg_match_all('/<td\b[^>]*>.*?<\/td>/is', $row, $cellMatches);
+                $cells = $cellMatches[0] ?? [];
+                $descriptionIndex = null;
+                $classTicketIndex = null;
+                foreach ($cells as $index => $cell) {
+                    $openEnd = strpos($cell, '>');
+                    if ($openEnd === false) {
+                        continue;
+                    }
+                    $open = substr($cell, 0, $openEnd + 1);
+                    if ($this->hasClass($open, 'desc')) {
+                        $descriptionIndex = $index;
+                    }
+                    if ($this->hasClass($open, 'ticket')) {
+                        $classTicketIndex = $index;
+                    }
+                }
+
+                if ($descriptionIndex === null) {
+                    return $row;
+                }
+
+                $description = $cells[$descriptionIndex];
+                $openEnd = strpos($description, '>');
                 if ($openEnd === false) {
-                    return $cell;
+                    return $row;
+                }
+                $inner = substr($description, $openEnd + 1, -5);
+                $plain = preg_replace('/<br\b[^>]*>/i', "\n", $inner) ?? $inner;
+                $plain = trim(preg_replace('/\s+/', ' ', strip_tags($plain)) ?? '');
+                if (preg_match('/\bPNR\s*:\s*([A-Za-z0-9][A-Za-z0-9_-]*)\b/i', $plain, $pnrMatch) !== 1) {
+                    return $row;
                 }
 
-                $open = substr($cell, 0, $openEnd + 1);
-                $inner = substr($cell, $openEnd + 1, -5);
-                if (! $this->hasClass($open, 'desc')) {
-                    return $cell;
+                $pnr = trim($pnrMatch[1]);
+                $destinationIndex = $classTicketIndex ?? $ticketColumn;
+                if ($destinationIndex === null || ! isset($cells[$destinationIndex]) || $destinationIndex === $descriptionIndex) {
+                    return $row;
                 }
 
-                if (preg_match('/\bPNR\s*:\s*([^<\r\n]+)/i', strip_tags($inner), $pnrMatch) === 1) {
-                    $pnr = trim($pnrMatch[1]);
-                    $inner = preg_replace('/\s*(?:<br\s*\/?>(?:\s*)?)?PNR\s*:\s*[^<\r\n]+/i', '', $inner) ?? $inner;
+                $destination = $cells[$destinationIndex];
+                if (preg_match('/\bPNR\s*:\s*'.preg_quote($pnr, '/').'\b/i', strip_tags($destination)) === 1) {
+                    return $row;
                 }
 
-                if (stripos(strip_tags($inner), 'air ticket') !== false) {
-                    $inner = preg_replace('/(?:Adult\s+)?Air Ticket/i', 'Air Ticket', $inner, 1) ?? $inner;
-                }
-
-                return $open.$inner.'</td>';
-            }, $row) ?? $row;
-
-            if ($pnr === '') {
-                return $row;
-            }
-
-            return preg_replace_callback('/<td\b[^>]*>.*?<\/td>/is', function (array $cellMatch) use ($pnr): string {
-                $cell = $cellMatch[0];
-                $openEnd = strpos($cell, '>');
-                if ($openEnd === false) {
-                    return $cell;
-                }
-                $open = substr($cell, 0, $openEnd + 1);
-                if (! $this->hasClass($open, 'ticket')) {
-                    return $cell;
+                $cleanInner = preg_replace('/\s*(?:<br\b[^>]*>\s*)?\bPNR\s*:\s*[A-Za-z0-9][A-Za-z0-9_-]*\b/i', '', $inner) ?? $inner;
+                if (stripos(strip_tags($cleanInner), 'air ticket') !== false) {
+                    $cleanInner = preg_replace('/(?:Adult\s+)?Air Ticket/i', 'Air Ticket', $cleanInner, 1) ?? $cleanInner;
                 }
                 $safePnr = htmlspecialchars($pnr, ENT_QUOTES, 'UTF-8');
-                if (stripos(strip_tags($cell), 'PNR:') !== false) {
-                    return $cell;
-                }
-                return substr($cell, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
-            }, $row, 1) ?? $row;
+                $destination = substr($destination, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
+                $cells[$descriptionIndex] = substr($description, 0, $openEnd + 1).$cleanInner.'</td>';
+                $cells[$destinationIndex] = $destination;
+
+                $cursor = 0;
+                return preg_replace_callback('/<td\b[^>]*>.*?<\/td>/is', function () use (&$cursor, $cells): string {
+                    return $cells[$cursor++] ?? '';
+                }, $row) ?? $row;
+            }, $table) ?? $table;
         }, $html) ?? $html;
+    }
+
+    private function ticketColumnFromHeader(string $table): ?int
+    {
+        if (preg_match('/<thead\b[^>]*>.*?<\/thead>/is', $table, $headMatch) !== 1) {
+            return null;
+        }
+        if (preg_match('/<tr\b[^>]*>.*?<\/tr>/is', $headMatch[0], $rowMatch) !== 1) {
+            return null;
+        }
+        preg_match_all('/<th\b[^>]*>.*?<\/th>/is', $rowMatch[0], $headers);
+        foreach ($headers[0] ?? [] as $index => $header) {
+            $label = trim(preg_replace('/\s+/', ' ', strip_tags($header)) ?? '');
+            if (preg_match('/\bTICKET\s*(?:\/\s*REF|NUMBER)\b/i', $label) === 1) {
+                return $index;
+            }
+        }
+        return null;
     }
 
     private function hasClass(string $tag, string $class): bool
@@ -151,7 +189,7 @@ class PresentSalesInvoicePrintV2
     private function injectStyle(string $html): string
     {
         $style = <<<'CSS'
-<style id="et-sales-invoice-print-v2-372">
+<style id="et-sales-invoice-print-v2-373">
 body.et-si-print-370{background:#edf3f8;color:#13233d;font-family:Arial,Helvetica,sans-serif}
 body.et-si-print-370 .actions{width:210mm;margin:12px auto 10px;display:flex;gap:8px}
 body.et-si-print-370 .sheet{width:210mm;min-height:297mm;margin:0 auto 22px;background:#fff;padding:10mm 11mm 9mm;box-shadow:0 6px 22px rgba(15,41,70,.12)}

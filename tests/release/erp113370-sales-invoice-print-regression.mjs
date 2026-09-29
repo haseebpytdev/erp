@@ -14,7 +14,7 @@ ok(routes.includes("! in_array('GET', $route->methods(), true)"), 'Print hook is
 ok(!routes.includes("Route::get('/sales/invoices/{invoice}/print'"), 'No competing print route is registered');
 
 ok(middleware.includes('class="sheet"'), 'Native paper boundary is required before transformation');
-ok(middleware.includes('data-et-sales-invoice-print-v2="ERP-11.3.372"'), 'Transformation is idempotently marked');
+ok(middleware.includes('data-et-sales-invoice-print-v2="ERP-11.3.373"'), 'Transformation is idempotently marked');
 ok(middleware.includes("$response->getStatusCode() >= 400"), 'Error responses are not transformed');
 ok(middleware.includes('content-type'), 'Only HTML responses are transformed');
 ok(middleware.includes("$response->headers->remove('Content-Length')"), 'Content-Length is cleared after transformation');
