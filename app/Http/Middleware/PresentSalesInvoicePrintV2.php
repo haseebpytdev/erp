@@ -206,7 +206,7 @@ class PresentSalesInvoicePrintV2
                     $newNormalized = $this->normalizeReference($referenceContext);
                     if ($existingReference === '' || preg_match('/^(?:—|-|N\/A|NONE)$/i', $existingReference) === 1) {
                         $safeReference = htmlspecialchars($referenceContext, ENT_QUOTES, 'UTF-8');
-                        $cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).'<div class="service-detail">'.$safeReference.'</div></td>';
+                        $cells[$destinationIndex] = $this->replaceCellInner($cells[$destinationIndex], '<div class="service-detail">'.$safeReference.'</div>');
                     } elseif ($existingNormalized === $newNormalized) {
                         // Same customer-facing reference, including labelled forms,
                         // is already visible; never duplicate it.
@@ -227,6 +227,12 @@ class PresentSalesInvoicePrintV2
     {
         preg_match_all('/<tr\b[^>]*>.*?<td\b[^>]*class\s*=\s*(["\'])[^"\']*\bdesc\b[^"\']*\1[^>]*>.*?<\/tr>/is', $table, $rows);
         return count($rows[0] ?? []);
+    }
+
+    private function replaceCellInner(string $cell, string $inner): string
+    {
+        if (preg_match('/^<td\b[^>]*>/i', $cell, $match) !== 1) return $cell;
+        return $match[0].$inner.'</td>';
     }
 
     private function descriptionHtml(string $description): string

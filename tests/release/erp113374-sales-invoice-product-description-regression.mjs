@@ -57,7 +57,7 @@ ok(!resolver.includes('journal') && !resolver.includes('account_code'), 'ACCOUNT
 ok(!resolver.includes('margin') && !resolver.includes('profit'), 'MARGIN_VISIBLE=NO');
 ok(!resolver.includes('migration'), 'NEW_MIGRATION_REQUIRED=NO');
 ok(resolver.includes('private function packageTitle') && resolver.includes('Umrah Package') && resolver.includes('group\\s+package'), 'UMRAH_PACKAGE_TITLE_DEDUPLICATED=PASS');
-ok(middleware.includes('preg_match(\'/^(?:—|-|N\\/A|NONE)$/i\', $existingReference)') && middleware.includes('$cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5)'), 'REFERENCE_PLACEHOLDER_REPLACED=PASS');
+ok(middleware.includes('replaceCellInner($cells[$destinationIndex]') && middleware.includes("return $match[0].$inner.'</td>'"), 'REFERENCE_PLACEHOLDER_REPLACED=PASS');
 ok(resolver.includes('private function hotel') && resolver.includes('$items') && resolver.includes('array_unique($items)'), 'HOTEL_MULTI_ROW_ALL_ROWS=PASS');
 ok(resolver.includes('private function transport') && resolver.includes('array_unique(array_filter($items))'), 'TRANSPORT_MULTI_ROW_ALL_ROWS=PASS');
 ok(resolver.includes('private function visa') && resolver.includes('array_unique($items)'), 'VISA_MULTI_ROW_ALL_ROWS=PASS');
@@ -68,7 +68,8 @@ ok(!resolver.includes('booking_group_umrah_contexts') && !resolver.includes('boo
 ok(resolver.includes("'umrah' => ['package_code']") && resolver.includes('packageTitle'), 'UMRAH_PACKAGE_CODE_REFERENCE=PASS');
 ok(!resolver.includes('vendor_package_code') && !resolver.includes('vendor_voucher_no'), 'UMRAH_VENDOR_FIELDS_NOT_EXPOSED=PASS');
 ok(resolver.includes("str_contains($city, 'makkah')") && resolver.includes("str_contains($city, 'madinah')") && resolver.includes('$makkah += $nights'), 'UMRAH_CITY_NIGHT_AGGREGATION=PASS');
-ok(middleware.includes('$cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).\'<div class="service-detail">\'.$safeReference'), 'PLACEHOLDER_CELL_CONTENT_REPLACED=PASS');
+ok(middleware.includes('replaceCellInner($cells[$destinationIndex]') && middleware.includes("return $match[0].$inner.'</td>'"), 'PLACEHOLDER_CELL_CONTENT_REPLACED=PASS');
 ok(!middleware.includes("$cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).$existingReference"), 'FALSE_POSITIVE_PLACEHOLDER_TEST=NO');
+ok(middleware.includes('private function replaceCellInner') && !middleware.includes("$cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).'<div"), 'PLACEHOLDER_TEST_FAILS_OLD_IMPLEMENTATION=YES');
 
 console.log(`PASS ${pass} ERP-11.3.374 Sales Invoice Product Description assertions`);
