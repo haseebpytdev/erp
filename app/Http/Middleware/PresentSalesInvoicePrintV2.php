@@ -177,7 +177,9 @@ class PresentSalesInvoicePrintV2
                     if ($hasPnr) return $row;
                 }
 
-                $destination = $hasPnr ? $cells[$destinationIndex] : '';
+                $destination = ($destinationIndex !== null && isset($cells[$destinationIndex]) && $destinationIndex !== $descriptionIndex)
+                    ? $cells[$destinationIndex]
+                    : '';
                 $destinationText = preg_replace('/<br\b[^>]*>/i', "\n", $destination) ?? $destination;
                 $destinationText = trim(preg_replace('/\s+/', ' ', strip_tags($destinationText)) ?? '');
                 $destinationPnr = null;
@@ -200,9 +202,16 @@ class PresentSalesInvoicePrintV2
                     $cells[$destinationIndex] = substr($destination, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
                 } elseif ($referenceContext !== '' && $destinationIndex !== null && isset($cells[$destinationIndex]) && $destinationIndex !== $descriptionIndex) {
                     $existingReference = trim(preg_replace('/\s+/', ' ', strip_tags($destinationText)) ?? '');
+                    $existingNormalized = $this->normalizeReference($existingReference);
+                    $newNormalized = $this->normalizeReference($referenceContext);
                     if ($existingReference === '' || preg_match('/^(?:—|-|N\/A|NONE)$/i', $existingReference) === 1) {
                         $safeReference = htmlspecialchars($referenceContext, ENT_QUOTES, 'UTF-8');
                         $cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).'<div class="service-detail">'.$safeReference.'</div></td>';
+                    } elseif ($existingNormalized === $newNormalized) {
+                        // Same customer-facing reference, including labelled forms,
+                        // is already visible; never duplicate it.
+                    } else {
+                        // Conflicting native references fail closed.
                     }
                 }
 
@@ -229,6 +238,13 @@ class PresentSalesInvoicePrintV2
             $html .= '<div class="'.($index === 0 ? 'service-title' : 'service-detail').'">'.$safe.'</div>';
         }
         return $html;
+    }
+
+    private function normalizeReference(string $value): string
+    {
+        $value = strtoupper(trim(preg_replace('/\s+/', ' ', strip_tags($value)) ?? ''));
+        $value = preg_replace('/^(?:CONFIRMATION|REF|BOOKING REF|BOOKING REFERENCE|REFERENCE)\s*:\s*/i', '', $value) ?? $value;
+        return trim($value);
     }
 
     private function ticketColumnFromHeader(string $table): ?int

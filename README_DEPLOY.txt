@@ -18,7 +18,7 @@ ERP-11.3.374 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
 VERIFIED. Browser print-preview and live production verification remain
 pending.
 
-ERP374_PRODUCT_DESCRIPTION_REGRESSION=PASS (40 assertions)
+ERP374_PRODUCT_DESCRIPTION_REGRESSION=PASS (50 assertions)
 FULL_NODE_RESULT=132 total / 90 pass / 42 historical/environment failures
 NEW_NODE_FAILURES=0
 UNEXPECTED_NEW_FAILURES=0
