@@ -31,7 +31,7 @@ ok(resolver.includes("'air' => 'Air Ticket'"), 'AIR_NO_DATA_FALLBACK=PASS');
 ok(resolver.includes('room_type') && resolver.includes('occupancy'), 'HOTEL_ROOM_AUTHORITY_AUDITED=YES');
 ok(resolver.includes('board_basis'), 'HOTEL_BOARD_BASIS_SUPPORTED=YES');
 ok(resolver.includes('private function reference'), 'NON_AIR_REFERENCE_AUTHORITY=PASS');
-ok(resolver.includes('confirmation_no') && resolver.includes('visa_number') && resolver.includes('package_reference'), 'PRODUCT_REFERENCE_ALIASES=PASS');
+ok(resolver.includes('confirmation_no') && resolver.includes('visa_number') && resolver.includes('package_code'), 'PRODUCT_REFERENCE_ALIASES=PASS');
 ok(['route_name', 'route_label', 'from_location', 'to_location', 'from_city', 'to_city', 'brn_number'].every(alias => resolver.includes(alias)), 'TRANSPORT_NATIVE_ALIAS_CONTRACT=PASS');
 ok(['checkin_date', 'checkout_date', 'brn_number', 'reference_no', 'meal'].every(alias => resolver.includes(alias)), 'HOTEL_NATIVE_ALIAS_CONTRACT=PASS');
 ok(resolver.includes("family === 'other'") && resolver.includes('service_reference'), 'OTHER_REFERENCE_FROM_NATIVE_LINE_OR_SERVICE=PASS');
@@ -63,5 +63,12 @@ ok(resolver.includes('private function transport') && resolver.includes('array_u
 ok(resolver.includes('private function visa') && resolver.includes('array_unique($items)'), 'VISA_MULTI_ROW_ALL_ROWS=PASS');
 ok(resolver.includes('$references = []') && resolver.includes('count($references) === 1 ? $references[0] : \'\''), 'MULTI_REFERENCE_FAILS_CLOSED=PASS');
 ok(resolver.includes('! in_array($value, $references, true)'), 'SINGLE_REFERENCE_DEDUPLICATED=PASS');
+ok(resolver.includes("booking_group_package_unified") && resolver.includes("booking_group_package_hotels"), 'UMRAH_CURRENT_AUTHORITY_TABLES=PASS');
+ok(!resolver.includes('booking_group_umrah_contexts') && !resolver.includes('booking_group_umrah_services'), 'UMRAH_LEGACY_AUTHORITY_NOT_USED=PASS');
+ok(resolver.includes("'umrah' => ['package_code']") && resolver.includes('packageTitle'), 'UMRAH_PACKAGE_CODE_REFERENCE=PASS');
+ok(!resolver.includes('vendor_package_code') && !resolver.includes('vendor_voucher_no'), 'UMRAH_VENDOR_FIELDS_NOT_EXPOSED=PASS');
+ok(resolver.includes("str_contains($city, 'makkah')") && resolver.includes("str_contains($city, 'madinah')") && resolver.includes('$makkah += $nights'), 'UMRAH_CITY_NIGHT_AGGREGATION=PASS');
+ok(middleware.includes('$cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).\'<div class="service-detail">\'.$safeReference'), 'PLACEHOLDER_CELL_CONTENT_REPLACED=PASS');
+ok(!middleware.includes("$cells[$destinationIndex] = substr($cells[$destinationIndex], 0, -5).$existingReference"), 'FALSE_POSITIVE_PLACEHOLDER_TEST=NO');
 
 console.log(`PASS ${pass} ERP-11.3.374 Sales Invoice Product Description assertions`);

@@ -129,7 +129,7 @@ final class SalesInvoiceLineDescriptionResolver
             'hotel' => ['booking_hotel_stays', 'booking_hotels', 'hotel_stays', 'booking_hotel_details', 'booking_accommodations', 'hotel_booking_details'],
             'visa' => ['booking_visa_services'],
             'transport' => ['booking_transport_segments', 'booking_transports', 'transport_booking_details', 'booking_transport_details'],
-            'umrah' => ['booking_group_umrah_contexts', 'booking_group_umrah_services'],
+            'umrah' => ['booking_group_package_unified', 'booking_group_package_hotels'],
             default => [],
         };
         $rows = [];
@@ -143,7 +143,7 @@ final class SalesInvoiceLineDescriptionResolver
                 else continue;
                 foreach ($query->get() as $row) $rows[] = (array) $row;
             } catch (Throwable) {}
-            if ($rows !== [] && in_array($family, ['air', 'hotel', 'visa', 'transport', 'umrah'], true)) break;
+            if ($rows !== [] && in_array($family, ['air', 'hotel', 'visa', 'transport'], true)) break;
         }
         return $rows;
     }
@@ -227,13 +227,18 @@ final class SalesInvoiceLineDescriptionResolver
     }
     private function umrah(array $rows): string
     {
-        $items = [];
+        $package = '';
+        $makkah = 0;
+        $madina = 0;
         foreach ($this->ordered($rows) as $row) {
-            $package=$this->firstText($row,['package_name','package','package_code','name']); $m=$this->firstText($row,['makkah_nights','makkah_night_count']); $d=$this->firstText($row,['madinah_nights','madinah_night_count']);
-            $details=implode(' · ',array_filter([$m!==''?'Makkah '.$m.'N':'',$d!==''?'Madinah '.$d.'N':'']));
-            if($package!==''||$details!=='') $items[] = trim($this->packageTitle($package).($details!==''?"\n".$details:''));
+            if ($package === '') $package = $this->firstText($row, ['package_name', 'package', 'package_code', 'name']);
+            $city = strtolower($this->firstText($row, ['city', 'city_name', 'location']));
+            $nights = (int) $this->firstText($row, ['nights', 'total_nights']);
+            if ($nights > 0 && str_contains($city, 'makkah')) $makkah += $nights;
+            if ($nights > 0 && (str_contains($city, 'madinah') || str_contains($city, 'medina'))) $madina += $nights;
         }
-        return implode("\n", array_values(array_unique($items)));
+        $details = implode(' · ', array_filter([$makkah > 0 ? 'Makkah '.$makkah.'N' : '', $madina > 0 ? 'Madinah '.$madina.'N' : '']));
+        return trim($this->packageTitle($package).($details !== '' ? "\n".$details : ''));
     }
 
     private function reference(string $family, int $bookingId, array $service, array $line = []): string
@@ -247,7 +252,7 @@ final class SalesInvoiceLineDescriptionResolver
             'hotel' => ['confirmation_no', 'confirmation_number', 'brn', 'brn_number', 'booking_reference', 'voucher_no', 'reference_no'],
             'visa' => ['visa_number', 'visa_no', 'application_reference', 'application_no'],
             'transport' => ['brn_number', 'brn', 'provider_reference', 'booking_reference', 'reference', 'voucher_no', 'confirmation_no'],
-            'umrah' => ['package_reference', 'package_booking_no', 'voucher_no', 'booking_reference'],
+            'umrah' => ['package_code'],
             default => ['service_reference', 'customer_reference', 'reference_no'],
         };
         $references = [];
