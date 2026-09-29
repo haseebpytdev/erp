@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
+use App\Services\Sales\SalesInvoiceLineDescriptionResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
@@ -34,7 +35,7 @@ class PresentSalesInvoicePrintV2
             return $response;
         }
 
-        $html = $this->refineContent($html);
+        $html = $this->refineContent($html, $this->invoiceDescriptions($request));
         $html = $this->markBody($html);
         $html = $this->injectStyle($html);
 
@@ -82,7 +83,24 @@ class PresentSalesInvoicePrintV2
         return preg_replace('/'.preg_quote($tag, '/').'/', $replacement, $html, 1) ?? $html;
     }
 
-    private function refineContent(string $html): string
+    /** @return list<string> */
+    private function invoiceDescriptions(Request $request): array
+    {
+        $routeInvoice = $request->route('invoice');
+        $invoiceId = is_object($routeInvoice) && method_exists($routeInvoice, 'getKey')
+            ? (int) $routeInvoice->getKey()
+            : (int) (is_scalar($routeInvoice) ? $routeInvoice : 0);
+        if ($invoiceId <= 0) return [];
+        try {
+            return app(SalesInvoiceLineDescriptionResolver::class)->resolve($invoiceId);
+        } catch (\Throwable) {
+            // Product context is optional presentation enrichment. Native HTML
+            // remains authoritative when a schema/relationship is unavailable.
+            return [];
+        }
+    }
+
+    private function refineContent(string $html, array $lineDescriptions = []): string
     {
         $html = preg_replace('/(>\s*)TICKET\s+NUMBER(\s*<)/i', '$1TICKET / REF$2', $html) ?? $html;
         $html = preg_replace('/This Sales Invoice is the customer commercial\/accounting document\.\s*Booking Confirmation, Receipt Voucher, Hotel\/Umrah\/Travel Voucher and supplier documents remain separate controlled documents in the ERP\.?/is', '', $html) ?? $html;
@@ -91,7 +109,8 @@ class PresentSalesInvoicePrintV2
             $table = $tableMatch[0];
             $ticketColumn = $this->ticketColumnFromHeader($table);
 
-            return preg_replace_callback('/<tr\b[^>]*>.*?<\/tr>/is', function (array $rowMatch) use ($ticketColumn): string {
+            $lineIndex = 0;
+            return preg_replace_callback('/<tr\b[^>]*>.*?<\/tr>/is', function (array $rowMatch) use ($ticketColumn, $lineDescriptions, &$lineIndex): string {
                 $row = $rowMatch[0];
                 if (stripos($row, '<td') === false) {
                     return $row;
@@ -119,42 +138,51 @@ class PresentSalesInvoicePrintV2
                     return $row;
                 }
 
+                $descriptionContext = array_key_exists($lineIndex, $lineDescriptions)
+                    ? trim((string) $lineDescriptions[$lineIndex])
+                    : null;
+                $lineIndex++;
+
                 $description = $cells[$descriptionIndex];
                 $openEnd = strpos($description, '>');
                 if ($openEnd === false) {
                     return $row;
                 }
                 $inner = substr($description, $openEnd + 1, -5);
-                $plain = preg_replace('/<br\b[^>]*>/i', "\n", $inner) ?? $inner;
+                $originalInner = $inner;
+                $plain = preg_replace('/<br\b[^>]*>/i', "\n", $originalInner) ?? $originalInner;
                 $plain = trim(preg_replace('/\s+/', ' ', strip_tags($plain)) ?? '');
-                if (preg_match('/\bPNR\s*:\s*([A-Za-z0-9][A-Za-z0-9_-]*)\b/i', $plain, $pnrMatch) !== 1) {
+                $hasPnr = preg_match('/\bPNR\s*:\s*([A-Za-z0-9][A-Za-z0-9_-]*)\b/i', $plain, $pnrMatch) === 1;
+                if (! $hasPnr && $descriptionContext === null) {
                     return $row;
                 }
 
-                $pnr = trim($pnrMatch[1]);
+                $pnr = $hasPnr ? trim($pnrMatch[1]) : '';
                 $destinationIndex = $classTicketIndex ?? $ticketColumn;
                 if ($destinationIndex === null || ! isset($cells[$destinationIndex]) || $destinationIndex === $descriptionIndex) {
-                    return $row;
+                    if ($hasPnr) return $row;
                 }
 
-                $destination = $cells[$destinationIndex];
+                $destination = $hasPnr ? $cells[$destinationIndex] : '';
                 $destinationText = preg_replace('/<br\b[^>]*>/i', "\n", $destination) ?? $destination;
                 $destinationText = trim(preg_replace('/\s+/', ' ', strip_tags($destinationText)) ?? '');
                 $destinationPnr = null;
-                if (preg_match('/\bPNR\s*:\s*([A-Za-z0-9][A-Za-z0-9_-]*)\b/i', $destinationText, $destinationPnrMatch) === 1) {
+                if ($hasPnr && preg_match('/\bPNR\s*:\s*([A-Za-z0-9][A-Za-z0-9_-]*)\b/i', $destinationText, $destinationPnrMatch) === 1) {
                     $destinationPnr = trim($destinationPnrMatch[1]);
                     if (strcasecmp($destinationPnr, $pnr) !== 0) {
                         return $row;
                     }
                 }
 
-                $cleanInner = preg_replace('/\s*(?:<br\b[^>]*>\s*)?\bPNR\s*:\s*[A-Za-z0-9][A-Za-z0-9_-]*\b/i', '', $inner) ?? $inner;
-                if (stripos(strip_tags($cleanInner), 'air ticket') !== false) {
+                $cleanInner = preg_replace('/\s*(?:<br\b[^>]*>\s*)?\bPNR\s*:\s*[A-Za-z0-9][A-Za-z0-9_-]*\b/i', '', $originalInner) ?? $originalInner;
+                if ($descriptionContext !== null && $descriptionContext !== '') {
+                    $cleanInner = '<div class="service-title">'.htmlspecialchars($descriptionContext, ENT_QUOTES, 'UTF-8').'</div>';
+                } elseif (stripos(strip_tags($cleanInner), 'air ticket') !== false) {
                     $cleanInner = preg_replace('/(?:Adult\s+)?Air Ticket/i', 'Air Ticket', $cleanInner, 1) ?? $cleanInner;
                 }
                 $safePnr = htmlspecialchars($pnr, ENT_QUOTES, 'UTF-8');
                 $cells[$descriptionIndex] = substr($description, 0, $openEnd + 1).$cleanInner.'</td>';
-                if ($destinationPnr === null) {
+                if ($hasPnr && $destinationPnr === null) {
                     $cells[$destinationIndex] = substr($destination, 0, -5).'<div class="service-detail">PNR: '.$safePnr.'</div></td>';
                 }
 

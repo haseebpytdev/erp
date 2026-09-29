@@ -1,23 +1,27 @@
-ERP-11.3.373 Sales Invoice PNR Live Corrective
+ERP-11.3.374 Sales Invoice Smart Product Description Enrichment
 
-Active release: v1.1.33.373-ERP11.3.373
-CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.373
-CURRENT_LIVE_RELEASE=ERP-11.3.372
-CURRENT_LIVE_VERSION=v1.1.33.372-ERP11.3.372
-CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
-LAST_PACKAGED_RELEASE=ERP-11.3.372
+Active release: v1.1.33.374-ERP11.3.374
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.374
+CURRENT_LIVE_RELEASE=ERP-11.3.373
+CURRENT_LIVE_VERSION=v1.1.33.373-ERP11.3.373
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+LAST_PACKAGED_RELEASE=ERP-11.3.373
 NEW_MIGRATION_REQUIRED=NO
 
-ERP-11.3.373 preserves PNR values in Ticket / Ref. using a header-derived
-destination fallback when the native ticket class is absent. The approved
-.372 compact A4 layout, Air Ticket fallback, disclaimer removal and financial
-authorities remain unchanged. No posting, database or migration change is
-included.
+ERP-11.3.374 adds read-only product-aware service descriptions for Air, Hotel,
+Visa, Transport, Umrah Package and other services using existing native
+booking/service authority. Invoice amounts, totals, accounting, posting,
+supplier costing, provider and database behavior remain unchanged. No new
+migration is required.
 
-ERP-11.3.373 is FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
+ERP-11.3.374 is NOT FINALIZED / NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION
 VERIFIED. Browser print-preview and live production verification remain
 pending.
 
+ERP374_PRODUCT_DESCRIPTION_REGRESSION=PASS (31 assertions)
+FULL_NODE_RESULT=132 total / 90 pass / 42 historical/environment failures
+NEW_NODE_FAILURES=0
+UNEXPECTED_NEW_FAILURES=0
 ERP373_PNR_LIVE_FIX_REGRESSION=PASS (23 assertions)
 ERP372_SMART_DESCRIPTION_REGRESSION=PASS (39 assertions)
 TICKET_REF_HEADER=PASS
