@@ -166,6 +166,17 @@ class CashVoucherController extends Controller
         return view('accounting.cash-vouchers.form', $this->formData(null, $type));
     }
 
+    public function documents(Request $request)
+    {
+        $type = (string) $request->query('voucher_type', '');
+        abort_unless(in_array($type, ['receipt', 'payment'], true), 404);
+        abort_unless($this->service->canUseType($request->user(), $type, 'view'), 403);
+        $definition = $this->service->voucherDefinition($type);
+        $partyId = (int) $request->query('party_id', 0);
+        $this->service->assertPartyRole($partyId, $definition['party_type']);
+        return response()->json(['documents' => $this->service->documentOptions($definition['target_type'], $partyId, $definition['party_type'])]);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validateHeader($request);
@@ -488,7 +499,9 @@ class CashVoucherController extends Controller
             'paymentMethods' => $type === 'contra'
                 ? $this->service->transferMethods()
                 : $this->service->paymentMethods(),
-            'documents' => $definition['target_type'] ? $this->service->documentOptions($definition['target_type']) : [],
+            // Allocation documents are party-scoped and loaded only after a
+            // canonical party has been selected.
+            'documents' => [],
             'expenseAccounts' => $type === 'expense' ? $this->service->expenseAccounts() : [],
             'contraDetail' => null,
             'layoutMeta' => $this->layout->resolve(),
@@ -518,12 +531,9 @@ class CashVoucherController extends Controller
         if ($lockedType !== null && $data['voucher_type'] !== $lockedType) {
             abort(409, 'Voucher type cannot be changed after creation.');
         }
-        if (
-            ! in_array($data['voucher_type'], ['expense', 'contra'], true)
-            && empty($data['party_id'])
-            && trim((string) ($data['party_name'] ?? '')) === ''
-        ) {
-            abort(422, 'Select a party or enter a party name.');
+        if (! in_array($data['voucher_type'], ['expense', 'contra'], true)) {
+            if (empty($data['party_id'])) abort(422, 'Select a canonical party from the authorized party list.');
+            $this->service->assertPartyRole((int) $data['party_id'], $this->service->voucherDefinition($data['voucher_type'])['party_type']);
         }
         return $data;
     }
@@ -647,9 +657,11 @@ class CashVoucherController extends Controller
         $rows = [];
         $now = now();
         foreach ($allocations as $index => $allocation) {
-            $document = $this->service->documentSnapshot($targetType, (int) $allocation['target_id']);
             $voucher = DB::table('cash_vouchers')->where('id', $voucherId)->first();
-            if ($voucher?->party_id && $document['party_id'] && (int) $voucher->party_id !== (int) $document['party_id']) {
+            if (! $voucher?->party_id) abort(422, 'A canonical voucher party is required before allocating documents.');
+            $definition = $this->service->voucherDefinition((string) $voucher->voucher_type);
+            $document = $this->service->documentSnapshot($targetType, (int) $allocation['target_id'], (int) $voucher->party_id, $definition['party_type']);
+            if (! $document['party_id'] || (int) $voucher->party_id !== (int) $document['party_id']) {
                 abort(422, 'Selected document party does not match the voucher party.');
             }
             if (strtoupper((string) ($document['currency_code'] ?? 'PKR')) !== strtoupper($currencyCode)) {

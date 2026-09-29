@@ -147,6 +147,7 @@ final class PartyStatementService
 
     private function caption(string $type, float $closing): string
     {
+        if (round($closing, 2) === 0.0) return 'Nil / Settled';
         if ($type === 'customer') return $closing < 0 ? 'Customer Advance / Credit Balance' : 'Amount Receivable from Customer';
         return $closing > 0 ? 'Vendor Advance / Debit Balance' : 'Amount Payable to Vendor';
     }

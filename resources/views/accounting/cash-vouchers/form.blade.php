@@ -95,10 +95,7 @@
               </select>
             </div>
 
-            <div class="cvf27-field">
-              <label>Manual Party Name</label>
-              <input name="party_name" value="{{ old('party_name',$row->party_name ?? '') }}" placeholder="Use only when party is not in master">
-            </div>
+            <input type="hidden" name="party_name" value="">
           @endif
 
           @unless($isContra)
@@ -282,27 +279,29 @@ function refresh(){const selected=String(method.value||'').toLowerCase();const s
 @if($definition['target_type'])
 <script>
 (()=>{
-const docs=@json($documents);
+let docs=@json($documents);
 const existing=@json(($allocations ?? collect())->map(fn($a)=>(array)$a)->values());
 const body=document.getElementById('allocationBody');
 const empty=document.getElementById('allocationEmpty');
 const party=document.getElementById('partySelect');
 const amount=document.getElementById('voucherAmount');
 const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function eligible(d){const pid=Number(party.value||0);return !pid||!d.party_id||Number(d.party_id)===pid;}
+function eligible(d){const pid=Number(party.value||0);return pid>0&&d.party_id&&Number(d.party_id)===pid;}
 function opts(selected){return '<option value="">Select document</option>'+docs.filter(eligible).map(d=>`<option value="${d.id}" ${Number(selected)===Number(d.id)?'selected':''}>${esc(d.number)} · ${esc(d.party_name||'')} · ${esc(d.currency_code)} ${Number(d.outstanding||0).toFixed(2)} open</option>`).join('')}
 function updateEmpty(){empty.style.display=body.children.length?'none':'block'}
 function row(v={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=`<td><select class="doc" name="allocations[${i}][target_id]" required>${opts(v.target_id)}</select></td><td class="outstanding">0.00</td><td><input class="alloc" type="number" min="0.01" step="0.01" name="allocations[${i}][amount]" value="${Number(v.amount||0).toFixed(2)}" required></td><td><input name="allocations[${i}][notes]" value="${esc(v.notes||'')}"></td><td class="cvf27-action"><button type="button" class="cvf27-rm">×</button></td>`;body.appendChild(tr);refreshRow(tr);calc();updateEmpty()}
 function refreshRow(tr){const id=Number(tr.querySelector('.doc').value||0);const d=docs.find(x=>Number(x.id)===id);tr.querySelector('.outstanding').textContent=d?`${d.currency_code} ${Number(d.outstanding||0).toFixed(2)}`:'0.00'}
 function renumber(){[...body.children].forEach((tr,i)=>tr.querySelectorAll('[name]').forEach(el=>el.name=el.name.replace(/allocations\[\d+\]/,`allocations[${i}]`)))}
 function calc(){const allocated=[...body.querySelectorAll('.alloc')].reduce((s,e)=>s+Number(e.value||0),0);const total=Number(amount.value||0);document.getElementById('allocatedTotal').textContent=allocated.toFixed(2);document.getElementById('unallocatedTotal').textContent=Math.max(0,total-allocated).toFixed(2)}
-existing.forEach(row);
+const documentUrl=@json(route('accounting.cash-vouchers.documents'));
+async function loadDocuments(){const pid=Number(party.value||0);docs=[];[...body.children].forEach(tr=>tr.remove());calc();updateEmpty();if(!pid)return;const response=await fetch(documentUrl+'?voucher_type='+encodeURIComponent(@json($type))+'&party_id='+pid,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});if(!response.ok)return;const payload=await response.json();docs=Array.isArray(payload.documents)?payload.documents:[];existing.forEach(row);}
+if(Number(party.value||0))loadDocuments();
 document.getElementById('addAllocation').onclick=()=>row();
 body.addEventListener('change',e=>{if(e.target.classList.contains('doc'))refreshRow(e.target.closest('tr'));calc()});
 body.addEventListener('input',calc);
 body.addEventListener('click',e=>{if(e.target.classList.contains('cvf27-rm')){e.target.closest('tr').remove();renumber();calc();updateEmpty()}});
 amount.addEventListener('input',calc);
-party.addEventListener('change',()=>{[...body.children].forEach(tr=>{const s=tr.querySelector('.doc');const cur=s.value;s.innerHTML=opts(cur);refreshRow(tr)});calc()});
+party.addEventListener('change',loadDocuments);
 calc();updateEmpty();
 })();
 </script>

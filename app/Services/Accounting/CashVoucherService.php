@@ -13,6 +13,7 @@ class CashVoucherService
         private readonly ErpPermissionMatrixService $permissions,
         private readonly ChartOfAccountsWorkspaceService $chartAccounts,
         private readonly CashVoucherNativeJournalBridge $nativeJournal,
+        private readonly AccountingPartyRoleResolver $partyRoles,
     ) {
     }
 
@@ -173,57 +174,20 @@ class CashVoucherService
 
     public function partyOptions(string $partyType): array
     {
-        foreach (['parties', 'party_master', 'party_masters', 'customers', 'suppliers', 'vendors'] as $table) {
-            if (! Schema::hasTable($table)) {
-                continue;
-            }
+        return $this->partyRoles->options($partyType);
+    }
 
-            $cols = Schema::getColumnListing($table);
-            $id = $this->first($cols, ['id', 'party_id', 'customer_id', 'supplier_id', 'vendor_id']);
-            $name = $this->first($cols, ['name', 'party_name', 'customer_name', 'supplier_name', 'vendor_name', 'display_name', 'company_name']);
-            if (! $id || ! $name) {
-                continue;
-            }
-
-            $query = DB::table($table)->select([$id.' as id', $name.' as name']);
-            $type = $this->first($cols, ['type', 'party_type', 'category']);
-            if ($type) {
-                $query->where(function ($q) use ($type, $partyType): void {
-                    if ($partyType === 'supplier') {
-                        $q->where($type, 'like', '%supplier%')
-                            ->orWhere($type, 'like', '%vendor%');
-                    } else {
-                        $q->where($type, 'like', '%customer%')
-                            ->orWhere($type, 'like', '%client%')
-                            ->orWhere($type, 'like', '%agent%');
-                    }
-                });
-            } elseif ($partyType === 'supplier' && in_array($table, ['customers'], true)) {
-                continue;
-            } elseif ($partyType === 'customer' && in_array($table, ['suppliers', 'vendors'], true)) {
-                continue;
-            }
-
-            $rows = $query->orderBy($name)->limit(1000)->get();
-            if ($rows->isNotEmpty()) {
-                return $rows->map(fn ($r): array => ['id' => (int) $r->id, 'name' => (string) $r->name])->all();
-            }
-        }
-
-        return [];
+    public function assertPartyRole(?int $partyId, string $partyType): array
+    {
+        return $this->partyRoles->assertRole((int) $partyId, $partyType);
     }
 
     public function resolvePartyName(string $partyType, ?int $partyId, ?string $fallback = null): ?string
     {
         if ($partyId) {
-            foreach ($this->partyOptions($partyType) as $party) {
-                if ((int) $party['id'] === $partyId) {
-                    return (string) $party['name'];
-                }
-            }
+            return $this->assertPartyRole($partyId, $partyType)['party_name'];
         }
-
-        return $fallback !== null && trim($fallback) !== '' ? trim($fallback) : null;
+        return null;
     }
 
     public function bookingOptions(): array
@@ -478,17 +442,17 @@ class CashVoucherService
         );
     }
 
-    public function documentOptions(string $targetType): array
+    public function documentOptions(string $targetType, ?int $partyId = null, ?string $expectedPartyType = null): array
     {
         return $targetType === 'supplier_costing'
-            ? $this->supplierCostingOptions()
-            : $this->salesInvoiceOptions();
+            ? $this->supplierCostingOptions($partyId, $expectedPartyType)
+            : $this->salesInvoiceOptions($partyId, $expectedPartyType);
     }
 
-    public function salesInvoiceOptions(): array
+    public function salesInvoiceOptions(?int $partyId = null, ?string $expectedPartyType = null): array
     {
         $schema = $this->salesInvoiceSchema();
-        if (! $schema) {
+        if (! $schema || ! $schema['party_id']) {
             return [];
         }
 
@@ -499,7 +463,8 @@ class CashVoucherService
             }
         }
 
-        $query = DB::table($schema['table'])->select($select)->orderByDesc($schema['id'])->limit(500);
+        $query = DB::table($schema['table'])->select($select)->whereNotNull($schema['party_id'])->orderByDesc($schema['id'])->limit(500);
+        if ($partyId !== null) $query->where($schema['party_id'], $partyId);
         $rows = $query->get();
         $result = [];
         foreach ($rows as $row) {
@@ -530,14 +495,16 @@ class CashVoucherService
         return $result;
     }
 
-    public function supplierCostingOptions(): array
+    public function supplierCostingOptions(?int $partyId = null, ?string $expectedPartyType = null): array
     {
         if (! Schema::hasTable('supplier_costings')) {
             return [];
         }
 
-        return DB::table('supplier_costings')
-            ->where('status', 'posted')
+        $query = DB::table('supplier_costings')
+            ->where('status', 'posted')->whereNotNull('supplier_id');
+        if ($partyId !== null) $query->where('supplier_id', $partyId);
+        return $query
             ->orderByDesc('id')
             ->limit(500)
             ->get()
@@ -558,9 +525,9 @@ class CashVoucherService
             })->all();
     }
 
-    public function documentSnapshot(string $targetType, int $targetId): array
+    public function documentSnapshot(string $targetType, int $targetId, ?int $partyId = null, ?string $partyType = null): array
     {
-        foreach ($this->documentOptions($targetType) as $document) {
+        foreach ($this->documentOptions($targetType, $partyId, $partyType) as $document) {
             if ((int) $document['id'] === $targetId) {
                 return $document;
             }
@@ -1004,6 +971,9 @@ class CashVoucherService
             throw new RuntimeException('Cash / Bank account is no longer an active posting account.');
         }
         $definition = $this->voucherDefinition($type);
+        if (! in_array($type, ['expense', 'contra'], true)) {
+            $this->assertPartyRole((int) ($voucher->party_id ?? 0), (string) $definition['party_type']);
+        }
         $allocations = DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->orderBy('line_no')->get();
         if ($type === 'contra') {
             if ($allocations->isNotEmpty()) {
@@ -1108,11 +1078,12 @@ class CashVoucherService
             if ((string) $allocation->target_type !== (string) $definition['target_type']) {
                 throw new RuntimeException('Allocation document type does not match this voucher type.');
             }
-            $document = $this->documentSnapshot((string) $allocation->target_type, (int) $allocation->target_id);
+            $this->assertPartyRole((int) $voucher->party_id, (string) $definition['party_type']);
+            $document = $this->documentSnapshot((string) $allocation->target_type, (int) $allocation->target_id, (int) $voucher->party_id, (string) $definition['party_type']);
             if ((float) $allocation->amount <= 0) {
                 throw new RuntimeException('Allocation amount must be greater than zero.');
             }
-            if ($voucher->party_id && $document['party_id'] && (int) $voucher->party_id !== (int) $document['party_id']) {
+            if (! $voucher->party_id || ! $document['party_id'] || (int) $voucher->party_id !== (int) $document['party_id']) {
                 throw new RuntimeException('Allocation party does not match the voucher party for '.$document['number'].'.');
             }
             if (strtoupper((string) ($document['currency_code'] ?? 'PKR')) !== strtoupper((string) ($voucher->currency_code ?? 'PKR'))) {
@@ -1319,6 +1290,7 @@ class CashVoucherService
                         ->first();
 
                     if ($row) {
+                        $this->assertPostingAccount($row, $s);
                         return [
                             'code' => (string) $row->{$s['code']},
                             'name' => (string) $row->{$s['name']},
@@ -1331,19 +1303,16 @@ class CashVoucherService
                     ->first();
 
                 if ($row) {
+                    $this->assertPostingAccount($row, $s);
                     return [
                         'code' => (string) $row->{$s['code']},
                         'name' => (string) $row->{$s['name']},
                     ];
                 }
             } catch (\Throwable $e) {
-                report($e);
+                throw new RuntimeException('Required accounting control account '.$definition['control'].' is not configured to an active posting account.', 0, $e);
             }
-
-            return [
-                'code' => $definition['code'],
-                'name' => $definition['name'],
-            ];
+            throw new RuntimeException('Required accounting control account '.$definition['control'].' is not configured to an active posting account.');
         }
 
         $account = (array) config('cash_vouchers.accounts.'.$key, []);
@@ -1352,6 +1321,19 @@ class CashVoucherService
             'code' => (string) ($account['code'] ?? ''),
             'name' => (string) ($account['name'] ?? ucwords(str_replace('_', ' ', $key))),
         ];
+    }
+
+    private function assertPostingAccount(object $row, array $schema): void
+    {
+        foreach (['active', 'is_active'] as $column) {
+            if (! empty($schema[$column]) && property_exists($row, $schema[$column]) && ! (bool) $row->{$schema[$column]}) throw new RuntimeException('The configured control account is inactive.');
+        }
+        foreach (['is_header', 'header'] as $column) {
+            if (! empty($schema[$column]) && property_exists($row, $schema[$column]) && (bool) $row->{$schema[$column]}) throw new RuntimeException('The configured control account is a header and cannot receive postings.');
+        }
+        foreach (['allow_posting', 'posting_enabled', 'is_posting'] as $column) {
+            if (! empty($schema[$column]) && property_exists($row, $schema[$column]) && ! (bool) $row->{$schema[$column]}) throw new RuntimeException('The configured control account is not posting-enabled.');
+        }
     }
 
     private function lockAllocationTargets(int $voucherId): void

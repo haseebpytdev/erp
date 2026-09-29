@@ -3,6 +3,7 @@
 namespace App\Services\Purchase;
 
 use App\Services\Accounting\CashVoucherNativeJournalBridge;
+use App\Services\Accounting\AccountingPartyRoleResolver;
 use App\Services\Accounting\ChartOfAccountsWorkspaceService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -14,6 +15,7 @@ final class SupplierCostingService
         private readonly ChartOfAccountsWorkspaceService $chart,
         private readonly CashVoucherNativeJournalBridge $nativeJournal,
         private readonly BookingSupplierObligationResolver $obligations,
+        private readonly AccountingPartyRoleResolver $partyRoles,
     ) {
     }
 
@@ -30,7 +32,7 @@ final class SupplierCostingService
     public function transition(int $id,string $action,$user): void
     {
         DB::transaction(function()use($id,$action,$user):void{
-            $row=DB::table('supplier_costings')->where('id',$id)->lockForUpdate()->first();if(!$row)throw new RuntimeException('Supplier costing document not found.');$map=['submit'=>['draft','pending_approval'],'approve'=>['pending_approval','approved'],'post'=>['approved','posted']];if(!isset($map[$action]))throw new RuntimeException('Unsupported workflow action.');[$from,$to]=$map[$action];if($row->status!==$from)throw new RuntimeException('Workflow action is not valid for the current status.');if($action!=='submit'&&!$this->canApprove($user))throw new RuntimeException('You are not authorized to approve/post supplier costing.');$this->validateBookingSourceIntegrity($row);if((float)$row->total_cost<=0)throw new RuntimeException('Supplier costing total must be greater than zero.');
+            $row=DB::table('supplier_costings')->where('id',$id)->lockForUpdate()->first();if(!$row)throw new RuntimeException('Supplier costing document not found.');$map=['submit'=>['draft','pending_approval'],'approve'=>['pending_approval','approved'],'post'=>['approved','posted']];if(!isset($map[$action]))throw new RuntimeException('Unsupported workflow action.');[$from,$to]=$map[$action];if($row->status!==$from)throw new RuntimeException('Workflow action is not valid for the current status.');if($action!=='submit'&&!$this->canApprove($user))throw new RuntimeException('You are not authorized to approve/post supplier costing.');if((int)$row->supplier_id<=0)throw new RuntimeException('A canonical Vendor/Supplier is required for Supplier Costing.');$this->partyRoles->resolveSupplier((int)$row->supplier_id);$this->validateBookingSourceIntegrity($row);if((float)$row->total_cost<=0)throw new RuntimeException('Supplier costing total must be greater than zero.');
             $update=['status'=>$to,'updated_at'=>now()];if($action==='submit'){$update['submitted_by']=$user?->id;$update['submitted_at']=now();}if($action==='approve'){$update['approved_by']=$user?->id;$update['approved_at']=now();}if($action==='post'){$reference='SCPOST-'.now()->format('Ymd').'-'.(string)$id;$this->createPosting($row,$reference);$this->nativeJournal->postSupplierCosting($id,$user,$reference);$update['posted_by']=$user?->id;$update['posted_at']=now();$update['posting_reference']=$reference;}
             DB::table('supplier_costings')->where('id',$id)->update($update);$this->activity($id,$action,$from,$to,$user,$action==='post'?'Balanced supplier payable posting and native journal created.':null);
         });
@@ -119,9 +121,7 @@ final class SupplierCostingService
     public function supplierOptions(): array
     {
         try {
-            return app(\App\Services\Operations\UnifiedGroupPackageDataSource::class)->vendors()
-                ->map(static fn (array $row): array => ['id' => (int) ($row['id'] ?? 0), 'name' => trim((string) ($row['name'] ?? ''))])
-                ->filter(static fn (array $row): bool => $row['id'] > 0 && $row['name'] !== '')->unique('id')->values()->all();
+            return $this->partyRoles->options('supplier');
         } catch (\Throwable) {
             return [];
         }

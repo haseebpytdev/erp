@@ -1,3 +1,19 @@
+ERP-11.3.375 Accounting Integrity Guards
+
+Active release: v1.1.33.375-ERP11.3.375
+CURRENT_DEVELOPMENT_RELEASE=ERP-11.3.375
+CURRENT_LIVE_RELEASE=ERP-11.3.374
+CURRENT_LIVE_VERSION=v1.1.33.374-ERP11.3.374
+CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
+LAST_PACKAGED_RELEASE=ERP-11.3.374
+NEW_MIGRATION_REQUIRED=NO
+
+ERP-11.3.375 introduces canonical Customer / Vendor role enforcement, strict
+party identity for party-controlled vouchers, customer-scoped Receipt and
+supplier-scoped Payment allocation, server-side cross-party rejection,
+fail-closed control-account resolution and neutral zero-balance statements.
+ERP-11.3.375 is NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
+
 ERP-11.3.374 Sales Invoice Smart Product Description Enrichment
 
 Active release: v1.1.33.374-ERP11.3.374
