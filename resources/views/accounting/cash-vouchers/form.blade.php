@@ -25,6 +25,7 @@
 .cvf27-card-head{padding:11px 14px;border-bottom:1px solid #e8edf3;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .cvf27-card-title{font-size:14px;font-weight:900}.cvf27-help{font-size:10px;color:#74849a}.cvf27-body{padding:14px}
 .cvf27-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px 13px}
+.cvf27-expense-grid [data-expense-field="payee"]{grid-column:1;grid-row:1}.cvf27-expense-grid [data-expense-field="booking"]{grid-column:2;grid-row:1}.cvf27-expense-grid [data-expense-field="voucher-date"]{grid-column:3;grid-row:1}.cvf27-expense-grid [data-expense-field="value-date"]{grid-column:4;grid-row:1}.cvf27-expense-grid [data-expense-field="currency"]{grid-column:1;grid-row:2}.cvf27-expense-grid [data-expense-field="exchange"]{grid-column:2;grid-row:2}.cvf27-expense-grid [data-expense-field="payment-method"]{grid-column:3;grid-row:2}.cvf27-expense-grid [data-expense-field="cash-bank"]{grid-column:4;grid-row:2}.cvf27-expense-grid [data-expense-field="bank-name"]{grid-column:1;grid-row:3}.cvf27-expense-grid [data-expense-field="transaction-reference"]{grid-column:2;grid-row:3}.cvf27-expense-grid [data-expense-field="instrument"]{grid-column:3;grid-row:3}.cvf27-expense-grid [data-expense-field="payment-proof"]{grid-column:4;grid-row:3}.cvf27-expense-grid [data-expense-field="narration"]{grid-column:1/-1;grid-row:4}
 .cvf27-field label{display:block;margin:0 0 5px;font-size:9.5px;font-weight:900;color:#465970}
 .cvf27-field input,.cvf27-field select,.cvf27-field textarea{width:100%;min-height:40px;border:1px solid #d4deea;border-radius:7px;background:#fff;padding:8px 10px;color:#24354c;font-size:11.5px;outline:none}
 .cvf27-field textarea{height:72px;resize:vertical}.cvf27-span2{grid-column:span 2}.cvf27-span4{grid-column:1/-1}
@@ -42,8 +43,8 @@
 .cvf27-note{padding:10px 12px;border:1px solid #dbe5f1;background:#f7faff;border-radius:8px;font-size:10.5px;color:#52687f;margin-bottom:13px}
 .cvf27-warning{display:none;grid-column:1/-1;padding:8px 10px;border:1px solid #edcf88;background:#fff9e8;border-radius:7px;color:#805b09;font-size:10px}
 .cvf27-accountPicker{position:relative}.cvf27-accountPicker input.accountSearch{border:1px solid #d4deea;background:#fff;padding:7px 8px;border-radius:6px;width:100%}.cvf27-accountResults{position:absolute;z-index:20;left:0;right:0;top:100%;background:#fff;border:1px solid #cfdbea;border-radius:6px;box-shadow:0 8px 18px rgba(19,43,73,.16);max-height:210px;overflow:auto}.cvf27-account-option{display:block;width:100%;border:0;background:#fff;text-align:left;padding:7px 9px;font-size:10.5px;cursor:pointer}.cvf27-account-option:hover,.cvf27-account-option:focus{background:#eef5ff}.cvf27-account-empty{display:block;padding:8px;color:#74849a;font-size:10px}
-@media(max-width:1050px){.cvf27-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cvf27-span4{grid-column:1/-1}}
-@media(max-width:650px){.cvf27-head{display:block}.cvf27-actions{justify-content:flex-start;margin-top:10px}.cvf27-grid{grid-template-columns:1fr}.cvf27-span2,.cvf27-span4{grid-column:span 1}.cvf27-bottom{display:block}.cvf27-bottom-actions{margin-top:9px}.cvf27-bottom-actions .cvf27-btn{flex:1}}
+@media(max-width:1050px){.cvf27-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cvf27-span4{grid-column:1/-1}.cvf27-expense-grid [data-expense-field]{grid-column:auto;grid-row:auto}}
+@media(max-width:650px){.cvf27-head{display:block}.cvf27-actions{justify-content:flex-start;margin-top:10px}.cvf27-grid{grid-template-columns:1fr}.cvf27-span2,.cvf27-span4{grid-column:span 1}.cvf27-expense-grid [data-expense-field]{grid-column:auto;grid-row:auto}.cvf27-bottom{display:block}.cvf27-bottom-actions{margin-top:9px}.cvf27-bottom-actions .cvf27-btn{flex:1}}
 </style>
 
 <div class="cvf27" data-et-cash-voucher-form="{{ config('et_erp_release.release', 'ERP-11.3') }}">
@@ -76,19 +77,19 @@
         <div class="cvf27-help">All vouchers use the same controlled Draft → Approval → Posted workflow.</div>
       </div>
       <div class="cvf27-body">
-        <div class="cvf27-grid">
+        <div class="cvf27-grid{{ $isExpense ? ' cvf27-expense-grid' : '' }}">
           @if($isContra)
             <input type="hidden" name="party_id" value="">
             <input type="hidden" name="party_name" value="">
             <input type="hidden" name="booking_id" value="">
           @elseif($isExpense)
             <input type="hidden" name="party_id" value="">
-            <div class="cvf27-field cvf27-span2">
+            <div class="cvf27-field cvf27-span2" data-expense-field="payee">
               <label>Payee Name</label>
               <input name="party_name" value="{{ old('party_name',$row->party_name ?? '') }}" placeholder="Optional person or organization paid">
             </div>
           @else
-            <div class="cvf27-field">
+            <div class="cvf27-field" data-expense-field="booking">
               <label>{{ $partyLabel }} *</label>
               <select name="party_id" id="partySelect" required>
                 <option value="">Select {{ strtolower($partyLabel) }}</option>
@@ -114,12 +115,12 @@
             </div>
           @endunless
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="voucher-date">
             <label>Voucher Date *</label>
             <input type="date" name="voucher_date" value="{{ old('voucher_date',$row->voucher_date ?? now()->toDateString()) }}" required>
           </div>
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="value-date">
             <label>Value / Bank Date</label>
             <input type="date" name="value_date" value="{{ old('value_date',$row->value_date ?? '') }}">
           </div>
@@ -133,17 +134,17 @@
             <input type="hidden" id="voucherAmount" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}">
           @endunless
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="currency">
             <label>Currency *</label>
             <input name="currency_code" value="{{ old('currency_code',$row->currency_code ?? 'PKR') }}" required>
           </div>
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="exchange">
             <label>Exchange Rate *</label>
             <input type="number" step="0.00000001" min="0.00000001" name="exchange_rate" value="{{ old('exchange_rate',$row->exchange_rate ?? '1.00000000') }}" required>
           </div>
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="payment-method">
             <label>{{ $isContra ? 'Transfer Method' : 'Payment Method' }} *</label>
             <select name="payment_method" id="paymentMethod">
               @foreach($paymentMethods as $m)
@@ -152,7 +153,7 @@
             </select>
           </div>
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="cash-bank">
             <label>{{ $isContra ? 'From Cash / Bank Account' : 'Cash / Bank Account' }} *</label>
             <select name="cash_bank_account" id="cashBankAccount" required>
               <option value="">Select account</option>
@@ -164,7 +165,7 @@
           </div>
 
           @if($isContra)
-            <div class="cvf27-field">
+            <div class="cvf27-field" data-expense-field="bank-name">
               <label>To Cash / Bank Account *</label>
               <select name="destination_account" id="destinationAccount" required>
                 <option value="">Select destination account</option>
@@ -186,22 +187,22 @@
 
           <div id="paymentMethodWarning" class="cvf27-warning"></div>
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="transaction-reference">
             <label>Transaction / Bank Reference</label>
             <input name="transaction_reference" value="{{ old('transaction_reference',$row->transaction_reference ?? '') }}">
           </div>
 
-          <div class="cvf27-field">
+          <div class="cvf27-field" data-expense-field="instrument">
             <label>Cheque / Instrument No.</label>
             <input name="instrument_no" value="{{ old('instrument_no',$row->instrument_no ?? '') }}">
           </div>
 
-          <div class="cvf27-field cvf27-span2">
+          <div class="cvf27-field cvf27-span2" data-expense-field="narration">
             <label>Narration / Remarks</label>
             <textarea name="narration" placeholder="Enter the narration that should appear in ledgers and reports">{{ old('narration',$row->narration ?? '') }}</textarea>
           </div>
 
-          <div class="cvf27-field cvf27-span2">
+          <div class="cvf27-field cvf27-span2" data-expense-field="payment-proof">
             <label>Payment Proof (PDF/JPG/PNG/WEBP, max 5MB)</label>
             <div class="cvf27-upload cvf27-upload-compact">
               <input type="file" name="payment_proof" accept=".pdf,.jpg,.jpeg,.png,.webp">
@@ -341,7 +342,7 @@ const currency=document.querySelector('[name="currency_code"]');
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  function accountLabel(a){return `${a.code} · ${a.name}`}
  function matches(term){term=String(term||'').trim().toLowerCase();return accounts.filter(a=>!term||String(a.code).toLowerCase().includes(term)||String(a.name).toLowerCase().includes(term)).slice(0,12)}
- function picker(tr,selected){const input=tr.querySelector('.accountSearch');const hidden=tr.querySelector('.accountId');const results=tr.querySelector('.accountResults');const current=accounts.find(a=>Number(a.id)===Number(selected));if(current)input.value=accountLabel(current);function render(){results.innerHTML=matches(input.value).map(a=>`<button type="button" class="cvf27-account-option" data-id="${a.id}">${esc(accountLabel(a))}</button>`).join('')||'<span class="cvf27-account-empty">No eligible expense account</span>';results.hidden=false}function choose(id){const a=accounts.find(x=>Number(x.id)===Number(id));if(!a)return;hidden.value=a.id;input.value=accountLabel(a);results.hidden=true}input.addEventListener('input',()=>{hidden.value='';render()});input.addEventListener('focus',render);input.addEventListener('keydown',e=>{const options=[...results.querySelectorAll('.cvf27-account-option')];let index=options.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();(options[index+1]||options[0])?.focus()}else if(e.key==='ArrowUp'){e.preventDefault();(options[index-1]||options[options.length-1])?.focus()}else if(e.key==='Escape'){results.hidden=true}});results.addEventListener('click',e=>{if(e.target.dataset.id)choose(e.target.dataset.id)});tr.querySelector('.accountPicker').addEventListener('focusout',()=>setTimeout(()=>{if(!tr.querySelector('.accountPicker').contains(document.activeElement))results.hidden=true},0))}
+ function picker(tr,selected){const input=tr.querySelector('.accountSearch');const hidden=tr.querySelector('.accountId');const results=tr.querySelector('.accountResults');const current=accounts.find(a=>Number(a.id)===Number(selected));if(current)input.value=accountLabel(current);function render(){results.innerHTML=matches(input.value).map(a=>`<button type="button" class="cvf27-account-option" data-id="${a.id}">${esc(accountLabel(a))}</button>`).join('')||'<span class="cvf27-account-empty">No eligible expense account</span>';results.hidden=false}function choose(id){const a=accounts.find(x=>Number(x.id)===Number(id));if(!a)return;hidden.value=a.id;input.value=accountLabel(a);results.hidden=true}input.addEventListener('input',()=>{hidden.value='';render()});input.addEventListener('focus',render);input.addEventListener('keydown',e=>{const options=[...results.querySelectorAll('.cvf27-account-option')];let index=options.indexOf(document.activeElement);if(e.key==='ArrowDown'){e.preventDefault();(options[index+1]||options[0])?.focus()}else if(e.key==='ArrowUp'){e.preventDefault();(options[index-1]||options[options.length-1])?.focus()}else if(e.key==='Escape'){results.hidden=true}});results.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.id){e.preventDefault();choose(e.target.dataset.id)}});results.addEventListener('click',e=>{if(e.target.dataset.id)choose(e.target.dataset.id)});tr.querySelector('.accountPicker').addEventListener('focusout',()=>setTimeout(()=>{if(!tr.querySelector('.accountPicker').contains(document.activeElement))results.hidden=true},0))}
 function renumber(){[...body.children].forEach((tr,i)=>{tr.querySelector('.lineNo').textContent=i+1;tr.querySelectorAll('[name]').forEach(el=>el.name=el.name.replace(/expense_lines\[\d+\]/,`expense_lines[${i}]`))})}
 function calculate(){const total=[...body.querySelectorAll('.expenseAmount')].reduce((sum,input)=>sum+Number(input.value||0),0);amount.value=total.toFixed(2);document.getElementById('expenseTotal').textContent=total.toFixed(2);document.getElementById('expenseCurrency').textContent=String(currency.value||'PKR').toUpperCase();empty.style.display=body.children.length?'none':'block'}
  function addLine(value={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=`<td class="lineNo">${i+1}</td><td><div class="cvf27-accountPicker"><input class="accountSearch" type="search" placeholder="Search code or name" autocomplete="off" role="combobox"><input class="accountId" type="hidden" name="expense_lines[${i}][expense_account_id]" value="${Number(value.expense_account_id||0)||''}" required><div class="accountResults" hidden></div></div></td><td><input name="expense_lines[${i}][description]" value="${esc(value.description||'')}" placeholder="Purpose of expense"></td><td><input class="expenseAmount" type="number" name="expense_lines[${i}][amount]" min="0.01" step="0.01" value="${Number(value.amount||0).toFixed(2)}" required></td><td class="cvf27-action"><button type="button" class="cvf27-rm" aria-label="Remove expense line">×</button></td>`;body.appendChild(tr);picker(tr,value.expense_account_id);calculate();return tr}
