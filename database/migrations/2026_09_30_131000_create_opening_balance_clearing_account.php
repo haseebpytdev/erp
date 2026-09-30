@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use RuntimeException;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        $s = $this->schema();
+        if (!$s['control_type'] || !$s['parent']) throw new RuntimeException('Opening Balance Clearing account requires control_type and parent-account columns.');
+        $existing = DB::table($s['table'])->whereRaw('UPPER('.$s['control_type'].') = ?', ['OPENING_BALANCE_CLEARING'])->get();
+        if ($existing->count() > 1) throw new RuntimeException('Multiple OPENING_BALANCE_CLEARING accounts exist; migration stopped.');
+        if ($existing->count() === 1) { $this->assertCompatible($existing->first(), $s); return; }
+        $parents = DB::table($s['table'])->whereRaw('LOWER('.$s['type'].') = ?', ['equity'])->where(function($q) use($s){$q->whereNull($s['parent'])->orWhere($s['parent'],0)->orWhere($s['parent'],'');})->get();
+        if ($parents->count() !== 1) throw new RuntimeException('Opening Balance Clearing parent selection is ambiguous; expected exactly one eligible Equity root.');
+        $parent=$parents->first(); $code=$this->nextCode($parent,$s); $insert=[$s['code']=>$code,$s['name']=>'Opening Balance Clearing',$s['type']=>$this->storageType('equity',$s),$s['parent']=>$this->parentValue($parent,$s)];
+        if($s['subtype'])$insert[$s['subtype']]='Opening Balance / Migration Clearing'; if($s['normal'])$insert[$s['normal']]='CREDIT'; if($s['posting'])$insert[$s['posting']]=1; if($s['control_flag'])$insert[$s['control_flag']]=1; $insert[$s['control_type']]='OPENING_BALANCE_CLEARING'; if($s['notes'])$insert[$s['notes']]='System-controlled migration clearing account for authoritative opening balance postings. Not for normal operational vouchers.'; if($s['status'])$insert[$s['status']]='active'; if($s['active'])$insert[$s['active']]=1; foreach(['company_id','branch_id','organization_id','tenant_id','legal_entity_id'] as $c)if(in_array($c,$s['columns'],true))$insert[$c]=$parent->{$c}??null; if($s['created_at'])$insert[$s['created_at']]=now(); if($s['updated_at'])$insert[$s['updated_at']]=now(); DB::table($s['table'])->insert($insert);
+    }
+    public function down(): void {}
+    private function schema(): array { foreach(['chart_of_accounts','chart_accounts','accounts','account_masters','gl_accounts'] as $table){if(!Schema::hasTable($table))continue;$c=Schema::getColumnListing($table);$first=fn(array $xs):?string=>collect($xs)->first(fn($x)=>in_array($x,$c,true));$s=['table'=>$table,'columns'=>$c,'id'=>$first(['id','account_id']),'code'=>$first(['code','account_code','gl_code','number','account_number']),'name'=>$first(['name','account_name','title']),'type'=>$first(['type','account_type','category','account_category']),'subtype'=>$first(['subtype','sub_type','account_subtype','account_sub_type']),'parent'=>$first(['parent_id','parent_account_id','parent_account','parent_code']),'normal'=>$first(['normal_balance','normal_side','balance_type']),'posting'=>$first(['allow_direct_journal_posting','allow_direct_posting','allow_posting','is_posting','posting_allowed','can_post']),'control_flag'=>$first(['is_control_account','is_control','control_account']),'control_type'=>$first(['control_type','control_code','control_key']),'notes'=>$first(['notes','memo','remarks','description']),'status'=>$first(['status','account_status']),'active'=>$first(['is_active','active','enabled']),'created_at'=>$first(['created_at']),'updated_at'=>$first(['updated_at'])];if($s['id']&&$s['code']&&$s['name']&&$s['type'])return $s;}throw new RuntimeException('Chart of Accounts table could not be resolved.'); }
+    private function parentValue(object $p,array $s):mixed { return in_array($s['parent'],['parent_id','parent_account_id'],true)?$p->{$s['id']}:$p->{$s['code']}; }
+    private function nextCode(object $p,array $s):string { $pc=trim((string)$p->{$s['code']});$children=DB::table($s['table'])->where($s['parent'],$this->parentValue($p,$s))->pluck($s['code'])->map(fn($v)=>trim((string)$v))->all();if(preg_match('/^\d+$/',$pc)){ $n=(int)$pc+1;foreach($children as $c)if(ctype_digit($c))$n=max($n,(int)$c+1);while(DB::table($s['table'])->where($s['code'],(string)$n)->exists())$n++;return (string)$n;} $n=0;do{$n++;$code=$pc.'-'.str_pad((string)$n,2,'0',STR_PAD_LEFT);}while(DB::table($s['table'])->where($s['code'],$code)->exists());return $code; }
+    private function storageType(string $type,array $s):string { $sample=DB::table($s['table'])->whereNotNull($s['type'])->value($s['type']);if(is_string($sample)&&$sample!==''&&$sample===strtoupper($sample))return strtoupper($type);if(is_string($sample)&&$sample!==''&&$sample===ucfirst(strtolower($sample)))return ucfirst($type);return strtolower($type); }
+    private function assertCompatible(object $r,array $s):void { if($s['active']&&!((bool)$r->{$s['active']}))throw new RuntimeException('Existing Opening Balance Clearing account is inactive.'); if($s['posting']&&property_exists($r,$s['posting'])&&!((bool)$r->{$s['posting']}))throw new RuntimeException('Existing Opening Balance Clearing account is not posting-enabled.'); if($s['control_flag']&&property_exists($r,$s['control_flag'])&&!((bool)$r->{$s['control_flag']}))throw new RuntimeException('Existing Opening Balance Clearing account is not a control account.'); if(strtolower((string)$r->{$s['type']})!=='equity')throw new RuntimeException('Existing Opening Balance Clearing account is not Equity.'); }
+};
