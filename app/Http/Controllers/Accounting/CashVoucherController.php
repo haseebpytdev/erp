@@ -507,6 +507,27 @@ class CashVoucherController extends Controller
     private function formData(?object $row, string $type): array
     {
         $definition = $this->service->voucherDefinition($type);
+        $bookings = [];
+        if ($type !== 'contra') {
+            $bookings = $type === 'expense'
+                ? $this->service->bookingOptions()
+                : (! empty($row?->party_id)
+                    ? $this->service->bookingOptions((int) $row->party_id, $definition['party_type'], $type)
+                    : []);
+            if (! empty($row?->booking_id)) {
+                // The browse list is intentionally capped; edit hydration is
+                // authoritative and must preserve the already-saved booking.
+                $this->service->assertBookingRelationship(
+                    (int) $row->booking_id,
+                    $type,
+                    ! empty($row->party_id) ? (int) $row->party_id : null
+                );
+                $snapshot = $this->service->bookingSnapshot((int) $row->booking_id);
+                if (! collect($bookings)->contains(fn ($booking): bool => (int) $booking['id'] === (int) $snapshot['id'])) {
+                    $bookings[] = $snapshot;
+                }
+            }
+        }
         return [
             'row' => $row,
             'type' => $type,
@@ -514,13 +535,7 @@ class CashVoucherController extends Controller
             'parties' => in_array($type, ['expense', 'contra'], true)
                 ? []
                 : $this->service->partyOptions($definition['party_type']),
-            'bookings' => $type === 'contra'
-                ? []
-                : ($type === 'expense'
-                    ? $this->service->bookingOptions()
-                    : (! empty($row?->party_id)
-                        ? $this->service->bookingOptions((int) $row->party_id, $definition['party_type'], $type)
-                        : [])),
+            'bookings' => $bookings,
             'cashBankAccounts' => $this->service->cashBankAccounts(),
             'paymentMethods' => $type === 'contra'
                 ? $this->service->transferMethods()

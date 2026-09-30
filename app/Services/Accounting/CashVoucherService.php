@@ -209,51 +209,56 @@ class CashVoucherService
             }
             $this->assertPartyRole($partyId, $partyType);
         }
+        $authority = $this->bookingAuthority();
+        if (! $authority) {
+            return [];
+        }
+        $select = [$authority['id'].' as id'];
+        if ($authority['reference']) {
+            $select[] = $authority['reference'].' as reference';
+        }
+        $query = DB::table($authority['table'])
+            ->select($select)
+            ->orderByDesc($authority['id'])
+            ->limit(500);
+        if ($partyType === 'customer') {
+            $query->where('customer_party_id', $partyId);
+        } elseif ($partyType === 'supplier') {
+            if (! Schema::hasTable('supplier_costings') || ! Schema::hasColumn('supplier_costings', 'supplier_id') || ! Schema::hasColumn('supplier_costings', 'booking_id')) {
+                return [];
+            }
+            $related = DB::table('supplier_costings')
+                ->where('supplier_id', $partyId)
+                ->whereNotNull('booking_id')
+                ->distinct()
+                ->pluck('booking_id')
+                ->map(fn ($value): int => (int) $value)
+                ->all();
+            if ($related === []) {
+                return [];
+            }
+            $query->whereIn($authority['id'], $related);
+        }
+        return $query->get()->map(fn ($r): array => [
+            'id' => (int) $r->id,
+            'reference' => (string) ($r->reference ?? ('Booking #'.$r->id)),
+        ])->all();
+    }
+
+    private function bookingAuthority(): ?array
+    {
         foreach (['bookings', 'travel_bookings', 'booking_group_package_unified'] as $table) {
             if (! Schema::hasTable($table)) {
                 continue;
             }
-            $cols = Schema::getColumnListing($table);
-            $id = $this->first($cols, ['id', 'booking_id']);
-            $ref = $this->first($cols, ['booking_no', 'booking_number', 'booking_ref', 'reference', 'booking_reference']);
-            if (! $id) {
-                continue;
+            $columns = Schema::getColumnListing($table);
+            $id = $this->first($columns, ['id', 'booking_id']);
+            $reference = $this->first($columns, ['booking_no', 'booking_number', 'booking_ref', 'reference', 'booking_reference']);
+            if ($id && in_array('customer_party_id', $columns, true)) {
+                return ['table' => $table, 'id' => $id, 'reference' => $reference];
             }
-            $select = [$id.' as id'];
-            if ($ref) {
-                $select[] = $ref.' as reference';
-            }
-            $query = DB::table($table)
-                ->select($select)
-                ->orderByDesc($id)
-                ->limit(500);
-            if ($partyType === 'customer' && in_array('customer_party_id', $cols, true)) {
-                $query->where('customer_party_id', $partyId);
-            } elseif ($partyType === 'customer') {
-                return [];
-            } elseif ($partyType === 'supplier') {
-                if (! Schema::hasTable('supplier_costings') || ! Schema::hasColumn('supplier_costings', 'supplier_id') || ! Schema::hasColumn('supplier_costings', 'booking_id')) {
-                    return [];
-                }
-                $related = DB::table('supplier_costings')
-                    ->where('supplier_id', $partyId)
-                    ->whereNotNull('booking_id')
-                    ->distinct()
-                    ->pluck('booking_id')
-                    ->map(fn ($value): int => (int) $value)
-                    ->all();
-                if ($related === []) {
-                    return [];
-                }
-                $query->whereIn($id, $related);
-            }
-            return $query->get()->map(fn ($r): array => [
-                    'id' => (int) $r->id,
-                    'reference' => (string) ($r->reference ?? ('Booking #'.$r->id)),
-                ])->all();
         }
-
-        return [];
+        return null;
     }
 
     public function bookingSnapshot(int $bookingId): array
@@ -261,19 +266,11 @@ class CashVoucherService
         if ($bookingId < 1) {
             throw new RuntimeException('A valid Booking Reference is required.');
         }
-        foreach (['bookings', 'travel_bookings', 'booking_group_package_unified'] as $table) {
-            if (! Schema::hasTable($table)) {
-                continue;
-            }
-            $cols = Schema::getColumnListing($table);
-            $id = $this->first($cols, ['id', 'booking_id']);
-            $ref = $this->first($cols, ['booking_no', 'booking_number', 'booking_ref', 'reference', 'booking_reference']);
-            if (! $id) {
-                continue;
-            }
-            $row = DB::table($table)->where($id, $bookingId)->first();
+        $authority = $this->bookingAuthority();
+        if ($authority) {
+            $row = DB::table($authority['table'])->where($authority['id'], $bookingId)->first();
             if ($row) {
-                return ['id' => $bookingId, 'reference' => (string) ($ref && isset($row->{$ref}) ? $row->{$ref} : ('Booking #'.$bookingId))];
+                return ['id' => $bookingId, 'reference' => (string) ($authority['reference'] && isset($row->{$authority['reference']}) ? $row->{$authority['reference']} : ('Booking #'.$bookingId))];
             }
         }
         throw new RuntimeException('Selected Booking Reference does not exist.');
@@ -297,15 +294,9 @@ class CashVoucherService
         }
         $this->assertPartyRole($partyId, $definition['party_type']);
         if ($definition['party_type'] === 'customer') {
-            foreach (['bookings', 'travel_bookings', 'booking_group_package_unified'] as $table) {
-                if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'customer_party_id')) {
-                    continue;
-                }
-                $columns = Schema::getColumnListing($table);
-                $id = $this->first($columns, ['id', 'booking_id']);
-                if ($id && DB::table($table)->where($id, $bookingId)->where('customer_party_id', $partyId)->exists()) {
-                    return;
-                }
+            $authority = $this->bookingAuthority();
+            if ($authority && DB::table($authority['table'])->where($authority['id'], $bookingId)->where('customer_party_id', $partyId)->exists()) {
+                return;
             }
         } elseif ($definition['party_type'] === 'supplier') {
             $this->bookingSnapshot($bookingId);

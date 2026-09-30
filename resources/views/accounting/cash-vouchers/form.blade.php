@@ -330,6 +330,9 @@ calc();updateEmpty();
 })();
 </script>
 @endif
+<script>
+(()=>{const proof=document.querySelector('input[name="payment_proof"]');const proofName=document.querySelector('.cvf27-proof-name');proof?.addEventListener('change',()=>{if(proofName)proofName.textContent=proof.files?.[0]?.name||'No file selected'});})();
+</script>
 @if($isExpense)
 <script>
 (()=>{
@@ -351,7 +354,6 @@ function calculate(){const total=[...body.querySelectorAll('.expenseAmount')].re
 body.addEventListener('input',calculate);
 body.addEventListener('click',event=>{if(event.target.classList.contains('cvf27-rm')){event.target.closest('tr').remove();renumber();calculate()}});
 currency.addEventListener('input',calculate);calculate();
-const proof=document.querySelector('input[name="payment_proof"]');const proofName=document.querySelector('.cvf27-proof-name');proof?.addEventListener('change',()=>{proofName.textContent=proof.files?.[0]?.name||'No file selected'});
 })();
 </script>
 @endif
