@@ -130,7 +130,7 @@ check('register retains Search and Filter', has(register, 'Search') && has(regis
 check('release identity is .377', version === 'v1.1.33.377-ERP11.3.377' && has(config, "'release' => 'ERP-11.3.377'"));
 const currentRelease = read('CURRENT_RELEASE.md');
 check('ERP376 metadata is packaged and deployed', /ERP-11\.3\.376 is FINALIZED \/ PACKAGED \/ DEPLOYED/.test(currentRelease));
-check('ERP377 review metadata remains pending', has(read('README_DEPLOY.txt'), 'EXTERNAL_SOURCE_REVIEW=PENDING') && has(read('README_DEPLOY.txt'), 'REMOTE_SOURCE_VERIFICATION=NOT_RUN'));
+check('ERP377 final review metadata is recorded', has(read('README_DEPLOY.txt'), 'EXTERNAL_SOURCE_REVIEW=PASS') && has(read('README_DEPLOY.txt'), 'REMOTE_SOURCE_VERIFICATION=PASS') && has(currentRelease, 'CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED'));
 check('no migration was introduced', !fs.readdirSync(path.join(root, 'database', 'migrations')).some((name) => name.includes('377')));
 
 const failures = results.filter(([, pass]) => !pass);
