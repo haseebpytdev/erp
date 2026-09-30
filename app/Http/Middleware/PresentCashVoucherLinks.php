@@ -70,6 +70,8 @@ final class PresentCashVoucherLinks
             $paymentUrl = route('accounting.cash-vouchers.index', ['type' => 'payment']);
             $expenseUrl = route('accounting.cash-vouchers.index', ['mode' => 'expenses']);
             $contraUrl = route('accounting.cash-vouchers.index', ['mode' => 'contra']);
+            $openingUrl = route('accounting.party-opening-balances.create');
+            $customerPaymentUrl = route('accounting.customer-payments.create');
 
             $onVoucherWorkspace = str_starts_with(trim($request->path(), '/'), 'accounting/cash-vouchers');
             $selectedType = strtolower(trim((string) $request->query('type', '')));
@@ -88,6 +90,8 @@ final class PresentCashVoucherLinks
             $paymentLink = '<a class="nav-item'.$paymentActive.'" href="'.e($paymentUrl).'" data-et-live-accounting-nav="payment"><span>↑</span><span>Payments</span></a>';
             $expenseLink = '<a class="nav-item'.$expenseActive.'" href="'.e($expenseUrl).'" data-et-live-accounting-nav="expense"><span>≡</span><span>Expense Vouchers</span></a>';
             $contraLink = '<a class="nav-item'.$contraActive.'" href="'.e($contraUrl).'" data-et-live-accounting-nav="contra"><span>⇄</span><span>Contra Vouchers</span></a>';
+            $openingLink = '<a class="nav-item" href="'.e($openingUrl).'" data-et-live-accounting-nav="party-opening"><span>◫</span><span>Party Opening Balances</span></a>';
+            $customerPaymentLink = '<a class="nav-item" href="'.e($customerPaymentUrl).'" data-et-live-accounting-nav="customer-payment"><span>↗</span><span>Customer Payment / Refund</span></a>';
 
             $html = str_replace(
                 '<div class="nav-item muted"><span>•</span><span>Receipts</span><em>Soon</em></div>',
@@ -114,6 +118,11 @@ final class PresentCashVoucherLinks
                     ? $expenseLink
                     : $paymentLink;
                 $html = str_replace($anchor, $anchor.$contraLink, $html);
+            }
+            if (!str_contains($html, 'data-et-live-accounting-nav="party-opening"')) {
+                $anchor = str_contains($html, 'data-et-live-accounting-nav="contra"') ? $contraLink
+                    : (str_contains($html, 'data-et-live-accounting-nav="expense"') ? $expenseLink : $paymentLink);
+                $html = str_replace($anchor, $anchor.$openingLink.$customerPaymentLink, $html);
             }
         }
 

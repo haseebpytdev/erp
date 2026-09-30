@@ -59,6 +59,7 @@ use App\Http\Controllers\Accounting\AdvanceAdjustmentController;
 use App\Http\Controllers\Accounting\ChartOfAccountsWorkspaceController;
 use App\Http\Controllers\Accounting\ManagementAccountingReportController;
 use App\Http\Controllers\Accounting\PartyStatementController;
+use App\Http\Controllers\Accounting\PartyBalanceLifecycleController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentPassengerOperationsLink;
@@ -431,6 +432,19 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::put('/accounting/advance-adjustments/{adjustment}', [AdvanceAdjustmentController::class, 'update'])->whereNumber('adjustment')->name('accounting.advance-adjustments.update');
     Route::post('/accounting/advance-adjustments/{adjustment}/workflow/{action}', [AdvanceAdjustmentController::class, 'workflow'])->whereNumber('adjustment')->where('action', 'submit|approve|post')->name('accounting.advance-adjustments.workflow');
     Route::post('/accounting/advance-adjustments/{adjustment}/reverse', [AdvanceAdjustmentController::class, 'reverse'])->whereNumber('adjustment')->name('accounting.advance-adjustments.reverse');
+
+    // ERP-11.3.378 controlled party-balance lifecycle.
+    Route::get('/accounting/party-opening-balances/create', [PartyBalanceLifecycleController::class, 'openingCreate'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.create');
+    Route::post('/accounting/party-opening-balances', [PartyBalanceLifecycleController::class, 'openingStore'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.store');
+    Route::get('/accounting/party-opening-balances/{id}', [PartyBalanceLifecycleController::class, 'openingShow'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.show');
+    Route::post('/accounting/party-opening-balances/{id}/workflow/{action}', [PartyBalanceLifecycleController::class, 'openingWorkflow'])->whereNumber('id')->where('action','submit|approve|post')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.workflow');
+    Route::post('/accounting/party-opening-balances/{id}/reverse', [PartyBalanceLifecycleController::class, 'openingReverse'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.reverse');
+    Route::get('/accounting/customer-payments/create', [PartyBalanceLifecycleController::class, 'paymentCreate'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-payments.create');
+    Route::get('/accounting/customer-payments/sources', [PartyBalanceLifecycleController::class, 'paymentSources'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-payments.sources');
+    Route::post('/accounting/customer-payments', [PartyBalanceLifecycleController::class, 'paymentStore'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-payments.store');
+    Route::get('/accounting/customer-payments/{id}', [PartyBalanceLifecycleController::class, 'paymentShow'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-payments.show');
+    Route::post('/accounting/customer-payments/{id}/workflow/{action}', [PartyBalanceLifecycleController::class, 'paymentWorkflow'])->whereNumber('id')->where('action','submit|approve|post')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-payments.workflow');
+    Route::post('/accounting/customer-payments/{id}/reverse', [PartyBalanceLifecycleController::class, 'paymentReverse'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-payments.reverse');
 
     Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->name('purchase.supplier-costing.index');
     Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->name('purchase.supplier-costing.create');

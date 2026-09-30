@@ -186,6 +186,12 @@ final class CashVoucherNativeJournalBridge
         });
     }
 
+    /** Additive posting seam for controlled accounting documents. */
+    public function postControlledDocument(object $document, iterable $postingLines, string $sourceType, int $sourceId, string $journalNo, string $description, mixed $user = null, ?int $reversalOfId = null, string $origin = 'controlled_document', string $sourceLineType = 'controlled_document_posting_line'): int
+    {
+        return DB::transaction(fn (): int => $this->createNativeJournal($document, $postingLines, $sourceType, $sourceId, $journalNo, $description, $user, $reversalOfId, $origin, $sourceLineType));
+    }
+
     private function adjustmentDocument(object $row): object
     {
         return (object)['voucher_no'=>$row->adjustment_no,'voucher_date'=>$row->adjustment_date,'voucher_type'=>'advance_adjustment','booking_id'=>$row->booking_id,'party_name'=>$row->party_name,'currency_code'=>$row->currency_code,'exchange_rate'=>$row->exchange_rate,'narration'=>$row->remarks,'created_by'=>$row->created_by,'approved_by'=>$row->approved_by,'approved_at'=>$row->approved_at,'posted_by'=>$row->posted_by,'posted_at'=>$row->posted_at,'created_at'=>$row->created_at];
@@ -503,6 +509,7 @@ final class CashVoucherNativeJournalBridge
         }
 
         $branchId = $this->firstPositive([
+            $voucher->branch_id ?? null,
             $booking?->branch_id ?? null,
             $booking?->office_id ?? null,
             $this->userAttribute($user, 'primary_branch_id'),
@@ -522,6 +529,7 @@ final class CashVoucherNativeJournalBridge
         }
 
         $companyId = $this->firstPositive([
+            $voucher->company_id ?? null,
             $booking?->company_id ?? null,
             $this->userAttribute($user, 'company_id'),
         ]);
@@ -537,7 +545,7 @@ final class CashVoucherNativeJournalBridge
             );
         }
 
-        $fiscalYearId = $this->fiscalYearId((string) $voucher->voucher_date);
+        $fiscalYearId = $this->firstPositive([$voucher->fiscal_year_id ?? null]) ?: $this->fiscalYearId((string) $voucher->voucher_date);
 
         if (! $companyId) {
             throw new RuntimeException('Native journal posting stopped: company context could not be resolved.');
@@ -549,10 +557,7 @@ final class CashVoucherNativeJournalBridge
             throw new RuntimeException('Native journal posting stopped: fiscal year could not be resolved for '.$voucher->voucher_date.'.');
         }
 
-        $accountingPeriodId = $this->accountingPeriodId(
-            (string) $voucher->voucher_date,
-            $fiscalYearId
-        );
+        $accountingPeriodId = $this->firstPositive([$voucher->accounting_period_id ?? null]) ?: $this->accountingPeriodId((string) $voucher->voucher_date, $fiscalYearId);
 
         if (! $accountingPeriodId) {
             throw new RuntimeException(
