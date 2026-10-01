@@ -174,4 +174,16 @@ ok('ADVANCE_SUBMIT_UI_PERMISSION_EXACT',adjustment.includes("'canUpdate'=>")&&ad
 ok('OPENING_SHOW_ACTION_PERMISSION_EXACT',lifecycle.includes("'canUpdate'=>")&&lifecycle.includes("'canApprove'=>")&&lifecycle.includes("'canPost'=>")&&lifecycle.includes("'canReverse'=>"));
 ok('RETURN_SHOW_ACTION_PERMISSION_EXACT',lifecycle.includes("customerAdvanceReturnShow")&&lifecycle.includes("'canUpdate'=>")&&lifecycle.includes("'canApprove'=>")&&lifecycle.includes("'canPost'=>")&&lifecycle.includes("'canReverse'=>"));
 ok('R6_ATOMICITY_GUARDS_PRESERVED',service.includes('assertOpeningReversalDependenciesLocked')&&returns.includes('revalidatePostLocked')&&returns.includes('assertBranchForUser'));
+ok('CLEARING_EXISTING_NAME_VALIDATED',clearingMigration.includes("opening balance clearing")&&clearingMigration.includes('incompatible identity'));
+ok('CLEARING_EXISTING_SUBTYPE_VALIDATED',clearingMigration.includes('opening balance / migration clearing'));
+ok('CLEARING_EXISTING_NORMAL_BALANCE_CREDIT_VALIDATED',clearingMigration.includes('must have Credit normal balance'));
+ok('CLEARING_EXISTING_ACTIVE_STATUS_VALIDATED',clearingMigration.includes('is not live')&&clearingMigration.includes('is inactive'));
+ok('CLEARING_EXISTING_EQUITY_VALIDATED',clearingMigration.includes('is not Equity'));
+ok('CLEARING_EXISTING_PARENT_COMPATIBILITY_VALIDATED',clearingMigration.includes('incompatible Equity parent'));
+ok('CLEARING_INCOMPATIBLE_EXISTING_FAIL_CLOSED',clearingMigration.includes('assertCompatible')&&clearingMigration.includes('RuntimeException'));
+ok('CLEARING_RUNTIME_COMPATIBILITY_FAIL_CLOSED',service.includes('assertClearingCompatibility')&&service.includes('normal balance must be Credit'));
+ok('ADVANCE_OPENING_UI_UPDATE_COMBINED_PERMISSION',adjustment.includes('canSourceAction')&&adjustment.includes("'canUpdate'=>"));
+ok('ADVANCE_OPENING_UI_APPROVE_COMBINED_PERMISSION',adjustment.includes("'canApprove'=>"));
+ok('ADVANCE_OPENING_UI_POST_COMBINED_PERMISSION',adjustment.includes("'canPost'=>"));
+ok('ADVANCE_OPENING_UI_REVERSE_COMBINED_PERMISSION',adjustment.includes("'canReverse'=>"));
 const failures=checks.filter(([,v])=>!v);console.log(`ERP113378_PARTY_BALANCE_LIFECYCLE=${failures.length?'FAIL':'PASS'} (${pass} assertions)`);for(const[n,v]of checks)console.log(`${v?'PASS':'FAIL'} ${n}`);if(failures.length)process.exitCode=1;

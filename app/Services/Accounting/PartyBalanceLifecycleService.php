@@ -21,8 +21,20 @@ final class PartyBalanceLifecycleService
         if (!$s['control_type']) throw new RuntimeException('Opening Balance Clearing account is not configured.');
         $row = DB::table($s['table'])->whereRaw('UPPER('.$s['control_type'].')=?', [strtoupper($key)])->first();
         if (!$row || !$this->isPosting($row, $s) || ($s['control_flag'] && property_exists($row, $s['control_flag']) && !((bool) $row->{$s['control_flag']}))) throw new RuntimeException('Opening Balance Clearing account is not configured.');
+        $this->assertClearingCompatibility($row, $s);
         return ['id' => (int) $row->{$s['id']}, 'code' => (string) $row->{$s['code']}, 'name' => (string) $row->{$s['name']}];
     }
+
+    private function assertClearingCompatibility(object $row, array $s): void
+    {
+        if (strtolower(trim((string) $row->{$s['name']})) !== 'opening balance clearing' || $this->normalizeClearingType((string) $row->{$s['type']}) !== 'equity') throw new RuntimeException('Opening Balance Clearing account is semantically incompatible.');
+        if ($s['subtype'] && strtolower(trim((string) ($row->{$s['subtype']} ?? ''))) !== 'opening balance / migration clearing') throw new RuntimeException('Opening Balance Clearing subtype is incompatible.');
+        if ($s['normal'] && strtolower(trim((string) ($row->{$s['normal']} ?? ''))) !== 'credit') throw new RuntimeException('Opening Balance Clearing normal balance must be Credit.');
+        if ($s['status'] && ! in_array(strtolower(trim((string) ($row->{$s['status']} ?? ''))), ['active','enabled','open'], true)) throw new RuntimeException('Opening Balance Clearing account is not active.');
+        if ($s['active'] && ! ((bool) ($row->{$s['active']} ?? false))) throw new RuntimeException('Opening Balance Clearing account is inactive.');
+    }
+
+    private function normalizeClearingType(string $value): string { $v = strtolower(trim($value)); return str_contains($v, 'equity') || str_contains($v, 'capital') ? 'equity' : $v; }
 
     public function createOpening(array $data, mixed $user): int
     {
