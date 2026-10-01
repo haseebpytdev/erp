@@ -13,6 +13,7 @@ const rMigration=read('database/migrations/2026_09_30_130000_create_customer_adv
 const erp378IdentifierNames=['party_opening_balances_opening_no_unique','party_opening_balances_posting_reference_unique','party_opening_balances_reversal_reference_unique','party_opening_balances_party_type_party_id_index','party_opening_balances_status_opening_date_index','pob_posting_opening_fk','pob_activity_opening_fk','customer_advance_returns_return_no_unique','customer_advance_returns_customer_party_id_index','customer_advance_returns_return_date_index','customer_advance_returns_status_index','customer_advance_returns_posting_reference_unique','customer_advance_returns_reversal_reference_unique','customer_advance_returns_customer_party_id_status_index','car_alloc_return_fk','car_posting_return_fk','car_activity_return_fk','car_alloc_return_line_uq','car_alloc_return_source_uq','car_alloc_source_idx','advance_adjustments_advance_source_type_index','advance_adjustments_advance_source_id_index'];
 const r2Migration=read('database/migrations/2026_09_30_133000_complete_party_balance_source_identity.php');
 const clearingMigration=read('database/migrations/2026_09_30_131000_create_opening_balance_clearing_account.php');
+const clearingSubtypeBlock=clearingMigration.match(/private function normalizeSubtype[\s\S]*?private function assertCompatible/)?.[0]??'';
 const form=read('resources/views/accounting/customer-advance-returns/form.blade.php');
 const openingForm=read('resources/views/accounting/party-opening-balances/form.blade.php');
 const cashForm=read('resources/views/accounting/cash-vouchers/form.blade.php');
@@ -74,7 +75,7 @@ ok('RETURN_FK_NAMES_EXPLICIT',rMigration.includes('car_alloc_return_fk')&&rMigra
 ok('RETURN_UNIQUE_NAMES_EXPLICIT',rMigration.includes('car_alloc_return_line_uq')&&rMigration.includes('car_alloc_return_source_uq'));
 ok('RETURN_INDEX_NAMES_EXPLICIT',rMigration.includes('car_alloc_source_idx'));
 ok('ALL_ERP378_DB_IDENTIFIERS_LE_64',erp378IdentifierNames.every(name=>name.length<=64));
-ok('ERP378_OVERLONG_GENERATED_IDENTIFIERS_ABSENT',![clearingMigration,rMigration].some(source=>source.includes('party_opening_balance_posting_lines_party_opening_balance_id_foreign')||source.includes('customer_advance_return_allocations_customer_advance_return_id_foreign')||source.includes('customer_advance_return_allocations_customer_advance_return_id_advance_source_type_advance_source_id_unique')));
+ok('ERP378_OVERLONG_GENERATED_IDENTIFIERS_ABSENT',![migration,rMigration].some(source=>source.includes('party_opening_balance_posting_lines_party_opening_balance_id_foreign')||source.includes('party_opening_balance_activities_party_opening_balance_id_foreign')||source.includes('customer_advance_return_allocations_customer_advance_return_id_foreign')||source.includes('customer_advance_return_posting_lines_customer_advance_return_id_foreign')||source.includes('customer_advance_return_activities_customer_advance_return_id_foreign')||source.includes('customer_advance_return_allocations_customer_advance_return_id_advance_source_type_advance_source_id_unique')));
 ok('OPENING_PARTIAL_STATE_RECOVERY_PRESENT',migration.includes('recoverInterruptedSchema')&&migration.includes('party_opening_balance_activities'));
 ok('OPENING_POPULATED_STATE_FAILS_CLOSED',migration.includes('Interrupted ERP378 opening-balance schema contains data; automatic recovery is refused.'));
 ok('OPENING_EMPTY_STATE_RECOVERABLE',migration.includes('if($existing===[])return')&&migration.includes('Schema::dropIfExists($table)'));
@@ -213,4 +214,9 @@ ok('CLEARING_SUBTYPE_NORMALIZATION_PARITY',clearingMigration.includes('opening b
 ok('CLEARING_SAME_NAME_WHITESPACE_CONFLICT_PROTECTED',clearingMigration.includes('$sameName')&&clearingMigration.includes('$this->norm'));
 ok('CLEARING_RUNTIME_DUPLICATE_CONTROL_FAILS_CLOSED',service.includes('$matches->count() !== 1')&&service.includes('identity is missing or duplicated'));
 ok('CLEARING_RUNTIME_PARENT_FAILS_CLOSED',service.includes('Opening Balance Clearing parent is missing')&&service.includes('runtimeParentUsesId'));
+ok('EQUITY_PARENT_SINGLE_ROOT_SUPPORTED',clearingMigration.includes('isEligibleParent')&&clearingMigration.includes('$parents->first()'));
+ok('EQUITY_PARENT_CAPITAL_DISAMBIGUATION',clearingMigration.includes('normalizeSubtype')&&clearingMigration.includes("$parents->count() > 1")&&clearingMigration.includes("$capital->count() !== 1"));
+ok('EQUITY_PARENT_RETAINED_EARNINGS_EXCLUDED',clearingMigration.includes("['capital','owner capital','owners capital','equity capital','owners equity capital']")&&!clearingSubtypeBlock.includes("str_contains($v,'capital')"));
+ok('EQUITY_PARENT_NO_HARDCODED_PRODUCTION_IDENTITY',!clearingMigration.includes('3010')&&!clearingMigration.includes('3020')&&!clearingMigration.includes('account ID 9'));
+ok('EQUITY_PARENT_AMBIGUITY_FAILS_CLOSED',clearingMigration.includes('parent selection is ambiguous')&&clearingMigration.includes('$parents->count() !== 1'));
 const failures=checks.filter(([,v])=>!v);console.log(`ERP113378_PARTY_BALANCE_LIFECYCLE=${failures.length?'FAIL':'PASS'} (${pass} assertions)`);for(const[n,v]of checks)console.log(`${v?'PASS':'FAIL'} ${n}`);if(failures.length)process.exitCode=1;
