@@ -14,6 +14,7 @@ const erp378IdentifierNames=['party_opening_balances_opening_no_unique','party_o
 const r2Migration=read('database/migrations/2026_09_30_133000_complete_party_balance_source_identity.php');
 const clearingMigration=read('database/migrations/2026_09_30_131000_create_opening_balance_clearing_account.php');
 const clearingSubtypeBlock=clearingMigration.match(/private function normalizeSubtype[\s\S]*?private function assertCompatible/)?.[0]??'';
+const normalizeSubtypeForRegression=value=>{let v=value.toLowerCase().trim().replace(/\s+/g,' ').replace(/[’']/g,'').replace(/[_\-\/]/g,' ').replace(/\s+/g,' ').trim();return ['capital','owner capital','owners capital','equity capital','owners equity capital'].includes(v)?'capital':v;};
 const form=read('resources/views/accounting/customer-advance-returns/form.blade.php');
 const openingForm=read('resources/views/accounting/party-opening-balances/form.blade.php');
 const cashForm=read('resources/views/accounting/cash-vouchers/form.blade.php');
@@ -217,6 +218,10 @@ ok('CLEARING_RUNTIME_PARENT_FAILS_CLOSED',service.includes('Opening Balance Clea
 ok('EQUITY_PARENT_SINGLE_ROOT_SUPPORTED',clearingMigration.includes('isEligibleParent')&&clearingMigration.includes('$parents->first()'));
 ok('EQUITY_PARENT_CAPITAL_DISAMBIGUATION',clearingMigration.includes('normalizeSubtype')&&clearingMigration.includes("$parents->count() > 1")&&clearingMigration.includes("$capital->count() !== 1"));
 ok('EQUITY_PARENT_RETAINED_EARNINGS_EXCLUDED',clearingMigration.includes("['capital','owner capital','owners capital','equity capital','owners equity capital']")&&!clearingSubtypeBlock.includes("str_contains($v,'capital')"));
+ok('OWNER_APOSTROPHE_CAPITAL_SUPPORTED',normalizeSubtypeForRegression("owner's capital")==='capital'&&clearingSubtypeBlock.includes("str_replace([")&&clearingSubtypeBlock.includes(",'’'],'',$v)"));
+ok('OWNER_CURLY_APOSTROPHE_CAPITAL_SUPPORTED',normalizeSubtypeForRegression('owner’s capital')==='capital'&&clearingSubtypeBlock.includes("’"));
+ok('RETAINED_EARNINGS_STILL_EXCLUDED',normalizeSubtypeForRegression('RETAINED_EARNINGS')!=='capital'&&normalizeSubtypeForRegression('retained earnings')!=='capital');
+ok('BROAD_CAPITAL_SUBSTRING_FALLBACK',!clearingSubtypeBlock.includes("str_contains($v,'capital')"));
 ok('EQUITY_PARENT_NO_HARDCODED_PRODUCTION_IDENTITY',!clearingMigration.includes('3010')&&!clearingMigration.includes('3020')&&!clearingMigration.includes('account ID 9'));
 ok('EQUITY_PARENT_AMBIGUITY_FAILS_CLOSED',clearingMigration.includes('parent selection is ambiguous')&&clearingMigration.includes('$parents->count() !== 1'));
 const failures=checks.filter(([,v])=>!v);console.log(`ERP113378_PARTY_BALANCE_LIFECYCLE=${failures.length?'FAIL':'PASS'} (${pass} assertions)`);for(const[n,v]of checks)console.log(`${v?'PASS':'FAIL'} ${n}`);if(failures.length)process.exitCode=1;
