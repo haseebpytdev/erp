@@ -90,7 +90,7 @@ final class PresentCashVoucherLinks
             $paymentLink = '<a class="nav-item'.$paymentActive.'" href="'.e($paymentUrl).'" data-et-live-accounting-nav="payment"><span>↑</span><span>Payments</span></a>';
             $expenseLink = '<a class="nav-item'.$expenseActive.'" href="'.e($expenseUrl).'" data-et-live-accounting-nav="expense"><span>≡</span><span>Expense Vouchers</span></a>';
             $contraLink = '<a class="nav-item'.$contraActive.'" href="'.e($contraUrl).'" data-et-live-accounting-nav="contra"><span>⇄</span><span>Contra Vouchers</span></a>';
-            $openingLink = '<a class="nav-item" href="'.e($openingUrl).'" data-et-live-accounting-nav="party-opening"><span>◫</span><span>Party Opening Balances</span></a>';
+            $openingLink = '<a class="nav-item" href="'.e($openingUrl).'" data-et-live-accounting-nav="party-opening"><span>◫</span><span>Party Balances</span></a>';
             $customerAdvanceReturnLink = '<a class="nav-item" href="'.e($customerAdvanceReturnUrl).'" data-et-live-accounting-nav="customer-advance-return"><span>↩</span><span>Customer Advance Returns</span></a>';
 
             $html = str_replace(
