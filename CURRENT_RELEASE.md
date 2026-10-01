@@ -25,8 +25,8 @@ and workflow, preserves historical print lookup, and streamlines Expense
 Voucher entry with compact Payment Proof, line-derived totals, a searchable
 real Expense Account picker, and focused repeated-line entry. Accounting
 formulas, journal authority and database schema remain unchanged.
-ERP-11.3.377 is FINALIZED / NOT PACKAGED / NOT DEPLOYED /
-NOT PRODUCTION-VERIFIED.
+ERP-11.3.377 is FINALIZED / PACKAGED / DEPLOYED / VERSION GATE PASS /
+ACCOUNTING LIVE UAT PARTIAL.
 EXTERNAL_SOURCE_REVIEW=PASS
 REMOTE_SOURCE_VERIFICATION=PASS
 FUNCTIONAL_SOURCE_HEAD=41df75d27f1fc9fe39d97914cd3b578db496bcd0

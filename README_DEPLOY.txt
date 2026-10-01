@@ -614,7 +614,7 @@ customer advance return lifecycle with idempotent native journal posting and
 reversal. Existing accounting formulas and journal authority are preserved.
 ERP-11.3.378 is NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
 
-ERP113378_PARTY_BALANCE_LIFECYCLE_REGRESSION=PASS (74 assertions)
+ERP113378_PARTY_BALANCE_LIFECYCLE_REGRESSION=PASS (40 assertions)
 EXTERNAL_SOURCE_REVIEW=PENDING
 PHP_RUNTIME=UNAVAILABLE
 PHP_SYNTAX=NOT_RUN

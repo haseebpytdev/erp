@@ -140,7 +140,7 @@ class CashVoucherService
                 'manage expense vouchers',
             ];
         } elseif ($type === 'customer_advance_return') {
-            $phrases = ['view customer advance returns','create customer advance returns','approve customer advance returns','post customer advance returns','reverse customer advance returns','manage customer advance returns','manage customer advances'];
+            $phrases = ['view customer advance returns','create customer advance returns','update customer advance returns','approve customer advance returns','post customer advance returns','reverse customer advance returns','manage customer advance returns'];
         } elseif ($type === 'party_opening_balance') {
             $phrases = ['view party opening balances','create party opening balances','update party opening balances','approve party opening balances','post party opening balances','reverse party opening balances','manage party opening balances'];
         } else {
@@ -160,11 +160,11 @@ class CashVoucherService
 
         $actionPhrases = match ($action) {
             'view' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'view') || str_contains($p, 'manage'))),
-            'create' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'create') || str_contains($p, 'manage') || str_contains($p, 'advance'))),
+            'create' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'create') || str_contains($p, 'manage'))),
             'update' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'update') || str_contains($p, 'manage'))),
             'approve' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'approve') || str_contains($p, 'manage'))),
             'post' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'post') || str_contains($p, 'manage'))),
-            'reverse' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'reverse') || str_contains($p, 'post') || str_contains($p, 'manage'))),
+            'reverse' => array_values(array_filter($phrases, fn (string $p): bool => str_contains($p, 'reverse') || str_contains($p, 'manage'))),
             default => $phrases,
         };
 
@@ -968,31 +968,29 @@ class CashVoucherService
             if ($adjustment->status !== $from) {
                 throw new RuntimeException('Workflow action is not valid for the current adjustment status.');
             }
-            $voucher = DB::table('cash_vouchers')->where('id', $adjustment->advance_voucher_id)->lockForUpdate()->first();
-            if (! $voucher) {
-                throw new RuntimeException('Source advance voucher not found.');
-            }
-            if ((string) $voucher->status !== 'posted' || ! $voucher->party_id || ! in_array((string) $voucher->party_type, ['customer', 'supplier'], true)) {
-                throw new RuntimeException('The source advance is no longer a valid Posted party advance.');
-            }
-            $this->assertPartyRole((int) $voucher->party_id, (string) $voucher->party_type);
-            $derivedTargetType = $voucher->party_type === 'supplier' ? 'supplier_costing' : 'sales_invoice';
-            if ((string) $adjustment->target_type !== $derivedTargetType) {
+            $sourceType = (string) ($adjustment->advance_source_type ?: 'cash_voucher');
+            $sourceId = (int) ($adjustment->advance_source_id ?: $adjustment->advance_voucher_id);
+            $source = $this->partyAdvanceBalances->advanceSourceSnapshot($sourceType, $sourceId);
+            $sourcePartyType = $source['party_type']; $sourcePartyId = (int) $source['party_id'];
+            $this->assertPartyRole($sourcePartyId, $sourcePartyType);
+            $derivedTargetType = (string) $adjustment->target_type;
+            $allowedTargets = $sourcePartyType === 'supplier' ? ['supplier_costing','party_opening_payable'] : ['sales_invoice','party_opening_balance'];
+            if (!in_array($derivedTargetType, $allowedTargets, true)) {
                 throw new RuntimeException('Advance adjustment target domain does not match its source party.');
             }
-            if ((string) $adjustment->party_type !== (string) $voucher->party_type || (int) $adjustment->party_id !== (int) $voucher->party_id) {
+            if ((string) $adjustment->party_type !== $sourcePartyType || (int) $adjustment->party_id !== $sourcePartyId) {
                 throw new RuntimeException('Stored advance adjustment party identity no longer matches its source.');
             }
-            if (! $this->canUseType($user, (string) $voucher->voucher_type, $action === 'submit' ? 'update' : $action)) {
+            if (! $this->canUseType($user, $sourceType === 'party_opening_balance' ? 'party_opening_balance' : (string) ($source['voucher_type'] ?? ($sourcePartyType === 'supplier' ? 'supplier_advance' : 'customer_advance')), $action === 'submit' ? 'update' : $action)) {
                 throw new RuntimeException('You are not authorized for this advance adjustment workflow action.');
             }
 
             if ($action === 'post') $this->lockTarget($derivedTargetType, (int) $adjustment->target_id);
-            $target = $this->documentSnapshot($derivedTargetType, (int) $adjustment->target_id, (int) $voucher->party_id, (string) $voucher->party_type);
-            if (strtoupper((string) ($target['currency_code'] ?: 'PKR')) !== strtoupper((string) ($voucher->currency_code ?: 'PKR'))) {
+            $target = $this->documentSnapshot($derivedTargetType, (int) $adjustment->target_id, $sourcePartyId, $sourcePartyType);
+            if (strtoupper((string) ($target['currency_code'] ?: 'PKR')) !== strtoupper((string) ($source['currency_code'] ?: 'PKR'))) {
                 throw new RuntimeException('Advance and target document currencies must match.');
             }
-            $available = $this->availableAdvance((int) $adjustment->advance_voucher_id);
+            $available = $this->partyAdvanceBalances->availableAdvance($sourceType, $sourceId);
             if ((float) $adjustment->amount <= 0 || (float) $adjustment->amount > $available + 0.005) {
                 throw new RuntimeException('Adjustment amount exceeds the currently available advance balance.');
             }
@@ -1030,8 +1028,10 @@ class CashVoucherService
             if (! $adjustment || $adjustment->status !== 'posted') {
                 throw new RuntimeException('Only a Posted advance adjustment can be reversed.');
             }
-            $voucher = DB::table('cash_vouchers')->where('id', $adjustment->advance_voucher_id)->first();
-            if (! $voucher || ! $this->canUseType($user, (string) $voucher->voucher_type, 'reverse')) {
+            $sourceType = (string) ($adjustment->advance_source_type ?: 'cash_voucher');
+            $sourceId = (int) ($adjustment->advance_source_id ?: $adjustment->advance_voucher_id);
+            $source = $this->partyAdvanceBalances->advanceSourceSnapshot($sourceType, $sourceId);
+            if (! $this->canUseType($user, $sourceType === 'party_opening_balance' ? 'party_opening_balance' : (string) ($source['voucher_type'] ?? 'customer_advance'), 'reverse')) {
                 throw new RuntimeException('You are not authorized to reverse this advance adjustment.');
             }
             if (trim($reason) === '') {
@@ -1241,7 +1241,8 @@ class CashVoucherService
         }
         $grouped = [];
         foreach ($allocations as $allocation) {
-            if ((string) $allocation->target_type !== (string) $definition['target_type']) {
+            $allowedTargetTypes = $voucher->voucher_type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucher->voucher_type === 'payment' ? ['supplier_costing','party_opening_payable'] : []);
+            if (! in_array((string) $allocation->target_type, $allowedTargetTypes, true)) {
                 throw new RuntimeException('Allocation document type does not match this voucher type.');
             }
             $this->assertPartyRole((int) $voucher->party_id, (string) $definition['party_type']);
@@ -1525,6 +1526,7 @@ class CashVoucherService
             return;
         }
         if ($targetType !== 'sales_invoice') {
+            if (in_array($targetType, ['party_opening_balance','party_opening_payable'], true) && Schema::hasTable('party_opening_balances')) DB::table('party_opening_balances')->where('id',$targetId)->lockForUpdate()->first();
             return;
         }
         $schema = $this->salesInvoiceSchema();
@@ -1535,6 +1537,7 @@ class CashVoucherService
 
     private function targetTotal(string $targetType, int $targetId): float
     {
+        if (in_array($targetType, ['party_opening_balance','party_opening_payable'], true) && Schema::hasTable('party_opening_balances')) return (float) DB::table('party_opening_balances')->where('id',$targetId)->value('amount');
         if ($targetType === 'supplier_costing') {
             return (float) (DB::table('supplier_costings')->where('id', $targetId)->value('total_cost') ?? 0);
         }

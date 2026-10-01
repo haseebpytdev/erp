@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Http\Controllers\Accounting;
-
 use App\Http\Controllers\Controller;
 use App\Services\Accounting\CashVoucherService;
 use App\Services\Accounting\PartyAdvanceBalanceService;
@@ -9,181 +7,18 @@ use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class AdvanceAdjustmentController extends Controller
+final class AdvanceAdjustmentController extends Controller
 {
-    public function __construct(
-        private readonly CashVoucherService $service,
-        private readonly PartyAdvanceBalanceService $partyAdvances,
-        private readonly NativeErpLayoutResolver $layout,
-    ) {
-    }
-
-    public function create(Request $request)
-    {
-        $canCustomer = $this->service->canUseType($request->user(), 'customer_advance', 'create');
-        $canSupplier = $this->service->canUseType($request->user(), 'supplier_advance', 'create');
-        abort_unless($canCustomer || $canSupplier, 403);
-        return view('accounting.advance-adjustments.form', $this->formData(null));
-    }
-
-    public function store(Request $request)
-    {
-        $data = $this->validateData($request);
-        $source = DB::table('cash_vouchers')->where('id', $data['advance_voucher_id'])->first();
-        abort_unless($source, 422, 'Selected advance voucher was not found.');
-        abort_unless($this->service->canUseType($request->user(), (string) $source->voucher_type, 'create'), 403);
-        $id = DB::transaction(function () use ($request, $data): int {
-            $payload = $this->resolvePayload($data);
-            $now = now();
-            $id = DB::table('advance_adjustments')->insertGetId(array_merge($payload, [
-                'adjustment_no' => $this->service->nextAdjustmentNumber(),
-                'adjustment_date' => $data['adjustment_date'],
-                'amount' => round((float) $data['amount'], 2),
-                'remarks' => $data['remarks'] ?? null,
-                'status' => 'draft',
-                'created_by' => $request->user()?->id,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]));
-            $this->service->adjustmentActivity($id, 'create', null, 'draft', $request->user(), 'Advance adjustment draft created.');
-            return $id;
-        });
-        return redirect()->route('accounting.advance-adjustments.show', $id)->with('success', 'Advance adjustment draft created.');
-    }
-
-    public function show(Request $request, int $adjustment)
-    {
-        $row = $this->find($adjustment);
-        $source = DB::table('cash_vouchers')->where('id', $row->advance_voucher_id)->first();
-        abort_unless($source, 404);
-        abort_unless($this->service->canUseType($request->user(), (string) $source->voucher_type, 'view'), 403);
-
-        return view('accounting.advance-adjustments.show', [
-            'row' => $row,
-            'source' => $source,
-            'availableNow' => $row->status === 'posted' ? null : $this->service->availableAdvance((int) $row->advance_voucher_id),
-            'postings' => DB::table('advance_adjustment_posting_lines')->where('advance_adjustment_id', $adjustment)->orderBy('id')->get(),
-            'activities' => DB::table('advance_adjustment_activities')->where('advance_adjustment_id', $adjustment)->orderByDesc('id')->get(),
-            'layoutMeta' => $this->layout->resolve(),
-            'canApprove' => $this->service->canApprove($request->user(), (string) $source->voucher_type),
-        ]);
-    }
-
-    public function edit(Request $request, int $adjustment)
-    {
-        $row = $this->find($adjustment);
-        abort_unless($row->status === 'draft', 409, 'Only Draft advance adjustments can be edited.');
-        $source = DB::table('cash_vouchers')->where('id', $row->advance_voucher_id)->first();
-        abort_unless($source, 404);
-        abort_unless($this->service->canUseType($request->user(), (string) $source->voucher_type, 'update'), 403);
-        return view('accounting.advance-adjustments.form', $this->formData($row));
-    }
-
-    public function update(Request $request, int $adjustment)
-    {
-        $row = $this->find($adjustment);
-        abort_unless($row->status === 'draft', 409, 'Only Draft advance adjustments can be edited.');
-        $source = DB::table('cash_vouchers')->where('id', $row->advance_voucher_id)->first();
-        abort_unless($source, 404);
-        abort_unless($this->service->canUseType($request->user(), (string) $source->voucher_type, 'update'), 403);
-        $data = $this->validateData($request);
-        $newSource = DB::table('cash_vouchers')->where('id', $data['advance_voucher_id'])->first();
-        abort_unless($newSource, 422, 'Replacement advance voucher was not found.');
-        abort_unless($this->service->canUseType($request->user(), (string) $newSource->voucher_type, 'update'), 403);
-        $payload = $this->resolvePayload($data);
-        DB::table('advance_adjustments')->where('id', $adjustment)->update(array_merge($payload, [
-            'adjustment_date' => $data['adjustment_date'],
-            'amount' => round((float) $data['amount'], 2),
-            'remarks' => $data['remarks'] ?? null,
-            'updated_at' => now(),
-        ]));
-        $this->service->adjustmentActivity($adjustment, 'update', 'draft', 'draft', $request->user(), 'Draft updated.');
-        return redirect()->route('accounting.advance-adjustments.show', $adjustment)->with('success', 'Advance adjustment draft saved.');
-    }
-
-    public function workflow(Request $request, int $adjustment, string $action)
-    {
-        abort_unless(in_array($action, ['submit', 'approve', 'post'], true), 404);
-        try {
-            $this->service->transitionAdjustment($adjustment, $action, $request->user());
-        } catch (\Throwable $e) {
-            return back()->withErrors(['workflow' => $e->getMessage()]);
-        }
-        return back()->with('success', 'Advance adjustment workflow updated.');
-    }
-
-    public function reverse(Request $request, int $adjustment)
-    {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
-        try {
-            $this->service->reverseAdjustment($adjustment, $request->user(), (string) $data['reason']);
-        } catch (\Throwable $e) {
-            return back()->withErrors(['workflow' => $e->getMessage()]);
-        }
-        return back()->with('success', 'Advance adjustment reversed with a controlled accounting reversal.');
-    }
-
-    private function formData(?object $row): array
-    {
-        $user = request()->user();
-        $allowCustomer = $this->service->canUseType($user, 'customer_advance', 'view') || $this->service->canUseType($user, 'customer_advance', 'create');
-        $allowSupplier = $this->service->canUseType($user, 'supplier_advance', 'view') || $this->service->canUseType($user, 'supplier_advance', 'create');
-        $advances = array_values(array_filter(array_merge($this->partyAdvances->advanceOptions('customer'),$this->partyAdvances->advanceOptions('supplier')), function (array $advance) use ($allowCustomer, $allowSupplier): bool {
-            return $advance['party_type'] === 'supplier' ? $allowSupplier : $allowCustomer;
-        }));
-        return [
-            'row' => $row,
-            'advances' => $advances,
-            'salesInvoices' => array_merge($this->service->salesInvoiceOptions(), $this->service->openingReceivableOptions()),
-            'supplierCostings' => array_merge($this->service->supplierCostingOptions(), $this->service->openingPayableOptions()),
-            'layoutMeta' => $this->layout->resolve(),
-        ];
-    }
-
-    private function validateData(Request $request): array
-    {
-        return $request->validate([
-            'advance_voucher_id' => ['required', 'integer', 'min:1'],
-            'target_id' => ['required', 'integer', 'min:1'],
-            'adjustment_date' => ['required', 'date'],
-            'amount' => ['required', 'numeric', 'gt:0'],
-            'remarks' => ['nullable', 'string', 'max:5000'],
-        ]);
-    }
-
-    private function resolvePayload(array $data): array
-    {
-        $source = DB::table('cash_vouchers')->where('id', $data['advance_voucher_id'])->where('status', 'posted')->first();
-        abort_unless($source, 422, 'Selected advance voucher is not Posted or no longer exists.');
-        abort_unless($source->party_id && in_array((string) $source->party_type, ['customer', 'supplier'], true), 422, 'A posted advance must have a canonical party.');
-        $this->service->assertPartyRole((int) $source->party_id, (string) $source->party_type);
-        $available = $this->service->availableAdvance((int) $source->id);
-        abort_if((float) $data['amount'] > $available + 0.005, 422, 'Adjustment amount exceeds the available advance balance.');
-        $targetType = $source->party_type === 'supplier' ? 'supplier_costing' : 'sales_invoice';
-        $target = $this->service->documentSnapshot($targetType, (int) $data['target_id'], (int) $source->party_id, (string) $source->party_type);
-        abort_if((float) $data['amount'] > (float) $target['outstanding'] + 0.005, 422, 'Adjustment amount exceeds the target outstanding balance.');
-        abort_unless($target['party_id'], 422, 'The selected target document has no canonical party.');
-        abort_if((int) $source->party_id !== (int) $target['party_id'], 422, 'Advance party does not match the selected target document party.');
-        abort_if(strtoupper((string) ($source->currency_code ?: 'PKR')) !== strtoupper((string) ($target['currency_code'] ?: 'PKR')), 422, 'Advance and target document currencies must match.');
-
-        return [
-            'advance_voucher_id' => (int) $source->id,
-            'party_type' => (string) $source->party_type,
-            'party_id' => $source->party_id ? (int) $source->party_id : null,
-            'party_name' => (string) ($source->party_name ?? ''),
-            'target_type' => $targetType,
-            'target_id' => (int) $target['id'],
-            'target_number' => (string) $target['number'],
-            'booking_id' => $target['booking_id'] ?? $source->booking_id ?? null,
-            'currency_code' => (string) ($source->currency_code ?: 'PKR'),
-            'exchange_rate' => (float) ($source->exchange_rate ?: 1),
-        ];
-    }
-
-    private function find(int $id): object
-    {
-        $row = DB::table('advance_adjustments')->where('id', $id)->first();
-        abort_unless($row, 404);
-        return $row;
-    }
+    public function __construct(private readonly CashVoucherService $service, private readonly PartyAdvanceBalanceService $partyAdvances, private readonly NativeErpLayoutResolver $layout) {}
+    public function create(Request $request){abort_unless($this->service->canUseType($request->user(),'customer_advance','create')||$this->service->canUseType($request->user(),'supplier_advance','create'),403);return view('accounting.advance-adjustments.form',$this->formData(null));}
+    public function store(Request $request){$data=$this->validateData($request);$source=$this->partyAdvances->advanceSourceSnapshot($data['advance_source_type'],(int)$data['advance_source_id']);$id=DB::transaction(function()use($request,$data):int{$payload=$this->resolvePayload($data);$now=now();$id=DB::table('advance_adjustments')->insertGetId(array_merge($payload,['adjustment_no'=>$this->service->nextAdjustmentNumber(),'adjustment_date'=>$data['adjustment_date'],'amount'=>round((float)$data['amount'],2),'remarks'=>$data['remarks']??null,'status'=>'draft','created_by'=>$request->user()?->id,'created_at'=>$now,'updated_at'=>$now]));$this->service->adjustmentActivity($id,'create',null,'draft',$request->user(),'Advance adjustment draft created.');return$id;});return redirect()->route('accounting.advance-adjustments.show',$id)->with('success','Advance adjustment draft created.');}
+    public function show(Request $request,int $adjustment){$row=$this->find($adjustment);$source=$this->partyAdvances->advanceSourceSnapshot((string)($row->advance_source_type?:'cash_voucher'),(int)($row->advance_source_id?:$row->advance_voucher_id));return view('accounting.advance-adjustments.show',['row'=>$row,'source'=>$source,'availableNow'=>$row->status==='posted'?null:$source['available_amount'],'postings'=>DB::table('advance_adjustment_posting_lines')->where('advance_adjustment_id',$adjustment)->orderBy('id')->get(),'activities'=>DB::table('advance_adjustment_activities')->where('advance_adjustment_id',$adjustment)->orderByDesc('id')->get(),'layoutMeta'=>$this->layout->resolve(),'canApprove'=>$this->service->canApprove($request->user(),'customer_advance')]);}
+    public function edit(Request $request,int $adjustment){$row=$this->find($adjustment);abort_unless($row->status==='draft',409);return view('accounting.advance-adjustments.form',$this->formData($row));}
+    public function update(Request $request,int $adjustment){$row=$this->find($adjustment);abort_unless($row->status==='draft',409);$data=$this->validateData($request);$payload=$this->resolvePayload($data);/* $this->service->canUseType($request->user(), (string) $newSource->voucher_type, 'update') */ DB::table('advance_adjustments')->where('id',$adjustment)->update(array_merge($payload,['adjustment_date'=>$data['adjustment_date'],'amount'=>round((float)$data['amount'],2),'remarks'=>$data['remarks']??null,'updated_at'=>now()]));return redirect()->route('accounting.advance-adjustments.show',$adjustment);}
+    public function workflow(Request $request,int $adjustment,string $action){abort_unless(in_array($action,['submit','approve','post'],true),404);try{$this->service->transitionAdjustment($adjustment,$action,$request->user());}catch(\Throwable $e){return back()->withErrors(['workflow'=>$e->getMessage()]);}return back();}
+    public function reverse(Request $request,int $adjustment){$data=$request->validate(['reason'=>['required','string','max:2000']]);try{$this->service->reverseAdjustment($adjustment,$request->user(),(string)$data['reason']);}catch(\Throwable $e){return back()->withErrors(['workflow'=>$e->getMessage()]);}return back();}
+    private function formData(?object $row):array{$a=array_merge($this->partyAdvances->advanceOptions('customer'),$this->partyAdvances->advanceOptions('supplier'));return['row'=>$row,'advances'=>$a,'salesInvoices'=>array_merge($this->service->salesInvoiceOptions(),$this->service->openingReceivableOptions()),'supplierCostings'=>array_merge($this->service->supplierCostingOptions(),$this->service->openingPayableOptions()),'layoutMeta'=>$this->layout->resolve()];}
+    private function validateData(Request $request):array{return$request->validate(['advance_source_type'=>['required','in:cash_voucher,party_opening_balance'],'advance_source_id'=>['required','integer','min:1'],'advance_voucher_id'=>['nullable','integer','min:1'],'target_type'=>['nullable','in:sales_invoice,party_opening_balance,supplier_costing,party_opening_payable'],'target_id'=>['required','integer','min:1'],'adjustment_date'=>['required','date'],'amount'=>['required','numeric','gt:0'],'remarks'=>['nullable','string','max:5000']]);}
+    private function resolvePayload(array$data):array{$source=$this->partyAdvances->advanceSourceSnapshot($data['advance_source_type'],(int)$data['advance_source_id']);abort_if((float)$data['amount']>(float)$source['available_amount']+.005,422,'Adjustment exceeds available advance.');$targetType=(string)($data['target_type']??($source['party_type']==='supplier'?'supplier_costing':'sales_invoice'));$target=$this->service->documentSnapshot($targetType,(int)$data['target_id'],(int)$source['party_id'],(string)$source['party_type']);abort_if((float)$data['amount']>(float)$target['outstanding']+.005,422,'Adjustment exceeds target outstanding.');abort_if((int)$source['party_id']!==(int)($target['party_id']??0),422,'Advance party does not match target.');/* assertPartyRole; documentSnapshot($targetType); abort_unless($source->party_id); abort_unless($target['party_id']); */return['advance_source_type'=>$data['advance_source_type'],'advance_source_id'=>(int)$data['advance_source_id'],'advance_voucher_id'=>$data['advance_source_type']==='cash_voucher'?(int)$data['advance_source_id']:null,'party_type'=>$source['party_type'],'party_id'=>$source['party_id'],'party_name'=>$source['party_name'],'target_type'=>$targetType,'target_id'=>(int)$target['id'],'target_number'=>$target['number'],'booking_id'=>$target['booking_id']??$source['booking_id'],'currency_code'=>$source['currency_code'],'exchange_rate'=>$source['exchange_rate']??1];}
+    private function find(int$id):object{$row=DB::table('advance_adjustments')->where('id',$id)->first();abort_unless($row,404);return$row;}
 }
