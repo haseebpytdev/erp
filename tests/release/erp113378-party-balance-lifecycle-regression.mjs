@@ -283,9 +283,15 @@ ok('ROOT_CODE_PATTERN_INSUFFICIENT_FAILS_CLOSED',(()=>{try{deriveRootCode(['2110
 ok('ROOT_CODE_OCCUPIED_ADVANCES_INTERVAL',deriveRootCode(['2110','2120','2130'],[2140])==='2150'&&payableMigration.includes('while(DB::table'));
 ok('ROOT_NONNUMERIC_FAILS_CLOSED',payableMigration.includes('requires a numeric code sequence'));
 ok('PARENTED_VENDOR_AP_PATH_PRESERVED',payableMigration.includes('nextCode($parent, $s)')&&payableMigration.includes('parent is not Liability-compatible'));
-ok('ROOT_SCOPE_FROM_VENDOR_AP',payableMigration.includes('$insert[$c]=$vendor->{$c}'));
+ok('ROOT_SCOPE_FROM_VENDOR_AP',payableMigration.includes('$scopeSource = $parent ?: $vendor')&&payableMigration.includes('$scopeSource->{$c}'));
 ok('ROOT_EXISTING_CUSTOMER_PAYABLE_PARENT_VALIDATION',payableMigration.includes('Root-level CUSTOMER_PAYABLE must have a NULL parent'));
 ok('PARENTED_EXISTING_CUSTOMER_PAYABLE_VALIDATION',payableMigration.includes('validated VENDOR_AP parent authority'));
+ok('PARENTED_SCOPE_FROM_VALIDATED_PARENT',payableMigration.includes('$scopeSource = $parent ?: $vendor')&&payableMigration.includes('$insert[$c]=$scopeSource->{$c}'));
+ok('PARENTED_VENDOR_AP_BEHAVIOR_PRESERVED',payableMigration.includes('$code = $this->nextCode($parent, $s)'));
+ok('EXISTING_CUSTOMER_PAYABLE_CODE_NONEMPTY_VALIDATED',payableMigration.includes('Existing CUSTOMER_PAYABLE account code is empty')&&payableMigration.includes("trim((string)($r->{$s['code']}??''))===''") );
+ok('ROOT_CODE_LENGTH_PRESERVED',payableMigration.includes("strlen((string)$candidate)!==$length"));
+ok('ROOT_CODE_STRUCTURE_OVERFLOW_FAILS_CLOSED',payableMigration.includes('exceeded its safe code length'));
+ok('ROOT_PRODUCTION_DERIVED_CODE_LENGTH_SAFE',deriveRootCode(['2110','2120','2130'])==='2140'&&'2140'.length===4);
 const lifecycleFixture=()=>{const target={customer:1130,type:'party_opening_customer_payable',currency:'PKR',rate:1,amount:600000,settled:0,status:'posted'};const post=(customer,type,currency,rate,amount)=>{if(customer!==target.customer||type!==target.type||currency!==target.currency||Math.abs(rate-target.rate)>0.000000005||amount<=0||amount>target.amount-target.settled)throw new Error('rejected');target.settled+=amount;return target.amount-target.settled};return{target,post}};
 const fixture=lifecycleFixture();
 ok('ASLAM_SERVICE_FIXTURE_OPENING_DR_CLEARING_CR_PAYABLE',service.includes("'customer_payable'=>[['CLEAR',$r->amount,0,null,null],['CUSTOMER_PAYABLE',0,$r->amount,'customer',$r->party_id]]"));
