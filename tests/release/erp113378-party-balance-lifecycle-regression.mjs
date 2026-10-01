@@ -274,6 +274,18 @@ ok('CUSTOMER_PAYABLE_RUNTIME_CONTROL_FLAG_VALIDATED',cash.includes('CUSTOMER_PAY
 ok('CUSTOMER_PAYABLE_RUNTIME_ACTIVE_VALIDATED',cash.includes('CUSTOMER_PAYABLE is inactive'));
 ok('CUSTOMER_PAYABLE_RUNTIME_STATUS_VALIDATED',cash.includes('CUSTOMER_PAYABLE is not active'));
 ok('CUSTOMER_PAYABLE_RUNTIME_CODE_NONEMPTY',cash.includes('CUSTOMER_PAYABLE account code is empty'));
+const deriveRootCode=(codes,occupied=[])=>{const values=codes.map(Number).sort((a,b)=>a-b);if(values.length<3||new Set(values.slice(1).map((v,i)=>v-values[i])).size!==1)throw new Error('ambiguous');const step=values[1]-values[0];let candidate=values.at(-1)+step;while(occupied.includes(candidate))candidate+=step;return String(candidate)};
+ok('ROOT_VENDOR_AP_SUPPORTED',payableMigration.includes('nextRootLiabilityCode')&&payableMigration.includes('whereNull($s[\'parent\'])'));
+ok('ROOT_CUSTOMER_PAYABLE_PARENT_NULL',payableMigration.includes("$s['parent']=>$parent ? $this->parentValue($parent,$s) : null"));
+ok('ROOT_CODE_PATTERN_DERIVED',deriveRootCode(['2110','2120','2130'])==='2140'&&payableMigration.includes('intervals'));
+ok('ROOT_CODE_PATTERN_AMBIGUITY_FAILS_CLOSED',(()=>{try{deriveRootCode(['2110','2130','2140']);return false}catch{return true}})()&&payableMigration.includes('sequence is ambiguous'));
+ok('ROOT_CODE_PATTERN_INSUFFICIENT_FAILS_CLOSED',(()=>{try{deriveRootCode(['2110','2120']);return false}catch{return true}})()&&payableMigration.includes('sequence is insufficient'));
+ok('ROOT_CODE_OCCUPIED_ADVANCES_INTERVAL',deriveRootCode(['2110','2120','2130'],[2140])==='2150'&&payableMigration.includes('while(DB::table'));
+ok('ROOT_NONNUMERIC_FAILS_CLOSED',payableMigration.includes('requires a numeric code sequence'));
+ok('PARENTED_VENDOR_AP_PATH_PRESERVED',payableMigration.includes('nextCode($parent, $s)')&&payableMigration.includes('parent is not Liability-compatible'));
+ok('ROOT_SCOPE_FROM_VENDOR_AP',payableMigration.includes('$insert[$c]=$vendor->{$c}'));
+ok('ROOT_EXISTING_CUSTOMER_PAYABLE_PARENT_VALIDATION',payableMigration.includes('Root-level CUSTOMER_PAYABLE must have a NULL parent'));
+ok('PARENTED_EXISTING_CUSTOMER_PAYABLE_VALIDATION',payableMigration.includes('validated VENDOR_AP parent authority'));
 const lifecycleFixture=()=>{const target={customer:1130,type:'party_opening_customer_payable',currency:'PKR',rate:1,amount:600000,settled:0,status:'posted'};const post=(customer,type,currency,rate,amount)=>{if(customer!==target.customer||type!==target.type||currency!==target.currency||Math.abs(rate-target.rate)>0.000000005||amount<=0||amount>target.amount-target.settled)throw new Error('rejected');target.settled+=amount;return target.amount-target.settled};return{target,post}};
 const fixture=lifecycleFixture();
 ok('ASLAM_SERVICE_FIXTURE_OPENING_DR_CLEARING_CR_PAYABLE',service.includes("'customer_payable'=>[['CLEAR',$r->amount,0,null,null],['CUSTOMER_PAYABLE',0,$r->amount,'customer',$r->party_id]]"));
