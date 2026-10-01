@@ -38,12 +38,17 @@ ok('sidebar opening label', sidebar.includes('<span>Opening Balances</span>') &&
 ok('sidebar return label', sidebar.includes('<span>Advance Returns</span>') && !sidebar.includes('<span>Customer Advance Returns</span>'));
 const releaseMiddleware=read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
 const accountingCss=read('public/erp-theme/modules/accounting.css');
+const professionalCss=read('public/erp-ui/erp-professional.css');
 ok('sidebar compact labels scoped', releaseMiddleware.includes('compactSidebarReleaseBlock') && releaseMiddleware.includes('Party Balances') && releaseMiddleware.includes("ERP-11.3.378"));
 ok('sidebar labels remain semantic', sidebar.includes('data-et-live-accounting-nav="party-opening"') && sidebar.includes('data-et-live-accounting-nav="customer-advance-return"'));
 ok('accounting css owns ERP378 styles', accountingCss.includes('et378') && accountingCss.includes('tr.is-selected') && accountingCss.includes('.et378-total output') && !views.some(p=>read(p).includes('<style')));
 ok('no static inline styles in ERP378 views', !views.some(p=>/\sstyle\s*=/.test(read(p))));
 ok('deselected totals exclude disabled amounts', returnForm.includes("[data-amount]:not(:disabled)") && returnForm.includes("getElementById('return-amount').value=selected.toFixed(2)"));
 ok('allocation source and workflow contracts', returnForm.includes('allocations[') && returnForm.includes('customer-advance-returns.sources') && returnForm.includes('No returnable customer advance'));
+ok('shared button hover authority', professionalCss.includes('Shared ERP button/action state authority') && professionalCss.includes('a.btn-primary') && professionalCss.includes(':hover') && professionalCss.includes(':visited') && professionalCss.includes(':focus-visible') && professionalCss.includes(':active'));
+ok('button hover preserves semantic contrast', professionalCss.includes('color:#fff!important') && professionalCss.includes('background:#0d6f48!important') && professionalCss.includes('background:#a52d39!important') && professionalCss.includes('color:#3e2b02!important'));
+ok('generic links and sidebar remain distinct', professionalCss.includes('body.et-ui-professional a:hover') && professionalCss.includes('.sidebar a:hover') && professionalCss.includes('a.btn-primary'));
+ok('ERP378 primary anchors protected', source.includes('et378-btn primary') && professionalCss.includes('a.primary') && professionalCss.includes('color:#fff!important'));
 ok('canonical metadata unchanged', read('VERSION.txt').includes('v1.1.33.378-ERP11.3.378') && read('config/et_erp_release.php').includes('ERP-11.3.378 Party Balance Lifecycle'));
 ok('migrations and services untouched', !source.includes('Migration') && fs.existsSync(path.join(root,'app/Services/Accounting/PartyBalanceLifecycleService.php')));
 console.log(`ERP113378_PARTY_BALANCE_UI=PASS (${pass}/${total} assertions)`);
