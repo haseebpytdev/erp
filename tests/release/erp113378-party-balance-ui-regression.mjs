@@ -53,6 +53,9 @@ const secondaryRule = professionalCss.match(/a\.btn:not\([^}]+\):hover/si)?.[0] 
 ok('generic button anchors remain secondary', !professionalCss.includes(':is(a.btn,a.et-btn,a.btn-primary') && professionalCss.includes('a.btn:not(') && professionalCss.includes('a.et-btn:not('));
 ok('semantic class collision exclusions complete', ['.btn-primary','.et-btn-primary','.primary','.btn-success','.et-btn-success','.success','.btn-danger','.et-btn-danger','.danger','.btn-warning','.et-btn-warning','.warning'].every(token=>secondaryRule.includes(token)));
 ok('button family fixtures covered', professionalCss.includes('.btn-primary') && professionalCss.includes('.btn.primary') && professionalCss.includes('.btn.success') && professionalCss.includes('.btn.danger') && professionalCss.includes('.btn.warning') && source.includes('et378-btn primary') && source.includes('et378-btn"'));
+ok('all primary aliases mirror interaction states', ['.sci-primary','.scs-primary','.scb-primary','.cvs27-primary','.cvf27-primary','.aa-primary','.mr-btn'].every(token=>professionalCss.includes(token)));
+ok('ERP378 secondary hover is scoped', accountingCss.includes('.et378-btn:not(.primary):not(.success):not(.danger):not(.warning)') && accountingCss.includes('color:var(--et-text)!important'));
+ok('ERP378 reversal keeps danger family', source.includes('et378-btn danger') && professionalCss.includes('a.danger') && professionalCss.includes('button.danger'));
 ok('canonical metadata unchanged', read('VERSION.txt').includes('v1.1.33.378-ERP11.3.378') && read('config/et_erp_release.php').includes('ERP-11.3.378 Party Balance Lifecycle'));
 ok('migrations and services untouched', !source.includes('Migration') && fs.existsSync(path.join(root,'app/Services/Accounting/PartyBalanceLifecycleService.php')));
 console.log(`ERP113378_PARTY_BALANCE_UI=PASS (${pass}/${total} assertions)`);
