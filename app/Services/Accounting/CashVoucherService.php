@@ -1509,8 +1509,11 @@ class CashVoucherService
                     $row = $rows->first();
 
                     if ($row) {
-                        $this->assertPostingAccount($row, $s);
-                        if ($definition['control'] === 'CUSTOMER_PAYABLE' && $s['type'] && $this->normalizeAccountType((string)($row->{$s['type']} ?? '')) !== 'liability') throw new RuntimeException('CUSTOMER_PAYABLE must be a Liability account.');
+                        if ($definition['control'] === 'CUSTOMER_PAYABLE') {
+                            $this->assertCustomerPayableAccount($row, $s);
+                        } else {
+                            $this->assertPostingAccount($row, $s);
+                        }
                         return [
                             'code' => (string) $row->{$s['code']},
                             'name' => (string) $row->{$s['name']},
@@ -1555,6 +1558,24 @@ class CashVoucherService
         foreach (['allow_posting', 'posting_enabled', 'is_posting'] as $column) {
             if (! empty($schema[$column]) && property_exists($row, $schema[$column]) && ! (bool) $row->{$schema[$column]}) throw new RuntimeException('The configured control account is not posting-enabled.');
         }
+    }
+
+    private function assertCustomerPayableAccount(object $row, array $schema): void
+    {
+        if (trim((string)($row->{$schema['code']} ?? '')) === '') throw new RuntimeException('CUSTOMER_PAYABLE account code is empty.');
+        if ($this->normalizeAccountText((string)($row->{$schema['name']} ?? '')) !== 'customer payables / reimbursements') throw new RuntimeException('CUSTOMER_PAYABLE account name is incompatible.');
+        if ($schema['type'] && $this->normalizeAccountType((string)($row->{$schema['type']} ?? '')) !== 'liability') throw new RuntimeException('CUSTOMER_PAYABLE must be a Liability account.');
+        if ($schema['subtype'] && $this->normalizeAccountText((string)($row->{$schema['subtype']} ?? '')) !== 'customer payable / reimbursement') throw new RuntimeException('CUSTOMER_PAYABLE subtype is incompatible.');
+        if ($schema['normal'] && strtolower(trim((string)($row->{$schema['normal']} ?? ''))) !== 'credit') throw new RuntimeException('CUSTOMER_PAYABLE normal balance must be Credit.');
+        if ($schema['posting'] && property_exists($row, $schema['posting']) && ! (bool)$row->{$schema['posting']}) throw new RuntimeException('CUSTOMER_PAYABLE is not posting-enabled.');
+        if ($schema['control_flag'] && property_exists($row, $schema['control_flag']) && ! (bool)$row->{$schema['control_flag']}) throw new RuntimeException('CUSTOMER_PAYABLE is not a control account.');
+        if ($schema['active'] && property_exists($row, $schema['active']) && ! (bool)$row->{$schema['active']}) throw new RuntimeException('CUSTOMER_PAYABLE is inactive.');
+        if ($schema['status'] && property_exists($row, $schema['status']) && ! in_array(strtolower(trim((string)$row->{$schema['status']})), ['active','enabled','open'], true)) throw new RuntimeException('CUSTOMER_PAYABLE is not active.');
+    }
+
+    private function normalizeAccountText(string $value): string
+    {
+        return strtolower((string)preg_replace('/\s+/', ' ', trim($value)));
     }
 
     private function normalizeAccountType(string $value): string { $v=strtolower(trim($value)); return str_contains($v,'liab')?'liability':$v; }
