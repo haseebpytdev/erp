@@ -88,6 +88,17 @@ ok('RETURN_DROP_ORDER_SAFE',rMigration.includes("['customer_advance_return_activ
 ok('OPENING_DOWN_NON_DESTRUCTIVE',migration.includes('rollback refused')&&migration.includes('party_opening_balances'));
 ok('RETURN_DOWN_NON_DESTRUCTIVE',rMigration.includes('rollback refused')&&rMigration.includes('Posted customer advance return history'));
 ok('NATIVE_JOURNAL_AUTHORITY',service.includes('postControlledDocument')&&returns.includes('postControlledDocument'));
+ok('OPENING_ORIGINAL_SOURCE_TYPE_PRESERVED',service.includes("'party_opening_balance',$r->id")&&service.includes("'controlled_document','party_opening_balance_posting_line'"));
+ok('OPENING_ORIGINAL_ORIGIN_CONTROLLED_DOCUMENT',service.includes("'party_opening_balance',$r->id,$r->opening_no,'Party opening balance',$user,null,'controlled_document'"));
+ok('OPENING_REVERSAL_SOURCE_TYPE_PRESERVED',service.includes("'party_opening_balance_reversal',$id"));
+ok('OPENING_REVERSAL_ORIGIN_CONTROLLED_DOCUMENT',service.includes("'party_opening_balance_reversal',$id,'OBREV-'" )&&service.includes("$r->posting_journal_id,'controlled_document','party_opening_balance_posting_line'"));
+ok('RETURN_ORIGINAL_SOURCE_TYPE_PRESERVED',returns.includes("'customer_advance_return',$id"));
+ok('RETURN_ORIGINAL_ORIGIN_CONTROLLED_DOCUMENT',returns.includes("'customer_advance_return',$id,$r->return_no,'Customer advance return',$user,null,'controlled_document'"));
+ok('RETURN_REVERSAL_SOURCE_TYPE_PRESERVED',returns.includes("'customer_advance_return_reversal',$id"));
+ok('RETURN_REVERSAL_ORIGIN_CONTROLLED_DOCUMENT',returns.includes("'customer_advance_return_reversal',$id,'CARREV-'" )&&returns.includes("$r->posting_journal_id,'controlled_document','customer_advance_return_posting_line'"));
+ok('CONTROLLED_DOCUMENT_ORIGIN_LENGTH_SAFE','controlled_document'.length<=20);
+ok('NO_DETAILED_OPENING_ORIGIN',!service.includes("$user,null,'party_opening_balance','party_opening_balance_posting_line'"));
+ok('NO_DETAILED_RETURN_ORIGIN',!returns.includes("$user,null,'customer_advance_return','customer_advance_return_posting_line'"));
 ok('CASH_ALLOCATION_TARGET_TYPE_FORM_FIELD',cashForm.includes('name="allocations[${i}][target_type]"'));
 ok('CASH_MIXED_TARGET_OPTION_IDENTITY_TYPE_PLUS_ID',cashForm.includes('data-target-type')&&cashForm.includes('targetType'));
 ok('VALIDATE_ALLOCATIONS_CAPTURES_ALLOWED_OR_NO_CLOSURE_BUG',voucher.includes('$allowed =')&&voucher.includes('foreach ($rows as $row)'));
