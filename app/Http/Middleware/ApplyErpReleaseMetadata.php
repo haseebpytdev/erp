@@ -122,6 +122,9 @@ class ApplyErpReleaseMetadata
             report($e);
         }
 
+        // ERP-11.3.378: compact only the native sidebar footer block.
+        $html = $this->compactSidebarReleaseBlock($html, $package, $version);
+
         $html = $this->normalizeTravelReportHostTitle($request, $html);
         $html = $this->injectProfessionalUi($request, $html, $version);
 
@@ -240,6 +243,28 @@ class ApplyErpReleaseMetadata
         [$fragment, $offset] = $targets[0];
         $updated = preg_replace('/(>)[\s]*Dashboard[\s]*(<)/i', '$1Travel Reports$2', $fragment, 1, $count);
         if ($count !== 1 || $updated === null) {
+            return $html;
+        }
+        return substr($html, 0, $offset).$updated.substr($html, $offset + strlen($fragment));
+    }
+
+    /** Compact the uniquely identified sidebar without changing System Health metadata. */
+    private function compactSidebarReleaseBlock(string $html, string $package, string $version): string
+    {
+        $pattern = '/<aside\b[^>]*class=("|\')[^"\']*\bsidebar\b[^"\']*\1[^>]*>.*?<\/aside>/is';
+        $matches = [];
+        preg_match_all($pattern, $html, $matches, PREG_OFFSET_CAPTURE);
+        if (count($matches[0] ?? []) !== 1) {
+            return $html;
+        }
+        [$fragment, $offset] = $matches[0][0];
+        if ($package === '' || $version === '' ||
+            (! str_contains($fragment, $package) && ! str_contains($fragment, $version))) {
+            return $html;
+        }
+        $updated = str_replace($package, 'Party Balances', $fragment);
+        $updated = str_replace($version, 'ERP-11.3.378', $updated);
+        if ($updated === $fragment) {
             return $html;
         }
         return substr($html, 0, $offset).$updated.substr($html, $offset + strlen($fragment));

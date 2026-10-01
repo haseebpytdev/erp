@@ -36,7 +36,14 @@ ok('workflow guards preserved', openingShow.includes("$canUpdate") && openingSho
 const sidebar=read('app/Http/Middleware/PresentCashVoucherLinks.php');
 ok('sidebar opening label', sidebar.includes('<span>Opening Balances</span>') && !sidebar.includes('<span>Party Opening Balances</span>'));
 ok('sidebar return label', sidebar.includes('<span>Advance Returns</span>') && !sidebar.includes('<span>Customer Advance Returns</span>'));
-ok('accounting css owns ERP378 styles', read('public/erp-theme/modules/accounting.css').includes('et378') && !views.some(p=>read(p).includes('<style')));
+const releaseMiddleware=read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
+const accountingCss=read('public/erp-theme/modules/accounting.css');
+ok('sidebar compact labels scoped', releaseMiddleware.includes('compactSidebarReleaseBlock') && releaseMiddleware.includes('Party Balances') && releaseMiddleware.includes("ERP-11.3.378"));
+ok('sidebar labels remain semantic', sidebar.includes('data-et-live-accounting-nav="party-opening"') && sidebar.includes('data-et-live-accounting-nav="customer-advance-return"'));
+ok('accounting css owns ERP378 styles', accountingCss.includes('et378') && accountingCss.includes('tr.is-selected') && accountingCss.includes('.et378-total output') && !views.some(p=>read(p).includes('<style')));
+ok('no static inline styles in ERP378 views', !views.some(p=>/\sstyle\s*=/.test(read(p))));
+ok('deselected totals exclude disabled amounts', returnForm.includes("[data-amount]:not(:disabled)") && returnForm.includes("getElementById('return-amount').value=selected.toFixed(2)"));
+ok('allocation source and workflow contracts', returnForm.includes('allocations[') && returnForm.includes('customer-advance-returns.sources') && returnForm.includes('No returnable customer advance'));
 ok('canonical metadata unchanged', read('VERSION.txt').includes('v1.1.33.378-ERP11.3.378') && read('config/et_erp_release.php').includes('ERP-11.3.378 Party Balance Lifecycle'));
 ok('migrations and services untouched', !source.includes('Migration') && fs.existsSync(path.join(root,'app/Services/Accounting/PartyBalanceLifecycleService.php')));
 console.log(`ERP113378_PARTY_BALANCE_UI=PASS (${pass}/${total} assertions)`);

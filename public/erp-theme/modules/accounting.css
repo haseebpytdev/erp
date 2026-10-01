@@ -28,6 +28,10 @@ body.et-ui-module-accounting :where(.report-filters,.ledger-filters){gap:10px;}
 /* ERP-11.3.378 Party Balance Lifecycle workspace. Scoped to Accounting. */
 body.et-ui-module-accounting :where(.et378,.et378-form,.et378-show){max-width:1480px;margin:0 auto;color:#17243a}
 body.et-ui-module-accounting :where(.et378 *, .et378-form *, .et378-show *){box-sizing:border-box}
+body.et-ui-module-accounting :where(.et378-source-card){padding:0;box-shadow:none}
+body.et-ui-module-accounting :where(.et378-span-full){grid-column:1/-1}
+body.et-ui-module-accounting :where(.et378-table tr.is-selected){background:#f1f7ff;box-shadow:inset 3px 0 0 #4e8fe2}
+body.et-ui-module-accounting :where(.et378-total output){display:block;margin-top:4px;font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}
 body.et-ui-module-accounting :where(.et378-head){display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
 body.et-ui-module-accounting :where(.et378-kicker){font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1769d2}
 body.et-ui-module-accounting :where(.et378 h1,.et378-form h1,.et378-show h1){margin:4px 0;font-size:26px}
