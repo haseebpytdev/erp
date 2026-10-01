@@ -19,22 +19,27 @@ final class PartyBalanceLifecycleService
     {
         $s = $this->chart->schema();
         if (!$s['control_type']) throw new RuntimeException('Opening Balance Clearing account is not configured.');
-        $row = DB::table($s['table'])->whereRaw('UPPER('.$s['control_type'].')=?', [strtoupper($key)])->first();
-        if (!$row || !$this->isPosting($row, $s) || ($s['control_flag'] && property_exists($row, $s['control_flag']) && !((bool) $row->{$s['control_flag']}))) throw new RuntimeException('Opening Balance Clearing account is not configured.');
+        $matches = DB::table($s['table'])->whereRaw('UPPER('.$s['control_type'].')=?', [strtoupper($key)])->get();
+        if ($matches->count() !== 1) throw new RuntimeException('Opening Balance Clearing account identity is missing or duplicated.');
+        $row = $matches->first();
+        if (!$this->isPosting($row, $s) || ($s['control_flag'] && property_exists($row, $s['control_flag']) && !((bool) $row->{$s['control_flag']}))) throw new RuntimeException('Opening Balance Clearing account is not configured.');
         $this->assertClearingCompatibility($row, $s);
         return ['id' => (int) $row->{$s['id']}, 'code' => (string) $row->{$s['code']}, 'name' => (string) $row->{$s['name']}];
     }
 
     private function assertClearingCompatibility(object $row, array $s): void
     {
-        if (strtolower(trim((string) $row->{$s['name']})) !== 'opening balance clearing' || $this->normalizeClearingType((string) $row->{$s['type']}) !== 'equity') throw new RuntimeException('Opening Balance Clearing account is semantically incompatible.');
-        if ($s['subtype'] && strtolower(trim((string) ($row->{$s['subtype']} ?? ''))) !== 'opening balance / migration clearing') throw new RuntimeException('Opening Balance Clearing subtype is incompatible.');
+        if ($this->normalizeClearingText((string) $row->{$s['name']}) !== 'opening balance clearing' || $this->normalizeClearingType((string) $row->{$s['type']}) !== 'equity') throw new RuntimeException('Opening Balance Clearing account is semantically incompatible.');
+        if ($s['subtype'] && $this->normalizeClearingText((string) ($row->{$s['subtype']} ?? '')) !== 'opening balance / migration clearing') throw new RuntimeException('Opening Balance Clearing subtype is incompatible.');
         if ($s['normal'] && strtolower(trim((string) ($row->{$s['normal']} ?? ''))) !== 'credit') throw new RuntimeException('Opening Balance Clearing normal balance must be Credit.');
         if ($s['status'] && ! in_array(strtolower(trim((string) ($row->{$s['status']} ?? ''))), ['active','enabled','open'], true)) throw new RuntimeException('Opening Balance Clearing account is not active.');
         if ($s['active'] && ! ((bool) ($row->{$s['active']} ?? false))) throw new RuntimeException('Opening Balance Clearing account is inactive.');
+        if ($s['parent']) { $value = $row->{$s['parent']} ?? null; if ($value === null || $value === '') throw new RuntimeException('Opening Balance Clearing parent is missing.'); $parent = $this->runtimeParentUsesId($s) ? DB::table($s['table'])->where($s['id'], $value)->first() : DB::table($s['table'])->where($s['code'], (string) $value)->first(); if (!$parent || $this->normalizeClearingType((string) $parent->{$s['type']}) !== 'equity') throw new RuntimeException('Opening Balance Clearing parent is incompatible.'); }
     }
 
     private function normalizeClearingType(string $value): string { $v = strtolower(trim($value)); return str_contains($v, 'equity') || str_contains($v, 'capital') ? 'equity' : $v; }
+    private function normalizeClearingText(string $value): string { return strtolower((string) preg_replace('/\s+/', ' ', trim($value))); }
+    private function runtimeParentUsesId(array $s): bool { if (str_ends_with(strtolower((string) $s['parent']), '_id')) return true; $sample=DB::table($s['table'])->whereNotNull($s['parent'])->value($s['parent']); if($sample===null||$sample==='')return false; $byId=DB::table($s['table'])->where($s['id'],$sample)->exists();$byCode=DB::table($s['table'])->where($s['code'],(string)$sample)->exists();if($byId&&!$byCode)return true;if($byCode&&!$byId)return false;return str_contains(strtolower((string)$s['parent']),'id'); }
 
     public function createOpening(array $data, mixed $user): int
     {

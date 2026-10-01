@@ -186,4 +186,10 @@ ok('ADVANCE_OPENING_UI_UPDATE_COMBINED_PERMISSION',adjustment.includes('canSourc
 ok('ADVANCE_OPENING_UI_APPROVE_COMBINED_PERMISSION',adjustment.includes("'canApprove'=>"));
 ok('ADVANCE_OPENING_UI_POST_COMBINED_PERMISSION',adjustment.includes("'canPost'=>"));
 ok('ADVANCE_OPENING_UI_REVERSE_COMBINED_PERMISSION',adjustment.includes("'canReverse'=>"));
+ok('CLEARING_STATUS_VALIDATION_EXPRESSION_CORRECTED',clearingMigration.includes("in_array(strtolower(trim((string)($r->{$s['status']}??''))),['active','enabled','open'],true)"));
+ok('CLEARING_NAME_NORMALIZATION_PARITY',clearingMigration.includes("preg_replace('/\\s+/'")&&service.includes("preg_replace('/\\s+/'"));
+ok('CLEARING_SUBTYPE_NORMALIZATION_PARITY',clearingMigration.includes('opening balance / migration clearing')&&service.includes('opening balance / migration clearing')&&service.includes('normalizeClearingText'));
+ok('CLEARING_SAME_NAME_WHITESPACE_CONFLICT_PROTECTED',clearingMigration.includes('$sameName')&&clearingMigration.includes('$this->norm'));
+ok('CLEARING_RUNTIME_DUPLICATE_CONTROL_FAILS_CLOSED',service.includes('$matches->count() !== 1')&&service.includes('identity is missing or duplicated'));
+ok('CLEARING_RUNTIME_PARENT_FAILS_CLOSED',service.includes('Opening Balance Clearing parent is missing')&&service.includes('runtimeParentUsesId'));
 const failures=checks.filter(([,v])=>!v);console.log(`ERP113378_PARTY_BALANCE_LIFECYCLE=${failures.length?'FAIL':'PASS'} (${pass} assertions)`);for(const[n,v]of checks)console.log(`${v?'PASS':'FAIL'} ${n}`);if(failures.length)process.exitCode=1;
