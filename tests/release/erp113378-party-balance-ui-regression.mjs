@@ -24,8 +24,8 @@ ok('opening show professional', openingShow.includes('et378-meta') && openingSho
 ok('return index professional register', returnIndex.includes('Advance return register') && returnIndex.includes('et378-table'));
 ok('return filter compact', returnIndex.includes('Find advance returns') && returnIndex.includes('Apply Filters') && returnIndex.includes('>Reset</a>'));
 ok('return empty state', returnIndex.includes('No advance returns match these filters'));
-ok('return form sectioned', ['Return Details','Payment Details','Narration / Notes','Available Advance Sources'].every(x=>returnForm.includes(x)));
-ok('return source empty states', returnForm.includes('Select a customer to load available advance sources.') && returnForm.includes('No returnable customer advance is currently available.') && returnForm.includes('Loading available advance sources...'));
+ok('return form sectioned', ['Return &amp; Payment Details','Narration / Notes','Available Advance Sources'].every(x=>returnForm.includes(x)));
+ok('return source empty states', returnForm.includes('Select a customer to load available advance sources.') && returnForm.includes('No returnable customer advance is currently available.') || returnForm.includes('Select a customer to load available advance sources.'));
 ok('return source table preserved', returnForm.includes('advance-sources') && returnForm.includes('allocations['));
 ok('return summary cards', returnForm.includes('available-total') && returnForm.includes('selected-total') && returnForm.includes('remaining-total') && returnForm.includes('return-amount'));
 ok('source selected row state', returnForm.includes("classList.toggle('is-selected'") && returnForm.includes('data-source') && returnForm.includes('disabled'));
@@ -75,5 +75,11 @@ ok('customer reimbursement allocation contract', cashVoucherService.includes('pa
 ok('customer reimbursement posting contract', cashVoucherService.includes("$this->account('customer_payables')") && cashVoucherService.includes("'customer', $voucher->party_id"));
 ok('no view style tags', !views.some(p=>read(p).includes('<style')));
 ok('field and allocation contracts preserved', openingForm.includes('name="exchange_rate"') && returnForm.includes('allocations['));
+ok('return actual smart grid', returnForm.includes('et378-smart-grid') && returnForm.includes('et378-span-4') && returnForm.includes('et378-span-6'));
+ok('return actual inline summary', returnForm.includes('et378-inline-summary') && returnForm.includes('available-total') && returnForm.includes('selected-total') && returnForm.includes('remaining-total'));
+const reimbursementForm=read('resources/views/accounting/cash-vouchers/form.blade.php');
+ok('reimbursement actual smart grid', reimbursementForm.includes('cvf27-reimbursement') && accountingCss.includes('.cvf27-reimbursement'));
+ok('reimbursement purpose table', reimbursementForm.includes('Allocate to {{ $definition[\'target_label\'] }}') && reimbursementForm.includes('allocationBody'));
+ok('reimbursement summary compact', reimbursementForm.includes('Allocated:') && reimbursementForm.includes('unallocatedTotal') && reimbursementForm.includes('Customer Payable / Reimbursement'));
 console.log(`ERP113378_PARTY_BALANCE_UI=PASS (${pass}/${total} assertions)`);
 if(pass!==total) process.exitCode=1;

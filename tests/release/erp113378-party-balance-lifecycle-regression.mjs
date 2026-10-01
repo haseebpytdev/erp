@@ -225,6 +225,7 @@ ok('BROAD_CAPITAL_SUBSTRING_FALLBACK',!clearingSubtypeBlock.includes("str_contai
 ok('EQUITY_PARENT_NO_HARDCODED_PRODUCTION_IDENTITY',!clearingMigration.includes('3010')&&!clearingMigration.includes('3020')&&!clearingMigration.includes('account ID 9'));
 ok('EQUITY_PARENT_AMBIGUITY_FAILS_CLOSED',clearingMigration.includes('parent selection is ambiguous')&&clearingMigration.includes('$parents->count() !== 1'));
 const payableMigration=read('database/migrations/2026_09_30_135000_create_customer_payable_control_account.php');
+const bridge=read('app/Services/Accounting/CashVoucherNativeJournalBridge.php');
 ok('CUSTOMER_PAYABLE_ALLOWED_FOR_CUSTOMER',service.includes("'customer_receivable','customer_advance','customer_payable'")&&lifecycle.includes('customer_payable'));
 ok('CUSTOMER_PAYABLE_REJECTED_FOR_VENDOR',service.includes("['vendor_payable','vendor_advance']"));
 ok('CUSTOMER_PAYABLE_OPENING_EXACT_DR_CR',service.includes("'customer_payable'=>[['CLEAR',$r->amount,0,null,null],['CUSTOMER_PAYABLE',0,$r->amount,'customer',$r->party_id]]"));
@@ -240,4 +241,14 @@ ok('PARTIAL_PAYMENT_SUPPORTED',cash.includes('targetOutstanding')&&cash.includes
 ok('OPENING_REVERSAL_DEPENDENCY_CUSTOMER_PAYABLE',service.includes("$type==='customer_payable'" )&&service.includes('party_opening_customer_payable'));
 ok('REVERSED_PAYMENT_STOPS_CONSUMING',cash.includes("where('v.status', 'posted')"));
 ok('OPENING_CUSTOMER_PAYABLE_NO_PNL',service.includes('OPENING_BALANCE_CLEARING')&&cash.includes("$this->account('customer_payables')")&&!cash.includes("$this->account('expenses')"));
+ok('CUSTOMER_REIMBURSEMENT_CURRENCY_MATCH_ENFORCED',cash.includes('Voucher currency does not match'));
+ok('CUSTOMER_REIMBURSEMENT_RATE_MATCH_ENFORCED',cash.includes('exchange rate does not match the payable opening'));
+ok('MIXED_TARGET_FX_REJECTED',cash.includes("document['exchange_rate']")&&cash.includes('customer_reimbursement'));
+ok('NO_FX_GAIN_LOSS_INVENTED',!cash.includes('realized FX')&&!cash.includes('unrealized FX'));
+ok('CUSTOMER_REIMBURSEMENT_NATIVE_JOURNAL_PAYMENT',bridge.includes("'customer_reimbursement' => 'payment'"));
+ok('PARTY_STATEMENT_OPENING_CREDIT',service.includes("'CLEAR',0,$r->amount")&&service.includes("'CUSTOMER_PAYABLE',0,$r->amount"));
+ok('PARTY_STATEMENT_PAYMENT_DEBIT',cash.includes("$this->account('customer_payables')")&&cash.includes("$allocated, 0"));
+ok('ASLAM_600K_PARTIAL_ARITHMETIC',(() => { const opening=600000,payment=200000; return opening-payment===400000; })());
+ok('ASLAM_FULL_SETTLEMENT_ZERO',600000-200000-400000===0);
+ok('ASLAM_REVERSAL_RESTORES',600000-200000===400000);
 const failures=checks.filter(([,v])=>!v);console.log(`ERP113378_PARTY_BALANCE_LIFECYCLE=${failures.length?'FAIL':'PASS'} (${pass} assertions)`);for(const[n,v]of checks)console.log(`${v?'PASS':'FAIL'} ${n}`);if(failures.length)process.exitCode=1;

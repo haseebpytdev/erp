@@ -608,7 +608,7 @@ class CashVoucherService
         if (! Schema::hasTable('party_opening_balances')) return [];
         $q = DB::table('party_opening_balances')->where('party_type','customer')->where('balance_type','customer_payable')->where('status','posted');
         if ($partyId !== null) $q->where('party_id',$partyId);
-        return $q->orderByDesc('id')->limit(500)->get()->map(fn($r)=>['id'=>(int)$r->id,'number'=>(string)$r->opening_no,'status'=>'posted','total'=>(float)$r->amount,'outstanding'=>$this->targetOutstanding('party_opening_customer_payable',(int)$r->id,(float)$r->amount),'party_id'=>(int)$r->party_id,'party_name'=>(string)$r->party_name,'currency_code'=>(string)$r->currency_code,'target_type'=>'party_opening_customer_payable'])->filter(fn($x)=>$x['outstanding']>0.005)->values()->all();
+        return $q->orderByDesc('id')->limit(500)->get()->map(fn($r)=>['id'=>(int)$r->id,'number'=>(string)$r->opening_no,'status'=>'posted','total'=>(float)$r->amount,'original_payable'=>(float)$r->amount,'settled'=>$this->targetTotal('party_opening_customer_payable',(int)$r->id)-(float)$this->targetOutstanding('party_opening_customer_payable',(int)$r->id,(float)$r->amount),'outstanding'=>$this->targetOutstanding('party_opening_customer_payable',(int)$r->id,(float)$r->amount),'party_id'=>(int)$r->party_id,'party_name'=>(string)$r->party_name,'currency_code'=>(string)$r->currency_code,'exchange_rate'=>(float)($r->exchange_rate ?: 1),'opening_date'=>(string)$r->opening_date,'target_type'=>'party_opening_customer_payable'])->filter(fn($x)=>$x['outstanding']>0.005)->values()->all();
     }
 
     public function salesInvoiceOptions(?int $partyId = null, ?string $expectedPartyType = null): array
@@ -1299,6 +1299,9 @@ class CashVoucherService
             if (strtoupper((string) ($document['currency_code'] ?? 'PKR')) !== strtoupper((string) ($voucher->currency_code ?? 'PKR'))) {
                 throw new RuntimeException('Voucher currency does not match '.$document['number'].' currency.');
             }
+            if ($voucher->voucher_type === 'customer_reimbursement' && abs((float)($document['exchange_rate'] ?? 1) - (float)($voucher->exchange_rate ?: 1)) > 0.000000005) {
+                throw new RuntimeException('Customer Reimbursement exchange rate does not match the payable opening.');
+            }
             $key = $allocation->target_type.':'.$allocation->target_id;
             $grouped[$key] ??= ['document' => $document, 'amount' => 0.0];
             $grouped[$key]['amount'] += (float) $allocation->amount;
@@ -1501,12 +1504,13 @@ class CashVoucherService
                 $s = $this->chartAccounts->schema();
 
                 if ($s['control_type']) {
-                    $row = DB::table($s['table'])
-                        ->whereRaw('UPPER('.$s['control_type'].') = ?', [$definition['control']])
-                        ->first();
+                    $rows = DB::table($s['table'])->whereRaw('UPPER('.$s['control_type'].') = ?', [$definition['control']])->get();
+                    if ($definition['control'] === 'CUSTOMER_PAYABLE' && $rows->count() !== 1) throw new RuntimeException('CUSTOMER_PAYABLE control account identity is missing or duplicated.');
+                    $row = $rows->first();
 
                     if ($row) {
                         $this->assertPostingAccount($row, $s);
+                        if ($definition['control'] === 'CUSTOMER_PAYABLE' && $s['type'] && $this->normalizeAccountType((string)($row->{$s['type']} ?? '')) !== 'liability') throw new RuntimeException('CUSTOMER_PAYABLE must be a Liability account.');
                         return [
                             'code' => (string) $row->{$s['code']},
                             'name' => (string) $row->{$s['name']},
@@ -1552,6 +1556,8 @@ class CashVoucherService
             if (! empty($schema[$column]) && property_exists($row, $schema[$column]) && ! (bool) $row->{$schema[$column]}) throw new RuntimeException('The configured control account is not posting-enabled.');
         }
     }
+
+    private function normalizeAccountType(string $value): string { $v=strtolower(trim($value)); return str_contains($v,'liab')?'liability':$v; }
 
     private function lockAllocationTargets(int $voucherId): void
     {

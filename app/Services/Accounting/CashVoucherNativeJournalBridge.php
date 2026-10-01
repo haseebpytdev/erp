@@ -1031,6 +1031,7 @@ SQL
         return match ($voucherType) {
             'receipt' => 'receipt',
             'payment' => 'payment',
+            'customer_reimbursement' => 'payment',
             'expense' => 'expense',
             'contra' => 'contra',
             'customer_advance' => 'customer_advance',

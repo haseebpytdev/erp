@@ -115,7 +115,7 @@ class CashVoucherController extends Controller
             ->where('status', '!=', 'reversed')
             ->selectRaw("
                 COALESCE(SUM(CASE WHEN voucher_type = 'receipt' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS receipts,
-                COALESCE(SUM(CASE WHEN voucher_type = 'payment' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS payments,
+                COALESCE(SUM(CASE WHEN voucher_type IN ('payment','customer_reimbursement') THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS payments,
                 COALESCE(SUM(CASE WHEN voucher_type = 'expense' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS expenses,
                 COALESCE(SUM(CASE WHEN voucher_type = 'contra' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS contra,
                 COALESCE(SUM(CASE WHEN voucher_type = 'customer_advance' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS customer_advances,
