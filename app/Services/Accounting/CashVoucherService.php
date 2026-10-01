@@ -14,6 +14,7 @@ class CashVoucherService
         private readonly ChartOfAccountsWorkspaceService $chartAccounts,
         private readonly CashVoucherNativeJournalBridge $nativeJournal,
         private readonly AccountingPartyRoleResolver $partyRoles,
+        private readonly PartyAdvanceBalanceService $partyAdvanceBalances,
     ) {
     }
 
@@ -140,6 +141,8 @@ class CashVoucherService
             ];
         } elseif ($type === 'customer_advance_return') {
             $phrases = ['view customer advance returns','create customer advance returns','approve customer advance returns','post customer advance returns','reverse customer advance returns','manage customer advance returns','manage customer advances'];
+        } elseif ($type === 'party_opening_balance') {
+            $phrases = ['view party opening balances','create party opening balances','update party opening balances','approve party opening balances','post party opening balances','reverse party opening balances','manage party opening balances'];
         } else {
             $isReceipt = in_array($type, ['receipt', 'customer_advance'], true);
             $phrases = $isReceipt
@@ -548,7 +551,7 @@ class CashVoucherService
 
     public function documentOptions(string $targetType, ?int $partyId = null, ?string $expectedPartyType = null): array
     {
-        $expected = $targetType === 'supplier_costing' ? 'supplier' : ($targetType === 'sales_invoice' || $targetType === 'party_opening_balance' ? 'customer' : null);
+        $expected = $targetType === 'supplier_costing' || $targetType === 'party_opening_payable' ? 'supplier' : ($targetType === 'sales_invoice' || $targetType === 'party_opening_balance' ? 'customer' : null);
         if ($expected !== null && $expectedPartyType !== null && strtolower($expectedPartyType) !== $expected) {
             throw new RuntimeException('The selected document domain does not match the party role.');
         }
@@ -557,14 +560,21 @@ class CashVoucherService
         }
         return $targetType === 'supplier_costing'
             ? $this->supplierCostingOptions($partyId, $expectedPartyType)
-            : ($targetType === 'party_opening_balance' ? $this->openingReceivableOptions($partyId) : $this->salesInvoiceOptions($partyId, $expectedPartyType));
+            : ($targetType === 'party_opening_balance' ? $this->openingReceivableOptions($partyId) : ($targetType === 'party_opening_payable' ? $this->openingPayableOptions($partyId) : $this->salesInvoiceOptions($partyId, $expectedPartyType)));
     }
 
     public function openingReceivableOptions(?int $partyId = null): array
     {
         if (!Schema::hasTable('party_opening_balances')) return [];
-        $q=DB::table('party_opening_balances')->where('party_type','customer')->where('opening_type','customer_receivable')->where('status','posted'); if($partyId!==null)$q->where('party_id',$partyId);
-        return $q->orderByDesc('id')->limit(500)->get()->map(fn($r)=>['id'=>(int)$r->id,'number'=>(string)$r->document_no,'status'=>'posted','total'=>(float)$r->amount,'outstanding'=>$this->targetOutstanding('party_opening_balance',(int)$r->id,(float)$r->amount),'party_id'=>(int)$r->party_id,'party_name'=>(string)$r->party_name,'currency_code'=>(string)$r->currency_code,'target_type'=>'party_opening_balance'])->filter(fn($x)=>$x['outstanding']>0.005)->values()->all();
+        $q=DB::table('party_opening_balances')->where('party_type','customer')->where('balance_type','customer_receivable')->where('status','posted'); if($partyId!==null)$q->where('party_id',$partyId);
+        return $q->orderByDesc('id')->limit(500)->get()->map(fn($r)=>['id'=>(int)$r->id,'number'=>(string)$r->opening_no,'status'=>'posted','total'=>(float)$r->amount,'outstanding'=>$this->targetOutstanding('party_opening_balance',(int)$r->id,(float)$r->amount),'party_id'=>(int)$r->party_id,'party_name'=>(string)$r->party_name,'currency_code'=>(string)$r->currency_code,'target_type'=>'party_opening_balance'])->filter(fn($x)=>$x['outstanding']>0.005)->values()->all();
+    }
+
+    public function openingPayableOptions(?int $partyId = null): array
+    {
+        if (!Schema::hasTable('party_opening_balances')) return [];
+        $q=DB::table('party_opening_balances')->where('party_type','vendor')->where('balance_type','vendor_payable')->where('status','posted'); if($partyId!==null)$q->where('party_id',$partyId);
+        return $q->orderByDesc('id')->limit(500)->get()->map(fn($r)=>['id'=>(int)$r->id,'number'=>(string)$r->opening_no,'status'=>'posted','total'=>(float)$r->amount,'outstanding'=>$this->targetOutstanding('party_opening_payable',(int)$r->id,(float)$r->amount),'party_id'=>(int)$r->party_id,'party_name'=>(string)$r->party_name,'currency_code'=>(string)$r->currency_code,'target_type'=>'party_opening_payable'])->filter(fn($x)=>$x['outstanding']>0.005)->values()->all();
     }
 
     public function salesInvoiceOptions(?int $partyId = null, ?string $expectedPartyType = null): array
@@ -687,16 +697,14 @@ class CashVoucherService
                 ->sum('amount');
         }
 
-        if ($targetType === 'party_opening_balance' && Schema::hasTable('customer_payments') && Schema::hasTable('customer_payment_allocations')) {
-            $allocated = DB::table('customer_payment_allocations as a')->join('customer_payments as p','p.id','=','a.customer_payment_id')->where('a.source_type','opening_receivable')->where('a.source_id',$targetId)->where('p.status','posted')->sum('a.amount');
-            $allocated += Schema::hasTable('cash_voucher_allocations') ? (float) DB::table('cash_voucher_allocations as a')->join('cash_vouchers as v','v.id','=','a.cash_voucher_id')->where('a.target_type','party_opening_balance')->where('a.target_id',$targetId)->where('v.status','posted')->sum('a.amount') : 0;
-        }
-
         return max(0, round((float) $total - $allocated, 2));
     }
 
     public function availableAdvance(int $voucherId): float
     {
+        return $this->partyAdvanceBalances->availableAdvance('cash_voucher', $voucherId);
+        /* Legacy implementation retained below for historical source context. */
+        /*
         $voucher = DB::table('cash_vouchers')->where('id', $voucherId)->first();
         if (! $voucher || $voucher->status !== 'posted') {
             return 0.0;
@@ -712,11 +720,12 @@ class CashVoucherService
                 ->sum('amount')
             : 0.0;
 
-        return max(0, round($base - $used, 2));
+        return max(0, round($base - $used, 2)); */
     }
 
     public function advanceOptions(?string $partyType = null): array
     {
+        if ($partyType !== null) return $this->partyAdvanceBalances->advanceOptions($partyType);
         if (! Schema::hasTable('cash_vouchers')) {
             return [];
         }

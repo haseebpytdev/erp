@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
 use App\Services\Accounting\CashVoucherService;
+use App\Services\Accounting\PartyAdvanceBalanceService;
 use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,7 @@ class AdvanceAdjustmentController extends Controller
 {
     public function __construct(
         private readonly CashVoucherService $service,
+        private readonly PartyAdvanceBalanceService $partyAdvances,
         private readonly NativeErpLayoutResolver $layout,
     ) {
     }
@@ -126,14 +128,14 @@ class AdvanceAdjustmentController extends Controller
         $user = request()->user();
         $allowCustomer = $this->service->canUseType($user, 'customer_advance', 'view') || $this->service->canUseType($user, 'customer_advance', 'create');
         $allowSupplier = $this->service->canUseType($user, 'supplier_advance', 'view') || $this->service->canUseType($user, 'supplier_advance', 'create');
-        $advances = array_values(array_filter($this->service->advanceOptions(), function (array $advance) use ($allowCustomer, $allowSupplier): bool {
+        $advances = array_values(array_filter(array_merge($this->partyAdvances->advanceOptions('customer'),$this->partyAdvances->advanceOptions('supplier')), function (array $advance) use ($allowCustomer, $allowSupplier): bool {
             return $advance['party_type'] === 'supplier' ? $allowSupplier : $allowCustomer;
         }));
         return [
             'row' => $row,
             'advances' => $advances,
-            'salesInvoices' => $this->service->salesInvoiceOptions(),
-            'supplierCostings' => $this->service->supplierCostingOptions(),
+            'salesInvoices' => array_merge($this->service->salesInvoiceOptions(), $this->service->openingReceivableOptions()),
+            'supplierCostings' => array_merge($this->service->supplierCostingOptions(), $this->service->openingPayableOptions()),
             'layoutMeta' => $this->layout->resolve(),
         ];
     }
