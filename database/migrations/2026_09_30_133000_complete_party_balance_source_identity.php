@@ -17,12 +17,15 @@ return new class extends Migration
             });
         }
         if (Schema::hasTable('cash_voucher_allocations') && ! Schema::hasColumn('cash_voucher_allocations', 'target_type')) {
+            if (DB::table('cash_voucher_allocations')->exists()) throw new \RuntimeException('cash_voucher_allocations.target_type provenance is unavailable for non-empty legacy rows; migration stopped without backfill.');
             Schema::table('cash_voucher_allocations', fn (Blueprint $table) => $table->string('target_type', 40)->index());
         }
     }
 
     public function down(): void
     {
-        // Non-destructive: lifecycle source columns and nullable compatibility remain on rollback.
+        if (Schema::hasTable('advance_adjustments') && DB::table('advance_adjustments')->whereNotNull('advance_source_id')->exists()) throw new \RuntimeException('Advance source identity history exists; rollback refused.');
+        if (Schema::hasTable('party_opening_balances') && DB::table('party_opening_balances')->whereNotNull('reversed_by')->exists()) throw new \RuntimeException('Opening reversal audit history exists; rollback refused.');
+        // Nullable compatibility columns remain when rollback cannot prove they are unused.
     }
 };

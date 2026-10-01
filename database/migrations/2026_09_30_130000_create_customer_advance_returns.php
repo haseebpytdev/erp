@@ -17,6 +17,8 @@ return new class extends Migration {
     }
     public function down(): void
     {
-        // Deliberately non-destructive: posted return history must not be dropped by rollback.
+        if (Schema::hasTable('customer_advance_returns') && DB::table('customer_advance_returns')->where('status','posted')->exists()) throw new \RuntimeException('Posted customer advance return history exists; rollback refused.');
+        if (Schema::hasTable('customer_advance_return_posting_lines') && DB::table('customer_advance_return_posting_lines')->exists()) throw new \RuntimeException('Customer advance return posting history exists; rollback refused.');
+        Schema::dropIfExists('customer_advance_return_activities'); Schema::dropIfExists('customer_advance_return_posting_lines'); Schema::dropIfExists('customer_advance_return_allocations'); Schema::dropIfExists('customer_advance_returns');
     }
 };

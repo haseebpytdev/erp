@@ -36,7 +36,24 @@ final class PartyBalanceLifecycleService
 
     public function transitionOpening(int $id, string $action, mixed $user): void
     {
-        DB::transaction(function () use ($id, $action, $user): void { $row=DB::table('party_opening_balances')->where('id',$id)->lockForUpdate()->first(); if(!$row) throw new RuntimeException('Opening balance not found.'); $from=['submit'=>'draft','approve'=>'pending_approval','post'=>'approved'][$action]??null; $to=['submit'=>'pending_approval','approve'=>'approved','post'=>'posted'][$action]??null; if(!$from||$row->status!==$from) throw new RuntimeException('Opening balance lifecycle transition is not allowed.'); $this->assertBranchForUser((int)$row->branch_id,$user); if($action==='post') $this->postOpening($row,$user); $now=now(); $fields=['status'=>$to,'updated_at'=>$now]; if($action==='submit'){$fields['submitted_by']=$user?->id;$fields['submitted_at']=$now;} if($action==='approve'){$fields['approved_by']=$user?->id;$fields['approved_at']=$now;} if($action==='post'){$fields['posted_by']=$user?->id;$fields['posted_at']=$now;$fields['posting_reference']='OBPOST-'.$row->id;} DB::table('party_opening_balances')->where('id',$id)->update($fields); DB::table('party_opening_balance_activities')->insert(['party_opening_balance_id'=>$id,'action'=>$action,'from_status'=>$from,'to_status'=>$to,'user_id'=>$user?->id,'remarks'=>'Workflow transition.','created_at'=>$now,'updated_at'=>$now]); });
+        DB::transaction(function () use ($id, $action, $user): void {
+            $row = DB::table('party_opening_balances')->where('id', $id)->lockForUpdate()->first();
+            if (!$row) throw new RuntimeException('Opening balance not found.');
+            $from = ['submit'=>'draft','approve'=>'pending_approval','post'=>'approved'][$action] ?? null;
+            $to = ['submit'=>'pending_approval','approve'=>'approved','post'=>'posted'][$action] ?? null;
+            if (!$from || $row->status !== $from) throw new RuntimeException('Opening balance lifecycle transition is not allowed.');
+            $this->assertBranchForUser((int) $row->branch_id, $user);
+            if ($action === 'post') {
+                $this->roles->assertRole((int) $row->party_id, (string) $row->party_type);
+                $this->postOpening($row, $user);
+            }
+            $now = now(); $fields = ['status'=>$to, 'updated_at'=>$now];
+            if ($action === 'submit') { $fields['submitted_by']=$user?->id; $fields['submitted_at']=$now; }
+            if ($action === 'approve') { $fields['approved_by']=$user?->id; $fields['approved_at']=$now; }
+            if ($action === 'post') { $fields['posted_by']=$user?->id; $fields['posted_at']=$now; $fields['posting_reference']='OBPOST-'.$row->id; }
+            DB::table('party_opening_balances')->where('id',$id)->update($fields);
+            DB::table('party_opening_balance_activities')->insert(['party_opening_balance_id'=>$id,'action'=>$action,'from_status'=>$from,'to_status'=>$to,'user_id'=>$user?->id,'remarks'=>'Workflow transition.','created_at'=>$now,'updated_at'=>$now]);
+        });
     }
 
     public function reverseOpening(int $id, string $reason, mixed $user): void
