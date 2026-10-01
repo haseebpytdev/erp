@@ -19,7 +19,7 @@ CURRENT_LIVE_RELEASE=ERP-11.3.376
 CURRENT_LIVE_VERSION=v1.1.33.376-ERP11.3.376
 CURRENT_RELEASE_PACKAGE_STATUS=FINALIZED
 LAST_PACKAGED_RELEASE=ERP-11.3.376
-NEW_MIGRATION_REQUIRED=YES
+NEW_MIGRATION_REQUIRED=NO
 
 ERP-11.3.377 scopes party-controlled Booking References through native
 Customer and Supplier relationships, guards cross-party references on every
@@ -614,7 +614,7 @@ customer advance return lifecycle with idempotent native journal posting and
 reversal. Existing accounting formulas and journal authority are preserved.
 ERP-11.3.378 is NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
 
-ERP113378_PARTY_BALANCE_LIFECYCLE_REGRESSION=PASS (76 assertions)
+ERP113378_PARTY_BALANCE_LIFECYCLE_REGRESSION=PASS (109 assertions)
 EXTERNAL_SOURCE_REVIEW=PENDING
 PHP_RUNTIME=UNAVAILABLE
 PHP_SYNTAX=NOT_RUN

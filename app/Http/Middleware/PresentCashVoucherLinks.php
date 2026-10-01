@@ -70,8 +70,8 @@ final class PresentCashVoucherLinks
             $paymentUrl = route('accounting.cash-vouchers.index', ['type' => 'payment']);
             $expenseUrl = route('accounting.cash-vouchers.index', ['mode' => 'expenses']);
             $contraUrl = route('accounting.cash-vouchers.index', ['mode' => 'contra']);
-            $openingUrl = route('accounting.party-opening-balances.create');
-            $customerAdvanceReturnUrl = route('accounting.customer-advance-returns.create');
+            $openingUrl = route('accounting.party-opening-balances.index');
+            $customerAdvanceReturnUrl = route('accounting.customer-advance-returns.index');
 
             $onVoucherWorkspace = str_starts_with(trim($request->path(), '/'), 'accounting/cash-vouchers');
             $selectedType = strtolower(trim((string) $request->query('type', '')));

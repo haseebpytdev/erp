@@ -177,6 +177,21 @@ class CashVoucherService
             || $this->canUseType($user, $type, 'post');
     }
 
+    public function advanceOperationDomain(array $source): string
+    {
+        if (($source['advance_source_type'] ?? null) === 'party_opening_balance') {
+            return 'party_opening_balance';
+        }
+        return ($source['party_type'] ?? null) === 'supplier' ? 'supplier_advance' : 'customer_advance';
+    }
+
+    public function canApproveAdvance(mixed $user, array $source): bool
+    {
+        $domain = $this->advanceOperationDomain($source);
+        return $this->canApprove($user, $domain)
+            && ($domain !== 'party_opening_balance' || $this->canApprove($user, ($source['party_type'] ?? null) === 'supplier' ? 'supplier_advance' : 'customer_advance'));
+    }
+
     public function partyOptions(string $partyType): array
     {
         return $this->partyRoles->options($partyType);
@@ -900,6 +915,9 @@ class CashVoucherService
             if (Schema::hasTable('advance_adjustments') && DB::table('advance_adjustments')->where('advance_voucher_id', $voucherId)->where('status', 'posted')->exists()) {
                 throw new RuntimeException('This voucher has Posted advance adjustments. Reverse those adjustments first, then reverse the source voucher.');
             }
+            if (Schema::hasTable('customer_advance_return_allocations') && Schema::hasTable('customer_advance_returns') && DB::table('customer_advance_return_allocations as a')->join('customer_advance_returns as r', 'r.id', '=', 'a.customer_advance_return_id')->where('r.status', 'posted')->where('a.advance_source_type', 'cash_voucher')->where('a.advance_source_id', $voucherId)->lockForUpdate()->exists()) {
+                throw new RuntimeException('This voucher has Posted Customer Advance Returns. Reverse those Returns first, then reverse the source voucher.');
+            }
             if (DB::table('cash_voucher_posting_lines')->where('cash_voucher_id', $voucherId)->where('entry_type', 'reversal')->exists()) {
                 throw new RuntimeException('This cash voucher is already reversed.');
             }
@@ -981,7 +999,7 @@ class CashVoucherService
             if ((string) $adjustment->party_type !== $sourcePartyType || (int) $adjustment->party_id !== $sourcePartyId) {
                 throw new RuntimeException('Stored advance adjustment party identity no longer matches its source.');
             }
-            if (! $this->canUseType($user, $sourceType === 'party_opening_balance' ? 'party_opening_balance' : (string) ($source['voucher_type'] ?? ($sourcePartyType === 'supplier' ? 'supplier_advance' : 'customer_advance')), $action === 'submit' ? 'update' : $action)) {
+            if (! $this->canUseType($user, $this->advanceOperationDomain($source), $action === 'submit' ? 'update' : $action) || ($sourceType === 'party_opening_balance' && ! $this->canUseType($user, $sourcePartyType === 'supplier' ? 'supplier_advance' : 'customer_advance', $action === 'submit' ? 'update' : $action))) {
                 throw new RuntimeException('You are not authorized for this advance adjustment workflow action.');
             }
 
@@ -1031,7 +1049,7 @@ class CashVoucherService
             $sourceType = (string) ($adjustment->advance_source_type ?: 'cash_voucher');
             $sourceId = (int) ($adjustment->advance_source_id ?: $adjustment->advance_voucher_id);
             $source = $this->partyAdvanceBalances->advanceSourceSnapshot($sourceType, $sourceId);
-            if (! $this->canUseType($user, $sourceType === 'party_opening_balance' ? 'party_opening_balance' : (string) ($source['voucher_type'] ?? 'customer_advance'), 'reverse')) {
+            if (! $this->canUseType($user, $this->advanceOperationDomain($source), 'reverse') || ($sourceType === 'party_opening_balance' && ! $this->canUseType($user, $source['party_type'] === 'supplier' ? 'supplier_advance' : 'customer_advance', 'reverse'))) {
                 throw new RuntimeException('You are not authorized to reverse this advance adjustment.');
             }
             if (trim($reason) === '') {

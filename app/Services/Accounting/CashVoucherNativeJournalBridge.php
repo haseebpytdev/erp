@@ -497,6 +497,19 @@ final class CashVoucherNativeJournalBridge
         return null;
     }
 
+    public function authorizedBranchId(mixed $user, ?int $selected = null): int
+    {
+        $direct = $this->firstPositive([$this->userAttribute($user, 'primary_branch_id'), $this->userAttribute($user, 'branch_id'), $this->userAttribute($user, 'home_branch_id')]);
+        $pivot = $this->branchFromUserPivot($this->positiveInt($user?->id ?? null));
+        $fallback = $this->singleId(['branches','branch_master','branch_masters','offices','office_master','office_masters'], ['id','branch_id','office_id']);
+        $authoritative = $direct ?: ($pivot ?: $fallback);
+        if ($selected !== null && $selected > 0 && $authoritative && $selected !== $authoritative) {
+            throw new RuntimeException('The selected branch is outside your authorized branch scope.');
+        }
+        if ($authoritative < 1) throw new RuntimeException('An authorized branch is required.');
+        return $selected && $selected > 0 ? $selected : $authoritative;
+    }
+
     private function resolveContext(object $voucher, mixed $user): array
     {
         $booking = null;
@@ -545,7 +558,7 @@ final class CashVoucherNativeJournalBridge
             );
         }
 
-        $fiscalYearId = $this->firstPositive([$voucher->fiscal_year_id ?? null]) ?: $this->fiscalYearId((string) $voucher->voucher_date);
+        $fiscalYearId = $this->fiscalYearId((string) $voucher->voucher_date);
 
         if (! $companyId) {
             throw new RuntimeException('Native journal posting stopped: company context could not be resolved.');
@@ -557,7 +570,7 @@ final class CashVoucherNativeJournalBridge
             throw new RuntimeException('Native journal posting stopped: fiscal year could not be resolved for '.$voucher->voucher_date.'.');
         }
 
-        $accountingPeriodId = $this->firstPositive([$voucher->accounting_period_id ?? null]) ?: $this->accountingPeriodId((string) $voucher->voucher_date, $fiscalYearId);
+        $accountingPeriodId = $this->accountingPeriodId((string) $voucher->voucher_date, $fiscalYearId);
 
         if (! $accountingPeriodId) {
             throw new RuntimeException(
