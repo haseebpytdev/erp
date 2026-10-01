@@ -49,6 +49,10 @@ ok('shared button hover authority', professionalCss.includes('Shared ERP button/
 ok('button hover preserves semantic contrast', professionalCss.includes('color:#fff!important') && professionalCss.includes('background:#0d6f48!important') && professionalCss.includes('background:#a52d39!important') && professionalCss.includes('color:#3e2b02!important'));
 ok('generic links and sidebar remain distinct', professionalCss.includes('body.et-ui-professional a:hover') && professionalCss.includes('.sidebar a:hover') && professionalCss.includes('a.btn-primary'));
 ok('ERP378 primary anchors protected', source.includes('et378-btn primary') && professionalCss.includes('a.primary') && professionalCss.includes('color:#fff!important'));
+const secondaryRule = professionalCss.match(/a\.btn:not\([^}]+\):hover/si)?.[0] ?? '';
+ok('generic button anchors remain secondary', !professionalCss.includes(':is(a.btn,a.et-btn,a.btn-primary') && professionalCss.includes('a.btn:not(') && professionalCss.includes('a.et-btn:not('));
+ok('semantic class collision exclusions complete', ['.btn-primary','.et-btn-primary','.primary','.btn-success','.et-btn-success','.success','.btn-danger','.et-btn-danger','.danger','.btn-warning','.et-btn-warning','.warning'].every(token=>secondaryRule.includes(token)));
+ok('button family fixtures covered', professionalCss.includes('.btn-primary') && professionalCss.includes('.btn.primary') && professionalCss.includes('.btn.success') && professionalCss.includes('.btn.danger') && professionalCss.includes('.btn.warning') && source.includes('et378-btn primary') && source.includes('et378-btn"'));
 ok('canonical metadata unchanged', read('VERSION.txt').includes('v1.1.33.378-ERP11.3.378') && read('config/et_erp_release.php').includes('ERP-11.3.378 Party Balance Lifecycle'));
 ok('migrations and services untouched', !source.includes('Migration') && fs.existsSync(path.join(root,'app/Services/Accounting/PartyBalanceLifecycleService.php')));
 console.log(`ERP113378_PARTY_BALANCE_UI=PASS (${pass}/${total} assertions)`);
