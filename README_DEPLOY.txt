@@ -606,7 +606,7 @@ CURRENT_LIVE_RELEASE=ERP-11.3.377
 CURRENT_LIVE_VERSION=v1.1.33.377-ERP11.3.377
 CURRENT_RELEASE_PACKAGE_STATUS=NOT_FINALIZED
 LAST_PACKAGED_RELEASE=ERP-11.3.377
-NEW_MIGRATION_REQUIRED=NO
+NEW_MIGRATION_REQUIRED=YES
 
 ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening
 Balance Clearing account, customer advance source authority and a dedicated
@@ -614,7 +614,7 @@ customer advance return lifecycle with idempotent native journal posting and
 reversal. Existing accounting formulas and journal authority are preserved.
 ERP-11.3.378 is NOT PACKAGED / NOT DEPLOYED / NOT PRODUCTION-VERIFIED.
 
-ERP113378_PARTY_BALANCE_LIFECYCLE_REGRESSION=PASS (40 assertions)
+ERP113378_PARTY_BALANCE_LIFECYCLE_REGRESSION=PASS (76 assertions)
 EXTERNAL_SOURCE_REVIEW=PENDING
 PHP_RUNTIME=UNAVAILABLE
 PHP_SYNTAX=NOT_RUN

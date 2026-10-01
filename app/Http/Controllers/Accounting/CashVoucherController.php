@@ -609,7 +609,9 @@ class CashVoucherController extends Controller
             'allocations.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
         $allowed = $voucherType === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucherType === 'payment' ? ['supplier_costing','party_opening_payable'] : []);
-        return array_values(array_filter(array_map(static function (array $row) use ($targetType): array { $row['target_type'] = $row['target_type'] ?? $targetType; return $row; }, (array) ($validated['allocations'] ?? [])), static fn (array $row): bool => $allowed === [] || in_array((string) $row['target_type'], $allowed, true)));
+        $rows = array_values(array_map(static function (array $row) use ($targetType): array { $row['target_type'] = $row['target_type'] ?? $targetType; return $row; }, (array) ($validated['allocations'] ?? [])));
+        foreach ($rows as $row) if ($allowed !== [] && ! in_array((string) $row['target_type'], $allowed, true)) throw ValidationException::withMessages(['allocations' => 'Invalid allocation target type for this voucher.']);
+        return $rows;
     }
 
     private function validateExpenseLines(Request $request, array $header): array
