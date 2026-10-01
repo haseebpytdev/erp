@@ -89,7 +89,7 @@
               <input name="party_name" value="{{ old('party_name',$row->party_name ?? '') }}" placeholder="Optional person or organization paid">
             </div>
           @else
-            <div class="cvf27-field">
+            <div class="cvf27-field" data-reimbursement-field="customer">
               <label>{{ $partyLabel }} *</label>
               <select name="party_id" id="partySelect" required>
                 <option value="">Select {{ strtolower($partyLabel) }}</option>
@@ -126,9 +126,9 @@
           </div>
 
           @unless($isExpense)
-            <div class="cvf27-field">
+          <div class="cvf27-field" data-reimbursement-field="amount">
               <label>{{ $isContra ? 'Transfer Amount' : 'Total Amount' }} *</label>
-              <input type="number" id="voucherAmount" step="0.01" min="0.01" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}" required>
+            <input type="number" id="voucherAmount" step="0.01" min="0.01" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}" required>
             </div>
           @else
             <input type="hidden" id="voucherAmount" name="amount" value="{{ old('amount',$row->amount ?? '0.00') }}">
@@ -238,23 +238,34 @@
         <div class="cvf27-card-head">
           <div>
             <div class="cvf27-card-title">Allocate to {{ $definition['target_label'] }}</div>
-            @if($type === 'customer_reimbursement')<div class="cvf27-help">Opening No. · Opening Date · Original Payable · Paid / Settled · Outstanding · Payment Amount</div>@endif
+            @if($type === 'customer_reimbursement')<div class="cvf27-help">Select a posted customer payable opening and enter the amount to reimburse.</div>@endif
             <div class="cvf27-help">{{ $type === 'customer_reimbursement' ? 'Required. Allocate the full payment to a posted Customer Payable / Reimbursement opening.' : 'Optional. Unallocated balance becomes '.($definition['party_type']==='customer'?'Customer Advance':'Vendor Advance').' automatically.' }}</div>
           </div>
           <button type="button" class="cvf27-btn" id="addAllocation">+ Add Allocation</button>
         </div>
 
-        <table class="cvf27-table">
-          <colgroup><col style="width:29%"><col style="width:18%"><col style="width:23%"><col style="width:22%"><col style="width:8%"></colgroup>
-          <thead><tr><th>{{ $definition['target_label'] }}</th><th>Outstanding</th><th>Allocation Amount</th><th>Notes</th><th class="cvf27-action">Action</th></tr></thead>
+        <table class="cvf27-table{{ $type === 'customer_reimbursement' ? ' cvf27-reimbursement-table' : '' }}">
+          @if($type === 'customer_reimbursement')
+            <colgroup><col style="width:15%"><col style="width:13%"><col style="width:15%"><col style="width:13%"><col style="width:14%"><col style="width:15%"><col style="width:7%"></colgroup>
+            <thead><tr><th>Opening No.</th><th>Opening Date</th><th>Original Payable</th><th>Paid / Settled</th><th>Outstanding</th><th>Payment Amount</th><th class="cvf27-action">Action</th></tr></thead>
+          @else
+            <colgroup><col style="width:29%"><col style="width:18%"><col style="width:23%"><col style="width:22%"><col style="width:8%"></colgroup>
+            <thead><tr><th>{{ $definition['target_label'] }}</th><th>Outstanding</th><th>Allocation Amount</th><th>Notes</th><th class="cvf27-action">Action</th></tr></thead>
+          @endif
           <tbody id="allocationBody"></tbody>
         </table>
 
         <div id="allocationEmpty" class="cvf27-empty">No allocations added. Use “Add Allocation” only when settling an existing document.</div>
 
         <div class="cvf27-totals">
-          <span>Allocated: <strong id="allocatedTotal">0.00</strong></span>
-          <span>Advance / Unallocated: <strong id="unallocatedTotal">0.00</strong></span>
+          @if($type === 'customer_reimbursement')
+            <span>Available Payable: <strong id="availablePayableTotal">0.00</strong></span>
+            <span>Selected to Pay: <strong id="allocatedTotal">0.00</strong></span>
+            <span>Remaining to Allocate: <strong id="unallocatedTotal">0.00</strong></span>
+          @else
+            <span>Allocated: <strong id="allocatedTotal">0.00</strong></span>
+            <span>Advance / Unallocated: <strong id="unallocatedTotal">0.00</strong></span>
+          @endif
         </div>
       </section>
     @elseif($isContra)
@@ -300,13 +311,13 @@ const esc=v=>String(v??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 function eligible(d){const pid=Number(party.value||0);return pid>0&&d.party_id&&Number(d.party_id)===pid;}
 function opts(selected,selectedType){return '<option value="">Select document</option>'+docs.filter(eligible).map(d=>`<option value="${d.id}" data-target-type="${esc(d.target_type||'')}" ${Number(selected)===Number(d.id)&&String(selectedType||'')===String(d.target_type||'')?'selected':''}>${esc(d.number)} · ${esc(d.target_type||'')} · ${esc(d.party_name||'')} · ${esc(d.currency_code)} ${Number(d.outstanding||0).toFixed(2)} open</option>`).join('')}
 function updateEmpty(){empty.style.display=body.children.length?'none':'block'}
-function row(v={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=`<td><select class="doc" name="allocations[${i}][target_id]" required>${opts(v.target_id,v.target_type)}</select><input type="hidden" class="targetType" name="allocations[${i}][target_type]" value="${esc(v.target_type||'')}"></td><td class="outstanding">0.00</td><td><input class="alloc" type="number" min="0.01" step="0.01" name="allocations[${i}][amount]" value="${Number(v.amount||0).toFixed(2)}" required></td><td><input name="allocations[${i}][notes]" value="${esc(v.notes||'')}"></td><td class="cvf27-action"><button type="button" class="cvf27-rm">×</button></td>`;body.appendChild(tr);tr.querySelector('.doc').addEventListener('change',e=>{tr.querySelector('.targetType').value=e.target.selectedOptions[0]?.dataset.targetType||'';refreshRow(tr);calc()});refreshRow(tr);calc();updateEmpty()}
-function refreshRow(tr){const id=Number(tr.querySelector('.doc').value||0);const d=docs.find(x=>Number(x.id)===id);tr.querySelector('.outstanding').textContent=d?`${d.currency_code} ${Number(d.outstanding||0).toFixed(2)}`:'0.00'}
+function row(v={}){const i=body.children.length;const tr=document.createElement('tr');tr.innerHTML=@json($type)==='customer_reimbursement'?`<td><select class="doc" name="allocations[${i}][target_id]" required>${opts(v.target_id,v.target_type)}</select><input type="hidden" class="targetType" name="allocations[${i}][target_type]" value="${esc(v.target_type||'party_opening_customer_payable')}"></td><td class="opening-date">—</td><td class="original-payable">—</td><td class="settled">—</td><td class="outstanding">—</td><td><input class="alloc" type="number" min="0.01" step="0.01" name="allocations[${i}][amount]" value="${Number(v.amount||0).toFixed(2)}" required></td><td class="cvf27-action"><button type="button" class="cvf27-rm">×</button></td>`:`<td><select class="doc" name="allocations[${i}][target_id]" required>${opts(v.target_id,v.target_type)}</select><input type="hidden" class="targetType" name="allocations[${i}][target_type]" value="${esc(v.target_type||'')}"></td><td class="outstanding">0.00</td><td><input class="alloc" type="number" min="0.01" step="0.01" name="allocations[${i}][amount]" value="${Number(v.amount||0).toFixed(2)}" required></td><td><input name="allocations[${i}][notes]" value="${esc(v.notes||'')}"></td><td class="cvf27-action"><button type="button" class="cvf27-rm">×</button></td>`;body.appendChild(tr);tr.querySelector('.doc').addEventListener('change',e=>{tr.querySelector('.targetType').value=e.target.selectedOptions[0]?.dataset.targetType||(@json($type)==='customer_reimbursement'?'party_opening_customer_payable':'');refreshRow(tr);calc()});refreshRow(tr);calc();updateEmpty()}
+function refreshRow(tr){const id=Number(tr.querySelector('.doc').value||0);const d=docs.find(x=>Number(x.id)===id);if(!d){tr.querySelectorAll('.opening-date,.original-payable,.settled,.outstanding').forEach(x=>x.textContent='—');return}if(@json($type)==='customer_reimbursement'){tr.querySelector('.opening-date').textContent=d.opening_date||'—';tr.querySelector('.original-payable').textContent=`${d.currency_code} ${Number(d.original_payable||0).toFixed(2)}`;tr.querySelector('.settled').textContent=`${d.currency_code} ${Number(d.settled||0).toFixed(2)}`;tr.querySelector('.outstanding').textContent=`${d.currency_code} ${Number(d.outstanding||0).toFixed(2)}`}else tr.querySelector('.outstanding').textContent=`${d.currency_code} ${Number(d.outstanding||0).toFixed(2)}`}
 function renumber(){[...body.children].forEach((tr,i)=>tr.querySelectorAll('[name]').forEach(el=>el.name=el.name.replace(/allocations\[\d+\]/,`allocations[${i}]`)))}
-function calc(){const allocated=[...body.querySelectorAll('.alloc')].reduce((s,e)=>s+Number(e.value||0),0);const total=Number(amount.value||0);document.getElementById('allocatedTotal').textContent=allocated.toFixed(2);document.getElementById('unallocatedTotal').textContent=Math.max(0,total-allocated).toFixed(2)}
+function calc(){const allocated=[...body.querySelectorAll('.alloc')].reduce((s,e)=>s+Number(e.value||0),0);const total=Number(amount.value||0);document.getElementById('allocatedTotal').textContent=allocated.toFixed(2);document.getElementById('unallocatedTotal').textContent=Math.max(0,total-allocated).toFixed(2);const available=document.getElementById('availablePayableTotal');if(available)available.textContent=docs.reduce((s,d)=>s+Number(d.outstanding||0),0).toFixed(2)}
 const documentUrl=@json(route('accounting.cash-vouchers.documents'));
 let initialHydration=true;
-async function loadDocuments({restoreExisting=false}={}){const pid=Number(party.value||0);docs=[];[...body.children].forEach(tr=>tr.remove());calc();updateEmpty();if(!pid){initialHydration=false;return;}const response=await fetch(documentUrl+'?voucher_type='+encodeURIComponent(@json($type))+'&party_id='+pid,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});if(!response.ok){initialHydration=false;return;}const payload=await response.json();docs=Array.isArray(payload.documents)?payload.documents:[];if(restoreExisting&&initialHydration)existing.forEach(row);initialHydration=false;}
+async function loadDocuments({restoreExisting=false}={}){const pid=Number(party.value||0);docs=[];[...body.children].forEach(tr=>tr.remove());calc();updateEmpty();if(!pid){initialHydration=false;return;}try{const response=await fetch(documentUrl+'?voucher_type='+encodeURIComponent(@json($type))+'&party_id='+pid,{headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});if(!response.ok)throw new Error('document request failed');const payload=await response.json();docs=Array.isArray(payload.documents)?payload.documents:[];if(restoreExisting&&initialHydration)existing.forEach(row);initialHydration=false;}catch(error){docs=[];initialHydration=false;}}
 if(Number(party.value||0))loadDocuments({restoreExisting:true});
 document.getElementById('addAllocation').onclick=()=>row();
 body.addEventListener('change',e=>{if(e.target.classList.contains('doc'))refreshRow(e.target.closest('tr'));calc()});

@@ -251,4 +251,20 @@ ok('PARTY_STATEMENT_PAYMENT_DEBIT',cash.includes("$this->account('customer_payab
 ok('ASLAM_600K_PARTIAL_ARITHMETIC',(() => { const opening=600000,payment=200000; return opening-payment===400000; })());
 ok('ASLAM_FULL_SETTLEMENT_ZERO',600000-200000-400000===0);
 ok('ASLAM_REVERSAL_RESTORES',600000-200000===400000);
+const nextCodeFixture=(parent,children,global)=>{const used=new Set(global);if(/^\d+$/.test(parent)){let n=Number(parent)+1;for(const c of children)if(/^\d+$/.test(c))n=Math.max(n,Number(c)+1);while(used.has(String(n)))n++;return String(n)}let n=0;for(const c of children){const m=new RegExp(`^${parent.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}[-\\.]?(\\d+)$`,'i').exec(c);if(m)n=Math.max(n,Number(m[1]))}let code;do{n++;code=`${parent}-${String(n).padStart(2,'0')}`}while(used.has(code));return code};
+ok('CUSTOMER_PAYABLE_CODE_NUMERIC_PARENT',nextCodeFixture('2100',['2101','2103'],['2100','2101','2103'])==='2104');
+ok('CUSTOMER_PAYABLE_CODE_NUMERIC_SIBLINGS',nextCodeFixture('2100',['2101','2102'],['2100','2101','2102'])==='2103');
+ok('CUSTOMER_PAYABLE_CODE_NON_NUMERIC_PARENT',nextCodeFixture('AP',['AP-01'],['AP','AP-01'])==='AP-02');
+ok('CUSTOMER_PAYABLE_CODE_DUPLICATE_AVOIDANCE',nextCodeFixture('AP',['AP-01'],['AP','AP-01','AP-02'])==='AP-03');
+ok('CUSTOMER_PAYABLE_CODE_ALGORITHM_MATCHES_CLEARING',payableMigration.includes('ctype_digit($c)')&&payableMigration.includes("preg_match('/^\\d+$/',$base)")&&clearingMigration.includes('nextCodeForParentRow'));
+ok('REVERSED_CUSTOMER_PAYABLE_OUTSTANDING_ZERO',lifecycle.includes("(string)$row->status==='reversed'?0")&&lifecycle.includes('targetOutstanding'));
+ok('REIMBURSEMENT_SETTLEMENT_SERVICE_RULES',cash.includes('must be fully allocated')&&cash.includes('targetOutstanding')&&cash.includes('customer_reimbursement'));
+const lifecycleFixture=()=>{const target={customer:1130,type:'party_opening_customer_payable',currency:'PKR',rate:1,amount:600000,settled:0,status:'posted'};const post=(customer,type,currency,rate,amount)=>{if(customer!==target.customer||type!==target.type||currency!==target.currency||Math.abs(rate-target.rate)>0.000000005||amount<=0||amount>target.amount-target.settled)throw new Error('rejected');target.settled+=amount;return target.amount-target.settled};return{target,post}};
+const fixture=lifecycleFixture();
+ok('ASLAM_SERVICE_FIXTURE_OPENING_DR_CLEARING_CR_PAYABLE',service.includes("'customer_payable'=>[['CLEAR',$r->amount,0,null,null],['CUSTOMER_PAYABLE',0,$r->amount,'customer',$r->party_id]]"));
+ok('ASLAM_SERVICE_FIXTURE_PAYMENT_200K_REMAINING',fixture.post(1130,'party_opening_customer_payable','PKR',1,200000)===400000);
+ok('ASLAM_SERVICE_FIXTURE_FULL_PAYMENT_ZERO',fixture.post(1130,'party_opening_customer_payable','PKR',1,400000)===0);
+fixture.target.settled=200000;ok('ASLAM_SERVICE_FIXTURE_REVERSAL_RESTORED',fixture.target.amount-fixture.target.settled===400000);
+for(const bad of [[2120,'party_opening_customer_payable','PKR',1,100],[1130,'wrong','PKR',1,100],[1130,'party_opening_customer_payable','USD',1,100],[1130,'party_opening_customer_payable','PKR',2,100]]){let rejected=false;try{fixture.post(...bad)}catch{rejected=true}ok('ASLAM_SERVICE_FIXTURE_REJECTS_INVALID_TARGET',rejected)}
+let overpaymentRejected=false;try{fixture.post(1130,'party_opening_customer_payable','PKR',1,500000)}catch{overpaymentRejected=true}ok('ASLAM_SERVICE_FIXTURE_REJECTS_OVERPAYMENT',overpaymentRejected);
 const failures=checks.filter(([,v])=>!v);console.log(`ERP113378_PARTY_BALANCE_LIFECYCLE=${failures.length?'FAIL':'PASS'} (${pass} assertions)`);for(const[n,v]of checks)console.log(`${v?'PASS':'FAIL'} ${n}`);if(failures.length)process.exitCode=1;

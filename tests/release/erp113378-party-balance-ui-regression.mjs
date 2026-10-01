@@ -25,7 +25,10 @@ ok('return index professional register', returnIndex.includes('Advance return re
 ok('return filter compact', returnIndex.includes('Find advance returns') && returnIndex.includes('Apply Filters') && returnIndex.includes('>Reset</a>'));
 ok('return empty state', returnIndex.includes('No advance returns match these filters'));
 ok('return form sectioned', ['Return &amp; Payment Details','Narration / Notes','Available Advance Sources'].every(x=>returnForm.includes(x)));
-ok('return source empty states', returnForm.includes('Select a customer to load available advance sources.') && returnForm.includes('No returnable customer advance is currently available.') || returnForm.includes('Select a customer to load available advance sources.'));
+ok('return preselect state', returnForm.includes('Select a customer to load available advance sources.'));
+ok('return loading state', returnForm.includes('Loading available advance sources...'));
+ok('return zero state', returnForm.includes('No returnable customer advance is currently available.'));
+ok('return error state', returnForm.includes('Unable to load advance sources. Please try again.') && returnForm.includes('!r.ok') && returnForm.includes('catch'));
 ok('return source table preserved', returnForm.includes('advance-sources') && returnForm.includes('allocations['));
 ok('return summary cards', returnForm.includes('available-total') && returnForm.includes('selected-total') && returnForm.includes('remaining-total') && returnForm.includes('return-amount'));
 ok('source selected row state', returnForm.includes("classList.toggle('is-selected'") && returnForm.includes('data-source') && returnForm.includes('disabled'));
@@ -79,7 +82,10 @@ ok('return actual smart grid', returnForm.includes('et378-smart-grid') && return
 ok('return actual inline summary', returnForm.includes('et378-inline-summary') && returnForm.includes('available-total') && returnForm.includes('selected-total') && returnForm.includes('remaining-total'));
 const reimbursementForm=read('resources/views/accounting/cash-vouchers/form.blade.php');
 ok('reimbursement actual smart grid', reimbursementForm.includes('cvf27-reimbursement') && accountingCss.includes('.cvf27-reimbursement'));
+ok('reimbursement actual table columns', ['Opening No.','Opening Date','Original Payable','Paid / Settled','Outstanding','Payment Amount'].every(label=>reimbursementForm.includes(`<th>${label}</th>`)) && reimbursementForm.includes('cvf27-reimbursement-table'));
 ok('reimbursement purpose table', reimbursementForm.includes('Allocate to {{ $definition[\'target_label\'] }}') && reimbursementForm.includes('allocationBody'));
-ok('reimbursement summary compact', reimbursementForm.includes('Allocated:') && reimbursementForm.includes('unallocatedTotal') && reimbursementForm.includes('Customer Payable / Reimbursement'));
+const reimbursementSummaryBlock=reimbursementForm.match(/@if\(\$type === 'customer_reimbursement'\)([\s\S]*?)@else/)?.[1] ?? '';
+ok('reimbursement summary compact', reimbursementForm.includes('Available Payable:') && reimbursementForm.includes('Selected to Pay:') && reimbursementForm.includes('Remaining to Allocate:') && !reimbursementSummaryBlock.includes('Advance / Unallocated'));
+ok('reimbursement desktop three rows', accountingCss.includes('[data-expense-field="booking"]{grid-column:1;grid-row:3}') && accountingCss.includes('[data-reimbursement-field="customer"]{grid-column:1;grid-row:1}'));
 console.log(`ERP113378_PARTY_BALANCE_UI=PASS (${pass}/${total} assertions)`);
 if(pass!==total) process.exitCode=1;
