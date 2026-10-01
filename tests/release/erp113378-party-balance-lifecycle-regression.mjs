@@ -182,8 +182,10 @@ ok('CLEARING_EXISTING_EQUITY_VALIDATED',clearingMigration.includes('is not Equit
 ok('CLEARING_EXISTING_PARENT_COMPATIBILITY_VALIDATED',clearingMigration.includes('incompatible Equity parent'));
 ok('CLEARING_MIGRATION_MISSING_PARENT_FAILS_CLOSED',clearingMigration.includes("$pv===null||trim((string)$pv)===''" )&&clearingMigration.includes('parent is missing'));
 ok('CLEARING_MIGRATION_UNRESOLVABLE_PARENT_FAILS_CLOSED',clearingMigration.includes("if(!$parent||$this->normalizeType"));
-ok('CLEARING_MIGRATION_NON_EQUITY_PARENT_FAILS_CLOSED',clearingMigration.includes("!=='equity')throw new RuntimeException('Existing Opening Balance Clearing account has incompatible Equity parent.'"));
+ok('CLEARING_MIGRATION_NON_EQUITY_PARENT_FAILS_CLOSED',clearingMigration.includes("!=='equity')throw new \\RuntimeException('Existing Opening Balance Clearing account has incompatible Equity parent.'"));
 ok('CLEARING_MIGRATION_RUNTIME_PARENT_SEMANTICS_ALIGNED',clearingMigration.includes('parentUsesId($s)')&&service.includes('runtimeParentUsesId($s)'));
+ok('CLEARING_RUNTIMEEXCEPTION_IMPORT_REMOVED',!clearingMigration.includes('use RuntimeException;'));
+ok('CLEARING_RUNTIMEEXCEPTION_FULLY_QUALIFIED',clearingMigration.includes('new \\RuntimeException'));
 ok('CLEARING_INCOMPATIBLE_EXISTING_FAIL_CLOSED',clearingMigration.includes('assertCompatible')&&clearingMigration.includes('RuntimeException'));
 ok('CLEARING_RUNTIME_COMPATIBILITY_FAIL_CLOSED',service.includes('assertClearingCompatibility')&&service.includes('normal balance must be Credit'));
 ok('ADVANCE_OPENING_UI_UPDATE_COMBINED_PERMISSION',adjustment.includes('canSourceAction')&&adjustment.includes("'canUpdate'=>"));
