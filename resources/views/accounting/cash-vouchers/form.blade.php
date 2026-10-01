@@ -238,6 +238,7 @@
         <div class="cvf27-card-head">
           <div>
             <div class="cvf27-card-title">Allocate to {{ $definition['target_label'] }}</div>
+            @if($type === 'customer_reimbursement')<div class="cvf27-help">Opening No. · Opening Date · Original Payable · Paid / Settled · Outstanding · Payment Amount</div>@endif
             <div class="cvf27-help">{{ $type === 'customer_reimbursement' ? 'Required. Allocate the full payment to a posted Customer Payable / Reimbursement opening.' : 'Optional. Unallocated balance becomes '.($definition['party_type']==='customer'?'Customer Advance':'Vendor Advance').' automatically.' }}</div>
           </div>
           <button type="button" class="cvf27-btn" id="addAllocation">+ Add Allocation</button>
