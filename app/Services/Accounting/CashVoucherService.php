@@ -27,6 +27,7 @@ class CashVoucherService
             'contra' => 'CV',
             'customer_advance' => 'CAR',
             'supplier_advance' => 'SAP',
+            'customer_reimbursement' => 'CRP',
             default => throw new RuntimeException('Unsupported cash voucher type.'),
         };
 
@@ -109,6 +110,14 @@ class CashVoucherService
                 'target_type' => null,
                 'target_label' => null,
             ],
+            'customer_reimbursement' => [
+                'label' => 'Customer Reimbursement Payment',
+                'short' => 'Customer Reimbursement',
+                'direction' => 'out',
+                'party_type' => 'customer',
+                'target_type' => 'party_opening_customer_payable',
+                'target_label' => 'Customer Payable / Reimbursement',
+            ],
             default => throw new RuntimeException('Unsupported cash voucher type.'),
         };
     }
@@ -154,7 +163,7 @@ class CashVoucherService
             : [
                 'view payments', 'create payments', 'update payments', 'approve payments', 'post payments', 'manage payments',
                 'view payment vouchers', 'create payment vouchers', 'approve payment vouchers', 'post payment vouchers', 'manage payment vouchers',
-                'manage supplier advances', 'supplier advances',
+                'manage supplier advances', 'supplier advances', 'customer reimbursement', 'customer reimbursements',
             ];
         }
 
@@ -222,6 +231,8 @@ class CashVoucherService
             $partyType = 'customer';
         } elseif ($voucherType !== null && in_array($voucherType, ['payment', 'supplier_advance'], true)) {
             $partyType = 'supplier';
+        } elseif ($voucherType === 'customer_reimbursement') {
+            $partyType = 'customer';
         }
         if ($partyType !== null && in_array($partyType, ['customer', 'supplier'], true)) {
             if (! $partyId) {
@@ -566,7 +577,7 @@ class CashVoucherService
 
     public function documentOptions(string $targetType, ?int $partyId = null, ?string $expectedPartyType = null): array
     {
-        $expected = $targetType === 'supplier_costing' || $targetType === 'party_opening_payable' ? 'supplier' : ($targetType === 'sales_invoice' || $targetType === 'party_opening_balance' ? 'customer' : null);
+        $expected = $targetType === 'supplier_costing' || $targetType === 'party_opening_payable' ? 'supplier' : ($targetType === 'sales_invoice' || $targetType === 'party_opening_balance' || $targetType === 'party_opening_customer_payable' ? 'customer' : null);
         if ($expected !== null && $expectedPartyType !== null && strtolower($expectedPartyType) !== $expected) {
             throw new RuntimeException('The selected document domain does not match the party role.');
         }
@@ -575,7 +586,7 @@ class CashVoucherService
         }
         return $targetType === 'supplier_costing'
             ? $this->supplierCostingOptions($partyId, $expectedPartyType)
-            : ($targetType === 'party_opening_balance' ? $this->openingReceivableOptions($partyId) : ($targetType === 'party_opening_payable' ? $this->openingPayableOptions($partyId) : $this->salesInvoiceOptions($partyId, $expectedPartyType)));
+            : ($targetType === 'party_opening_balance' ? $this->openingReceivableOptions($partyId) : ($targetType === 'party_opening_payable' ? $this->openingPayableOptions($partyId) : ($targetType === 'party_opening_customer_payable' ? $this->openingCustomerPayableOptions($partyId) : $this->salesInvoiceOptions($partyId, $expectedPartyType))));
     }
 
     public function openingReceivableOptions(?int $partyId = null): array
@@ -590,6 +601,14 @@ class CashVoucherService
         if (!Schema::hasTable('party_opening_balances')) return [];
         $q=DB::table('party_opening_balances')->where('party_type','vendor')->where('balance_type','vendor_payable')->where('status','posted'); if($partyId!==null)$q->where('party_id',$partyId);
         return $q->orderByDesc('id')->limit(500)->get()->map(fn($r)=>['id'=>(int)$r->id,'number'=>(string)$r->opening_no,'status'=>'posted','total'=>(float)$r->amount,'outstanding'=>$this->targetOutstanding('party_opening_payable',(int)$r->id,(float)$r->amount),'party_id'=>(int)$r->party_id,'party_name'=>(string)$r->party_name,'currency_code'=>(string)$r->currency_code,'target_type'=>'party_opening_payable'])->filter(fn($x)=>$x['outstanding']>0.005)->values()->all();
+    }
+
+    public function openingCustomerPayableOptions(?int $partyId = null): array
+    {
+        if (! Schema::hasTable('party_opening_balances')) return [];
+        $q = DB::table('party_opening_balances')->where('party_type','customer')->where('balance_type','customer_payable')->where('status','posted');
+        if ($partyId !== null) $q->where('party_id',$partyId);
+        return $q->orderByDesc('id')->limit(500)->get()->map(fn($r)=>['id'=>(int)$r->id,'number'=>(string)$r->opening_no,'status'=>'posted','total'=>(float)$r->amount,'outstanding'=>$this->targetOutstanding('party_opening_customer_payable',(int)$r->id,(float)$r->amount),'party_id'=>(int)$r->party_id,'party_name'=>(string)$r->party_name,'currency_code'=>(string)$r->currency_code,'target_type'=>'party_opening_customer_payable'])->filter(fn($x)=>$x['outstanding']>0.005)->values()->all();
     }
 
     public function salesInvoiceOptions(?int $partyId = null, ?string $expectedPartyType = null): array
@@ -1254,12 +1273,18 @@ class CashVoucherService
             $this->recalculate($voucherId);
             return;
         }
+        if ($type === 'customer_reimbursement' && $allocations->isEmpty()) {
+            throw new RuntimeException('Customer Reimbursement requires a Customer Payable / Reimbursement allocation.');
+        }
+        if ($type === 'customer_reimbursement' && abs((float) $allocations->sum('amount') - (float) $voucher->amount) > 0.005) {
+            throw new RuntimeException('Customer Reimbursement cannot contain an unallocated remainder.');
+        }
         if ($definition['target_type'] === null && $allocations->isNotEmpty()) {
             throw new RuntimeException('Explicit advance vouchers cannot contain invoice/costing allocations. Use Advance Adjustment later.');
         }
         $grouped = [];
         foreach ($allocations as $allocation) {
-            $allowedTargetTypes = $voucher->voucher_type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucher->voucher_type === 'payment' ? ['supplier_costing','party_opening_payable'] : []);
+            $allowedTargetTypes = $voucher->voucher_type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucher->voucher_type === 'payment' ? ['supplier_costing','party_opening_payable'] : ($voucher->voucher_type === 'customer_reimbursement' ? ['party_opening_customer_payable'] : []));
             if (! in_array((string) $allocation->target_type, $allowedTargetTypes, true)) {
                 throw new RuntimeException('Allocation document type does not match this voucher type.');
             }
@@ -1378,6 +1403,11 @@ class CashVoucherService
             if ($unallocated > 0) {
                 $lines[] = $this->postingLine($voucherId, $reference, $ca, 'customer', $voucher->party_id, 0, $unallocated, $currency, $rate, $narration('Customer advance balance '.$voucher->voucher_no));
             }
+        } elseif ((string) $voucher->voucher_type === 'customer_reimbursement') {
+            if ($unallocated > 0.005 || $allocated <= 0 || !$voucher->party_id) throw new RuntimeException('Customer Reimbursement must be fully allocated to a Customer Payable / Reimbursement opening.');
+            $payable = $this->account('customer_payables');
+            $lines[] = $this->postingLine($voucherId, $reference, $payable, 'customer', $voucher->party_id, $allocated, 0, $currency, $rate, $narration('Customer reimbursement '.$voucher->voucher_no));
+            $lines[] = $this->postingLine($voucherId, $reference, $bank, null, null, 0, $amount, $currency, $rate, $narration('Customer reimbursement payment '.$voucher->voucher_no));
         } else {
             $ap = $this->account('accounts_payable');
             $sa = $this->account('supplier_advances');
@@ -1461,6 +1491,7 @@ class CashVoucherService
             'accounts_payable' => ['control' => 'VENDOR_AP', 'code' => '2110', 'name' => 'Vendor Payables'],
             'customer_advances' => ['control' => 'CUSTOMER_ADVANCE', 'code' => '2120', 'name' => 'Customer Advances'],
             'supplier_advances' => ['control' => 'VENDOR_ADVANCE', 'code' => '1140', 'name' => 'Vendor Advances'],
+            'customer_payables' => ['control' => 'CUSTOMER_PAYABLE', 'code' => null, 'name' => 'Customer Payables / Reimbursements'],
         ];
 
         $definition = $definitions[$key] ?? null;
@@ -1483,6 +1514,7 @@ class CashVoucherService
                     }
                 }
 
+                if ($definition['code'] === null) throw new RuntimeException('Required accounting control account '.$definition['control'].' is not configured to an active posting account.');
                 $row = DB::table($s['table'])
                     ->where($s['code'], $definition['code'])
                     ->first();
@@ -1544,7 +1576,7 @@ class CashVoucherService
             return;
         }
         if ($targetType !== 'sales_invoice') {
-            if (in_array($targetType, ['party_opening_balance','party_opening_payable'], true) && Schema::hasTable('party_opening_balances')) DB::table('party_opening_balances')->where('id',$targetId)->lockForUpdate()->first();
+            if (in_array($targetType, ['party_opening_balance','party_opening_payable','party_opening_customer_payable'], true) && Schema::hasTable('party_opening_balances')) DB::table('party_opening_balances')->where('id',$targetId)->lockForUpdate()->first();
             return;
         }
         $schema = $this->salesInvoiceSchema();
@@ -1555,7 +1587,7 @@ class CashVoucherService
 
     private function targetTotal(string $targetType, int $targetId): float
     {
-        if (in_array($targetType, ['party_opening_balance','party_opening_payable'], true) && Schema::hasTable('party_opening_balances')) return (float) DB::table('party_opening_balances')->where('id',$targetId)->value('amount');
+        if (in_array($targetType, ['party_opening_balance','party_opening_payable','party_opening_customer_payable'], true) && Schema::hasTable('party_opening_balances')) return (float) DB::table('party_opening_balances')->where('id',$targetId)->value('amount');
         if ($targetType === 'supplier_costing') {
             return (float) (DB::table('supplier_costings')->where('id', $targetId)->value('total_cost') ?? 0);
         }

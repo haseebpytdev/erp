@@ -168,6 +168,7 @@
     @endif
     @if(in_array('payment',$allowedTypes,true))
       <a class="et-fin-btn primary" href="{{ route('accounting.cash-vouchers.create',['type'=>'payment']) }}">＋ Payment Voucher</a>
+      @if(in_array('customer_reimbursement',$allowedTypes,true))<a class="et-fin-btn primary" href="{{ route('accounting.cash-vouchers.create',['type'=>'customer_reimbursement']) }}">＋ Customer Reimbursement</a>@endif
     @endif
     @if(in_array('expense',$allowedTypes,true))
       <a class="et-fin-btn primary" href="{{ route('accounting.cash-vouchers.create',['type'=>'expense']) }}">＋ Expense Voucher</a>
@@ -199,7 +200,7 @@
       <label>Type</label>
       <select name="type">
         <option value="">All Types</option>
-        @foreach(['receipt'=>'Receipt','payment'=>'Payment','expense'=>'Expense','contra'=>'Contra','customer_advance'=>'Customer Advance','supplier_advance'=>'Supplier Advance'] as $k=>$v)
+        @foreach(['receipt'=>'Receipt','payment'=>'Payment','customer_reimbursement'=>'Customer Reimbursement','expense'=>'Expense','contra'=>'Contra','customer_advance'=>'Customer Advance','supplier_advance'=>'Supplier Advance'] as $k=>$v)
           @if(in_array($k,$allowedTypes,true))<option value="{{ $k }}" @selected(request('type')===$k)>{{ $v }}</option>@endif
         @endforeach
       </select>

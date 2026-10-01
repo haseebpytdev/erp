@@ -29,7 +29,7 @@ class CashVoucherController extends Controller
     public function index(Request $request)
     {
         $allowedTypes = array_values(array_filter(
-            ['receipt', 'payment', 'expense', 'contra', 'customer_advance', 'supplier_advance'],
+            ['receipt', 'payment', 'customer_reimbursement', 'expense', 'contra', 'customer_advance', 'supplier_advance'],
             fn (string $type): bool => $this->service->canUseType($request->user(), $type, 'view')
         ));
         abort_if($allowedTypes === [], 403);
@@ -44,8 +44,8 @@ class CashVoucherController extends Controller
 
             if ($mode === 'receipts' && in_array('receipt', $allowedTypes, true)) {
                 $query->where('voucher_type', 'receipt');
-            } elseif ($mode === 'payments' && in_array('payment', $allowedTypes, true)) {
-                $query->where('voucher_type', 'payment');
+            } elseif ($mode === 'payments' && (in_array('payment', $allowedTypes, true) || in_array('customer_reimbursement', $allowedTypes, true))) {
+                $query->whereIn('voucher_type', array_values(array_intersect(['payment','customer_reimbursement'], $allowedTypes)));
             } elseif ($mode === 'expenses' && in_array('expense', $allowedTypes, true)) {
                 $query->where('voucher_type', 'expense');
             } elseif ($mode === 'contra' && in_array('contra', $allowedTypes, true)) {
@@ -162,7 +162,7 @@ class CashVoucherController extends Controller
     public function create(Request $request)
     {
         $type = (string) $request->query('type', 'receipt');
-        abort_unless(in_array($type, ['receipt', 'payment', 'expense', 'contra', 'customer_advance', 'supplier_advance'], true), 404);
+        abort_unless(in_array($type, ['receipt', 'payment', 'customer_reimbursement', 'expense', 'contra', 'customer_advance', 'supplier_advance'], true), 404);
         abort_unless($this->service->canUseType($request->user(), $type, 'create'), 403);
 
         return view('accounting.cash-vouchers.form', $this->formData(null, $type));
@@ -171,7 +171,7 @@ class CashVoucherController extends Controller
     public function documents(Request $request)
     {
         $type = (string) $request->query('voucher_type', '');
-        abort_unless(in_array($type, ['receipt', 'payment'], true), 404);
+        abort_unless(in_array($type, ['receipt', 'payment', 'customer_reimbursement'], true), 404);
         abort_unless($this->service->canUseType($request->user(), $type, 'view'), 403);
         $definition = $this->service->voucherDefinition($type);
         $partyId = (int) $request->query('party_id', 0);
@@ -180,7 +180,7 @@ class CashVoucherController extends Controller
         } catch (RuntimeException $e) {
             throw ValidationException::withMessages(['party_id' => $e->getMessage()]);
         }
-        $types = $type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ['supplier_costing','party_opening_payable'];
+        $types = $type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($type === 'customer_reimbursement' ? ['party_opening_customer_payable'] : ['supplier_costing','party_opening_payable']);
         $documents = [];
         // Historical contract remains explicit: documentOptions($definition['target_type'], $partyId, $definition['party_type'])
         foreach ($types as $targetType) $documents = array_merge($documents, $this->service->documentOptions($targetType, $partyId, $definition['party_type']));
@@ -190,7 +190,7 @@ class CashVoucherController extends Controller
     public function bookings(Request $request)
     {
         $type = (string) $request->query('voucher_type', '');
-        abort_unless(in_array($type, ['receipt', 'payment', 'customer_advance', 'supplier_advance'], true), 404);
+        abort_unless(in_array($type, ['receipt', 'payment', 'customer_reimbursement', 'customer_advance', 'supplier_advance'], true), 404);
         abort_unless($this->service->canUseType($request->user(), $type, 'view'), 403);
         $partyId = (int) $request->query('party_id', 0);
         $definition = $this->service->voucherDefinition($type);
@@ -556,7 +556,7 @@ class CashVoucherController extends Controller
     private function validateHeader(Request $request, ?string $lockedType = null): array
     {
         $data = $request->validate([
-            'voucher_type' => ['required', Rule::in(['receipt', 'payment', 'expense', 'contra', 'customer_advance', 'supplier_advance'])],
+            'voucher_type' => ['required', Rule::in(['receipt', 'payment', 'customer_reimbursement', 'expense', 'contra', 'customer_advance', 'supplier_advance'])],
             'party_id' => ['nullable', 'integer', 'min:1'],
             'party_name' => ['nullable', 'string', 'max:255'],
             'booking_id' => ['nullable', 'integer', 'min:1'],
@@ -608,7 +608,7 @@ class CashVoucherController extends Controller
             'allocations.*.amount' => ['required', 'numeric', 'gt:0'],
             'allocations.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
-        $allowed = $voucherType === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucherType === 'payment' ? ['supplier_costing','party_opening_payable'] : []);
+            $allowed = $voucherType === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucherType === 'payment' ? ['supplier_costing','party_opening_payable'] : ($voucherType === 'customer_reimbursement' ? ['party_opening_customer_payable'] : []));
         $rows = array_values(array_map(static function (array $row) use ($targetType): array { $row['target_type'] = $row['target_type'] ?? $targetType; return $row; }, (array) ($validated['allocations'] ?? [])));
         foreach ($rows as $row) if ($allowed !== [] && ! in_array((string) $row['target_type'], $allowed, true)) throw ValidationException::withMessages(['allocations' => 'Invalid allocation target type for this voucher.']);
         return $rows;
@@ -723,7 +723,7 @@ class CashVoucherController extends Controller
             if (! $voucher?->party_id) abort(422, 'A canonical voucher party is required before allocating documents.');
             $definition = $this->service->voucherDefinition((string) $voucher->voucher_type);
             $actualTargetType = (string) ($allocation['target_type'] ?? $targetType);
-            $allowed = $voucher->voucher_type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucher->voucher_type === 'payment' ? ['supplier_costing','party_opening_payable'] : []);
+            $allowed = $voucher->voucher_type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucher->voucher_type === 'payment' ? ['supplier_costing','party_opening_payable'] : ($voucher->voucher_type === 'customer_reimbursement' ? ['party_opening_customer_payable'] : []));
             if ($allowed !== [] && ! in_array($actualTargetType, $allowed, true)) abort(422, 'Allocation target type is not allowed for this voucher.');
             $document = $this->service->documentSnapshot($actualTargetType, (int) $allocation['target_id'], (int) $voucher->party_id, $definition['party_type']);
             if (! $document['party_id'] || (int) $voucher->party_id !== (int) $document['party_id']) {

@@ -238,7 +238,7 @@
         <div class="cvf27-card-head">
           <div>
             <div class="cvf27-card-title">Allocate to {{ $definition['target_label'] }}</div>
-            <div class="cvf27-help">Optional. Unallocated balance becomes {{ $definition['party_type']==='customer'?'Customer Advance':'Vendor Advance' }} automatically.</div>
+            <div class="cvf27-help">{{ $type === 'customer_reimbursement' ? 'Required. Allocate the full payment to a posted Customer Payable / Reimbursement opening.' : 'Optional. Unallocated balance becomes '.($definition['party_type']==='customer'?'Customer Advance':'Vendor Advance').' automatically.' }}</div>
           </div>
           <button type="button" class="cvf27-btn" id="addAllocation">+ Add Allocation</button>
         </div>

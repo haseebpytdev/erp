@@ -600,3 +600,11 @@ body.et-ui-professional .aa-item b{
   body.et-ui-professional .et-fin-filter > a.et-fin-btn:last-child{grid-row:auto!important;justify-self:stretch!important}
   body.et-ui-professional .et-summary-strip{grid-template-columns:1fr!important}
 }
+
+/* ERP-11.3.378 Corrective #21 compact smart transaction forms. */
+.et378-smart-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px 12px;align-items:end}
+.et378-smart-field,.et378-smart-grid .et378-field{min-width:0}
+.et378-span-2{grid-column:span 2}.et378-span-3{grid-column:span 3}.et378-span-4{grid-column:span 4}.et378-span-5{grid-column:span 5}.et378-span-6{grid-column:span 6}
+.et378-compact-section{margin-bottom:14px}.et378-compact-form textarea{min-height:54px;resize:vertical}.et378-inline-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media(max-width:1099px){.et378-smart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.et378-smart-grid>*{grid-column:span 1!important}}
+@media(max-width:620px){.et378-smart-grid{grid-template-columns:1fr}.et378-smart-grid>*{grid-column:span 1!important}.et378-inline-summary{grid-template-columns:1fr}.et378-compact-form .et378-actions{justify-content:stretch;flex-wrap:wrap}.et378-compact-form .et378-actions>*{flex:1 1 100%}}

@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        $s = $this->schema();
+        if (!$s['control_type'] || !$s['parent']) throw new \RuntimeException('Customer Payable control account requires control_type and parent columns.');
+        $matches = DB::table($s['table'])->whereRaw('UPPER('.$s['control_type'].') = ?', ['CUSTOMER_PAYABLE'])->get();
+        if ($matches->count() > 1) throw new \RuntimeException('Multiple CUSTOMER_PAYABLE control accounts exist; migration stopped.');
+        if ($matches->count() === 1) { $this->assertCompatible($matches->first(), $s); return; }
+        $same = DB::table($s['table'])->get()->filter(fn($r): bool => $this->norm((string)($r->{$s['name']} ?? '')) === 'customer payables / reimbursements');
+        if ($same->count() > 0) throw new \RuntimeException('A Customer Payables / Reimbursements account exists without the required control identity; migration stopped.');
+        $vendor = DB::table($s['table'])->whereRaw('UPPER('.$s['control_type'].') = ?', ['VENDOR_AP'])->get();
+        if ($vendor->count() !== 1) throw new \RuntimeException('Expected exactly one active VENDOR_AP control account.');
+        $vendor = $vendor->first(); $this->assertPosting($vendor, $s);
+        $parentValue = $vendor->{$s['parent']} ?? null;
+        if ($parentValue === null || $parentValue === '') throw new \RuntimeException('VENDOR_AP parent is missing.');
+        $parent = $this->parentUsesId($s) ? DB::table($s['table'])->where($s['id'],$parentValue)->first() : DB::table($s['table'])->where($s['code'],(string)$parentValue)->first();
+        if (!$parent || $this->type((string)$parent->{$s['type']}) !== 'liability') throw new \RuntimeException('VENDOR_AP parent is not Liability-compatible.');
+        $code = $this->nextCode($parent, $s); $insert=[$s['code']=>$code,$s['name']=>'Customer Payables / Reimbursements',$s['type']=>$this->storageType('liability',$s),$s['parent']=>$this->parentValue($parent,$s)];
+        if($s['subtype'])$insert[$s['subtype']]='Customer Payable / Reimbursement'; if($s['normal'])$insert[$s['normal']]=$this->storageNormal('credit',$s); if($s['posting'])$insert[$s['posting']]=1; if($s['control_flag'])$insert[$s['control_flag']]=1; $insert[$s['control_type']]='CUSTOMER_PAYABLE'; if($s['status'])$insert[$s['status']]='active'; if($s['active'])$insert[$s['active']]=1; foreach(['company_id','branch_id','organization_id','tenant_id','legal_entity_id'] as $c)if(in_array($c,$s['columns'],true))$insert[$c]=$parent->{$c}??null; if($s['created_at'])$insert[$s['created_at']]=now(); if($s['updated_at'])$insert[$s['updated_at']]=now(); DB::table($s['table'])->insert($insert);
+    }
+    public function down(): void {}
+    private function schema(): array { foreach(['chart_of_accounts','chart_accounts','accounts','account_masters','gl_accounts'] as $table){if(!Schema::hasTable($table))continue;$c=Schema::getColumnListing($table);$first=fn(array $x)=>collect($x)->first(fn($v)=>in_array($v,$c,true));$s=['table'=>$table,'columns'=>$c,'id'=>$first(['id','account_id']),'code'=>$first(['code','account_code','gl_code','number','account_number']),'name'=>$first(['name','account_name','title']),'type'=>$first(['type','account_type','category','account_category']),'subtype'=>$first(['subtype','sub_type','account_subtype','account_sub_type']),'parent'=>$first(['parent_id','parent_account_id','parent_account','parent_code']),'normal'=>$first(['normal_balance','normal_side','balance_type']),'posting'=>$first(['allow_direct_journal_posting','allow_direct_posting','allow_posting','is_posting','posting_allowed','can_post']),'control_flag'=>$first(['is_control_account','is_control','control_account']),'control_type'=>$first(['control_type','control_code','control_key']),'status'=>$first(['status','account_status']),'active'=>$first(['is_active','active','enabled']),'created_at'=>$first(['created_at']),'updated_at'=>$first(['updated_at'])];if($s['id']&&$s['code']&&$s['name']&&$s['type'])return $s;}throw new \RuntimeException('Chart of Accounts table could not be resolved.'); }
+    private function type(string $v): string { $v=strtolower(trim($v)); return str_contains($v,'liab')?'liability':$v; }
+    private function parentUsesId(array $s): bool { if(str_ends_with(strtolower($s['parent']),'_id'))return true;$sample=DB::table($s['table'])->whereNotNull($s['parent'])->value($s['parent']);if($sample===null||$sample==='')return false;$byId=DB::table($s['table'])->where($s['id'],$sample)->exists();$byCode=DB::table($s['table'])->where($s['code'],(string)$sample)->exists();if($byId&&!$byCode)return true;if($byCode&&!$byId)return false;return str_contains(strtolower($s['parent']),'id'); }
+    private function parentValue(object $p,array $s): mixed { return $this->parentUsesId($s)?$p->{$s['id']}:$p->{$s['code']}; }
+    private function nextCode(object $p,array $s): string { $base=trim((string)$p->{$s['code']});$children=DB::table($s['table'])->where($s['parent'],$this->parentValue($p,$s))->pluck($s['code'])->map(fn($v)=>trim((string)$v))->all();$n=0;foreach($children as $c)if(preg_match('/^'.preg_quote($base,'/').'[-\.]?(\d+)$/i',$c,$m))$n=max($n,(int)$m[1]);do{$n++;$code=$base.'-'.str_pad((string)$n,2,'0',STR_PAD_LEFT);}while(DB::table($s['table'])->where($s['code'],$code)->exists());return$code; }
+    private function assertPosting(object $r,array $s): void { if($s['active']&&property_exists($r,$s['active'])&&!((bool)$r->{$s['active']}))throw new \RuntimeException('VENDOR_AP is inactive.');if($s['status']&&property_exists($r,$s['status'])&&!in_array(strtolower((string)$r->{$s['status']}),['active','enabled','open'],true))throw new \RuntimeException('VENDOR_AP is not active.');if($s['posting']&&property_exists($r,$s['posting'])&&!((bool)$r->{$s['posting']}))throw new \RuntimeException('VENDOR_AP is not posting-enabled.');if($s['control_flag']&&property_exists($r,$s['control_flag'])&&!((bool)$r->{$s['control_flag']}))throw new \RuntimeException('VENDOR_AP is not a control account.'); }
+    private function assertCompatible(object $r,array $s): void { if($this->norm((string)$r->{$s['name']})!=='customer payables / reimbursements'||($s['subtype']&&$this->norm((string)($r->{$s['subtype']}??''))!=='customer payable / reimbursement')||$this->type((string)$r->{$s['type']})!=='liability'||($s['normal']&&strtolower((string)$r->{$s['normal']})!=='credit')||($s['active']&&!((bool)$r->{$s['active']}))||($s['posting']&&!((bool)$r->{$s['posting']}))||($s['control_flag']&&!((bool)$r->{$s['control_flag']})))throw new \RuntimeException('Existing CUSTOMER_PAYABLE account is incompatible.'); }
+    private function storageType(string $v,array $s): string { $sample=(string)(DB::table($s['table'])->whereNotNull($s['type'])->value($s['type'])??'');return $sample!==''&&$sample===strtoupper($sample)?strtoupper($v):strtolower($v); }
+    private function storageNormal(string $v,array $s): string { $sample=(string)(DB::table($s['table'])->whereNotNull($s['normal'])->value($s['normal'])??'');return $sample!==''&&$sample===strtolower($sample)?strtolower($v):strtoupper($v); }
+    private function norm(string $v): string { return strtolower((string)preg_replace('/\s+/',' ',trim($v))); }
+};
