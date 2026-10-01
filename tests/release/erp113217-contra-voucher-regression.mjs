@@ -45,7 +45,8 @@ ok(form.includes('destination_account') && service.includes('cashBankAccount'), 
 ok(form.includes('Transfer Method') && form.includes('Bank Transfer'), 'Bank to Bank transfer method is supported');
 ok(index.includes("['mode'=>'contra']") && index.includes("$contraDetails[$r->id]"), 'register identifies Contra transfers');
 ok(controller.includes("voucher_type = 'expense'") && controller.includes("voucher_type = 'contra'"), 'Contra is excluded from Expense totals');
-ok(controller.includes("voucher_type = 'payment'") && controller.includes('AS contra'), 'Contra is excluded from Supplier Payment totals');
+const paymentsSummaryBlock = controller.match(/\$mode === 'payments'[\s\S]*?\n\s*\}\s*elseif/s)?.[0] ?? '';
+ok(controller.includes("array_intersect(['payment','customer_reimbursement'], $allowedTypes)") && !paymentsSummaryBlock.includes("'contra'") && controller.includes("$query->where('voucher_type', 'contra')"), 'Payments summary includes only payment/customer_reimbursement while Contra remains separate');
 ok(print.includes("$row->voucher_type==='contra'") && print.includes('CONTRA VOUCHER') === false && print.includes("strtoupper($definition['label'])"), 'Contra print renders from its dedicated definition');
 ok(service.includes("'view contra vouchers'") && service.includes("'reverse contra vouchers'") && accessPolicy.includes("'manage contra vouchers'") && permissionMatrix.includes("'contra'"), 'dedicated Contra permissions are enforced and categorized');
 ok(service.includes("'expense' => 'EV'") && service.includes("'label' => 'Expense Voucher'"), 'Expense Voucher remains valid');
