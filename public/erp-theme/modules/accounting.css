@@ -25,6 +25,48 @@ body.et-ui-module-accounting :where(.mr .bad,.mr .loss){color:var(--et-danger);}
 @media(max-width:700px){body.et-ui-module-accounting :where(.mr-head){display:block;}body.et-ui-module-accounting :where(.mr-table-wrap){overflow-x:auto;}}
 body.et-ui-module-accounting :where(.report-filters,.ledger-filters){gap:10px;}
 
+/* ERP-11.3.378 Party Balance Lifecycle workspace. Scoped to Accounting. */
+body.et-ui-module-accounting :where(.et378,.et378-form,.et378-show){max-width:1480px;margin:0 auto;color:#17243a}
+body.et-ui-module-accounting :where(.et378 *, .et378-form *, .et378-show *){box-sizing:border-box}
+body.et-ui-module-accounting :where(.et378-head){display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+body.et-ui-module-accounting :where(.et378-kicker){font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#1769d2}
+body.et-ui-module-accounting :where(.et378 h1,.et378-form h1,.et378-show h1){margin:4px 0;font-size:26px}
+body.et-ui-module-accounting :where(.et378-sub){color:#708197;font-size:12px}
+body.et-ui-module-accounting :where(.et378-btn){display:inline-flex;align-items:center;min-height:37px;padding:8px 14px;border:1px solid #cbd8e6;border-radius:8px;background:#fff;color:#24405f;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
+body.et-ui-module-accounting :where(.et378-btn.primary){background:#1469d2;border-color:#1469d2;color:#fff}
+body.et-ui-module-accounting :where(.et378-btn.danger){background:#fff1f1;border-color:#e7aeb2;color:#a43f47}
+body.et-ui-module-accounting :where(.et378-card){background:#fff;border:1px solid #dce5ef;border-radius:11px;box-shadow:0 4px 14px #1c2d4408;overflow:hidden;margin:16px 0;padding:18px}
+body.et-ui-module-accounting :where(.et378-card-head){display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid #e8edf3}
+body.et-ui-module-accounting :where(.et378-card-head strong){font-size:14px}
+body.et-ui-module-accounting :where(.et378-filters){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;padding:14px}
+body.et-ui-module-accounting :where(.et378-grid){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+body.et-ui-module-accounting :where(.et378-field label){display:block;margin-bottom:5px;font-size:10px;font-weight:800;color:#607087;text-transform:uppercase}
+body.et-ui-module-accounting :where(.et378-field input,.et378-field select,.et378-field textarea){width:100%;min-height:38px;border:1px solid #d3deea;border-radius:7px;padding:8px 10px;color:#26384e;background:#fff}
+body.et-ui-module-accounting :where(.et378-field textarea){min-height:84px;resize:vertical}
+body.et-ui-module-accounting :where(.et378-actions){display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:16px}
+body.et-ui-module-accounting :where(.et378-table){width:100%;border-collapse:collapse}
+body.et-ui-module-accounting :where(.et378-table th,.et378-table td){padding:10px 11px;border-bottom:1px solid #edf1f5;text-align:left;font-size:11px;vertical-align:middle}
+body.et-ui-module-accounting :where(.et378-table th){background:#f7f9fc;color:#5b6d84;font-size:9px;text-transform:uppercase}
+body.et-ui-module-accounting :where(.et378-table tbody tr:hover){background:#fbfdff}
+body.et-ui-module-accounting :where(.et378-money){font-weight:800;white-space:nowrap}
+body.et-ui-module-accounting :where(.et378-status){display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef3f8;color:#49617d;font-size:9px;font-weight:800;text-transform:capitalize}
+body.et-ui-module-accounting :where(.et378-empty){text-align:center!important;padding:34px!important;color:#7a899d}
+body.et-ui-module-accounting :where(.et378-pages){padding:12px 14px}
+body.et-ui-module-accounting :where(.et378-pages a,.et378-pages span){display:inline-flex;min-width:28px;height:28px;align-items:center;justify-content:center;border:1px solid #dce5ef;border-radius:6px;margin-right:4px;text-decoration:none;color:#41566f;font-size:10px}
+body.et-ui-module-accounting :where(.et378-pages .active){background:#1469d2;color:#fff;border-color:#1469d2}
+body.et-ui-module-accounting :where(.et378-meta){display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+body.et-ui-module-accounting :where(.et378-meta div,.et378-total){padding:12px;border:1px solid #e4ebf3;border-radius:8px;background:#f8fafc}
+body.et-ui-module-accounting :where(.et378-meta small,.et378-total small){display:block;color:#708197;font-size:10px;text-transform:uppercase;font-weight:800}
+body.et-ui-module-accounting :where(.et378-meta strong,.et378-total strong){display:block;margin-top:4px;font-size:13px}
+body.et-ui-module-accounting :where(.et378-table-wrap){overflow-x:auto;-webkit-overflow-scrolling:touch}
+body.et-ui-module-accounting :where(.et378-totalbar){display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+body.et-ui-module-accounting :where(.et378-alert){padding:10px 12px;border-radius:8px;background:#fff0f0;color:#a43f47;font-size:12px}
+@media(max-width:900px){body.et-ui-module-accounting :where(.et378-filters){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){body.et-ui-module-accounting :where(.et378-head){display:block}body.et-ui-module-accounting :where(.et378-head .et378-btn){margin-top:12px}body.et-ui-module-accounting :where(.et378-meta){grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){body.et-ui-module-accounting :where(.et378-grid,.et378-filters){grid-template-columns:1fr}}
+@media(max-width:460px){body.et-ui-module-accounting :where(.et378-meta){grid-template-columns:1fr}}
+@media(max-width:600px){body.et-ui-module-accounting :where(.et378-table){min-width:850px}body.et-ui-module-accounting :where(.et378-card){overflow-x:auto}}
+
 
 /* Migrated Accounting Voucher presentation authority (ERP-11.3.291). */
 /* ERP-11.3.235 — Accounting voucher workspace visual system.
