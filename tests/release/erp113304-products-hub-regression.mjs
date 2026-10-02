@@ -23,7 +23,10 @@ ok(view.includes("$lock['locked'] ? 'View'") && view.includes("'Open Air'"), 'Lo
 ok(view.includes('Not Configured') && view.includes('Other Services'), 'Other Services remains an explicit non-configured card');
 ok(step1.includes("['1','Booking & Passengers']") && step1.includes("['2','Products']") && step1.includes("['3','Review']"), 'Step 1 keeps the approved labels');
 ok(step1.includes("var step=create(item[0]==='2'?'a':'div'") && step1.includes("step.href='/operations/bookings/'+String(etgpBookingId11397()||'')+'/products'"), 'Step 1 Products is a normal same-origin link to the independent Products document');
-ok(!step1.includes('products.hidden=true') && step1.includes('renderProducts('), 'Step 1 retains existing product editors until safe cross-document migration is complete');
+ok(step1.includes('etgpMainBookingOverview11390') && step1.includes('if(etgpMainBookingOverview11390(root))return;'), 'Main Booking deterministically skips detailed product rendering');
+ok(step1.includes('etgp-passenger-card') && step1.includes('etgp-booking-card') && step1.includes('etgp-booking-commercial-summary'), 'Main Booking still mounts passenger presentation, header and commercial summary');
+ok(view.includes('data-et-products-hub="1"') && !view.includes('data-etgp-product-buttons') && !view.includes('data-etgp-product-shells'), 'Products Hub remains cards-only without editor mount targets');
+ok(step1.includes('etgpMountDedicatedProduct113305') && view.includes("route('bookings.products.workspace'"), 'Dedicated product pages own detailed product editors');
 ok(step1.includes('etgp-passenger-card') && step1.includes('etgp-booking-card') && step1.includes('etgp-booking-commercial-summary'), 'Passengers, Booking Header and Commercial Summary remain on Step 1');
 ok(view.includes("route('bookings.products.workspace'") && view.includes("'product'=>$item[0]"), 'Product cards link to canonical dedicated product entry points');
 ok(!routes.includes('Route::post(\'/operations/bookings/{booking}/products'), 'Products Hub adds no mutation endpoint');

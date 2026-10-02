@@ -31,10 +31,11 @@ final class BookingProductsHubController extends Controller
         if ($snapshots['hotel']['stays'] ?? []) $selected[] = 'hotel';
         if (($snapshots['transport']['transports'] ?? []) || ($snapshots['transport']['services'] ?? [])) $selected[] = 'transport';
         if ($snapshots['visa']['visa_rows'] ?? []) $selected[] = 'visa';
+        $passengerCount = count(is_array($snapshots['air']['passengers'] ?? null) ? $snapshots['air']['passengers'] : []);
         return view('operations.bookings.products-hub-v113304', [
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'booking' => (array) $row,
             'customer' => $customer->resolve($booking), 'lock' => $locks->fromRow((array) $row),
-            'snapshots' => $snapshots, 'selected' => array_values(array_unique($selected)),
+            'snapshots' => $snapshots, 'selected' => array_values(array_unique($selected)), 'passengerCount' => $passengerCount,
         ]);
     }
 

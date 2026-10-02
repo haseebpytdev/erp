@@ -2510,11 +2510,17 @@ var etgpEnsureTransportSelectionForm113179=function(bookingId,retire){
   return id;
 };
 
+var etgpMainBookingOverview11390=function(root){
+  if(root&&root.dataset&&root.dataset.etgpDedicatedProduct==='1')return false;
+  return /^\/operations\/bookings\/\d+\/?$/i.test(String(window.location.pathname||''));
+};
+
 var renderProducts=function(
   root,
   reference,
   paxCount
 ){
+  if(etgpMainBookingOverview11390(root))return;
   etBookingWorkspaceContext113305.setRoot(root,reference);
   var selected=etBookingWorkspaceContext113305.getProductSelection(reference);
   var locked=etBookingWorkspaceContext113305.isLocked();

@@ -75,6 +75,7 @@ body.et-ui-module-operations :where(.et-ph-workflow span){padding-right:10px;bor
 body.et-ui-module-operations :where(.et-ph-workflow span:last-child){border-right:0}
 body.et-ui-module-operations :where(.et-ph-workflow .done){color:#16774d}
 body.et-ui-module-operations :where(.et-ph-workflow .current){color:var(--et-primary)}
+body.et-ui-module-operations :where(.et-ph-workflow .pending){color:var(--et-muted)}
 body.et-ui-module-operations :where(.et-ph-card-head){display:flex;align-items:center;justify-content:space-between;gap:8px}
 body.et-ui-module-operations :where(.et-ph-top){display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 16px}
 body.et-ui-module-operations :where(.et-ph-top h1){margin:2px 0 4px;color:var(--et-text);font-size:25px;line-height:1.18;font-weight:800}
