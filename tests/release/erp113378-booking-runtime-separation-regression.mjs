@@ -17,6 +17,22 @@ ok(view.includes("$passengerReady ? 'done' : 'pending'"), 'Passenger workflow cl
 ok(view.includes("$productsReady ? 'done' : 'pending'"), 'Product workflow class is dynamic');
 ok(view.includes('$approvalDone') && view.includes('$approvalCurrent'), 'Approval workflow state derives from persisted status');
 ok(!view.includes('class="done">Passengers') && !view.includes('class="done">Products'), 'Required workflow states are not falsely green');
+ok(view.includes('$reviewDone') && view.includes('$reviewCurrent') && !view.includes('class="current">Review'), 'Review workflow state is no longer hard-coded');
+const normalize = status => String(status).trim().toLowerCase().replace(/[_-]/g, ' ').replace(/\s+/g, ' ');
+const workflow = (status, passengers, products) => {
+  const value = normalize(status);
+  const approvalDone = ['approved', 'confirmed', 'travel ready'].includes(value);
+  const approvalCurrent = ['pending', 'pending approval', 'submitted', 'awaiting approval'].includes(value);
+  const reviewDone = approvalDone || approvalCurrent;
+  const reviewCurrent = !reviewDone && ['draft', 'reopened'].includes(value) && passengers > 0 && products > 0;
+  return { review: reviewDone ? 'done' : (reviewCurrent ? 'current' : 'pending'), approval: approvalDone ? 'done' : (approvalCurrent ? 'current' : 'pending') };
+};
+ok(workflow('Draft', 2, 1).review === 'current' && workflow('Draft', 0, 0).review === 'pending', 'Draft review state follows readiness');
+ok(workflow('Reopened', 2, 1).review === 'current' && workflow('Reopened', 0, 1).review === 'pending', 'Reopened review state follows readiness');
+ok(workflow('Pending Approval', 2, 1).review === 'done' && workflow('Pending Approval', 2, 1).approval === 'current', 'Pending Approval maps to completed review and current approval');
+ok(workflow('Approved', 2, 1).review === 'done' && workflow('Approved', 2, 1).approval === 'done', 'Approved maps to completed review and approval');
+ok(workflow('Travel Ready', 2, 1).review === 'done' && workflow('Travel Ready', 2, 1).approval === 'done', 'Travel Ready maps to completed review and approval');
+ok(!view.includes("['approved','posted','completed','closed']") && !view.includes('class="current">Review'), 'No fake approval statuses or hard-coded Review current remain');
 ok(runtime.includes('etgpMainBookingOverview11390') && runtime.includes('if(etgpMainBookingOverview11390(root))return;'), 'Main Booking skips detailed product renderProducts calls');
 ok(runtime.includes('etgp-passenger-card') && runtime.includes('quick-add'), 'Main Booking passenger runtime remains present');
 ok(presenter.includes('data-et-smart-products-entry="1"') && !presenter.includes('data-et-booking-products-launcher="1"'), 'Smart Products entry remains the sole normal product entry');
