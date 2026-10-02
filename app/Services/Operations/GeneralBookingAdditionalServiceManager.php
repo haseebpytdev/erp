@@ -81,7 +81,8 @@ final class GeneralBookingAdditionalServiceManager
     public function show(int $bookingId, int $batchId): array
     {
         $state = $this->indexState($bookingId);
-        if (($state['booking_missing'] ?? false) || ! ($state['schema_ready'] ?? false)) return $state + ['batch_missing' => true];
+        if (($state['booking_missing'] ?? false)) return $state;
+        if (! ($state['schema_ready'] ?? false)) return $state + ['batch_missing' => false];
         $batch = DB::table('general_booking_billing_batches')->where('id', $batchId)->where('booking_id', $bookingId)->first();
         if (! $batch) return $state + ['batch_missing' => true];
         return $state + ['batch' => (array) $batch, 'product_items' => [], 'product_choices_disabled' => true];
