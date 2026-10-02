@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+const migration = read('database/migrations/2026_09_30_140000_create_general_booking_billing_foundation.php');
+const resolver = read('app/Services/Operations/GeneralBookingBillingStateResolver.php');
+const inspector = read('app/Services/Operations/NativeSalesInvoiceInspector.php');
+const bridge = read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php');
+let pass = 0;
+const ok = (value, label) => { assert.ok(value, label); pass++; };
+
+for (const table of ['general_booking_billing_batches', 'general_booking_billing_batch_items', 'general_booking_invoice_links']) ok(migration.includes(`Schema::create('${table}'`), `${table} is defined`);
+ok(migration.includes("unique(['booking_id', 'batch_no']") && migration.includes('batch_no'), 'batch sequence is unique per booking');
+ok(migration.includes("unique(['batch_id', 'line_no']") && migration.includes("unique(['batch_id', 'source_key']"), 'batch item identities are unique');
+ok(migration.includes("$table->unique('batch_id'") && migration.includes("$table->unique('sales_invoice_id'") && migration.includes("unique(['booking_id', 'invoice_sequence']"), 'invoice links enforce one invoice per batch, batch per invoice and sequence per booking');
+ok(migration.includes("batch_type', 24") && migration.includes("status', 32)->default('draft')"), 'foundation status and batch type columns are present');
+ok(migration.includes("batch_no');") || migration.includes("batch_no');"), 'base and supplementary sequence storage is present');
+ok(migration.includes('Schema::dropIfExists(\'general_booking_invoice_links\')') && migration.includes('Schema::dropIfExists(\'general_booking_billing_batches\')'), 'down removes tables in reverse dependency order');
+ok(!migration.includes("Schema::table('sales_invoices'") && !migration.includes("Schema::table('sales_invoice_lines'"), 'native invoice tables are not altered');
+ok(resolver.includes('final class GeneralBookingBillingStateResolver') && resolver.includes('function resolve(int $bookingId)'), 'billing resolver is present');
+ok(resolver.includes("'schema_ready' => $tablesReady") && resolver.includes('nativeInvoices($bookingId)'), 'resolver reports schema readiness and reads native invoices');
+ok(resolver.includes("'legacy_base_candidate' => $legacyCandidate") && resolver.includes("'legacy_invoice_ambiguous' => $legacyAmbiguous"), 'legacy invoices are surfaced without auto-linking or guessing');
+ok(resolver.includes("self::INACTIVE") && resolver.includes("self::POSTED"), 'active and posted status filters are explicit');
+ok(resolver.includes("$approved = $batches->where('status', 'approved')") && resolver.includes('approvedUninvoiced'), 'approved-uninvoiced total uses approved batches without links');
+ok(resolver.includes("'total_invoiced'") && resolver.includes("'total_posted'") && resolver.includes("'next_invoice_sequence'"), 'read model exposes invoice totals and next sequence');
+ok(inspector.includes("'sales_invoices'") && bridge.includes('lockForUpdate'), 'existing native invoice authority and booking lock remain available');
+ok(migration.includes('sales_invoice_id') && migration.includes('invoice_no_snapshot'), 'native sales invoice identity is explicit');
+ok(migration.includes('source_snapshot_hash') && migration.includes('product_snapshot') && migration.includes('source_hash'), 'immutable batch and item snapshots are stored');
+ok(!migration.includes('DB::table') && !migration.includes('->insert(') && !migration.includes('->update('), 'migration performs no existing-data backfill');
+ok(bridge.includes("$invoiceSummary['all_count']") && inspector.includes("'all_count'=>count($invoices)"), 'current exact-one general booking guard remains present');
+console.log(`ERP113378_BOOKING_BILLING_FOUNDATION=PASS (${pass} assertions)`);
