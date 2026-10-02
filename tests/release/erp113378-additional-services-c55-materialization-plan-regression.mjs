@@ -1,0 +1,37 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+
+const root = path.resolve(import.meta.dirname, '../..');
+const read = file => fs.readFileSync(path.join(root, file), 'utf8');
+const planner = read('app/Services/Operations/GeneralBookingAdditionalServiceMaterializationPlanner.php');
+let n = 0;
+const ok = (v, m) => { n++; assert.ok(v, m); };
+
+ok(planner.includes('final class GeneralBookingAdditionalServiceMaterializationPlanner'), 'planner exists');
+ok(planner.includes('public function plan(int $bookingId, int $batchId)'), 'planner has read-only plan API');
+ok(planner.includes("$base['batch_status'] !== 'approved'") && planner.includes('only_approved_batch_plannable'), 'only approved batches are plannable');
+ok(planner.includes('$this->integrity->build($bookingId, $batchId)') && planner.includes('snapshot_integrity_failed'), 'freeze hash is rechecked and mismatch blocks');
+ok(planner.includes("'source_table'" ) || planner.includes('$row->source_table'), 'materialization links are classified');
+ok(planner.includes('partial_materialization_link'), 'partial links block');
+ok(planner.includes('foreign_or_missing_native_source'), 'foreign or missing native source blocks');
+ok(planner.includes("'materialized'" ) && planner.includes("'unmaterialized'" ), 'linked and unlinked item states are represented');
+ok(planner.includes("'air_ticket_details'") && planner.includes("'booking_itinerary_segments'"), 'air required tables are checked');
+ok(planner.includes('hash(\'sha256\',json_encode([') && planner.includes("$s['flight_number']") && planner.includes("$s['departure_at']"), 'air grouping key is deterministic');
+ok(!planner.includes("$s['booking_passenger_id']??null,$s['from']"), 'air grouping does not use passenger identity');
+ok(planner.includes("'service_strategy'=>'new_service'") && planner.includes("'reuse_existing_service'"), 'native service strategy is explicit');
+ok(planner.includes('booking_hotel_stays') && planner.includes('hotel_native_stay_store_unresolved'), 'hotel native table authority is resolved safely');
+ok(planner.includes('booking_transport_segments') && planner.includes('transport_native_store_unresolved'), 'transport native table authority is resolved safely');
+ok(planner.includes('booking_visa_services') && planner.includes('visa_existing_passenger_conflict'), 'existing Visa passenger collision blocks');
+ok(planner.includes('passengerBelongs($bookingId,$p)'), 'Air passenger ownership is validated');
+ok(planner.includes('NativeProductServiceResolver') && planner.includes('findAir') && planner.includes('findHotel') && planner.includes('findTransport') && planner.includes('findVisa'), 'Product/Service masters use resolver authority');
+ok(!planner.includes('product_service_id = ') && !planner.includes('product_service_id='), 'Product/Service IDs are not hard-coded');
+ok(planner.includes("'atomic' => true"), 'atomic batch plan is exposed');
+ok(planner.includes("$base['materialization_state'] = 'already_materialized'"), 'fully linked batches are classified already materialized');
+ok(planner.includes("$pending === 0 && $linked === $base['item_count']"), 'all-linked retry is idempotent');
+ok(planner.includes("$base['pending_count'] = $pending") && planner.includes('materialization_blocked'), 'partial state blocks the batch');
+ok(planner.includes("'would_reset_travel_ready' => false"), 'Travel Ready is reported only and never changed');
+ok(!planner.includes('GeneralBookingAirProductController') && !planner.includes('GeneralBookingHotelProductController') && !planner.includes('GeneralBookingTransportProductController') && !planner.includes('GeneralBookingVisaProductController'), 'native store controllers are not reused');
+ok(!planner.includes('->insert(') && !planner.includes('->update(') && !planner.includes('->delete(') && !planner.includes('updateOrInsert'), 'planner performs no database writes');
+ok(!planner.includes('sales_invoices') && !planner.includes('journal_entries'), 'planner adds no invoice or accounting writes');
+console.log(`ERP378 ADDITIONAL SERVICES C55 MATERIALIZATION PLAN REGRESSION: PASS (${n} assertions)`);
