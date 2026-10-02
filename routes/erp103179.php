@@ -341,6 +341,8 @@ Route::patch('/operations/bookings/{booking}/additional-services/{batch}/product
     ->whereNumber('booking')->whereNumber('batch')->whereNumber('item')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.items.update');
 Route::delete('/operations/bookings/{booking}/additional-services/{batch}/products/{product}/items/{item}', [GeneralBookingAdditionalServiceProductController::class, 'destroy'])
     ->whereNumber('booking')->whereNumber('batch')->whereNumber('item')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.items.destroy');
+Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow/{action}', [GeneralBookingAdditionalServiceController::class, 'workflow'])
+    ->whereNumber('booking')->whereNumber('batch')->whereIn('action', ['submit','approve','reject'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.workflow');
 
     Route::get('/operations/bookings/{booking}/products/air/fragment', [ProductWorkspaceController::class, 'fragment'])
         ->whereNumber('booking')
