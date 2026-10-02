@@ -23,21 +23,23 @@ final class GeneralBookingAdditionalServiceWorkflowManager
             if (! $batch) return $this->fail('batch_missing', 'Supplementary batch was not found.');
             if (strtolower((string) $batch->batch_type) !== 'supplementary') return $this->fail('base_batch', 'The Base batch cannot enter Supplementary workflow.');
             if (DB::table('general_booking_invoice_links')->where('batch_id', $batchId)->exists()) return $this->fail('invoiced', 'An invoiced batch cannot re-enter workflow.');
-            if ($action === 'submit' && strtolower((string) $batch->status) === 'pending_approval') return $this->fail('already_pending', 'This batch is already pending approval.');
-            if ($action === 'approve' && strtolower((string) $batch->status) === 'approved') return $this->fail('already_approved', 'This batch is already approved.');
-            if ($action === 'reject' && strtolower((string) $batch->status) === 'rejected') return $this->fail('already_rejected', 'This batch is already rejected.');
+            if ($action === 'submit' && strtolower((string) $batch->status) === 'pending_approval') return $this->idempotent('already_pending', 'pending_approval');
+            if ($action === 'approve' && strtolower((string) $batch->status) === 'approved') return $this->idempotent('already_approved', 'approved');
+            if ($action === 'reject' && strtolower((string) $batch->status) === 'rejected') return $this->idempotent('already_rejected', 'rejected');
             if (in_array($action, ['submit', 'approve'], true) && ! $this->parentAllows($bookingId)) return $this->fail('parent_locked_state', 'The parent booking must remain Approved or Travel Ready.');
             if ($action === 'submit') return $this->submit($bookingId, $batchId, $batch, $userId);
             if (strtolower((string) $batch->status) !== 'pending_approval') return $this->fail('invalid_state', 'This batch is not pending approval.');
+            if ($action === 'reject') {
+                $reason = trim((string) $reason); if ($reason === '' || mb_strlen($reason) > 2000) return $this->fail('rejection_reason_required', 'A rejection reason is required.');
+                DB::table('general_booking_billing_batches')->where('id', $batchId)->update(['status' => 'rejected', 'rejected_by' => $userId, 'rejected_at' => now(), 'rejection_reason' => $reason, 'updated_by' => $userId, 'updated_at' => now(), 'lock_version' => ((int) $batch->lock_version) + 1]);
+                return ['ok' => true, 'status' => 'rejected'];
+            }
             $frozen = $this->integrity->build($bookingId, $batchId);
             if ((string) $batch->source_snapshot_hash !== (string) $frozen['hash']) return $this->fail('snapshot_integrity_failed', 'The submitted snapshot no longer matches persisted items.');
             if ($action === 'approve') {
                 DB::table('general_booking_billing_batches')->where('id', $batchId)->update(['status' => 'approved', 'approved_by' => $userId, 'approved_at' => now(), 'updated_by' => $userId, 'updated_at' => now(), 'lock_version' => ((int) $batch->lock_version) + 1]);
                 return ['ok' => true, 'status' => 'approved'];
             }
-            $reason = trim((string) $reason); if ($reason === '' || mb_strlen($reason) > 2000) return $this->fail('rejection_reason_required', 'A rejection reason is required.');
-            DB::table('general_booking_billing_batches')->where('id', $batchId)->update(['status' => 'rejected', 'rejected_by' => $userId, 'rejected_at' => now(), 'rejection_reason' => $reason, 'updated_by' => $userId, 'updated_at' => now(), 'lock_version' => ((int) $batch->lock_version) + 1]);
-            return ['ok' => true, 'status' => 'rejected'];
         });
     }
 
@@ -62,4 +64,6 @@ final class GeneralBookingAdditionalServiceWorkflowManager
     }
 
     private function fail(string $code, string $message): array { return ['ok' => false, 'code' => $code, 'message' => $message]; }
+
+    private function idempotent(string $code, string $status): array { return ['ok' => true, 'code' => $code, 'status' => $status, 'idempotent' => true]; }
 }
