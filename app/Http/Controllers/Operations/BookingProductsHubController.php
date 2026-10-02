@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\BookingEditLockResolver;
+use App\Services\Operations\GeneralBookingAdditionalServiceManager;
 use App\Services\Operations\BookingTravelReadinessResolver;
 use App\Services\Operations\NativeBookingCustomerResolver;
 use App\Services\Operations\NativeErpLayoutResolver;
@@ -15,7 +16,7 @@ use Throwable;
 
 final class BookingProductsHubController extends Controller
 {
-    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks): View
+    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks, GeneralBookingAdditionalServiceManager $additional): View
     {
         abort_unless(Schema::hasTable('bookings'), 404);
         $row = DB::table('bookings')->where('id', $booking)->first();
@@ -36,6 +37,7 @@ final class BookingProductsHubController extends Controller
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'booking' => (array) $row,
             'customer' => $customer->resolve($booking), 'lock' => $locks->fromRow((array) $row),
             'snapshots' => $snapshots, 'selected' => array_values(array_unique($selected)), 'passengerCount' => $passengerCount,
+            'additionalServices' => $additional->indexState($booking, (int) ($request->user()?->id ?? 0)),
         ]);
     }
 

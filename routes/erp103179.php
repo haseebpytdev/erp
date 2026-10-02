@@ -11,6 +11,7 @@ use App\Http\Controllers\Operations\GeneralBookingOperationalSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingInvoiceSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingReviewController;
 use App\Http\Controllers\Operations\BookingProductsHubController;
+use App\Http\Controllers\Operations\GeneralBookingAdditionalServiceController;
 use App\Http\Controllers\Operations\ProductWorkspaceController;
 use App\Http\Controllers\Operations\VisaMasterController;
 use App\Http\Controllers\Operations\GeneralBookingVoucherPreviewController;
@@ -324,6 +325,13 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
 
     Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])
         ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.products.show');
+
+Route::get('/operations/bookings/{booking}/additional-services', [GeneralBookingAdditionalServiceController::class, 'index'])
+    ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.index');
+Route::post('/operations/bookings/{booking}/additional-services/start', [GeneralBookingAdditionalServiceController::class, 'start'])
+    ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.start');
+Route::get('/operations/bookings/{booking}/additional-services/{batch}', [GeneralBookingAdditionalServiceController::class, 'show'])
+    ->whereNumber('booking')->whereNumber('batch')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.show');
 
     Route::get('/operations/bookings/{booking}/products/air/fragment', [ProductWorkspaceController::class, 'fragment'])
         ->whereNumber('booking')
