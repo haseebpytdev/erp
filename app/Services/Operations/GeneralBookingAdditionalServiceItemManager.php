@@ -29,6 +29,7 @@ final class GeneralBookingAdditionalServiceItemManager
         }
         $state['passengers'] = in_array($product, ['air', 'visa'], true) ? $this->passengerOptions($bookingId) : [];
         $state['vendors'] = $this->vendorOptions();
+        $state['airlines'] = $product === 'air' ? $this->airlineOptions() : [];
         return $state;
     }
 
@@ -71,7 +72,9 @@ final class GeneralBookingAdditionalServiceItemManager
             $batch = $this->lockWritableBatch($bookingId, $batchId, $product);
             $item = DB::table('general_booking_billing_batch_items')->where('id', $itemId)->where('batch_id', $batchId)->lockForUpdate()->first();
             if (! $item || strtolower((string) $item->product_type) !== $product) return $this->fail('item_missing', 'Draft item was not found.');
-            $snapshot = $this->normalize($bookingId, $product, $input);
+            $existing = json_decode((string) ($item->product_snapshot ?? ''), true);
+            $existing = is_array($existing) ? $existing : [];
+            $snapshot = $this->normalize($bookingId, $product, array_replace($existing, $input));
             $this->validate($bookingId, $product, $snapshot);
             if ($product === 'air' && $this->duplicateAir($batchId, $snapshot, $itemId)) throw new \InvalidArgumentException('This Air passenger/sector/departure line already exists in the Draft.');
             $commercial = $this->commercial($product, $snapshot, $batch);
@@ -121,16 +124,16 @@ final class GeneralBookingAdditionalServiceItemManager
     private function normalize(int $bookingId, string $product, array $input): array
     {
         $fields = match ($product) {
-            'air' => ['booking_passenger_id','airline_id','airline_code','airline_name','flight_number','pnr','from','to','departure_at','arrival_at','booking_class','baggage','vendor_id','vendor_name','sale_price','cost_price'],
-            'hotel' => ['vendor_id','vendor_name','city','hotel_id','hotel_name','room_type','board','check_in','check_out','sale_rate','cost_rate','confirmation_no'],
-            'transport' => ['vendor_id','vendor_name','route_source_key','from_location','to_location','vehicle_type','service_date','company_name','driver_name','contact_number','plate_number','brn_number','sale_price','cost_price'],
-            default => ['booking_passenger_id','country','visa_type','provider_type','visa_rate_card_id','saudi_company_id','saudi_company_name','pakistani_iata_id','pakistani_iata_name','vendor_id','vendor_name','application_reference','sale_price','cost_price'],
+            'air' => ['booking_passenger_id','airline_id','airline_code','airline_name','flight_number','pnr','from','to','departure_at','arrival_at','booking_class','baggage','vendor_id','sale_price','cost_price'],
+            'hotel' => ['vendor_id','city','hotel_id','hotel_name','room_type','board','check_in','check_out','sale_rate','cost_rate','confirmation_no'],
+            'transport' => ['vendor_id','route_source_key','from_location','to_location','vehicle_type','service_date','company_name','driver_name','contact_number','plate_number','brn_number','sale_price','cost_price'],
+            default => ['booking_passenger_id','country','visa_type','provider_type','visa_rate_card_id','saudi_company_id','saudi_company_name','pakistani_iata_id','pakistani_iata_name','vendor_id','application_reference','sale_price','cost_price'],
         };
         $out = []; foreach ($fields as $field) if (array_key_exists($field, $input)) $out[$field] = is_string($input[$field]) ? trim(preg_replace('/\s+/', ' ', $input[$field]) ?? $input[$field]) : $input[$field];
         foreach (['booking_passenger_id','airline_id','vendor_id','hotel_id','visa_rate_card_id','saudi_company_id','pakistani_iata_id'] as $id) if (array_key_exists($id, $out)) $out[$id] = $out[$id] === '' ? null : (int) $out[$id];
         foreach (['sale_price','cost_price','sale_rate','cost_rate'] as $money) if (array_key_exists($money, $out) && $out[$money] !== '') { if (! is_numeric($out[$money])) throw new \InvalidArgumentException('Commercial amounts must be numeric.'); $out[$money] = round((float) $out[$money], 2); }
-        foreach (['check_in','check_out','service_date'] as $date) if (! empty($out[$date])) $out[$date] = (new DateTimeImmutable((string) $out[$date]))->format('Y-m-d');
-        foreach (['departure_at','arrival_at'] as $date) if (! empty($out[$date])) $out[$date] = (new DateTimeImmutable((string) $out[$date]))->format('Y-m-d H:i:s');
+        foreach (['check_in','check_out','service_date'] as $date) if (array_key_exists($date, $out) && $out[$date] !== '') $out[$date] = $this->canonicalDate((string) $out[$date]);
+        foreach (['departure_at','arrival_at'] as $date) if (array_key_exists($date, $out) && $out[$date] !== '') $out[$date] = $this->canonicalDateTime((string) $out[$date]);
         return $out;
     }
 
@@ -150,6 +153,8 @@ final class GeneralBookingAdditionalServiceItemManager
         }
         if ($product === 'hotel') { $in = new DateTimeImmutable((string) $snapshot['check_in']); $out = new DateTimeImmutable((string) $snapshot['check_out']); if ($out <= $in || $in->diff($out)->days < 1) throw new \InvalidArgumentException('Hotel check-out must be after check-in.'); }
         if ($snapshot['vendor_id'] ?? null) { $vendor = collect($this->vendorOptions())->first(fn (array $v) => (int) $v['id'] === (int) $snapshot['vendor_id']); if (! $vendor) throw new \InvalidArgumentException('Vendor is not valid.'); $snapshot['vendor_name'] = $vendor['name']; }
+        else { $snapshot['vendor_id'] = null; $snapshot['vendor_name'] = null; }
+        if ($product === 'air' && ($snapshot['airline_id'] ?? null)) { $airline = collect($this->airlineOptions())->first(fn (array $v) => (int) $v['id'] === (int) $snapshot['airline_id']); if (! $airline) throw new \InvalidArgumentException('Airline is not valid.'); $snapshot['airline_name'] = $airline['name']; $snapshot['airline_code'] = $airline['code']; }
     }
 
     private function commercial(string $product, array $s, object $batch): array
@@ -178,6 +183,9 @@ final class GeneralBookingAdditionalServiceItemManager
     private function sort(array $value): array { foreach ($value as $k => $v) if (is_array($v)) $value[$k] = $this->sort($v); ksort($value); return $value; }
     private function passengerOptions(int $bookingId): array { return collect($this->passengers->rows($bookingId))->map(fn ($p) => ['id' => (int) $p->id, 'name' => trim((string) ($p->name ?? $p->full_name ?? $p->passenger_name ?? trim((string) ($p->first_name ?? $p->given_name ?? '').' '.(string) ($p->last_name ?? $p->surname ?? ''))))])->all(); }
     private function vendorOptions(): array { return $this->catalog->vendors()->map(fn ($v) => ['id' => (int) ($v->id ?? $v['id'] ?? 0), 'name' => (string) ($v->name ?? $v->party_name ?? $v['name'] ?? '')])->filter(fn (array $v) => $v['id'] > 0)->values()->all(); }
+    private function airlineOptions(): array { return $this->catalog->airlines()->map(fn ($v) => ['id' => (int) ($v['id'] ?? $v['id'] ?? 0), 'name' => (string) ($v['name'] ?? $v['airline_name'] ?? ''), 'code' => (string) ($v['code'] ?? $v['airline_code'] ?? '')])->filter(fn (array $v) => $v['id'] > 0)->values()->all(); }
+    private function canonicalDate(string $value): string { $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value); $errors = DateTimeImmutable::getLastErrors(); if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) || $date === false || ($errors !== false && ($errors['warning_count'] || $errors['error_count']))) throw new \InvalidArgumentException('Invalid date format.'); return $date->format('Y-m-d'); }
+    private function canonicalDateTime(string $value): string { $value = str_replace('T', ' ', $value); $format = strlen($value) > 16 ? '!Y-m-d H:i:s' : '!Y-m-d H:i'; $date = DateTimeImmutable::createFromFormat($format, $value); $errors = DateTimeImmutable::getLastErrors(); if (! preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?::\d{2})?$/', $value) || $date === false || ($errors !== false && ($errors['warning_count'] || $errors['error_count']))) throw new \InvalidArgumentException('Invalid date/time format.'); return $date->format('Y-m-d H:i:s'); }
     private function fail(string $code, string $message): array { return ['ok' => false, 'status' => $code, 'message' => $message]; }
     private function createToken(int $bookingId, int $batchId, string $product): string { return Crypt::encryptString(json_encode(['booking_id' => $bookingId, 'batch_id' => $batchId, 'product' => $product, 'nonce' => (string) Str::uuid()])); }
     private function tokenPayload(string $token): array { try { $value = json_decode(Crypt::decryptString($token), true); return is_array($value) ? $value : []; } catch (\Throwable) { return []; } }

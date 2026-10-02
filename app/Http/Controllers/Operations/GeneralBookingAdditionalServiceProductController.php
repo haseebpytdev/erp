@@ -15,7 +15,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     public function edit(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items, NativeErpLayoutResolver $layout): View
     {
         $state = $items->editor($booking, $batch, $product, $request->integer('item') ?: null);
-        abort_if(($state['batch_missing'] ?? false) || ($state['item_missing'] ?? false) || ! ($state['schema_ready'] ?? false), 404);
+        abort_if(($state['batch_missing'] ?? false) || ($state['item_missing'] ?? false), 404);
         return view('operations.bookings.additional-services.product', ['layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'batchId' => $batch, 'state' => $state, 'product' => $product]);
     }
 
