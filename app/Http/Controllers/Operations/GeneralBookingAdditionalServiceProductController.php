@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Http\Controllers\Operations;
+
+use App\Http\Controllers\Controller;
+use App\Services\Operations\GeneralBookingAdditionalServiceItemManager;
+use App\Services\Operations\NativeErpLayoutResolver;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Throwable;
+
+final class GeneralBookingAdditionalServiceProductController extends Controller
+{
+    public function edit(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items, NativeErpLayoutResolver $layout): View
+    {
+        $state = $items->editor($booking, $batch, $product, $request->integer('item') ?: null);
+        abort_if(($state['batch_missing'] ?? false) || ! ($state['schema_ready'] ?? false), 404);
+        return view('operations.bookings.additional-services.product', ['layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'batchId' => $batch, 'state' => $state, 'product' => $product]);
+    }
+
+    public function store(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
+    {
+        try { $result = $items->create($booking, $batch, $product, $request->except(['_token']), (int) ($request->user()?->id ?? 0)); }
+        catch (Throwable $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        if (! ($result['ok'] ?? false)) return back()->withErrors(['product' => $result['message'] ?? 'Draft item could not be saved.'])->withInput();
+        return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch]);
+    }
+
+    public function update(Request $request, int $booking, int $batch, string $product, int $item, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
+    {
+        try { $result = $items->update($booking, $batch, $item, $product, $request->except(['_token','_method'])); }
+        catch (Throwable $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        if (! ($result['ok'] ?? false)) return back()->withErrors(['product' => $result['message'] ?? 'Draft item could not be updated.'])->withInput();
+        return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch]);
+    }
+
+    public function destroy(int $booking, int $batch, string $product, int $item, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
+    {
+        try { $result = $items->delete($booking, $batch, $item, $product); }
+        catch (Throwable $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        if (! ($result['ok'] ?? false)) return back()->withErrors(['product' => $result['message'] ?? 'Draft item could not be removed.']);
+        return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch]);
+    }
+}

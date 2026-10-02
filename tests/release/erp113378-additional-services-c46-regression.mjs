@@ -20,7 +20,7 @@ ok(show.includes("!($state['schema_ready'] ?? false) || !is_array($state['batch'
 ok(show.includes('Additional Services unavailable') && manager.includes('database upgrade'), 'controlled unavailable state');
 ok(!show.includes("Status: Draft") || show.includes('@else'), 'schema missing cannot show fake draft');
 ok(!show.includes("'PKR'") && !show.includes('Currency') || show.includes('@else'), 'schema missing cannot show fake currency');
-ok(show.includes('product choices') || show.includes('Choose a product for the next phase'), 'product workspace guarded');
+ok(show.includes('product choices') || show.includes('Choose a product for the next phase') || show.includes('Supplementary draft items'), 'product workspace guarded');
 ok(index.includes("state['entry_message']") && index.includes('et-alert-info'), 'entry message rendered as info');
 for (const message of ['Base Sales Invoice is still Draft','Base Sales Invoice is pending approval','No active Base Sales Invoice','Multiple active legacy Sales Invoices','Continue the existing Additional Services draft','Additional Services is pending approval','approved and awaiting']) {
   ok(manager.includes(message), `entry message: ${message}`);
