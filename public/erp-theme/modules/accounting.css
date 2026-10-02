@@ -39,6 +39,10 @@ body.et-ui-module-accounting :where(.et378 h1,.et378-form h1,.et378-show h1){mar
 body.et-ui-module-accounting :where(.et378-sub){color:#708197;font-size:12px}
 body.et-ui-module-accounting :where(.et378-btn){display:inline-flex;align-items:center;min-height:37px;padding:8px 14px;border:1px solid #cbd8e6;border-radius:8px;background:#fff;color:#24405f;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
 body.et-ui-module-accounting :where(.et378-btn.primary){background:#1469d2;border-color:#1469d2;color:#fff}
+body.et-ui-module-accounting :where(a.et378-btn.primary,button.et378-btn.primary,.et378-btn.primary):hover,
+body.et-ui-module-accounting :where(a.et378-btn.primary,button.et378-btn.primary,.et378-btn.primary):focus-visible,
+body.et-ui-module-accounting :where(a.et378-btn.primary,button.et378-btn.primary,.et378-btn.primary):active{background:#0f56b7!important;border-color:#0f56b7!important;color:#fff!important;text-decoration:none!important}
+body.et-ui-module-accounting :where(a.et378-btn.primary,button.et378-btn.primary,.et378-btn.primary):visited{color:#fff!important}
 body.et-ui-module-accounting :where(.et378-btn.danger){background:#fff1f1;border-color:#e7aeb2;color:#a43f47}
 body.et-ui-module-accounting :where(.et378-card){background:#fff;border:1px solid #dce5ef;border-radius:11px;box-shadow:0 4px 14px #1c2d4408;overflow:hidden;margin:16px 0;padding:18px}
 body.et-ui-module-accounting :where(.et378-card-head){display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 15px;border-bottom:1px solid #e8edf3}

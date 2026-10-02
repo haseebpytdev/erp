@@ -41,6 +41,9 @@ ok('sidebar opening label', sidebar.includes('<span>Opening Balances</span>') &&
 ok('sidebar return label', sidebar.includes('<span>Advance Returns</span>') && !sidebar.includes('<span>Customer Advance Returns</span>'));
 const releaseMiddleware=read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
 const accountingCss=read('public/erp-theme/modules/accounting.css');
+const runtimeCoreCss=read('public/erp-theme/et-core.css');
+const runtimeRegistersCss=read('public/erp-theme/modules/registers.css');
+const runtimeController=read('app/Http/Controllers/System/ErpProfessionalUiAssetController.php');
 const professionalCss=read('public/erp-ui/erp-professional.css');
 ok('sidebar compact labels scoped', releaseMiddleware.includes('compactSidebarReleaseBlock') && releaseMiddleware.includes('Party Balances') && releaseMiddleware.includes("ERP-11.3.378"));
 ok('sidebar labels remain semantic', sidebar.includes('data-et-live-accounting-nav="party-opening"') && sidebar.includes('data-et-live-accounting-nav="customer-advance-return"'));
@@ -60,6 +63,11 @@ ok('button family fixtures covered', professionalCss.includes('.btn-primary') &&
 ok('all primary aliases mirror interaction states', ['.sci-primary','.scs-primary','.scb-primary','.cvs27-primary','.cvf27-primary','.aa-primary','.mr-btn'].every(token=>professionalCss.includes(token)));
 ok('ERP378 secondary hover is scoped', accountingCss.includes('.et378-btn:not(.primary):not(.success):not(.danger):not(.warning)') && accountingCss.includes('color:var(--et-text)!important'));
 ok('ERP378 reversal keeps danger family', source.includes('et378-btn danger') && professionalCss.includes('a.danger') && professionalCss.includes('button.danger'));
+ok('runtime asset pipeline reaches active theme', runtimeController.includes("public/erp-theme/et-core.css") && runtimeController.includes("public/erp-theme/et-shell.css") && runtimeController.includes("modules/accounting.css") && runtimeController.includes("modules/registers.css"));
+ok('active core primary states remain white', ['a.btn.primary','button.btn.primary','.et378-btn.primary','.et-reg-primary-action',':hover',':visited',':focus-visible',':active','color:#fff!important'].every(token=>runtimeCoreCss.includes(token)));
+ok('active accounting primary states remain white', ['a.et378-btn.primary','button.et378-btn.primary',':hover',':visited',':focus-visible',':active','color:#fff!important'].every(token=>accountingCss.includes(token)));
+ok('active register primary states remain white', ['.et-reg-primary-action:hover','.et-reg-primary-action:visited','.et-reg-primary-action:focus-visible','.et-reg-primary-action:active','color:#fff!important'].every(token=>runtimeRegistersCss.includes(token)));
+ok('dashboard primary aliases are runtime-covered', runtimeCoreCss.includes('.btn.primary') && runtimeCoreCss.includes('.et-btn.primary') && runtimeCoreCss.includes(':hover') && runtimeCoreCss.includes(':active'));
 ok('canonical metadata unchanged', read('VERSION.txt').includes('v1.1.33.378-ERP11.3.378') && read('config/et_erp_release.php').includes('ERP-11.3.378 Party Balance Lifecycle'));
 ok('migrations and services untouched', !source.includes('Migration') && fs.existsSync(path.join(root,'app/Services/Accounting/PartyBalanceLifecycleService.php')));
 const cashVoucherIndex=read('resources/views/accounting/cash-vouchers/index.blade.php');
