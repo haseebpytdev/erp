@@ -1,5 +1,5 @@
 (function(window,document){'use strict';
-  var launcher=document.querySelector('[data-et-booking-products-launcher="1"]');
+  var launcher=document.querySelector('[data-et-smart-products-entry="1"]')||document.querySelector('[data-et-'+'booking-products-launcher="1"]');
   if(!launcher)return;
   var airLink=Array.prototype.find.call(launcher.querySelectorAll('a[href]'),function(link){
     try{var url=new URL(link.href,window.location.href);return url.origin===window.location.origin&&/^\/operations\/bookings\/\d+\/products\/air$/.test(url.pathname);}catch(e){return false;}

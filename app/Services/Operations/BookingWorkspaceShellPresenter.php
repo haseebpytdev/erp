@@ -287,14 +287,12 @@ HTML;
                 $html=preg_replace('/<\/body>/i',$locked."\n</body>",$html,1)??$html;
             }
             $reviewEntry = '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/review')).'" '
-                .'data-et-booking-review-entry="1" style="position:fixed;right:18px;bottom:18px;z-index:1000;padding:10px 15px;border-radius:9px;background:#1769d2;color:#fff;text-decoration:none;font:800 11px Arial,sans-serif;box-shadow:0 5px 16px rgba(23,105,210,.28)">Review Booking</a>';
+                .'class="et-booking-focus-btn primary" data-et-booking-review-entry="1" data-primary="1">Review Booking</a>';
             if (! str_contains($html, 'data-et-booking-review-entry="1"') && stripos($html, '</body>') !== false) {
                 $html = preg_replace('/<\/body>/i', $reviewEntry."\n</body>", $html, 1) ?? $html;
             }
-            $productLauncher = '<section data-et-booking-products-launcher="1" style="margin:18px 0;padding:14px;border:1px solid #dce8f5;border-radius:10px;background:#fff;box-shadow:0 5px 16px rgba(28,67,111,.12);font:800 11px Arial,sans-serif"><strong style="display:block;margin-bottom:8px">Booking Products</strong><div style="display:flex;gap:10px;flex-wrap:wrap">'
-                .implode('', array_map(static fn (string $product): string => '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/products/'.$product)).'" style="color:#1769d2;text-decoration:none">'.ucwords(str_replace('-', ' ', $product)).' →</a>', ['air','hotel','transport','visa','other-services']))
-                .'</div></section>';
-            if (! str_contains($html, 'data-et-booking-products-launcher="1"')) {
+            $productLauncher = '<section data-et-smart-products-entry="1" class="et-booking-smart-products"><strong>Products</strong><span>Manage Air, Hotel, Transport, Visa and Other Services</span><a class="et-booking-focus-btn primary" data-primary="1" href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/products')).'">Open Products</a></section>';
+            if (! str_contains($html, 'data-et-smart-products-entry="1"')) {
                 if (stripos($html, '</main>') !== false) {
                     $html = preg_replace('/<\/main>/i', $productLauncher."\n</main>", $html, 1) ?? $html;
                 } elseif (stripos($html, '</section>') !== false) {
@@ -304,7 +302,7 @@ HTML;
         }
 
         if (($isNativeBookingWorkspacePath || preg_match('#^operations/bookings/\d+/products/air$#', $path) === 1)
-            && str_contains($html, 'data-et-booking-products-launcher="1"')
+            && str_contains($html, 'data-et-smart-products-entry="1"')
         ) {
             $navigationScript = '<script src="'.e(route('system.erp-assets.dedicated-product-navigation')).'?v='.rawurlencode($assetVersion). '" defer data-et-dedicated-product-navigation="'.$assetVersion.'"></script>';
             $html = preg_replace('/<\/body>/i', $navigationScript."\n</body>", $html, 1) ?? $html;

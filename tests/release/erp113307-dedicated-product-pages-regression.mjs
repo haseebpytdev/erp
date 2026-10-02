@@ -44,8 +44,8 @@ ok(view.includes('Operational workspace not configured yet.'), 'Other Services i
 ok(!view.includes('data-etgp-product-buttons'), 'dedicated pages do not render aggregate product cards');
 ok(routes.includes("Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])"), 'aggregate Products route remains preserved');
 ok(!controller.includes('DB::table(\'booking_services\')->insert') && !controller.includes('DB::table(\'bookings\')->update'), 'workspace controller performs no product or lifecycle persistence');
-ok(presenter.includes('data-et-booking-products-launcher="1"') && presenter.includes('margin:18px 0'), 'main Booking launcher is normal in-document content');
-const launcher = presenter.slice(presenter.indexOf('data-et-booking-products-launcher="1"') - 120, presenter.indexOf('data-et-booking-products-launcher="1"') + 900);
+ok(presenter.includes('data-et-smart-products-entry="1"') && presenter.includes('Open Products'), 'main Booking launcher is a single smart Products entry');
+const launcher = presenter.slice(presenter.indexOf('data-et-smart-products-entry="1"') - 120, presenter.indexOf('data-et-smart-products-entry="1"') + 900);
 ok(!launcher.includes('position:fixed') && !launcher.includes('position:absolute'), 'main Booking launcher is not a floating overlay');
 ok(!view.includes('general-progressive-step1-css') && !view.includes('general-progressive-step1-js'), 'dedicated view leaves progressive asset ownership to the presenter');
 ok(controller.includes('string $product') && controller.includes('in_array($product, self::PRODUCTS, true)'), 'route product parameter is received and strictly validated by the controller');

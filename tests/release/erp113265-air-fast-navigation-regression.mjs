@@ -11,7 +11,7 @@ const partial = read('resources/views/operations/bookings/partials/product-works
 let pass = 0;
 const ok = (condition, label) => { assert.ok(condition, label); pass++; };
 
-ok(navigation.includes('[data-et-booking-products-launcher="1"]') && navigation.includes('operations\\/bookings\\/(\\d+)\\/products\\/air'), 'Air launcher is scoped to the current Booking products launcher');
+ok(navigation.includes('[data-et-smart-products-entry="1"]') && navigation.includes('operations\\/bookings\\/(\\d+)\\/products\\/air'), 'Air launcher is scoped to the current smart Products entry');
 ok(navigation.includes('event.preventDefault()') && navigation.includes('event.button!==0') && navigation.includes('event.metaKey') && navigation.includes('event.ctrlKey') && navigation.includes('event.shiftKey') && navigation.includes('event.altKey'), 'eligible primary clicks are intercepted while modified clicks remain native');
 ok(navigation.includes("/products/air/fragment") && navigation.includes("Accept:'text/html'") && navigation.includes("'X-Requested-With':'XMLHttpRequest'") && navigation.includes("credentials:'same-origin'"), 'fragment fetch contract is exact');
 ok(navigation.includes('AbortController') && navigation.includes('if(navigation)return'), 'concurrent navigation is guarded and abortable');
@@ -27,7 +27,7 @@ ok(navigation.includes('saveInFlight') && navigation.includes('draftPending') &&
 ok(navigation.includes('assetPromises') && navigation.includes('data-et-fast-nav-asset') && navigation.includes('dedicated-product-core') && navigation.includes('products-air'), 'required assets are deduplicated and loaded in core-before-Air order');
 ok(!navigation.includes('general-progressive-step1.js') && !navigation.includes('general-progressive-step1.css'), 'general progressive Air assets are not loaded by the fast path');
 ok(routes.includes("system.erp-assets.dedicated-product-navigation") && assetController.includes('dedicatedNavigation'), 'navigation module uses authenticated ERP asset delivery');
-ok(presenter.includes('data-et-dedicated-product-navigation') && presenter.includes('data-et-booking-products-launcher="1"'), 'navigation module is injected only with the native Booking products launcher');
+ok(presenter.includes('data-et-dedicated-product-navigation') && presenter.includes('data-et-smart-products-entry="1"'), 'navigation module is injected only with the native smart Products entry');
 ok(partial.includes('data-etgp-dedicated-product-body'), 'fragment target retains the dedicated product host contract');
 ok(bookingFocus.includes('window.etBookingFocus=window.etBookingFocus||{}') && bookingFocus.includes('mountPresentation') && bookingFocus.includes('etBookingFocusMountPresentation'), 'booking-focus exposes the reusable presentation seam');
 ok(bookingFocus.includes('window.etBookingFocus.mountPresentation=etBookingFocusMountPresentation') && bookingFocus.includes('etBookingFocusMountPresentation(document.querySelector'), 'initial document execution uses the same presentation seam');

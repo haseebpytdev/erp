@@ -11,9 +11,11 @@ const ok = (value, message) => { assert.ok(value, message); pass++; };
 
 ok(hub.includes('data-et-booking-smart-overview="1"'), 'smart booking header is marked in the runtime product overview');
 ok(hub.includes('booking_reference') && hub.includes('customer') && hub.includes('$lock[\'status\']'), 'header uses booking, customer and persisted status authorities');
-ok(hub.includes('data-et-booking-workflow="1"') && hub.includes('Passengers ✓') && hub.includes('Products ✓') && hub.includes('Billing / Travel'), 'compact workflow strip is present');
+ok(hub.includes('data-et-booking-workflow="1"') && hub.includes('Passengers') && hub.includes('Products') && hub.includes('Billing / Travel'), 'compact workflow strip is present and dynamic');
 ok(hub.includes('data-et-product-card="{{ $item[0] }}"') && hub.includes('data-et-product-card="other-services"'), 'five product overview cards are present');
-for (const path of ['air','hotel','transport','visa','other-services']) ok(hub.includes("url('/operations/bookings/'.$bookingId.'#'.$item[0])") || hub.includes(`url('/operations/bookings/'.$bookingId.'#${path}')`), `canonical product route context is preserved: ${path}`);
+ok(hub.includes("route('bookings.products.workspace'") && hub.includes("'product'=>$item[0]"), 'canonical dedicated product route is used for dynamic product cards');
+ok(hub.includes("'product'=>'other-services'"), 'canonical Other Services route is used');
+ok(!hub.includes('data-etgp-products-runtime') && !hub.includes('data-etgp-product-shells') && !hub.includes('general-progressive-step1.js'), 'Products Hub has no inline editor runtime mount');
 ok(hub.includes('Booking Value') && hub.includes('Supplier Cost'), 'product cards expose concise existing commercial summaries');
 ok(review.includes('data-et-booking-smart-review="1"') && review.includes('Commercial Summary') && review.includes('Sales Invoice'), 'review page has a simplified identity, commercial and billing hierarchy');
 ok(review.includes('data-et-booking-action-bar="1"') && review.includes('Preview Voucher') && review.includes('Send for Approval'), 'review action bar keeps existing workflow actions');
@@ -22,7 +24,9 @@ ok(review.includes('Mark as Travel Ready') && review.includes("action'=>'ready'"
 for (const selector of ['.br-btn.primary','.br-btn.green','.et-ph-btn.primary','.et-booking-focus-btn']) ok(css.includes(selector), `active booking button family is covered: ${selector}`);
 for (const state of [':hover',':visited',':focus-visible',':active']) ok(css.includes(state), `booking button state is covered: ${state}`);
 ok(css.includes('color:#fff!important') && css.includes('ACTIVE') === false, 'filled booking actions retain white foreground without unused CSS authority');
-ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes("system.erp-assets.general-progressive-step1-css"), 'booking runtime asset pipeline is explicit');
+ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes('data-et-smart-products-entry'), 'booking runtime asset pipeline and smart products entry are explicit');
+ok(presenter.includes('class="et-booking-focus-btn primary"') && presenter.includes('data-et-booking-review-entry'), 'floating Review Booking uses the booking primary class');
+ok(!presenter.includes('data-et-booking-products-launcher'), 'legacy duplicate Booking Products launcher is removed');
 ok(routes.includes("bookings.products.workspace") && routes.includes("bookings.review.show"), 'canonical booking product and review routes remain present');
 ok(!presenter.includes('SalesInvoiceDraftCreator') && !presenter.includes('DB::table'), 'booking presentation layer does not add accounting or database logic');
 console.log(`ERP113378_BOOKING_SMART_UI=PASS (${pass} assertions)`);
