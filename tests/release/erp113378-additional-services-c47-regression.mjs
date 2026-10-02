@@ -18,7 +18,7 @@ const bookingBranch = body.indexOf("if (($state['booking_missing'] ?? false)) re
 const schemaBranch = body.indexOf("if (! ($state['schema_ready'] ?? false)) return $state + ['batch_missing' => false];");
 const query = body.indexOf("DB::table('general_booking_billing_batches')");
 const missBranch = body.indexOf("if (! $batch) return $state + ['batch_missing' => true];");
-const realReturn = body.indexOf("'batch' => (array) $batch");
+const realReturn = body.indexOf("'batch' => $batchView");
 
 ok(bookingBranch >= 0, 'booking-missing authority returns state');
 ok(schemaBranch > bookingBranch && schemaBranch < query, 'schema unavailable branch precedes batch query');

@@ -85,7 +85,9 @@ final class GeneralBookingAdditionalServiceManager
         if (! ($state['schema_ready'] ?? false)) return $state + ['batch_missing' => false];
         $batch = DB::table('general_booking_billing_batches')->where('id', $batchId)->where('booking_id', $bookingId)->first();
         if (! $batch) return $state + ['batch_missing' => true];
-        return $state + ['batch' => (array) $batch, 'product_items' => [], 'product_choices_disabled' => true];
+        $items = \Illuminate\Support\Facades\DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->orderBy('line_no')->get();
+        $batchView = (array) $batch; $batchView['has_invoice_link'] = \Illuminate\Support\Facades\DB::table('general_booking_invoice_links')->where('batch_id', $batchId)->exists();
+        return $state + ['batch' => $batchView, 'items' => $items->map(static fn ($item): array => (array) $item)->all(), 'product_items' => $items->map(static fn ($item): array => (array) $item)->all(), 'product_choices_disabled' => false];
     }
 
     private function ensureBase(int $bookingId, array $state, int $userId): array

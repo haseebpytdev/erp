@@ -15,14 +15,15 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     public function edit(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items, NativeErpLayoutResolver $layout): View
     {
         $state = $items->editor($booking, $batch, $product, $request->integer('item') ?: null);
-        abort_if(($state['batch_missing'] ?? false) || ! ($state['schema_ready'] ?? false), 404);
+        abort_if(($state['batch_missing'] ?? false) || ($state['item_missing'] ?? false) || ! ($state['schema_ready'] ?? false), 404);
         return view('operations.bookings.additional-services.product', ['layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'batchId' => $batch, 'state' => $state, 'product' => $product]);
     }
 
     public function store(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
     {
         try { $result = $items->create($booking, $batch, $product, $request->except(['_token']), (int) ($request->user()?->id ?? 0)); }
-        catch (Throwable $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        catch (\InvalidArgumentException $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        catch (Throwable $e) { report($e); return back()->withErrors(['product' => 'The supplementary item could not be saved safely.']); }
         if (! ($result['ok'] ?? false)) return back()->withErrors(['product' => $result['message'] ?? 'Draft item could not be saved.'])->withInput();
         return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch]);
     }
@@ -30,7 +31,8 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     public function update(Request $request, int $booking, int $batch, string $product, int $item, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
     {
         try { $result = $items->update($booking, $batch, $item, $product, $request->except(['_token','_method'])); }
-        catch (Throwable $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        catch (\InvalidArgumentException $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        catch (Throwable $e) { report($e); return back()->withErrors(['product' => 'The supplementary item could not be updated safely.']); }
         if (! ($result['ok'] ?? false)) return back()->withErrors(['product' => $result['message'] ?? 'Draft item could not be updated.'])->withInput();
         return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch]);
     }
@@ -38,7 +40,8 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     public function destroy(int $booking, int $batch, string $product, int $item, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
     {
         try { $result = $items->delete($booking, $batch, $item, $product); }
-        catch (Throwable $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        catch (\InvalidArgumentException $e) { return back()->withErrors(['product' => $e->getMessage()]); }
+        catch (Throwable $e) { report($e); return back()->withErrors(['product' => 'The supplementary item could not be removed safely.']); }
         if (! ($result['ok'] ?? false)) return back()->withErrors(['product' => $result['message'] ?? 'Draft item could not be removed.']);
         return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch]);
     }

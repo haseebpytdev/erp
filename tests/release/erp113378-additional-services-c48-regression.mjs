@@ -25,7 +25,7 @@ ok(service.includes('recalculate($batchId, $batch)'), 'totals recalculated after
 ok(service.includes('customer_total') && service.includes('supplier_cost_total') && service.includes('margin_total') && service.includes('lock_version'), 'server batch totals and lock version');
 const totals = (rows) => { const sale = rows.reduce((s,r)=>s+r.sale,0); const cost = rows.reduce((s,r)=>s+r.cost,0); return {sale,cost,margin:sale-cost}; };
 ok(totals([{sale:100,cost:40},{sale:50,cost:20}]).margin === 90, 'margin formula');
-ok(service.includes('strtotime') && service.includes('quantity'), 'hotel nights server calculated');
+ok(service.includes('DateTimeImmutable') && service.includes('quantity'), 'hotel nights server calculated');
 ok(service.includes('sale_amount') && service.includes('supplier_cost_snapshot'), 'server commercial amounts');
 ok(service.includes('cost > 0') && service.includes('vendor is required'), 'vendor required for positive cost');
 ok(service.includes('vendor_name') && service.includes('vendorOptions'), 'vendor name server snapshot');
