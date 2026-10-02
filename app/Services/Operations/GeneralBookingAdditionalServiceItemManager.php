@@ -74,6 +74,10 @@ final class GeneralBookingAdditionalServiceItemManager
             if (! $item || strtolower((string) $item->product_type) !== $product) return $this->fail('item_missing', 'Draft item was not found.');
             $existing = json_decode((string) ($item->product_snapshot ?? ''), true);
             $existing = is_array($existing) ? $existing : [];
+            if ($product === 'air' && array_key_exists('airline_id', $input) && ($input['airline_id'] === null || $input['airline_id'] === '')) {
+                $input['airline_code'] = null;
+                if (! array_key_exists('airline_name', $input)) $input['airline_name'] = null;
+            }
             $snapshot = $this->normalize($bookingId, $product, array_replace($existing, $input));
             $this->validate($bookingId, $product, $snapshot);
             if ($product === 'air' && $this->duplicateAir($batchId, $snapshot, $itemId)) throw new \InvalidArgumentException('This Air passenger/sector/departure line already exists in the Draft.');
@@ -104,7 +108,7 @@ final class GeneralBookingAdditionalServiceItemManager
 
     private function batchState(int $bookingId, int $batchId, string $product): array
     {
-        if (! in_array($product, self::PRODUCTS, true) || ! Schema::hasTable('general_booking_billing_batches') || ! Schema::hasTable('general_booking_billing_batch_items') || ! Schema::hasTable('general_booking_invoice_links')) return ['schema_ready' => false, 'message' => 'Supplementary item storage is not ready.'];
+        if (! in_array($product, self::PRODUCTS, true) || ! $this->foundationReady()) return ['schema_ready' => false, 'message' => 'Additional Services requires the General Booking Billing database upgrade.'];
         $batch = DB::table('general_booking_billing_batches')->where('id', $batchId)->where('booking_id', $bookingId)->first();
         if (! $batch) return ['batch_missing' => true, 'schema_ready' => true];
         $items = DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->orderBy('line_no')->get();
@@ -114,6 +118,7 @@ final class GeneralBookingAdditionalServiceItemManager
     private function lockWritableBatch(int $bookingId, int $batchId, string $product): object
     {
         if (! in_array($product, self::PRODUCTS, true)) throw new \InvalidArgumentException('Unsupported supplementary product.');
+        $this->assertFoundationReady();
         $batch = DB::table('general_booking_billing_batches')->where('id', $batchId)->where('booking_id', $bookingId)->lockForUpdate()->first();
         if (! $batch) throw new \InvalidArgumentException('Supplementary batch does not belong to this booking.');
         if (strtolower((string) $batch->batch_type) !== 'supplementary' || strtolower((string) $batch->status) !== 'draft') throw new \InvalidArgumentException('Only a supplementary Draft batch can be edited.');
@@ -130,7 +135,7 @@ final class GeneralBookingAdditionalServiceItemManager
             default => ['booking_passenger_id','country','visa_type','provider_type','visa_rate_card_id','saudi_company_id','saudi_company_name','pakistani_iata_id','pakistani_iata_name','vendor_id','application_reference','sale_price','cost_price'],
         };
         $out = []; foreach ($fields as $field) if (array_key_exists($field, $input)) $out[$field] = is_string($input[$field]) ? trim(preg_replace('/\s+/', ' ', $input[$field]) ?? $input[$field]) : $input[$field];
-        foreach (['booking_passenger_id','airline_id','vendor_id','hotel_id','visa_rate_card_id','saudi_company_id','pakistani_iata_id'] as $id) if (array_key_exists($id, $out)) $out[$id] = $out[$id] === '' ? null : (int) $out[$id];
+        foreach (['booking_passenger_id','airline_id','vendor_id','hotel_id','visa_rate_card_id','saudi_company_id','pakistani_iata_id'] as $id) if (array_key_exists($id, $out)) $out[$id] = $this->normalizeIdentifier($out[$id], $id);
         foreach (['sale_price','cost_price','sale_rate','cost_rate'] as $money) if (array_key_exists($money, $out) && $out[$money] !== '') { if (! is_numeric($out[$money])) throw new \InvalidArgumentException('Commercial amounts must be numeric.'); $out[$money] = round((float) $out[$money], 2); }
         foreach (['check_in','check_out','service_date'] as $date) if (array_key_exists($date, $out) && $out[$date] !== '') $out[$date] = $this->canonicalDate((string) $out[$date]);
         foreach (['departure_at','arrival_at'] as $date) if (array_key_exists($date, $out) && $out[$date] !== '') $out[$date] = $this->canonicalDateTime((string) $out[$date]);
@@ -155,6 +160,7 @@ final class GeneralBookingAdditionalServiceItemManager
         if ($snapshot['vendor_id'] ?? null) { $vendor = collect($this->vendorOptions())->first(fn (array $v) => (int) $v['id'] === (int) $snapshot['vendor_id']); if (! $vendor) throw new \InvalidArgumentException('Vendor is not valid.'); $snapshot['vendor_name'] = $vendor['name']; }
         else { $snapshot['vendor_id'] = null; $snapshot['vendor_name'] = null; }
         if ($product === 'air' && ($snapshot['airline_id'] ?? null)) { $airline = collect($this->airlineOptions())->first(fn (array $v) => (int) $v['id'] === (int) $snapshot['airline_id']); if (! $airline) throw new \InvalidArgumentException('Airline is not valid.'); $snapshot['airline_name'] = $airline['name']; $snapshot['airline_code'] = $airline['code']; }
+        elseif ($product === 'air') { $snapshot['airline_code'] = null; $snapshot['airline_name'] = trim((string) ($snapshot['airline_name'] ?? '')) ?: null; }
     }
 
     private function commercial(string $product, array $s, object $batch): array
@@ -182,6 +188,9 @@ final class GeneralBookingAdditionalServiceItemManager
     private function hash(array $snapshot, array $commercial): string { ksort($snapshot); return hash('sha256', json_encode(['snapshot' => $this->sort($snapshot), 'commercial' => $commercial], JSON_UNESCAPED_SLASHES)); }
     private function sort(array $value): array { foreach ($value as $k => $v) if (is_array($v)) $value[$k] = $this->sort($v); ksort($value); return $value; }
     private function passengerOptions(int $bookingId): array { return collect($this->passengers->rows($bookingId))->map(fn ($p) => ['id' => (int) $p->id, 'name' => trim((string) ($p->name ?? $p->full_name ?? $p->passenger_name ?? trim((string) ($p->first_name ?? $p->given_name ?? '').' '.(string) ($p->last_name ?? $p->surname ?? ''))))])->all(); }
+    private function foundationReady(): bool { return Schema::hasTable('general_booking_billing_batches') && Schema::hasTable('general_booking_billing_batch_items') && Schema::hasTable('general_booking_invoice_links'); }
+    private function assertFoundationReady(): void { if (! $this->foundationReady()) throw new \InvalidArgumentException('Additional Services requires the General Booking Billing database upgrade.'); }
+    private function normalizeIdentifier(mixed $value, string $field): ?int { if ($value === null || $value === '') return null; if (is_int($value) && $value > 0) return $value; if (is_string($value) && preg_match('/^[1-9]\d*$/', trim($value))) return (int) trim($value); throw new \InvalidArgumentException('Invalid '.$field.'.'); }
     private function vendorOptions(): array { return $this->catalog->vendors()->map(fn ($v) => ['id' => (int) ($v->id ?? $v['id'] ?? 0), 'name' => (string) ($v->name ?? $v->party_name ?? $v['name'] ?? '')])->filter(fn (array $v) => $v['id'] > 0)->values()->all(); }
     private function airlineOptions(): array { return $this->catalog->airlines()->map(fn ($v) => ['id' => (int) ($v['id'] ?? $v['id'] ?? 0), 'name' => (string) ($v['name'] ?? $v['airline_name'] ?? ''), 'code' => (string) ($v['code'] ?? $v['airline_code'] ?? '')])->filter(fn (array $v) => $v['id'] > 0)->values()->all(); }
     private function canonicalDate(string $value): string { $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value); $errors = DateTimeImmutable::getLastErrors(); if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) || $date === false || ($errors !== false && ($errors['warning_count'] || $errors['error_count']))) throw new \InvalidArgumentException('Invalid date format.'); return $date->format('Y-m-d'); }
