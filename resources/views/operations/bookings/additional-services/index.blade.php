@@ -8,6 +8,9 @@
     @if(($state['message'] ?? null))
         <div class="et-alert et-alert-warning">{{ $state['message'] }}</div>
     @endif
+    @if(!($state['can_start_new_batch'] ?? false) && ($state['entry_message'] ?? null))
+        <div class="et-alert et-alert-info">{{ $state['entry_message'] }}</div>
+    @endif
     @if($errors->has('additional_services'))<div class="et-alert et-alert-danger">{{ $errors->first('additional_services') }}</div>@endif
     <div class="et-grid et-grid-3">
         <section class="et-card"><div class="et-card-label">Booking</div><strong>{{ $state['booking']['booking_reference'] ?? $state['booking']['reference_no'] ?? ('#'.$bookingId) }}</strong><div>{{ $customer['name'] ?? $customer['customer_name'] ?? 'Customer' }}</div><small>Status: {{ $state['booking_status'] ?? 'Unknown' }}</small></section>
