@@ -48,7 +48,6 @@ final class GeneralBookingBillingStateResolver
                 if (! $batchById->has($link->batch_id)) { $integrityErrors[] = 'link:'.(int) $link->link_id.':missing_batch'; continue; }
                 try { GeneralBookingBillingBatchContract::assertLinkConsistency((int) $link->batch_no, (string) $link->batch_type, (int) $link->invoice_sequence, (string) $link->link_type); }
                 catch (\Throwable $e) { $integrityErrors[] = 'link:'.(int) $link->link_id.':'.$e->getMessage(); }
-                $linkedBatchIds[(int) $link->batch_id] = true;
                 $invoice = [
                     'id' => (int) $link->sales_invoice_id,
                     'invoice_no' => (string) ($link->invoice_no ?: $link->invoice_no_snapshot ?: ''),
@@ -58,6 +57,9 @@ final class GeneralBookingBillingStateResolver
                     'batch_id' => (int) $link->batch_id, 'invoice_sequence' => (int) $link->invoice_sequence,
                 ];
                 if ($link->invoice_status === null) $integrityErrors[] = 'link:'.(int) $link->link_id.':missing_native_invoice';
+                if ($link->invoice_status !== null && ! in_array(strtolower(trim((string) $link->invoice_status)), self::INACTIVE, true)) {
+                    $linkedBatchIds[(int) $link->batch_id] = true;
+                }
                 $allLinkedInvoices[] = $invoice;
                 if ((string) $link->link_type === 'base') $baseInvoice = $invoice;
                 else $supplementaryInvoices[] = $invoice;
