@@ -43,9 +43,9 @@ final class PartyStatementService
         $rows = $this->journalRows($filters, $scope, $scopeControls);
         $opening = 0.0;
         $period = [];
-        $composition = [];
+        $exposure = [];
         foreach ($rows as $row) {
-            foreach (($row['control_types'] ?? []) as $controlType) $composition[$controlType] = true;
+            if ($row['date'] <= $filters['to']) foreach (($row['control_nets'] ?? []) as $controlType => $net) $exposure[$controlType] = round(($exposure[$controlType] ?? 0.0) + (float) $net, 2);
             $net = round((float) $row['debit'] - (float) $row['credit'], 2);
             if (abs($net) < 0.005) continue;
             if ($row['date'] < $filters['from']) {
@@ -64,7 +64,7 @@ final class PartyStatementService
             $row['debit'] = round($debit, 2); $row['credit'] = round($credit, 2); $row['balance'] = $balance;
             // Enrichment is deliberately applied after journal netting and balance
             // calculation: it can only add display metadata, never financial data.
-            unset($row['control_types']);
+            unset($row['control_types'], $row['control_nets']);
             $row = array_merge($row, $this->enrichment->resolve($row));
             $row = array_merge($row, $this->sourceLinks->resolve($row) ?? ['source_url' => null, 'source_linkable' => false]);
             $passengerRows = $row['passenger_rows'] ?? [];
@@ -84,7 +84,7 @@ final class PartyStatementService
             'filters' => $filters, 'rows' => $out, 'opening' => round($opening, 2),
             'total_debit' => round($totalDebit, 2), 'total_credit' => round($totalCredit, 2),
             'closing' => $closing, 'closing_side' => $closing > 0 ? 'Dr' : ($closing < 0 ? 'Cr' : '0.00'),
-            'caption' => $this->caption($filters['type'], $closing, array_keys($composition)), 'accounts' => $scope,
+            'caption' => $this->caption($filters['type'], $closing, $exposure), 'accounts' => $scope,
         ];
     }
 
@@ -113,6 +113,17 @@ final class PartyStatementService
         $controls = [];
         foreach ($accounts as $account) {
             $control = strtoupper(trim((string) ($account['control_type'] ?? '')));
+            if (! in_array($control, $wanted, true)) {
+                $code = trim((string) ($account['code'] ?? ''));
+                $control = match (true) {
+                    $type === 'customer' && $code === '1130' => 'CUSTOMER_AR',
+                    $type === 'customer' && $code === '2120' => 'CUSTOMER_ADVANCE',
+                    $type === 'customer' && $code === '2140' => 'CUSTOMER_PAYABLE',
+                    $type === 'vendor' && $code === '2110' => 'VENDOR_AP',
+                    $type === 'vendor' && $code === '1140' => 'VENDOR_ADVANCE',
+                    default => '',
+                };
+            }
             if (in_array($control, $wanted, true)) $controls[(int) $account['id']] = $control;
         }
         return $controls;
@@ -138,10 +149,13 @@ final class PartyStatementService
         $grouped = [];
         foreach ($rows as $row) {
             $key = (string) $row->journal_id;
-            $grouped[$key] ??= ['journal_id' => (int) $row->journal_id, 'date' => Carbon::parse($row->date)->toDateString(), 'reference' => (string) ($row->reference ?? ''), 'source_type' => (string) ($row->source_type ?? ''), 'source_id' => $row->source_id, 'debit' => 0.0, 'credit' => 0.0, 'control_types' => []];
+            $grouped[$key] ??= ['journal_id' => (int) $row->journal_id, 'date' => Carbon::parse($row->date)->toDateString(), 'reference' => (string) ($row->reference ?? ''), 'source_type' => (string) ($row->source_type ?? ''), 'source_id' => $row->source_id, 'debit' => 0.0, 'credit' => 0.0, 'control_types' => [], 'control_nets' => []];
             $grouped[$key]['debit'] += (float) $row->debit; $grouped[$key]['credit'] += (float) $row->credit;
             $control = $scopeControls[(int) $row->account_id] ?? null;
-            if ($control !== null) $grouped[$key]['control_types'][$control] = true;
+            if ($control !== null) {
+                $grouped[$key]['control_types'][$control] = true;
+                $grouped[$key]['control_nets'][$control] = round(($grouped[$key]['control_nets'][$control] ?? 0.0) + (float) $row->debit - (float) $row->credit, 2);
+            }
         }
         return array_values(array_map(fn (array $row): array => $row + ['type' => $this->label($row['source_type'], $row['reference']), 'booking_no' => '—', 'product' => '—', 'party' => '—', 'service_ref' => '—', 'description' => $row['reference'] ?: 'Journal'], $grouped));
     }
@@ -162,12 +176,12 @@ final class PartyStatementService
         };
     }
 
-    private function caption(string $type, float $closing, array $controlTypes = []): string
+    private function caption(string $type, float $closing, array $exposure = []): string
     {
         if (round($closing, 2) === 0.0) return 'Nil / Settled';
         if ($type === 'customer') {
-            $hasAdvance = in_array('CUSTOMER_ADVANCE', $controlTypes, true);
-            $hasPayable = in_array('CUSTOMER_PAYABLE', $controlTypes, true);
+            $hasAdvance = (float) ($exposure['CUSTOMER_ADVANCE'] ?? 0.0) < -0.005;
+            $hasPayable = (float) ($exposure['CUSTOMER_PAYABLE'] ?? 0.0) < -0.005;
             if ($closing < 0 && $hasAdvance && $hasPayable) return 'Customer Credit Balance (Advance / Payable)';
             if ($closing < 0 && $hasPayable) return 'Customer Payable / Reimbursement';
             if ($closing < 0 && $hasAdvance) return 'Customer Advance / Credit Balance';

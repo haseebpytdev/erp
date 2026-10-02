@@ -55,6 +55,14 @@ ok(enrichment.includes('customer_reimbursement') && enrichment.includes('Custome
 ok(enrichment.includes('Customer Reimbursement Reversal'), 'Customer reimbursement reversal label is preserved');
 ok(service.includes('Customer Payable / Reimbursement') && service.includes('Customer Advance / Credit Balance'), 'Customer closing nature distinguishes payable and advance');
 ok(service.includes('Customer Credit Balance (Advance / Payable)'), 'Mixed customer credit nature is neutral');
+ok(service.includes('control_nets') && service.includes("$row['date'] <= $filters['to']") && service.includes("< -0.005"), 'Closing nature uses control net exposure through To Date');
+const nature=(closing,exposure)=>closing===0?'Nil / Settled':closing>0?'Amount Receivable from Customer':(exposure.advance < -0.005 && exposure.payable < -0.005?'Customer Credit Balance (Advance / Payable)':exposure.payable < -0.005?'Customer Payable / Reimbursement':exposure.advance < -0.005?'Customer Advance / Credit Balance':'Customer Credit Balance');
+ok(nature(-600000,{advance:0,payable:-600000})==='Customer Payable / Reimbursement', 'Payable-only nature');
+ok(nature(-100000,{advance:-100000,payable:0})==='Customer Advance / Credit Balance', 'Advance-only nature');
+ok(nature(-600000,{advance:0,payable:-600000})!=='Customer Credit Balance (Advance / Payable)', 'Settled advance does not cause mixed nature');
+ok(nature(-600000,{advance:0,payable:-600000})!=='Customer Advance / Credit Balance', 'Settled payable does not cause advance nature');
+ok(nature(-700000,{advance:-100000,payable:-600000})==='Customer Credit Balance (Advance / Payable)', 'Active advance and payable are mixed');
+ok(nature(-600000,{})==='Customer Credit Balance', 'Unknown credit nature is neutral');
 const aslamStatementFixture=(opening,payments)=>-opening+payments.reduce((n,p)=>n+p,0);
 ok(aslamStatementFixture(600000,[])===-600000, 'Aslam opening payable closes 600000 Cr');
 ok(aslamStatementFixture(600000,[200000])===-400000, 'Aslam partial reimbursement leaves 400000 Cr');

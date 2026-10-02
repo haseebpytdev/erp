@@ -276,6 +276,15 @@ const aslamStatementFixture=(opening,payments)=>-opening+payments.reduce((n,p)=>
 ok('ASLAM_600K_STATEMENT_FIXTURE',aslamStatementFixture(600000,[])===-600000);
 ok('ASLAM_PARTIAL_200K_REMAINING_400K',aslamStatementFixture(600000,[200000])===-400000);
 ok('ASLAM_FULL_SETTLEMENT_ZERO',aslamStatementFixture(600000,[200000,400000])===0);
+ok('CLOSING_NATURE_USES_CONTROL_NET_EXPOSURE',statementService.includes('control_nets')&&statementService.includes('$row[\'date\'] <= $filters[\'to\']')&&statementService.includes('< -0.005'));
+ok('SETTLED_ADVANCE_DOES_NOT_CAUSE_MIXED',statementService.includes("$hasAdvance = (float) ($exposure['CUSTOMER_ADVANCE'] ?? 0.0) < -0.005"));
+ok('SETTLED_PAYABLE_DOES_NOT_CAUSE_MIXED',statementService.includes("$hasPayable = (float) ($exposure['CUSTOMER_PAYABLE'] ?? 0.0) < -0.005"));
+ok('FUTURE_CONTROL_MOVEMENT_EXCLUDED_FROM_NATURE',statementService.includes("if ($row['date'] <= $filters['to'])"));
+ok('PRE_FROM_CONTROL_BALANCE_INCLUDED_IN_NATURE',statementService.includes("if ($row['date'] < $filters['from'])"));
+ok('ACTIVE_ADVANCE_PLUS_PAYABLE_MIXED',statementService.includes('Customer Credit Balance (Advance / Payable)'));
+ok('PAYABLE_ONLY_NATURE',statementService.includes('Customer Payable / Reimbursement'));
+ok('ADVANCE_ONLY_NATURE',statementService.includes('Customer Advance / Credit Balance'));
+ok('UNKNOWN_CREDIT_NATURE_NEUTRAL',statementService.includes("return $closing < 0 ? 'Customer Credit Balance'"));
 ok('ASLAM_600K_PARTIAL_ARITHMETIC',(() => { const opening=600000,payment=200000; return opening-payment===400000; })());
 ok('ASLAM_FULL_SETTLEMENT_ZERO',600000-200000-400000===0);
 ok('ASLAM_REVERSAL_RESTORES',600000-200000===400000);
