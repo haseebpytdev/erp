@@ -40,4 +40,20 @@ ok(!middleware.includes('grand_total'), 'Middleware does not rebuild financial t
 ok(!middleware.includes('journal_entries'), 'Middleware does not touch journal authority');
 ok(!routes.includes('PresentSalesInvoicePrintV2::class)->'), 'Print middleware is not used as a broad global route middleware');
 
+ok(middleware.includes('verticalizePassengerCells'), 'Passenger presentation uses a dedicated print-layer normalizer');
+ok(middleware.includes("(?:pax|passenger)(?:-name)?"), 'Normalizer targets only passenger/Pax cells');
+ok(middleware.includes("preg_split('/\\s*(?:,|\\R)\\s*/u'"), 'Supported passenger separators are normalized deterministically');
+ok(middleware.includes('htmlspecialchars($name, ENT_QUOTES, \'UTF-8\')'), 'Passenger names are HTML escaped');
+ok(middleware.includes("$index + 1"), 'Passenger numbering preserves source order');
+ok(middleware.includes('<div class="pax-name">'), 'Multiple passengers render as separate visual lines');
+ok(middleware.includes('count($names) <= 1'), 'Single passenger cells remain unchanged');
+ok(middleware.includes('break-inside:avoid;page-break-inside:avoid'), 'Passenger-containing invoice rows remain print-safe');
+const passengerFixture = ['JAVED IQBAL', 'ABIDA PARVEEN', 'RUMAN UN NISA', 'HAMID RAZA'];
+const passengerMarkup = passengerFixture.map((name, index) => `<div class="pax-name">${index + 1}. ${name}</div>`).join('');
+ok(passengerMarkup.indexOf('1. JAVED IQBAL') < passengerMarkup.indexOf('2. ABIDA PARVEEN') && passengerMarkup.indexOf('2. ABIDA PARVEEN') < passengerMarkup.indexOf('3. RUMAN UN NISA') && passengerMarkup.indexOf('3. RUMAN UN NISA') < passengerMarkup.indexOf('4. HAMID RAZA'), 'Passenger order remains stable');
+ok(!passengerMarkup.includes(', '), 'Passenger fixture is not comma-packed');
+ok(passengerMarkup.split('<div class="pax-name">').length - 1 === 4, 'One visual line is emitted per passenger');
+ok(middleware.includes('invoiceDataRowCount($table)') && middleware.includes('$cells[$descriptionIndex]'), 'One commercial invoice row remains the accounting presentation unit');
+ok(middleware.includes('.grand-value') && middleware.includes('grand'), 'Grand total presentation remains untouched');
+
 console.log(`PASS ${pass} ERP-11.3.370 Sales Invoice Print assertions`);

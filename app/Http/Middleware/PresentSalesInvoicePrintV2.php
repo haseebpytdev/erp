@@ -111,6 +111,7 @@ class PresentSalesInvoicePrintV2
 
     private function refineContent(string $html, array $lineDescriptions = []): string
     {
+        $html = $this->verticalizePassengerCells($html);
         $html = preg_replace('/(>\s*)TICKET\s+NUMBER(\s*<)/i', '$1TICKET / REF$2', $html) ?? $html;
         $html = preg_replace('/This Sales Invoice is the customer commercial\/accounting document\.\s*Booking Confirmation, Receipt Voucher, Hotel\/Umrah\/Travel Voucher and supplier documents remain separate controlled documents in the ERP\.?/is', '', $html) ?? $html;
 
@@ -220,6 +221,26 @@ class PresentSalesInvoicePrintV2
                     return $cells[$cursor++] ?? '';
                 }, $row) ?? $row;
             }, $table) ?? $table;
+        }, $html) ?? $html;
+    }
+
+    private function verticalizePassengerCells(string $html): string
+    {
+        return preg_replace_callback('/<td\b[^>]*class\s*=\s*(["\'])[^"\']*\b(?:pax|passenger)(?:-name)?\b[^"\']*\1[^>]*>.*?<\/td>/is', function (array $match): string {
+            $cell = $match[0];
+            $openEnd = strpos($cell, '>');
+            if ($openEnd === false) return $cell;
+            $inner = substr($cell, $openEnd + 1, -5);
+            $plain = preg_replace('/<br\b[^>]*>/i', "\n", $inner) ?? $inner;
+            $plain = html_entity_decode(strip_tags($plain), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $names = preg_split('/\s*(?:,|\R)\s*/u', trim($plain)) ?: [];
+            $names = array_values(array_filter(array_map(static fn (string $name): string => trim($name), $names), static fn (string $name): bool => $name !== ''));
+            if (count($names) <= 1) return $cell;
+            $items = '';
+            foreach ($names as $index => $name) {
+                $items .= '<div class="pax-name">'.($index + 1).'. '.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'</div>';
+            }
+            return substr($cell, 0, $openEnd + 1).$items.'</td>';
         }, $html) ?? $html;
     }
 
