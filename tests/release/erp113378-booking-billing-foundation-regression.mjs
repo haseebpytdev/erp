@@ -20,9 +20,9 @@ ok(migration.includes('Schema::dropIfExists(\'general_booking_invoice_links\')')
 ok(!migration.includes("Schema::table('sales_invoices'") && !migration.includes("Schema::table('sales_invoice_lines'"), 'native invoice tables are not altered');
 ok(resolver.includes('final class GeneralBookingBillingStateResolver') && resolver.includes('function resolve(int $bookingId)'), 'billing resolver is present');
 ok(resolver.includes("'schema_ready' => $tablesReady") && resolver.includes('nativeInvoices($bookingId)'), 'resolver reports schema readiness and reads native invoices');
-ok(resolver.includes("'legacy_base_candidate' => count($activeNative) === 1 ? $activeNative[0] : null") && resolver.includes("'legacy_invoice_ambiguous' => count($activeNative) > 1"), 'legacy invoices are surfaced without auto-linking or guessing');
+ok(resolver.includes("'legacy_base_candidate' => $legacy['candidate']") && resolver.includes("'legacy_invoice_ambiguous' => $legacy['ambiguous']"), 'legacy invoices are surfaced without auto-linking or guessing');
 ok(resolver.includes("self::INACTIVE") && resolver.includes("self::POSTED"), 'active and posted status filters are explicit');
-ok(resolver.includes("strtolower((string) $batch->status) === 'approved'") && resolver.includes('approvedUninvoiced'), 'approved-uninvoiced total uses approved batches without links');
+ok(resolver.includes('approvedBatchNeedsInvoice') && resolver.includes('approvedUninvoiced'), 'approved-uninvoiced total uses approved batches without links');
 ok(resolver.includes("'total_invoiced'") && resolver.includes("'total_posted'") && resolver.includes("'next_invoice_sequence'"), 'read model exposes invoice totals and next sequence');
 ok(inspector.includes("'sales_invoices'") && bridge.includes('lockForUpdate'), 'existing native invoice authority and booking lock remain available');
 ok(migration.includes('sales_invoice_id') && migration.includes('invoice_no_snapshot'), 'native sales invoice identity is explicit');
@@ -30,8 +30,8 @@ ok(migration.includes('source_snapshot_hash') && migration.includes('product_sna
 ok(!migration.includes('DB::table') && !migration.includes('->insert(') && !migration.includes('->update('), 'migration performs no existing-data backfill');
 ok(bridge.includes("$invoiceSummary['all_count']") && inspector.includes("'all_count'=>count($invoices)"), 'current exact-one general booking guard remains present');
 ok(resolver.includes('foreach ($batches as $batch)') && resolver.includes("if ((int) $batch->batch_no === 0) $baseBatch = $view"), 'un-invoiced base and supplementary batches remain visible');
-ok(resolver.includes("! isset($linkedBatchIds[(int) $batch->id])"), 'approved un-invoiced total requires no active linked invoice');
-ok(resolver.includes('activeNative') && resolver.includes('self::INACTIVE'), 'legacy candidates exclude cancelled and void invoices');
+ok(resolver.includes("isset($linkedBatchIds[(int) $batch->id])") && resolver.includes('approvedBatchNeedsInvoice'), 'approved un-invoiced total requires no linked invoice');
+ok(resolver.includes('legacyAdoptionState') && contract.includes('canceled') && contract.includes('voided'), 'legacy candidates exclude cancelled and void invoices');
 ok(migration.includes("foreign('booking_id', 'gbbb_booking_fk')") && migration.includes("foreign('sales_invoice_id', 'gbil_invoice_fk')") && !migration.includes('catch (\\Throwable)'), 'required restrictive foreign keys fail loudly');
 ok(contract.includes('assertBatchSequence') && contract.includes("$type === 'base' && $batchNo !== 0") && contract.includes("$type === 'supplementary' && $batchNo < 1"), 'base zero and supplementary positive contracts are explicit');
 ok(contract.includes('assertInvoiceSequence') && contract.includes("$type === 'base' && $sequence !== 0") && contract.includes("$type === 'supplementary' && $sequence < 1"), 'base invoice sequence zero and supplementary positive contracts are explicit');

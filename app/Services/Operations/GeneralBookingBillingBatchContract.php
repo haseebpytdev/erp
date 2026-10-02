@@ -42,4 +42,26 @@ final class GeneralBookingBillingBatchContract
             throw new InvalidArgumentException('General billing batch and invoice link sequences are inconsistent.');
         }
     }
+
+    /** @param array<int,array{status?:string,grand_total?:float|int}> $nativeInvoices */
+    public static function legacyAdoptionState(array $nativeInvoices, bool $hasGeneralInvoiceLinks): array
+    {
+        if ($hasGeneralInvoiceLinks) {
+            return ['candidate' => null, 'ambiguous' => false];
+        }
+        $active = array_values(array_filter($nativeInvoices, static fn (array $invoice): bool => ! in_array(
+            strtolower(trim((string) ($invoice['status'] ?? ''))),
+            ['cancelled', 'canceled', 'void', 'voided', 'rejected'],
+            true
+        )));
+        return [
+            'candidate' => count($active) === 1 ? $active[0] : null,
+            'ambiguous' => count($active) > 1,
+        ];
+    }
+
+    public static function approvedBatchNeedsInvoice(string $status, bool $hasGeneralInvoiceLink): bool
+    {
+        return strtolower(trim($status)) === 'approved' && ! $hasGeneralInvoiceLink;
+    }
 }

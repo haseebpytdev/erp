@@ -57,9 +57,9 @@ final class GeneralBookingBillingStateResolver
                     'batch_id' => (int) $link->batch_id, 'invoice_sequence' => (int) $link->invoice_sequence,
                 ];
                 if ($link->invoice_status === null) $integrityErrors[] = 'link:'.(int) $link->link_id.':missing_native_invoice';
-                if ($link->invoice_status !== null && ! in_array(strtolower(trim((string) $link->invoice_status)), self::INACTIVE, true)) {
-                    $linkedBatchIds[(int) $link->batch_id] = true;
-                }
+                // Link existence is the issuance/idempotency authority. Native
+                // status is evaluated separately for financial totals.
+                $linkedBatchIds[(int) $link->batch_id] = true;
                 $allLinkedInvoices[] = $invoice;
                 if ((string) $link->link_type === 'base') $baseInvoice = $invoice;
                 else $supplementaryInvoices[] = $invoice;
@@ -69,20 +69,22 @@ final class GeneralBookingBillingStateResolver
                     'id' => (int) $batch->id, 'batch_no' => (int) $batch->batch_no,
                     'batch_type' => (string) $batch->batch_type, 'status' => (string) $batch->status,
                     'customer_total' => round((float) $batch->customer_total, 2),
-                    'invoice' => null,
+                    'invoice' => null, 'has_invoice_link' => false, 'active_invoice' => null,
                 ];
                 $matching = array_values(array_filter($allLinkedInvoices, static fn (array $invoice): bool => $invoice['batch_id'] === (int) $batch->id));
                 $view['invoice'] = $matching[0] ?? null;
+                $view['has_invoice_link'] = $matching !== [];
+                $view['active_invoice'] = $matching === [] ? null : (in_array($matching[0]['status'], self::INACTIVE, true) ? null : $matching[0]);
                 if ((int) $batch->batch_no === 0) $baseBatch = $view;
                 else $supplementaryBatches[] = $view;
-                if (strtolower((string) $batch->status) === 'approved' && ! isset($linkedBatchIds[(int) $batch->id])) $approvedUninvoiced += (float) $batch->customer_total;
+                if (GeneralBookingBillingBatchContract::approvedBatchNeedsInvoice((string) $batch->status, isset($linkedBatchIds[(int) $batch->id]))) $approvedUninvoiced += (float) $batch->customer_total;
             }
             $approvedUninvoiced = round($approvedUninvoiced, 2);
         }
 
         $activeLinked = array_values(array_filter($allLinkedInvoices, fn (array $invoice): bool => ! in_array($invoice['status'], self::INACTIVE, true)));
         $postedLinked = array_values(array_filter($activeLinked, fn (array $invoice): bool => in_array($invoice['status'], self::POSTED, true)));
-        $activeNative = array_values(array_filter($native, fn (array $invoice): bool => ! in_array($invoice['status'], self::INACTIVE, true)));
+        $legacy = GeneralBookingBillingBatchContract::legacyAdoptionState($native, $allLinkedInvoices !== []);
         return [
             'booking_id' => $bookingId, 'schema_ready' => $tablesReady,
             'base_batch' => $baseBatch, 'supplementary_batches' => $supplementaryBatches,
@@ -93,8 +95,8 @@ final class GeneralBookingBillingStateResolver
             'total_posted' => round(array_sum(array_column($postedLinked, 'grand_total')), 2),
             'approved_uninvoiced_total' => $approvedUninvoiced,
             'next_batch_no' => $nextBatchNo, 'next_invoice_sequence' => $nextInvoiceSequence,
-            'legacy_base_candidate' => count($activeNative) === 1 ? $activeNative[0] : null,
-            'legacy_invoice_ambiguous' => count($activeNative) > 1,
+            'legacy_base_candidate' => $legacy['candidate'],
+            'legacy_invoice_ambiguous' => $legacy['ambiguous'],
             'billing_integrity_ok' => $integrityErrors === [],
             'billing_integrity_errors' => array_values(array_unique($integrityErrors)),
         ];
