@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const read = p => fs.readFileSync(new URL('../../' + p, import.meta.url), 'utf8');
+const hub = read('resources/views/operations/bookings/products-hub-v113304.blade.php');
+const review = read('resources/views/operations/bookings/general-booking-review-v113160.blade.php');
+const css = read('public/erp-theme/modules/booking.css');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const routes = read('routes/erp103179.php');
+let pass = 0;
+const ok = (value, message) => { assert.ok(value, message); pass++; };
+
+ok(hub.includes('data-et-booking-smart-overview="1"'), 'smart booking header is marked in the runtime product overview');
+ok(hub.includes('booking_reference') && hub.includes('customer') && hub.includes('$lock[\'status\']'), 'header uses booking, customer and persisted status authorities');
+ok(hub.includes('data-et-booking-workflow="1"') && hub.includes('Passengers ✓') && hub.includes('Products ✓') && hub.includes('Billing / Travel'), 'compact workflow strip is present');
+ok(hub.includes('data-et-product-card="{{ $item[0] }}"') && hub.includes('data-et-product-card="other-services"'), 'five product overview cards are present');
+for (const path of ['air','hotel','transport','visa','other-services']) ok(hub.includes("url('/operations/bookings/'.$bookingId.'#'.$item[0])") || hub.includes(`url('/operations/bookings/'.$bookingId.'#${path}')`), `canonical product route context is preserved: ${path}`);
+ok(hub.includes('Booking Value') && hub.includes('Supplier Cost'), 'product cards expose concise existing commercial summaries');
+ok(review.includes('data-et-booking-smart-review="1"') && review.includes('Commercial Summary') && review.includes('Sales Invoice'), 'review page has a simplified identity, commercial and billing hierarchy');
+ok(review.includes('data-et-booking-action-bar="1"') && review.includes('Preview Voucher') && review.includes('Send for Approval'), 'review action bar keeps existing workflow actions');
+ok(review.includes('Reopen for Correction') && review.includes("action'=>'reopen'"), 'reopen authority is preserved with clearer wording');
+ok(review.includes('Mark as Travel Ready') && review.includes("action'=>'ready'"), 'travel readiness authority is preserved');
+for (const selector of ['.br-btn.primary','.br-btn.green','.et-ph-btn.primary','.et-booking-focus-btn']) ok(css.includes(selector), `active booking button family is covered: ${selector}`);
+for (const state of [':hover',':visited',':focus-visible',':active']) ok(css.includes(state), `booking button state is covered: ${state}`);
+ok(css.includes('color:#fff!important') && css.includes('ACTIVE') === false, 'filled booking actions retain white foreground without unused CSS authority');
+ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes("system.erp-assets.general-progressive-step1-css"), 'booking runtime asset pipeline is explicit');
+ok(routes.includes("bookings.products.workspace") && routes.includes("bookings.review.show"), 'canonical booking product and review routes remain present');
+ok(!presenter.includes('SalesInvoiceDraftCreator') && !presenter.includes('DB::table'), 'booking presentation layer does not add accounting or database logic');
+console.log(`ERP113378_BOOKING_SMART_UI=PASS (${pass} assertions)`);

@@ -50,6 +50,33 @@ body.et-ui-module-operations :where(.br-btn){
     cursor:pointer;
 }
 body.et-ui-module-operations :where(.br-btn.primary){background:var(--et-primary)!important;border-color:var(--et-primary)!important;color:#fff!important}
+/* ERP-11.3.378 C36: booking action state authority lives in the active theme. */
+body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]),
+body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]):hover,
+body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]):visited,
+body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]):focus-visible,
+body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]):active{
+    color:#fff!important;
+}
+body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]):hover{background:#125bb8!important;border-color:#125bb8!important}
+body.et-ui-module-operations :where(.br-btn.green,.et-booking-focus-btn.green),
+body.et-ui-module-operations :where(.br-btn.green,.et-booking-focus-btn.green):hover,
+body.et-ui-module-operations :where(.br-btn.green,.et-booking-focus-btn.green):visited,
+body.et-ui-module-operations :where(.br-btn.green,.et-booking-focus-btn.green):focus-visible,
+body.et-ui-module-operations :where(.br-btn.green,.et-booking-focus-btn.green):active{color:#fff!important}
+body.et-ui-module-operations :where(.br-btn.green,.et-booking-focus-btn.green):hover{background:#116b4a!important;border-color:#116b4a!important}
+body.et-ui-module-operations :where(.br-btn:not(.primary):not(.green),.et-ph-btn:not(.primary)):hover{background:#f3f7fb!important;color:var(--et-text)!important}
+body.et-ui-module-operations :where(.br-btn,.et-ph-btn,.et-booking-focus-btn):focus-visible{outline:3px solid rgba(23,105,210,.28)!important;outline-offset:2px}
+
+body.et-ui-module-operations :where(.et-products-hub){max-width:1280px}
+body.et-ui-module-operations :where(.et-ph-kicker){margin-bottom:4px;color:var(--et-primary);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+body.et-ui-module-operations :where(.et-ph-workflow){display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px 13px;border:1px solid var(--et-border);border-radius:10px;background:#fff;color:var(--et-muted);font-size:11px;font-weight:800}
+body.et-ui-module-operations :where(.et-ph-workflow span){padding-right:10px;border-right:1px solid var(--et-border)}
+body.et-ui-module-operations :where(.et-ph-workflow span:last-child){border-right:0}
+body.et-ui-module-operations :where(.et-ph-workflow .done){color:#16774d}
+body.et-ui-module-operations :where(.et-ph-workflow .current){color:var(--et-primary)}
+body.et-ui-module-operations :where(.et-ph-card-head){display:flex;align-items:center;justify-content:space-between;gap:8px}
+@media(max-width:760px){body.et-ui-module-operations :where(.et-ph-workflow){display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:768px){
     body.et-ui-module-operations :where(.br-top){flex-direction:column;align-items:stretch}
 }
