@@ -40,7 +40,7 @@ final class GeneralBookingAdditionalServiceController extends Controller
     public function show(Request $request, int $booking, int $batch, GeneralBookingAdditionalServiceManager $manager, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer): View
     {
         $state = $manager->show($booking, $batch);
-        abort_if(($state['booking_missing'] ?? false) || ($state['batch_missing'] ?? false), 404);
+        abort_if(($state['booking_missing'] ?? false) || (($state['schema_ready'] ?? false) && ($state['batch_missing'] ?? false)), 404);
         return view('operations.bookings.additional-services.show', [
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'batchId' => $batch, 'state' => $state,
             'customer' => $customer->resolve($booking),

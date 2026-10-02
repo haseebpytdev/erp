@@ -21,7 +21,6 @@ final class GeneralBookingAdditionalServiceManager
     public function __construct(
         private readonly BookingEditLockResolver $locks,
         private readonly GeneralBookingBillingStateResolver $state,
-        private readonly NativeSalesInvoiceInspector $nativeInvoices,
     ) {
     }
 
@@ -91,7 +90,7 @@ final class GeneralBookingAdditionalServiceManager
     private function ensureBase(int $bookingId, array $state, int $userId): array
     {
         if ($state['base_invoice'] ?? null) {
-            return $this->baseStatus($state['base_invoice']);
+            return $this->baseStatus($bookingId, $state['base_invoice']);
         }
         if ($state['all_linked_invoices'] ?? []) return $this->blocked($bookingId, 'base_invoice_missing', 'A valid Base Sales Invoice link is required before Additional Services.');
         if (($state['legacy_invoice_ambiguous'] ?? false)) return $this->blocked($bookingId, 'legacy_invoice_ambiguous', 'Multiple active legacy Sales Invoices were found; no Base Invoice was guessed.');
@@ -124,12 +123,12 @@ final class GeneralBookingAdditionalServiceManager
         return ['ok' => true, 'status' => 'base_adopted'];
     }
 
-    private function baseStatus(array $invoice): array
+    private function baseStatus(int $bookingId, array $invoice): array
     {
         $status = $this->status((string) ($invoice['status'] ?? ''));
         return in_array($status, self::ISSUED, true)
             ? ['ok' => true, 'status' => 'base_ready']
-            : $this->blocked(0, $this->baseStatusCode($status), 'The Base Sales Invoice must resolve to an issued commercial state first.');
+            : $this->blocked($bookingId, $this->baseStatusCode($status), 'The Base Sales Invoice must resolve to an issued commercial state first.');
     }
 
     private function baseStatusCode(string $status): string
@@ -145,8 +144,54 @@ final class GeneralBookingAdditionalServiceManager
         $eligibility = $this->eligibility($booking);
         $state['booking'] = $booking; $state['booking_status'] = $this->bookingStatus($booking);
         $state['schema_ready'] = true; $state['message'] = null; $state['eligibility_code'] = $eligibility['code'];
-        $state['can_start'] = $eligibility['allowed'] && (($state['base_invoice']['status'] ?? null) ? in_array($this->status((string) $state['base_invoice']['status']), self::ISSUED, true) : ! ($state['legacy_invoice_ambiguous'] ?? false));
+        $baseStatus = null;
+        if (is_array($state['base_invoice'] ?? null)) {
+            $baseStatus = $this->status((string) ($state['base_invoice']['status'] ?? ''));
+        } elseif (! ($state['all_linked_invoices'] ?? []) && is_array($state['legacy_base_candidate'] ?? null)) {
+            $baseStatus = $this->status((string) ($state['legacy_base_candidate']['status'] ?? ''));
+        }
+        $baseReady = $baseStatus !== null && in_array($baseStatus, self::ISSUED, true);
+        $baseAdoptable = ! ($state['base_invoice'] ?? null) && ! ($state['all_linked_invoices'] ?? []) && $baseReady;
+        $baseAllowed = $baseReady || $baseAdoptable;
+        $open = $this->openBatchState($state['supplementary_batches'] ?? []);
+        $state['can_start_new_batch'] = $eligibility['allowed'] && $baseAllowed && ! $open['blocking'];
+        $state['continue_batch_id'] = $open['continue_batch_id'];
+        $state['continue_batch_no'] = $open['continue_batch_no'];
+        $state['open_batch_status'] = $open['status'];
+        $baseCode = $baseStatus === null
+            ? (($state['legacy_invoice_ambiguous'] ?? false) ? 'legacy_invoice_ambiguous' : 'base_invoice_missing')
+            : $this->baseStatusCode($baseStatus);
+        $state['entry_code'] = ! $eligibility['allowed'] ? $eligibility['code'] : ($baseAllowed ? ($open['code'] ?? 'eligible') : $baseCode);
+        $state['entry_message'] = $this->entryMessage((string) $state['entry_code']);
+        $state['can_start'] = $state['can_start_new_batch'];
         return $state;
+    }
+
+    private function openBatchState(array $batches): array
+    {
+        foreach ($batches as $batch) {
+            $status = $this->status((string) ($batch['status'] ?? ''));
+            if ($status === 'draft') return ['blocking' => true, 'status' => $status, 'code' => 'draft_open', 'continue_batch_id' => (int) ($batch['id'] ?? 0), 'continue_batch_no' => (int) ($batch['batch_no'] ?? 0)];
+            if ($status === 'pending_approval') return ['blocking' => true, 'status' => $status, 'code' => 'pending_approval', 'continue_batch_id' => null, 'continue_batch_no' => null];
+            if ($status === 'approved' && ! ($batch['has_invoice_link'] ?? false)) return ['blocking' => true, 'status' => $status, 'code' => 'approved_uninvoiced', 'continue_batch_id' => null, 'continue_batch_no' => null];
+        }
+        return ['blocking' => false, 'status' => null, 'code' => 'eligible', 'continue_batch_id' => null, 'continue_batch_no' => null];
+    }
+
+    private function entryMessage(string $code): ?string
+    {
+        return match ($code) {
+            'schema_not_ready' => self::SCHEMA_MESSAGE,
+            'base_invoice_still_draft' => 'The Base Sales Invoice is still Draft; complete the original workflow first.',
+            'base_invoice_pending' => 'The Base Sales Invoice is pending approval.',
+            'base_invoice_inactive' => 'The Base Sales Invoice is inactive and cannot be used.',
+            'base_invoice_missing' => 'No active Base Sales Invoice was found.',
+            'legacy_invoice_ambiguous' => 'Multiple active legacy Sales Invoices were found; no Base Invoice was guessed.',
+            'draft_open' => 'Continue the existing Additional Services draft.',
+            'pending_approval' => 'Additional Services is pending approval and is read-only.',
+            'approved_uninvoiced' => 'Additional Services is approved and awaiting its supplementary invoice.',
+            default => null,
+        };
     }
 
     private function eligibility(array $booking): array
