@@ -691,14 +691,21 @@ foreach (Route::getRoutes()->getRoutes() as $publicVoucherCandidate) {
 }
 
 /* One authoritative hard-lock boundary for every booking mutation. Workflow
- * transitions and the accounting bridge remain separate, explicit actions. */
-Event::listen(RouteMatched::class, function (RouteMatched $event): void {
-    $route = $event->route;
+ * transitions and the accounting bridge remain separate, explicit actions.
+ * Additional Services is a dedicated draft store and is deliberately outside
+ * the original booking mutation lock. */
+$erpBookingEditLockRouteDecision = static function (\Illuminate\Routing\Route $route): bool {
     $methods = array_map('strtoupper', $route->methods());
-    if (array_diff($methods, ['GET','HEAD']) === []) return;
+    if (array_diff($methods, ['GET', 'HEAD']) === []) return false;
+    $name = strtolower((string) $route->getName());
+    if (str_starts_with($name, 'bookings.additional-services.')) return false;
     $uri = strtolower(trim((string) $route->uri(), '/'));
     $isBookingWrite = preg_match('#^(?:system/erp-bookings|operations/bookings)/\{[^}]+\}(?:/|$)#', $uri) === 1;
-    if (! $isBookingWrite || str_ends_with($uri, '/sales-invoice')) return;
+    return $isBookingWrite && ! str_ends_with($uri, '/sales-invoice');
+};
+Event::listen(RouteMatched::class, function (RouteMatched $event) use ($erpBookingEditLockRouteDecision): void {
+    $route = $event->route;
+    if (! $erpBookingEditLockRouteDecision($route)) return;
     $route->middleware(EnforceGeneralBookingEditLock::class);
 });
 
