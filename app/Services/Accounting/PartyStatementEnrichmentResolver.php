@@ -53,7 +53,10 @@ final class PartyStatementEnrichmentResolver
     private function transactionType(string $sourceType, array $source, string $fallback): string
     {
         $kind = strtolower((string) (($source['row']['voucher_type'] ?? '') ?: ''));
+        if ($sourceType === 'party_opening_balance') return 'Opening Balance';
+        if ($sourceType === 'party_opening_balance_reversal') return 'Opening Balance Reversal';
         if (str_contains($sourceType, 'cash_voucher') || str_contains($sourceType, 'receipt') || str_contains($sourceType, 'payment')) {
+            if ($kind === 'customer_reimbursement') return str_contains($sourceType, 'reversal') ? 'Customer Reimbursement Reversal' : 'Customer Reimbursement';
             if (str_contains($kind, 'refund')) return 'Refund';
             if ($kind === 'supplier_advance' || (str_contains($kind, 'supplier') && str_contains($kind, 'advance'))) return 'Advance';
             if ($kind === 'customer_advance' || (str_contains($kind, 'customer') && str_contains($kind, 'advance'))) return 'Advance';

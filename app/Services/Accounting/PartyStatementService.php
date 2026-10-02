@@ -39,10 +39,13 @@ final class PartyStatementService
         $accounts = $this->chart->schema();
         $accountRows = $this->chartAccounts($accounts);
         $scope = $this->scopeIds($accountRows, $filters['type']);
-        $rows = $this->journalRows($filters, $scope);
+        $scopeControls = $this->scopeControls($accountRows, $filters['type']);
+        $rows = $this->journalRows($filters, $scope, $scopeControls);
         $opening = 0.0;
         $period = [];
+        $composition = [];
         foreach ($rows as $row) {
+            foreach (($row['control_types'] ?? []) as $controlType) $composition[$controlType] = true;
             $net = round((float) $row['debit'] - (float) $row['credit'], 2);
             if (abs($net) < 0.005) continue;
             if ($row['date'] < $filters['from']) {
@@ -61,6 +64,7 @@ final class PartyStatementService
             $row['debit'] = round($debit, 2); $row['credit'] = round($credit, 2); $row['balance'] = $balance;
             // Enrichment is deliberately applied after journal netting and balance
             // calculation: it can only add display metadata, never financial data.
+            unset($row['control_types']);
             $row = array_merge($row, $this->enrichment->resolve($row));
             $row = array_merge($row, $this->sourceLinks->resolve($row) ?? ['source_url' => null, 'source_linkable' => false]);
             $passengerRows = $row['passenger_rows'] ?? [];
@@ -80,7 +84,7 @@ final class PartyStatementService
             'filters' => $filters, 'rows' => $out, 'opening' => round($opening, 2),
             'total_debit' => round($totalDebit, 2), 'total_credit' => round($totalCredit, 2),
             'closing' => $closing, 'closing_side' => $closing > 0 ? 'Dr' : ($closing < 0 ? 'Cr' : '0.00'),
-            'caption' => $this->caption($filters['type'], $closing), 'accounts' => $scope,
+            'caption' => $this->caption($filters['type'], $closing, array_keys($composition)), 'accounts' => $scope,
         ];
     }
 
@@ -93,7 +97,7 @@ final class PartyStatementService
 
     private function scopeIds(array $accounts, string $type): array
     {
-        $wanted = $type === 'vendor' ? [['VENDOR_AP', '2110'], ['VENDOR_ADVANCE', '1140']] : [['CUSTOMER_AR', '1130'], ['CUSTOMER_ADVANCE', '2120']];
+        $wanted = $type === 'vendor' ? [['VENDOR_AP', '2110'], ['VENDOR_ADVANCE', '1140']] : [['CUSTOMER_AR', '1130'], ['CUSTOMER_ADVANCE', '2120'], ['CUSTOMER_PAYABLE', '2140']];
         $ids = [];
         foreach ($wanted as [$control, $code]) {
             $matched = array_values(array_filter($accounts, fn (array $a): bool => strtoupper(trim((string) ($a['control_type'] ?? ''))) === $control));
@@ -103,7 +107,18 @@ final class PartyStatementService
         return $ids;
     }
 
-    private function journalRows(array $filters, array $scope): array
+    private function scopeControls(array $accounts, string $type): array
+    {
+        $wanted = $type === 'vendor' ? ['VENDOR_AP', 'VENDOR_ADVANCE'] : ['CUSTOMER_AR', 'CUSTOMER_ADVANCE', 'CUSTOMER_PAYABLE'];
+        $controls = [];
+        foreach ($accounts as $account) {
+            $control = strtoupper(trim((string) ($account['control_type'] ?? '')));
+            if (in_array($control, $wanted, true)) $controls[(int) $account['id']] = $control;
+        }
+        return $controls;
+    }
+
+    private function journalRows(array $filters, array $scope, array $scopeControls = []): array
     {
         if ($scope === [] || ! Schema::hasColumns('journal_lines', ['journal_entry_id', 'party_type', 'party_id'])) return [];
         $columns = Schema::getColumnListing('journal_entries');
@@ -123,8 +138,10 @@ final class PartyStatementService
         $grouped = [];
         foreach ($rows as $row) {
             $key = (string) $row->journal_id;
-            $grouped[$key] ??= ['journal_id' => (int) $row->journal_id, 'date' => Carbon::parse($row->date)->toDateString(), 'reference' => (string) ($row->reference ?? ''), 'source_type' => (string) ($row->source_type ?? ''), 'source_id' => $row->source_id, 'debit' => 0.0, 'credit' => 0.0];
+            $grouped[$key] ??= ['journal_id' => (int) $row->journal_id, 'date' => Carbon::parse($row->date)->toDateString(), 'reference' => (string) ($row->reference ?? ''), 'source_type' => (string) ($row->source_type ?? ''), 'source_id' => $row->source_id, 'debit' => 0.0, 'credit' => 0.0, 'control_types' => []];
             $grouped[$key]['debit'] += (float) $row->debit; $grouped[$key]['credit'] += (float) $row->credit;
+            $control = $scopeControls[(int) $row->account_id] ?? null;
+            if ($control !== null) $grouped[$key]['control_types'][$control] = true;
         }
         return array_values(array_map(fn (array $row): array => $row + ['type' => $this->label($row['source_type'], $row['reference']), 'booking_no' => '—', 'product' => '—', 'party' => '—', 'service_ref' => '—', 'description' => $row['reference'] ?: 'Journal'], $grouped));
     }
@@ -145,10 +162,17 @@ final class PartyStatementService
         };
     }
 
-    private function caption(string $type, float $closing): string
+    private function caption(string $type, float $closing, array $controlTypes = []): string
     {
         if (round($closing, 2) === 0.0) return 'Nil / Settled';
-        if ($type === 'customer') return $closing < 0 ? 'Customer Advance / Credit Balance' : 'Amount Receivable from Customer';
+        if ($type === 'customer') {
+            $hasAdvance = in_array('CUSTOMER_ADVANCE', $controlTypes, true);
+            $hasPayable = in_array('CUSTOMER_PAYABLE', $controlTypes, true);
+            if ($closing < 0 && $hasAdvance && $hasPayable) return 'Customer Credit Balance (Advance / Payable)';
+            if ($closing < 0 && $hasPayable) return 'Customer Payable / Reimbursement';
+            if ($closing < 0 && $hasAdvance) return 'Customer Advance / Credit Balance';
+            return $closing < 0 ? 'Customer Credit Balance' : 'Amount Receivable from Customer';
+        }
         return $closing > 0 ? 'Vendor Advance / Debit Balance' : 'Amount Payable to Vendor';
     }
 

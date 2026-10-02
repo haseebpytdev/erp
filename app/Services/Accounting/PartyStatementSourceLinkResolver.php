@@ -43,6 +43,7 @@ final class PartyStatementSourceLinkResolver
 
     private function authority(string $type): array
     {
+        if (in_array($type, ['party_opening_balance', 'party_opening_balance_reversal'], true)) return ['accounting.party-opening-balances.show', ['party_opening_balances'], 'party_opening_balance'];
         if (in_array($type, ['cash_voucher', 'cash_voucher_reversal', 'receipt', 'payment'], true) || str_contains($type, 'cash_voucher')) return ['accounting.cash-vouchers.show', ['cash_vouchers'], 'cash_voucher'];
         if (str_contains($type, 'advance_adjust')) return ['accounting.advance-adjustments.show', ['advance_adjustments'], 'advance_adjustment'];
         if (str_contains($type, 'supplier_cost')) return ['purchase.supplier-costing.show', ['supplier_costings'], 'supplier_costing'];

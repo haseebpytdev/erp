@@ -15,7 +15,7 @@ ok(routes.includes("accounting.party-statement.index") && routes.includes("/acco
 ok(routes.includes("accounting.party-statement.print") && routes.includes("/accounting/reports/party-statement/print"), 'Party Statement print route exists');
 ok(controller.includes('PartyStatementService') && controller.includes('statement($filters)'), 'Screen and print use the same service projection');
 ok(service.includes("where('je.status', 'posted')"), 'Only posted journals are authoritative');
-ok(service.includes("['CUSTOMER_AR', '1130']") && service.includes("['CUSTOMER_ADVANCE', '2120']"), 'Customer combines 1130 and 2120');
+ok(service.includes("['CUSTOMER_AR', '1130']") && service.includes("['CUSTOMER_ADVANCE', '2120']") && service.includes("['CUSTOMER_PAYABLE', '2140']"), 'Customer combines 1130, 2120 and customer payable');
 ok(service.includes("['VENDOR_AP', '2110']") && service.includes("['VENDOR_ADVANCE', '1140']"), 'Vendor combines 2110 and 1140');
 ok(service.includes('whereIn(\'jl.account_id\', array_keys($scope))'), 'Account scope is dynamically resolved');
 ok(service.includes("$net = round((float) $row['debit'] - (float) $row['credit'], 2)"), 'Signed movement is debit minus credit');
@@ -46,6 +46,19 @@ const openingAmount = openingFixture.reduce((n, r) => n + r.debit - r.credit, 0)
 const periodAmount = rowsFixture.reduce((n, r) => n + r.debit - r.credit, 0);
 ok(openingAmount + periodAmount === -1022420, 'Opening plus period debit minus credit equals closing');
 ok(enrichment.includes("'voucher_no'") && enrichment.includes('narration'), 'Advance and receipt rows expose voucher reference and actual narration');
+ok(service.includes('scopeControls') && service.includes("'CUSTOMER_PAYABLE'"), 'Customer payable uses control identity in statement scope');
+ok(service.includes("where('je.status', 'posted')") && service.includes("where('jl.party_type', $filters['type'])"), 'Party statement financial authority remains posted journal lines');
+ok(!service.includes("DB::table('party_opening_balances'") && !service.includes("DB::table('cash_vouchers'"), 'Source tables are not financial statement authorities');
+ok(enrichment.includes("party_opening_balance") && enrichment.includes('Opening Balance'), 'Opening balance label is presentation-only');
+ok(enrichment.includes('Opening Balance Reversal'), 'Opening reversal label is presentation-only');
+ok(enrichment.includes('customer_reimbursement') && enrichment.includes('Customer Reimbursement'), 'Customer reimbursement label uses voucher authority');
+ok(enrichment.includes('Customer Reimbursement Reversal'), 'Customer reimbursement reversal label is preserved');
+ok(service.includes('Customer Payable / Reimbursement') && service.includes('Customer Advance / Credit Balance'), 'Customer closing nature distinguishes payable and advance');
+ok(service.includes('Customer Credit Balance (Advance / Payable)'), 'Mixed customer credit nature is neutral');
+const aslamStatementFixture=(opening,payments)=>-opening+payments.reduce((n,p)=>n+p,0);
+ok(aslamStatementFixture(600000,[])===-600000, 'Aslam opening payable closes 600000 Cr');
+ok(aslamStatementFixture(600000,[200000])===-400000, 'Aslam partial reimbursement leaves 400000 Cr');
+ok(aslamStatementFixture(600000,[200000,400000])===0, 'Aslam full reimbursement settles to zero');
 
 // ERP-11.3.357 enrichment contract: these are source-level guards for the
 // read-only projection. Runtime DB/browser evidence remains environment-owned.
