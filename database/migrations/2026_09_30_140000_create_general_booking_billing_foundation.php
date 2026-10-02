@@ -40,6 +40,7 @@ return new class extends Migration
                 $table->unique(['booking_id', 'batch_no'], 'gbbb_booking_batch_unique');
                 $table->index(['booking_id', 'status'], 'gbbb_booking_status_idx');
                 $table->index(['booking_id', 'batch_type', 'status'], 'gbbb_booking_type_status_idx');
+                $table->foreign('booking_id', 'gbbb_booking_fk')->references('id')->on('bookings')->restrictOnDelete();
             });
         }
 
@@ -73,6 +74,8 @@ return new class extends Migration
                 $table->index(['booking_id', 'product_type'], 'gbbbi_booking_product_idx');
                 $table->index(['source_table', 'source_id'], 'gbbbi_source_idx');
                 $table->index('booking_service_id', 'gbbbi_service_idx');
+                $table->foreign('batch_id', 'gbbbi_batch_fk')->references('id')->on('general_booking_billing_batches')->restrictOnDelete();
+                $table->foreign('booking_id', 'gbbbi_booking_fk')->references('id')->on('bookings')->restrictOnDelete();
             });
         }
 
@@ -91,15 +94,11 @@ return new class extends Migration
                 $table->unique('sales_invoice_id', 'gbil_invoice_unique');
                 $table->unique(['booking_id', 'invoice_sequence'], 'gbil_booking_sequence_unique');
                 $table->index(['booking_id', 'link_type'], 'gbil_booking_type_idx');
+                $table->foreign('booking_id', 'gbil_booking_fk')->references('id')->on('bookings')->restrictOnDelete();
+                $table->foreign('batch_id', 'gbil_batch_fk')->references('id')->on('general_booking_billing_batches')->restrictOnDelete();
+                $table->foreign('sales_invoice_id', 'gbil_invoice_fk')->references('id')->on('sales_invoices')->restrictOnDelete();
             });
         }
-
-        $this->addForeignKeyIfCompatible('general_booking_billing_batch_items', 'batch_id', 'general_booking_billing_batches', 'id', 'gbbbi_batch_fk');
-        $this->addForeignKeyIfCompatible('general_booking_invoice_links', 'batch_id', 'general_booking_billing_batches', 'id', 'gbil_batch_fk');
-        $this->addForeignKeyIfCompatible('general_booking_invoice_links', 'sales_invoice_id', 'sales_invoices', 'id', 'gbil_invoice_fk');
-        $this->addForeignKeyIfCompatible('general_booking_billing_batches', 'booking_id', 'bookings', 'id', 'gbbb_booking_fk');
-        $this->addForeignKeyIfCompatible('general_booking_billing_batch_items', 'booking_id', 'bookings', 'id', 'gbbbi_booking_fk');
-        $this->addForeignKeyIfCompatible('general_booking_invoice_links', 'booking_id', 'bookings', 'id', 'gbil_booking_fk');
     }
 
     public function down(): void
@@ -109,18 +108,4 @@ return new class extends Migration
         Schema::dropIfExists('general_booking_billing_batches');
     }
 
-    private function addForeignKeyIfCompatible(string $table, string $column, string $foreignTable, string $foreignColumn, string $name): void
-    {
-        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column) || ! Schema::hasTable($foreignTable) || ! Schema::hasColumn($foreignTable, $foreignColumn)) {
-            return;
-        }
-        try {
-            Schema::table($table, function (Blueprint $blueprint) use ($column, $foreignTable, $foreignColumn, $name): void {
-                $blueprint->foreign($column, $name)->references($foreignColumn)->on($foreignTable)->restrictOnDelete();
-            });
-        } catch (\Throwable) {
-            // Mixed legacy installations may use incompatible key types. The
-            // unique/index contracts remain authoritative in that case.
-        }
-    }
 };
