@@ -9,7 +9,7 @@ ok(/private function itemBlocked\(array &\$item,\s*array &\$blockers,\s*string \
 ok(p.includes("$item['link_state']='inconsistent'")&&p.includes("$item['blockers'][]=$code"),'BLOCKED_AIR_ITEM_HAS_ITEM_BLOCKER');
 ok(p.includes('hotel_required_snapshot_field')&&p.includes('transport_required_snapshot_field')&&p.includes('visa_required_snapshot_field'),'BLOCKED_PRODUCT_ITEMS_HAVE_ITEM_BLOCKERS');
 ok(p.includes('persisted_product_service_id')&&p.includes('target_product_service_id')&&p.includes('expectedProductServiceId'),'EXPECTED_PS_ID_SEPARATE_FROM_PERSISTED_LINK');
-ok(p.includes("serviceStrategy($bookingId,(int)($item['target_product_service_id']??0),'hotel'"),'HOTEL_SERVICE_QUERY_USES_EXPECTED_PS_ID');
+ok(p.includes("$item['service_strategy']='new_service'")&&p.includes("$item['target_product_service_id']"),'HOTEL_SERVICE_STRATEGY_USES_EXPECTED_MASTER');
 ok(p.includes("serviceStrategy($bookingId,(int)($item['target_product_service_id']??0),'transport'"),'TRANSPORT_SERVICE_QUERY_USES_EXPECTED_PS_ID');
 ok(p.includes("serviceStrategy($bookingId,(int)($item['target_product_service_id']??0),'visa'"),'VISA_SERVICE_QUERY_USES_EXPECTED_PS_ID');
 ok(p.includes('deleted_at')&&p.includes('is_active')&&p.includes('active')&&p.includes('retired'),'ACTIVE_SERVICE_SEMANTICS_ALL_FLAGS');

@@ -603,6 +603,8 @@ final class GeneralBookingHotelProductController extends Controller
 
     private function resolveHotelStayTable(): ?string
     {
+        $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
+        if ($resolved) return (string) $resolved['table'];
         $candidates = ['booking_hotel_stays', 'booking_hotels', 'hotel_stays', 'booking_hotel_details', 'booking_accommodations', 'hotel_booking_details'];
         foreach ($candidates as $table) {
             if (! Schema::hasTable($table)) continue;
@@ -741,7 +743,14 @@ final class GeneralBookingHotelProductController extends Controller
     private function stayRows(int $booking, int $serviceId, string $table): array
     {
         $columns = $this->physicalColumnListing($table);
-        $query = DB::table($table)->where('booking_id', $booking);
+        $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
+        $query = DB::table($table);
+        if (($resolved['ownership_mode'] ?? 'direct_booking') === 'service_link') {
+            if ($serviceId <= 0) return [];
+            $query->where((string) $resolved['service_link_column'], $serviceId);
+        } else {
+            $query->where('booking_id', $booking);
+        }
         if ($serviceId > 0) {
             $serviceCol = $this->resolveBookingServiceLinkColumn($table, $columns);
             if ($serviceCol) $query->where($serviceCol, $serviceId);
@@ -824,18 +833,23 @@ final class GeneralBookingHotelProductController extends Controller
     private function syncStayRows(int $booking, int $serviceId, object $bookingRow, string $table, array $stays): void
     {
         $columns = $this->physicalColumnListing($table);
+        $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
         $serviceCol = $this->resolveBookingServiceLinkColumn($table, $columns);
-        $prototype = DB::table($table)->where('booking_id', $booking)->orderByDesc($this->firstColumn($columns, ['id', 'sort_order']) ?: 'id')->first();
+        $prototypeQuery = DB::table($table);
+        if (($resolved['ownership_mode'] ?? 'direct_booking') === 'service_link') $prototypeQuery->where($serviceCol, $serviceId);
+        else $prototypeQuery->where('booking_id', $booking);
+        $prototype = $prototypeQuery->orderByDesc($this->firstColumn($columns, ['id', 'sort_order']) ?: 'id')->first();
         if (! $prototype) $prototype = DB::table($table)->orderByDesc($this->firstColumn($columns, ['id', 'sort_order']) ?: 'id')->first();
 
-        $delete = DB::table($table)->where('booking_id', $booking);
-        if ($serviceCol) $delete->where($serviceCol, $serviceId);
+        $delete = DB::table($table);
+        if (($resolved['ownership_mode'] ?? 'direct_booking') === 'service_link') $delete->where($serviceCol, $serviceId);
+        else $delete->where('booking_id', $booking);
         $delete->delete();
 
         $bookingData = (array) $bookingRow;
         foreach ($stays as $index => $stay) {
             $row = [];
-            $this->put($row, $columns, ['booking_id'], $booking);
+            if (($resolved['ownership_mode'] ?? 'direct_booking') !== 'service_link') $this->put($row, $columns, ['booking_id'], $booking);
             if ($serviceCol) $row[$serviceCol] = $serviceId;
             foreach (['company_id', 'branch_id', 'customer_id', 'agent_id', 'salesperson_id', 'currency_id', 'tenant_id', 'office_id'] as $field) {
                 if (in_array($field, $columns, true) && array_key_exists($field, $bookingData)) $row[$field] = $bookingData[$field];
