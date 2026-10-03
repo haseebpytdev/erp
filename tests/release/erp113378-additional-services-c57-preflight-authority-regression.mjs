@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+
+const root = path.resolve(import.meta.dirname, '../..');
+const p = fs.readFileSync(path.join(root, 'app/Services/Operations/GeneralBookingAdditionalServiceMaterializationPlanner.php'), 'utf8');
+let n=0; const ok=(v,m)=>{n++;assert.ok(v,m)};
+ok(/private function itemBlocked\(array &\$item,\s*array &\$blockers,\s*string \$code\): void/.test(p),'ITEMBLOCKED_SIGNATURE_BY_REFERENCE');
+ok(p.includes("$item['link_state']='inconsistent'")&&p.includes("$item['blockers'][]=$code"),'BLOCKED_AIR_ITEM_HAS_ITEM_BLOCKER');
+ok(p.includes('hotel_required_snapshot_field')&&p.includes('transport_required_snapshot_field')&&p.includes('visa_required_snapshot_field'),'BLOCKED_PRODUCT_ITEMS_HAVE_ITEM_BLOCKERS');
+ok(p.includes('persisted_product_service_id')&&p.includes('target_product_service_id')&&p.includes('expectedProductServiceId'),'EXPECTED_PS_ID_SEPARATE_FROM_PERSISTED_LINK');
+ok(p.includes("serviceStrategy($bookingId,(int)($item['target_product_service_id']??0),'hotel'"),'HOTEL_SERVICE_QUERY_USES_EXPECTED_PS_ID');
+ok(p.includes("serviceStrategy($bookingId,(int)($item['target_product_service_id']??0),'transport'"),'TRANSPORT_SERVICE_QUERY_USES_EXPECTED_PS_ID');
+ok(p.includes("serviceStrategy($bookingId,(int)($item['target_product_service_id']??0),'visa'"),'VISA_SERVICE_QUERY_USES_EXPECTED_PS_ID');
+ok(p.includes('deleted_at')&&p.includes('is_active')&&p.includes('active')&&p.includes('retired'),'ACTIVE_SERVICE_SEMANTICS_ALL_FLAGS');
+ok(p.includes('ActiveBookingPassengerResolver')&&p.includes('$this->passengers->ids($bookingId)')&&!p.includes("['booking_passengers', 'booking_passenger_details', 'passengers']"),'ACTIVE_PASSENGER_RESOLVER_USED');
+ok(p.includes('UnifiedGroupPackageDataSource')&&p.includes('$this->vendors->vendors()')&&!p.includes("Schema::hasTable('vendors')"),'UNIFIED_VENDOR_AUTHORITY_USED');
+ok(p.includes('persisted_supplier_cost_snapshot')&&p.includes('positive_cost_vendor_missing'),'PERSISTED_SUPPLIER_COST_DRIVES_VENDOR_CHECK');
+ok(p.includes("['hotel_name','name','hotel_id']")&&p.includes("['check_in','check_in_date','checkin_date']")&&p.includes("['check_out','check_out_date','checkout_date']"),'HOTEL_COMPLETE_TABLE_ACCEPTED');
+ok(p.includes("['from_location','from','origin']")&&p.includes("['to_location','to','destination']")&&p.includes("['vehicle_type','vehicle_name','vehicle','vehicle_id']"),'TRANSPORT_COMPLETE_TABLE_ACCEPTED');
+ok(p.includes('BookingEditLockResolver')&&p.includes('$this->locks->fromRow'),'BOOKING_EDIT_LOCK_RESOLVER_USED_FOR_TRAVEL_READY');
+ok(p.includes("'target_product_service_id'=>$item['target_product_service_id']"),'AIR_TARGET_PRODUCT_SERVICE_EXPOSED');
+ok(p.includes("$linked > 0 && $pending > 0")&&p.includes('approved_batch_has_no_items'),'BATCH_STATE_GUARDS_PRESERVED');
+ok(p.includes("$item['persisted_product_service_id'] = $productServiceId ?: null")&&!p.includes("updateOrInsert"),'NO_PRODUCT_SERVICE_LINK_WRITE');
+ok(!p.includes('->insert(')&&!p.includes('insertGetId')&&!p.includes('->update(')&&!p.includes('updateOrInsert')&&!p.includes('->delete('),'NO_DB_WRITE');
+ok(!p.includes('GeneralBookingAirProductController')&&!p.includes('GeneralBookingHotelProductController')&&!p.includes('GeneralBookingTransportProductController')&&!p.includes('GeneralBookingVisaProductController'),'NO_NATIVE_CONTROLLER_STORE_CALL');
+ok(!p.includes('sales_invoices')&&!p.includes('journal_entries'),'NO_INVOICE_WRITE');
+console.log(`ERP378 ADDITIONAL SERVICES C57 PREFLIGHT AUTHORITY REGRESSION: PASS (${n} assertions)`);
