@@ -1,0 +1,33 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+
+const root = path.resolve(import.meta.dirname, '../..');
+const read = f => fs.readFileSync(path.join(root, f), 'utf8');
+const p = read('app/Services/Operations/GeneralBookingAdditionalServiceMaterializationPlanner.php');
+let n = 0; const ok = (v, m) => { n++; assert.ok(v, m); };
+
+ok(p.includes("$linked > 0 && $pending > 0") && p.includes('partial_batch_materialization'), 'mixed linked/unlinked batch blocks');
+ok(p.includes('linkValues') && p.includes('partial_materialization_link'), 'service-only and product-service-only links are partial');
+ok(p.includes('unsupported_materialized_source') && p.includes('sourceTableFor'), 'product source tables are allowlisted');
+ok(p.includes("$product === 'air'") && p.includes("'air_ticket_details'"), 'Air source authority is scoped');
+ok(p.includes("$product === 'visa'") && p.includes("'booking_visa_services'"), 'Visa source authority is scoped');
+ok(p.includes('product_service_link_conflict') && p.includes('serviceMatches'), 'materialized Product/Service and booking service links are verified');
+ok(p.includes('array &$item') && p.includes("$item['service_strategy']='blocked'"), 'blockers persist on item and strategy stays blocked');
+ok(p.includes('air_missing_passenger') && p.includes('air_foreign_passenger') && p.includes('air_missing_from') && p.includes('air_missing_to') && p.includes('air_missing_departure') && p.includes('air_missing_airline'), 'Air snapshot fields and passenger are validated');
+ok(p.includes('positive_cost_vendor_missing') && p.includes('vendorCheck'), 'positive-cost vendor existence is rechecked');
+ok(p.includes('AIR') || p.includes('air_required_table_missing'), 'Air required native tables are checked');
+ok(p.includes('compatibleTable') && p.includes('hotel_required_snapshot_field'), 'Hotel fields and compatible table are required');
+ok(p.includes('hotel_service_ambiguous') && p.includes('reuse_existing_service') && p.includes('new_service'), 'Hotel zero/one/many service strategy is conservative');
+ok(p.includes('transport_required_snapshot_field') && p.includes('transport_service_ambiguous'), 'Transport fields and zero/one/many service strategy are conservative');
+ok(p.includes('visa_missing_passenger') && p.includes('visa_foreign_passenger') && p.includes('visa_existing_passenger_conflict'), 'Visa passenger authority and collision are enforced');
+ok(p.includes('visa_service_ambiguous') && p.includes('visa_required_snapshot_field'), 'Visa service and snapshot preflight are enforced');
+ok(p.includes("'new_service'") && p.includes('serviceStrategy'), 'unmaterialized supplementary services plan new or unambiguous reuse');
+ok(p.includes("'materialization_state' = 'already_materialized'") || p.includes("'materialization_state'] = 'already_materialized'"), 'fully linked state is explicit');
+ok(p.includes('approved_batch_has_no_items'), 'empty approved batch is blocked');
+ok(p.includes("$base['would_reset_travel_ready']") && p.includes('travel_status'), 'Travel Ready reset need is calculated read-only');
+ok(p.includes("'atomic' => true") && p.includes("'materialization_state'"), 'atomic contract remains exposed');
+ok(!p.includes('->insert(') && !p.includes('insertGetId') && !p.includes('->update(') && !p.includes('updateOrInsert') && !p.includes('->delete('), 'planner performs no database writes');
+ok(!p.includes('GeneralBookingAirProductController') && !p.includes('GeneralBookingHotelProductController') && !p.includes('GeneralBookingTransportProductController') && !p.includes('GeneralBookingVisaProductController'), 'native store controllers are not called');
+ok(!p.includes('sales_invoices') && !p.includes('journal_entries'), 'invoice and accounting authorities are untouched');
+console.log(`ERP378 ADDITIONAL SERVICES C56 MATERIALIZATION PLAN HARDENING REGRESSION: PASS (${n} assertions)`);
