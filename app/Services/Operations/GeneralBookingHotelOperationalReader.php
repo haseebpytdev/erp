@@ -25,17 +25,16 @@ final class GeneralBookingHotelOperationalReader
     /** @return list<array<string,mixed>> */
     public function staysForBooking(int $bookingId): array
     {
-        if ($bookingId <= 0 || ! Schema::hasTable('booking_services')) return [];
+        if ($bookingId <= 0) return [];
         $master = $this->products->findHotel();
         if (! $master || (int) ($master['id'] ?? 0) <= 0) return [];
 
-        $services = DB::table('booking_services')
+        $services = Schema::hasTable('booking_services') ? DB::table('booking_services')
             ->where('booking_id', $bookingId)
             ->where('product_service_id', (int) $master['id'])
             ->get()
             ->filter(fn ($row): bool => $this->isActive((array) $row))
-            ->values();
-        if ($services->isEmpty()) return [];
+            ->values() : collect();
 
         $resolved = $this->store->resolve();
         if (! $resolved) return [];
@@ -47,13 +46,14 @@ final class GeneralBookingHotelOperationalReader
         if (($resolved['ownership_mode'] ?? '') === 'service_link') {
             $link = (string) ($resolved['service_link_column'] ?? '');
             if ($link === '' || $serviceIds->isEmpty()) return [];
-            $rows = DB::table($table)->whereIn($link, $serviceIds->all())->get()->map(
+            if ($serviceIds->isEmpty()) return [];
+            $rows = DB::table($table)->whereIn($link, $serviceIds->all())->get()->filter(fn ($row): bool => $this->isActive((array) $row))->map(
                 fn ($row) => $this->normalize((array) $row, $bookingId, (int) data_get($row, $link), $columns)
             );
         } else {
             $bookingColumn = (string) ($resolved['booking_column'] ?? 'booking_id');
             if (! in_array($bookingColumn, $columns, true)) return [];
-            $rows = DB::table($table)->where($bookingColumn, $bookingId)->get()->map(function ($row) use ($bookingId, $serviceIds, $columns): array {
+            $rows = DB::table($table)->where($bookingColumn, $bookingId)->get()->filter(fn ($row): bool => $this->isActive((array) $row))->map(function ($row) use ($bookingId, $serviceIds, $columns): array {
                 $data = (array) $row;
                 $serviceId = (int) ($data['booking_service_id'] ?? 0);
                 if ($serviceId <= 0 && $serviceIds->count() === 1) $serviceId = (int) $serviceIds->first();

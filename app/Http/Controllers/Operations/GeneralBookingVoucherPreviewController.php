@@ -44,7 +44,9 @@ final class GeneralBookingVoucherPreviewController extends Controller
         );
         // Hotel stays are consolidated through the read-side operational
         // authority so service-linked native rows are included together.
-        $hotel = ['stays' => $hotelReader->staysForBooking($booking)];
+        $hotel = $this->safeProductSnapshot(
+            fn (): array => ['stays' => $hotelReader->staysForBooking($booking)]
+        );
         $transport = $this->safeProductSnapshot(
             fn (): array => app(GeneralBookingTransportProductController::class)
                 ->show($request, $booking)
