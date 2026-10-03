@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
+use App\Services\Operations\GeneralBookingHotelOperationalReader;
 use App\Services\Operations\ClientVoucherFooterResolver;
 use App\Services\Operations\ClientVoucherPassengerVisaMap;
 use App\Services\Organization\CompanyProfileSnapshotService;
@@ -29,6 +30,7 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ClientVoucherFooterResolver $footerResolver,
         ClientVoucherPassengerVisaMap $passengerVisaMap,
         UnifiedGroupPackageDataSource $source,
+        GeneralBookingHotelOperationalReader $hotelReader,
     ): View {
         abort_unless(Schema::hasTable('bookings'), 404);
         $bookingRow = DB::table('bookings')->where('id', $booking)->first();
@@ -40,11 +42,9 @@ final class GeneralBookingVoucherPreviewController extends Controller
                 ->show($request, $booking)
                 ->getData(true)
         );
-        $hotel = $this->safeProductSnapshot(
-            fn (): array => app(GeneralBookingHotelProductController::class)
-                ->show($request, $booking)
-                ->getData(true)
-        );
+        // Hotel stays are consolidated through the read-side operational
+        // authority so service-linked native rows are included together.
+        $hotel = ['stays' => $hotelReader->staysForBooking($booking)];
         $transport = $this->safeProductSnapshot(
             fn (): array => app(GeneralBookingTransportProductController::class)
                 ->show($request, $booking)
@@ -254,6 +254,7 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ClientVoucherFooterResolver $footerResolver,
         ClientVoucherPassengerVisaMap $passengerVisaMap,
         UnifiedGroupPackageDataSource $source,
+        GeneralBookingHotelOperationalReader $hotelReader,
     ): View {
         abort_unless(
             preg_match('/^[a-f0-9]{48}$/', $token) === 1
@@ -266,7 +267,7 @@ final class GeneralBookingVoucherPreviewController extends Controller
         abort_unless($booking > 0, 404, 'Voucher not found.');
         $request->attributes->set('public_voucher', true);
 
-        return $this->show($request, $booking, $company, $footerResolver, $passengerVisaMap, $source);
+        return $this->show($request, $booking, $company, $footerResolver, $passengerVisaMap, $source, $hotelReader);
     }
 
     /** Collision-safe adapter for an installed host route using another parameter name. */
@@ -276,10 +277,11 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ClientVoucherFooterResolver $footerResolver,
         ClientVoucherPassengerVisaMap $passengerVisaMap,
         UnifiedGroupPackageDataSource $source,
+        GeneralBookingHotelOperationalReader $hotelReader,
     ): View {
         $parameters=$request->route()?->parameters() ?? [];
         $token=trim((string)reset($parameters));
-        return $this->publicShow($request,$token,$company,$footerResolver,$passengerVisaMap,$source);
+        return $this->publicShow($request,$token,$company,$footerResolver,$passengerVisaMap,$source,$hotelReader);
     }
 
     private function publicVoucherToken(int $booking, array $bookingData): string
