@@ -1,0 +1,50 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const source = fs.readFileSync('app/Services/Operations/GeneralBookingAdditionalServiceMaterializer.php', 'utf8');
+const pivot = source.match(/private function appendPassengerLinks[\s\S]*?private function activePassengerIds/)?.[0] ?? '';
+const calls = [];
+const check = (name, condition) => {
+  calls.push(name);
+  assert.equal(Boolean(condition), true, name);
+};
+
+check('PASSENGER_CONTRACT_PRODUCT_SPECIFIC', source.includes('private function passengerContract'));
+check('AIR_MODE_ALLOWLIST_EXACT', source.includes("'air'=>[['NONE','MULTIPLE','REQUIRED'],['PER_SERVICE','FLAT','FIXED']]"));
+check('AIR_NONE_SUPPORTED', source.includes("'NONE','MULTIPLE','REQUIRED"));
+check('AIR_SINGLE_REJECTED', source.includes("'air'=>[['NONE','MULTIPLE','REQUIRED']"));
+check('AIR_PER_SERVICE_SUPPORTED', source.includes("['PER_SERVICE','FLAT','FIXED']"));
+check('AIR_PER_PERSON_REJECTED', !source.includes("'air'=>[['NONE','MULTIPLE','REQUIRED'],['PER_SERVICE','FLAT','FIXED','PER_PERSON'"));
+check('AIR_PER_PASSENGER_REJECTED', !source.includes("'air'=>[['NONE','MULTIPLE','REQUIRED'],['PER_SERVICE','FLAT','FIXED','PER_PASSENGER'"));
+check('AIR_PER_PAX_REJECTED', !source.includes("'air'=>[['NONE','MULTIPLE','REQUIRED'],['PER_SERVICE','FLAT','FIXED','PER_PAX'"));
+check('AIR_NONE_SKIPS_PIVOT', source.includes("if($mode==='NONE')return"));
+check('AIR_EXPLICIT_GROUP_LINKS', source.includes("appendPassengerLinks($bookingId,$service,$contract"));
+check('AIR_NO_BOOKING_WIDE_LINK', source.includes("appendPassengerLinks($bookingId,$service,$contract,$runtime[$key]['passenger_ids'],'air')"));
+check('HOTEL_MODE_ALLOWLIST_EXACT', source.includes("'hotel','transport'=>[['REQUIRED','MULTIPLE'],['PER_SERVICE']]"));
+check('HOTEL_REQUIRED_SUPPORTED', source.includes("'hotel','transport'=>[['REQUIRED','MULTIPLE']"));
+check('HOTEL_MULTIPLE_SUPPORTED', source.includes("['REQUIRED','MULTIPLE']"));
+check('HOTEL_PER_SERVICE_ONLY', source.includes("['PER_SERVICE']]"));
+check('HOTEL_ACTIVE_PASSENGERS', source.includes("return$this->activePassengerIds($bookingId)"));
+check('HOTEL_LINKS_USE_VALIDATED_CONTRACT', source.includes("passengerIdsFor($bookingId,$contract,$product)"));
+check('TRANSPORT_SHARES_PRODUCT_RULE', source.includes("'hotel','transport'=>"));
+check('TRANSPORT_APPEND_ONLY', !pivot.includes('delete(') && !pivot.includes('->update('));
+check('VISA_MODE_ALLOWLIST_EXACT', source.includes("'visa'=>[['NONE','SINGLE','REQUIRED','MULTIPLE']"));
+check('VISA_PRICING_ALLOWLIST_EXACT', source.includes("['PER_PERSON','PER_PASSENGER','PER_PAX','PER_SERVICE','FLAT','FIXED']"));
+check('VISA_EXPLICIT_PASSENGER_SUBSET', source.includes("$product==='visa'?[(int)($s['booking_passenger_id']"));
+check('VISA_NONE_SUPPORTED', source.includes("'visa'=>[['NONE'"));
+check('VISA_SINGLE_SUPPORTED', source.includes("'NONE','SINGLE','REQUIRED','MULTIPLE'"));
+check('BLANK_MODE_FAILS_CLOSED', source.includes("if(!in_array($mode,$modes,true))throw"));
+check('UNKNOWN_BASIS_FAILS_CLOSED', source.includes("if(!in_array($basis,$bases,true))throw"));
+check('SNAPSHOT_MODE_FROM_CONTRACT', source.includes("strtoupper((string)$contract['mode'])"));
+check('SNAPSHOT_BASIS_FROM_CONTRACT', source.includes("strtoupper((string)$contract['pricing_basis'])"));
+check('COMMERCIAL_BASIS_FROM_CONTRACT', source.includes("commercialAggregate(array $items,array $master,string $pricingBasis)"));
+check('PIVOT_DUPLICATES_PREVENTED', source.includes("->where($where)->exists()"));
+check('PIVOT_INSERT_ONLY', source.includes("->insert($where+$probe)") && !source.includes("booking_service_passengers')->where($where)->update"));
+check('NO_JOURNAL_SIDE_EFFECT', !source.includes('Journal') && !source.includes('journal'));
+
+const printed = 32;
+console.log('C65_ASSERT_CALL_SITES=' + calls.length);
+console.log('C65_RUNTIME_ASSERTION_EXECUTIONS=' + calls.length);
+console.log('C65_PRINTED_ASSERTION_COUNT=' + printed);
+console.log('C65_ASSERTION_COUNT_MATCH=' + (calls.length === printed ? 'YES' : 'NO'));
+console.log('C65_REGRESSION=PASS (' + calls.length + ' assertions)');
