@@ -38,13 +38,37 @@ final class GeneralBookingAdditionalServiceSalesInvoiceCoordinator
                 ->lockForUpdate()
                 ->first();
             if ($existingLink) {
-                $linkedInvoice = SalesInvoice::query()->whereKey($existingLink->sales_invoice_id)->first();
+                if ((int) $existingLink->booking_id !== $bookingId
+                    || (int) $existingLink->batch_id !== $batchId
+                    || (int) $existingLink->sales_invoice_id <= 0) {
+                    throw ValidationException::withMessages(['batch' => 'Existing supplementary invoice link is inconsistent.']);
+                }
+                $linkedInvoice = SalesInvoice::query()
+                    ->whereKey((int) $existingLink->sales_invoice_id)
+                    ->first();
+                if (! $linkedInvoice) {
+                    throw ValidationException::withMessages(['batch' => 'Existing supplementary invoice link has no native Sales Invoice.']);
+                }
+                if ((int) $linkedInvoice->booking_id !== $bookingId) {
+                    throw ValidationException::withMessages(['batch' => 'Existing supplementary invoice link belongs to another booking.']);
+                }
+                if ($linkedInvoice->customer_party_id !== null
+                    && $booking->customer_party_id !== null
+                    && (int) $linkedInvoice->customer_party_id !== (int) $booking->customer_party_id) {
+                    throw ValidationException::withMessages(['batch' => 'Existing supplementary invoice link belongs to another customer.']);
+                }
+                $invoiceNoSnapshot = trim((string) ($existingLink->invoice_no_snapshot ?? ''));
+                if ($invoiceNoSnapshot !== '' && $invoiceNoSnapshot !== trim((string) $linkedInvoice->invoice_no)) {
+                    throw ValidationException::withMessages(['batch' => 'Existing supplementary invoice number snapshot is inconsistent.']);
+                }
                 return [
                     'status' => 'already_invoiced',
                     'booking_id' => $bookingId,
                     'batch_id' => $batchId,
                     'sales_invoice_id' => (int) $existingLink->sales_invoice_id,
-                    'invoice_no' => $linkedInvoice?->invoice_no ?: ($existingLink->invoice_no_snapshot ?: null),
+                    'invoice_no' => $linkedInvoice->invoice_no,
+                    'invoice_status' => $linkedInvoice->status,
+                    'invoice_sequence' => (int) $existingLink->invoice_sequence,
                 ];
             }
 

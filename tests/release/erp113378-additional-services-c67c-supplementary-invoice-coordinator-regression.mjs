@@ -7,6 +7,7 @@ const coordinatorPath = path.join(root, 'app/Services/Operations/GeneralBookingA
 const servicePath = path.join(root, 'app/Services/Sales/SalesInvoiceService.php');
 const coordinator = fs.readFileSync(coordinatorPath, 'utf8');
 const salesInvoiceService = fs.readFileSync(servicePath, 'utf8');
+const existingLinkBranch = coordinator.match(/if \(\$existingLink\) \{[\s\S]*?\n            \}\n\n            \$items/)?.[0] ?? '';
 
 let assertions = 0;
 const has = (pattern, message) => {
@@ -40,8 +41,36 @@ has(/\$existingLink = DB::table\('general_booking_invoice_links'\)[\s\S]*where\(
   'existing invoice link is checked under lock');
 has(/if \(\$existingLink\) \{[\s\S]*'status' => 'already_invoiced'[\s\S]*\}/,
   'existing links are permanently idempotent');
-no(/\$linkedInvoice->status|\$existingLink->status/,
-  'idempotency does not depend on native invoice status');
+has(/\(int\) \$existingLink->booking_id !== \$bookingId/,
+  'existing link booking ownership is validated');
+has(/\(int\) \$existingLink->batch_id !== \$batchId/,
+  'existing link batch ownership is validated');
+has(/\(int\) \$existingLink->sales_invoice_id <= 0/,
+  'existing link Sales Invoice ID must be positive');
+has(/SalesInvoice::query\(\)[\s\S]*whereKey\(\(int\) \$existingLink->sales_invoice_id\)[\s\S]*first\(\)/,
+  'existing link requires a native invoice lookup');
+has(/if \(! \$linkedInvoice\)[\s\S]*Existing supplementary invoice link has no native Sales Invoice/,
+  'missing linked native invoice fails closed');
+has(/if \(\(int\) \$linkedInvoice->booking_id !== \$bookingId\)[\s\S]*belongs to another booking/,
+  'cross-booking linked invoice fails closed');
+has(/\$linkedInvoice->customer_party_id !== null[\s\S]*\$booking->customer_party_id !== null[\s\S]*customer_party_id/,
+  'existing link customer ownership is validated');
+has(/\$invoiceNoSnapshot = trim\(\(string\) \(\$existingLink->invoice_no_snapshot \?\? ''\)\)/,
+  'nullable invoice number snapshot is allowed');
+has(/\$invoiceNoSnapshot !== ''[\s\S]*\$linkedInvoice->invoice_no[\s\S]*snapshot is inconsistent/,
+  'non-null invoice number snapshot must match');
+no(/\$linkedInvoice->status\s*!==|\$linkedInvoice->status\s*===|where\('status'/,
+  'existing link has no status reinvoice filter');
+has(/'invoice_status' => \$linkedInvoice->status/,
+  'valid existing link returns native invoice status without filtering');
+has(/'invoice_sequence' => \(int\) \$existingLink->invoice_sequence/,
+  'valid existing link returns its existing sequence');
+assertions += 1;
+assert.doesNotMatch(existingLinkBranch, /createFromBookingServices/,
+  'broken or valid existing links never call native creation');
+assertions += 1;
+assert.doesNotMatch(existingLinkBranch, /->delete\(|->update\(/,
+  'broken links are not auto-repaired');
 has(/\$this->integrity->build\(\$bookingId, \$batchId\)/,
   'snapshot integrity authority is used');
 has(/hash_equals\(\(string\) \$batch->source_snapshot_hash, \(string\) \(\$frozen\['hash'\] \?\? ''\)\)/,
