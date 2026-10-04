@@ -9,7 +9,7 @@ final class GeneralBookingAdditionalServiceWorkflowManager
 {
     private const MESSAGE = 'Additional Services requires the General Booking Billing database upgrade.';
 
-    public function __construct(private readonly BookingEditLockResolver $locks, private readonly GroupUmrahEditAuthority $authority, private readonly GeneralBookingAdditionalServiceSnapshotIntegrity $integrity) {}
+    public function __construct(private readonly BookingEditLockResolver $locks, private readonly GroupUmrahEditAuthority $authority, private readonly GeneralBookingAdditionalServiceSnapshotIntegrity $integrity, private readonly GeneralBookingAdditionalServiceMaterializer $materializer) {}
 
     public function transition(int $bookingId, int $batchId, string $action, mixed $user, ?string $reason = null): array
     {
@@ -18,7 +18,7 @@ final class GeneralBookingAdditionalServiceWorkflowManager
         if ($userId <= 0) return $this->fail('invalid_user', 'A valid authenticated user is required.');
         if (! $this->integrity->foundationReady()) return $this->fail('schema_not_ready', self::MESSAGE);
         if (in_array($action, ['approve', 'reject'], true) && ! $this->authority->canReopen($user)) return $this->fail('forbidden', 'Only an authorized approver may perform this action.');
-        return DB::transaction(function () use ($bookingId, $batchId, $action, $userId, $reason): array {
+        $result = DB::transaction(function () use ($bookingId, $batchId, $action, $userId, $reason): array {
             $batch = DB::table('general_booking_billing_batches')->where('id', $batchId)->where('booking_id', $bookingId)->lockForUpdate()->first();
             if (! $batch) return $this->fail('batch_missing', 'Supplementary batch was not found.');
             if (strtolower((string) $batch->batch_type) !== 'supplementary') return $this->fail('base_batch', 'The Base batch cannot enter Supplementary workflow.');
@@ -41,6 +41,12 @@ final class GeneralBookingAdditionalServiceWorkflowManager
                 return ['ok' => true, 'status' => 'approved'];
             }
         });
+        if ($action === 'approve' && ($result['ok'] ?? false) && ($result['status'] ?? '') === 'approved') {
+            $projection = $this->materializer->materialize($bookingId, $batchId, $userId);
+            $result['materialization_state'] = $projection['materialization_state'] ?? 'blocked';
+            $result['materialization'] = $projection;
+        }
+        return $result;
     }
 
     private function submit(int $bookingId, int $batchId, object $batch, int $userId): array
