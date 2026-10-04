@@ -106,6 +106,44 @@ class SalesInvoiceService
         },3);
     }
 
+    public function createFromBookingServices(Request $request, Booking $booking, array $bookingServiceIds): SalesInvoice
+    {
+        if ($bookingServiceIds === []) throw ValidationException::withMessages(['booking_services'=>'At least one booking service is required.']);
+        $normalized=[];
+        foreach ($bookingServiceIds as $raw) {
+            if (is_int($raw)) $id=$raw;
+            elseif (is_string($raw) && preg_match('/^[0-9]+$/D',trim($raw))) $id=(int)trim($raw);
+            else throw ValidationException::withMessages(['booking_services'=>'Booking service IDs must be positive integers.']);
+            if ($id<=0) throw ValidationException::withMessages(['booking_services'=>'Booking service IDs must be positive integers.']);
+            $normalized[]=$id;
+        }
+        if (count($normalized)!==count(array_unique($normalized))) throw ValidationException::withMessages(['booking_services'=>'Duplicate booking service IDs are not allowed.']);
+        if ($booking->status !== 'CONFIRMED') throw ValidationException::withMessages(['booking'=>'Only a confirmed booking can create a Sales Invoice.']);
+
+        return DB::transaction(function () use ($request,$booking,$normalized): SalesInvoice {
+            $lockedBooking=Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
+            if ($lockedBooking->status !== 'CONFIRMED') throw ValidationException::withMessages(['booking'=>'Booking status changed before invoicing. Refresh and try again.']);
+            $lockedBooking->loadMissing(['company','customer.customerProfile','passengers','services.product','services.passengers']);
+            $selectedServices=$lockedBooking->services->whereIn('id',$normalized)->values();
+            if ($selectedServices->count()!==count($normalized)) throw ValidationException::withMessages(['booking_services'=>'Every selected booking service must belong to this booking.']);
+            if ($selectedServices->contains(fn($service): bool=>strtoupper((string)$service->status)==='CANCELLED')) throw ValidationException::withMessages(['booking_services'=>'Cancelled booking services cannot be invoiced.']);
+            $alreadyInvoiced=SalesInvoice::query()->where('booking_id',$lockedBooking->id)->with('lines')->get()->flatMap(fn($invoice)=>$invoice->lines)->pluck('source_booking_service_id')->filter()->map(fn($id)=>(int)$id)->intersect($normalized);
+            if ($alreadyInvoiced->isNotEmpty()) throw ValidationException::withMessages(['booking_services'=>'One or more selected booking services are already represented on a Sales Invoice.']);
+            foreach ($selectedServices as $service) {
+                if (! $service->product?->revenue_mapping_key) throw ValidationException::withMessages(['booking'=>'Service '.$service->description.' has no revenue account mapping key. Configure the Product/Service first.']);
+                $linked=$service->passengers->where('is_active',true);
+                if(in_array($service->passenger_link_mode_snapshot,['REQUIRED','MULTIPLE'],true) && $linked->isEmpty()) throw ValidationException::withMessages(['booking'=>'Service '.$service->description.' requires passenger links before invoicing. Reopen/correct the booking first.']);
+                if($service->pricing_basis_snapshot==='PER_PERSON' && ($linked->isEmpty() || abs((float)$service->quantity-(float)$linked->count())>0.0001)) throw ValidationException::withMessages(['booking'=>'Service '.$service->description.' has an invalid PER_PERSON quantity. Correct the booking before invoicing.']);
+            }
+            $company=$lockedBooking->company;$invoiceDate=now()->toDateString();[$fy,$period]=$this->periodGuard->resolveOpen($company->id,$invoiceDate);$creditDays=(int)($lockedBooking->customer?->customerProfile?->credit_days??0);$dueDate=Carbon::parse($invoiceDate)->addDays(max(0,$creditDays))->toDateString();
+            $invoice=SalesInvoice::query()->create(['company_id'=>$lockedBooking->company_id,'branch_id'=>$lockedBooking->branch_id,'booking_id'=>$lockedBooking->id,'invoice_no'=>$this->numbers->next('SALES_INVOICE',$lockedBooking->company_id,$lockedBooking->branch_id,$fy),'invoice_date'=>$invoiceDate,'due_date'=>$dueDate,'customer_party_id'=>$lockedBooking->customer_party_id,'agent_party_id'=>$lockedBooking->agent_party_id,'salesperson_staff_id'=>$lockedBooking->salesperson_staff_id,'customer_reference'=>$lockedBooking->customer_reference,'currency_code'=>$lockedBooking->currency_code,'exchange_rate'=>1,'subtotal'=>0,'discount_total'=>0,'grand_total'=>0,'status'=>'DRAFT','payment_terms_snapshot'=>$creditDays>0?$creditDays.' day credit':'Due on receipt','notes'=>'Created from selected confirmed booking services '.$lockedBooking->booking_no.'. Booking confirmation and invoice posting remain separate events.','fiscal_year_id'=>$fy->id,'accounting_period_id'=>$period->id,'created_by'=>$request->user()->id,'updated_by'=>$request->user()->id]);
+            $passengerMap=[];foreach($lockedBooking->passengers->where('is_active',true) as $p){$snap=$invoice->passengers()->create(['source_booking_passenger_id'=>$p->id,'passenger_no'=>$p->passenger_no,'pax_type'=>$p->pax_type,'title'=>$p->title,'first_name'=>$p->first_name,'middle_name'=>$p->middle_name,'last_name'=>$p->last_name,'date_of_birth'=>$p->date_of_birth,'nationality_country_code'=>$p->nationality_country_code,'passport_no'=>$p->passport_no,'passport_expiry'=>$p->passport_expiry,'is_lead'=>$p->is_lead]);$passengerMap[$p->id]=$snap->id;}
+            $lineNo=1;$subtotal=0.0;foreach($selectedServices as $s){$line=$invoice->lines()->create(['line_no'=>$lineNo++,'source_booking_service_id'=>$s->id,'product_service_id'=>$s->product_service_id,'category_snapshot'=>$s->product?->category,'pricing_basis_snapshot'=>$s->pricing_basis_snapshot,'description'=>$s->description,'service_from'=>$s->service_from,'service_to'=>$s->service_to,'quantity'=>$s->quantity,'unit_price'=>$s->unit_price,'line_subtotal'=>$s->line_total,'discount_amount'=>0,'line_total'=>$s->line_total,'currency_code'=>$s->currency_code,'revenue_mapping_key'=>$s->product->revenue_mapping_key,'detail_snapshot'=>$this->serviceDetailSnapshot($s),'notes'=>$s->notes]);$ids=[];foreach($s->passengers->where('is_active',true) as $p){if(isset($passengerMap[$p->id]))$ids[]=$passengerMap[$p->id];}if($ids)$line->passengers()->sync($ids);$subtotal+=(float)$s->line_total;}
+            if($subtotal<=0) throw ValidationException::withMessages(['booking_services'=>'The selected services must produce a positive invoice total.']);
+            $invoice->update(['subtotal'=>round($subtotal,2),'grand_total'=>round($subtotal,2)]);$this->action($invoice,$request,'CREATE',null,'DRAFT','Created from selected booking services '.$lockedBooking->booking_no);AuditService::log($request,'sales_invoice.created',$invoice,[],$this->snapshot($invoice));return $invoice->fresh(['booking','customer','passengers','lines.passengers']);
+        },3);
+    }
+
     public function updateDraft(Request $request, SalesInvoice $invoice, array $data): SalesInvoice
     {
         if (! $invoice->isEditable()) throw ValidationException::withMessages(['invoice'=>'Only a draft Sales Invoice can be edited.']);
