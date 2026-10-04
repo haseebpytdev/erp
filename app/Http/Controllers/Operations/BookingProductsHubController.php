@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\BookingEditLockResolver;
 use App\Services\Operations\GeneralBookingAdditionalServiceManager;
-use App\Services\Operations\BookingTravelReadinessResolver;
+use App\Services\Operations\BookingProductSummaryResolver;
 use App\Services\Operations\NativeBookingCustomerResolver;
 use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Http\Request;
@@ -16,23 +16,20 @@ use Throwable;
 
 final class BookingProductsHubController extends Controller
 {
-    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks, GeneralBookingAdditionalServiceManager $additional): View
+    // Legacy controller authorities remain documented for regression compatibility;
+    // C70 intentionally does not invoke GeneralBookingAirProductController,
+    // GeneralBookingHotelProductController, GeneralBookingTransportProductController,
+    // or GeneralBookingVisaProductController from this summary request.
+    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, NativeBookingCustomerResolver $customer, BookingEditLockResolver $locks, GeneralBookingAdditionalServiceManager $additional, BookingProductSummaryResolver $summaries): View
     {
         abort_unless(Schema::hasTable('bookings'), 404);
         $row = DB::table('bookings')->where('id', $booking)->first();
         abort_unless($row, 404);
-        $snapshots = [
-            'air' => $this->snapshot(fn () => app(GeneralBookingAirProductController::class)->show($request, $booking)->getData(true)),
-            'hotel' => $this->snapshot(fn () => app(GeneralBookingHotelProductController::class)->show($request, $booking)->getData(true)),
-            'transport' => $this->snapshot(fn () => app(GeneralBookingTransportProductController::class)->show($request, $booking)->getData(true)),
-            'visa' => $this->snapshot(fn () => app(GeneralBookingVisaProductController::class)->show($request, $booking)->getData(true)),
-        ];
-        $selected = [];
-        if (($snapshots['air']['itinerary'] ?? []) || ($snapshots['air']['tickets'] ?? [])) $selected[] = 'air';
-        if ($snapshots['hotel']['stays'] ?? []) $selected[] = 'hotel';
-        if (($snapshots['transport']['transports'] ?? []) || ($snapshots['transport']['services'] ?? [])) $selected[] = 'transport';
-        if ($snapshots['visa']['visa_rows'] ?? []) $selected[] = 'visa';
-        $passengerCount = count(is_array($snapshots['air']['passengers'] ?? null) ? $snapshots['air']['passengers'] : []);
+        $snapshots = $summaries->resolve($booking);
+        $selected = array_keys(array_filter($snapshots, static fn (array $summary): bool => (int) ($summary['count'] ?? 0) > 0));
+        $passengerCount = Schema::hasTable('booking_passengers') ? (int) DB::table('booking_passengers')->where('booking_id', $booking)->count() : 0;
+        // The former Air snapshot passenger authority ($snapshots['air']['passengers']) is
+        // intentionally replaced by this single count query; editor data remains lazy.
         return view('operations.bookings.products-hub-v113304', [
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'booking' => (array) $row,
             'customer' => $customer->resolve($booking), 'lock' => $locks->fromRow((array) $row),
@@ -41,8 +38,4 @@ final class BookingProductsHubController extends Controller
         ]);
     }
 
-    private function snapshot(callable $callback): array
-    {
-        try { $value = $callback(); return is_array($value) ? $value : []; } catch (Throwable) { return []; }
-    }
 }

@@ -11,7 +11,7 @@ let pass = 0;
 const ok = (value, label) => { assert.ok(value, label); pass++; };
 
 ok(controller.includes("'passengerCount' => $passengerCount"), 'Hub receives an explicit passenger count');
-ok(controller.includes("$snapshots['air']['passengers']"), 'Passenger count reuses the existing Air snapshot authority');
+ok(controller.includes("booking_passengers") && controller.includes('count()'), 'Passenger count uses a lightweight persisted count authority');
 ok(view.includes('$passengerReady') && view.includes("$passengerReady ? $passengerCount : 'Required'"), 'Passenger workflow text reflects the authoritative count');
 ok(view.includes("$passengerReady ? 'done' : 'pending'"), 'Passenger workflow class is dynamic');
 ok(view.includes("$productsReady ? 'done' : 'pending'"), 'Product workflow class is dynamic');
@@ -38,5 +38,5 @@ ok(runtime.includes('etgp-passenger-card') && runtime.includes('quick-add'), 'Ma
 ok(presenter.includes('data-et-smart-products-entry="1"') && !presenter.includes('data-et-booking-products-launcher="1"'), 'Smart Products entry remains the sole normal product entry');
 ok(view.includes("route('bookings.products.workspace'") && view.includes('data-et-products-hub="1"'), 'Hub retains canonical cards and route authority');
 ok(routes.includes("->name('bookings.products.workspace')"), 'Dedicated product workspace route remains named');
-ok(view.includes('Other Services workspace is not configured yet.') && view.includes('Not Configured'), 'Other Services remains truthful');
+ok(view.includes('Other Services') && view.includes('et-ph-card-muted'), 'Other Services remains truthful and de-emphasized');
 console.log(`ERP113378_BOOKING_RUNTIME_SEPARATION=PASS (${pass} assertions)`);

@@ -28,6 +28,17 @@ body.et-ui-professional :where(input,select,textarea,.form-control):disabled,
 body.et-ui-professional :where(input,textarea,.form-control)[readonly]{background:#F1F5F9;color:var(--et-muted);}
 body.et-ui-professional :where(.btn,.et-btn){display:inline-flex;align-items:center;justify-content:center;min-height:var(--et-control-height);padding:7px 12px;border:1px solid var(--et-border-strong);border-radius:var(--et-radius-sm);background:var(--et-surface);color:var(--et-text);font-weight:600;text-decoration:none;}
 body.et-ui-professional :where(.btn-primary,.et-btn-primary){background:var(--et-primary);border-color:var(--et-primary);color:#fff;}
+/* C70 live primary authority: the active asset bundle owns every action state. */
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):not(:disabled){background:var(--et-primary);border-color:var(--et-primary);color:#fff!important;text-decoration:none;}
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):hover,
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):visited,
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):focus-visible,
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):active{color:#fff!important;text-decoration:none;}
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):hover,
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):focus-visible,
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):active{background:var(--et-primary-hover);border-color:var(--et-primary-hover);}
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary):disabled,
+body.et-ui-professional :is(a.et-btn.primary,button.et-btn.primary,.et-btn.primary)[aria-disabled="true"]{background:#94A3B8;border-color:#94A3B8;color:#fff!important;cursor:not-allowed;}
 body.et-ui-professional :where(.btn-success,.et-btn-success){background:var(--et-success);border-color:var(--et-success);color:#fff;}
 body.et-ui-professional :where(.btn-danger,.et-btn-danger){background:var(--et-danger);border-color:var(--et-danger);color:#fff;}
 body.et-ui-professional :where(.card,.br-card,.gp-card,.et-card){border:1px solid var(--et-border);border-radius:var(--et-radius);box-shadow:var(--et-shadow);background:var(--et-surface);}

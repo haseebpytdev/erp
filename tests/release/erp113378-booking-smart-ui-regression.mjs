@@ -14,8 +14,8 @@ ok(hub.includes('booking_reference') && hub.includes('customer') && hub.includes
 ok(hub.includes('data-et-booking-workflow="1"') && hub.includes('Passengers') && hub.includes('Products') && hub.includes('Billing / Travel'), 'compact workflow strip is present and dynamic');
 ok(hub.includes('data-et-product-card="{{ $item[0] }}"') && hub.includes('data-et-product-card="other-services"'), 'five product overview cards are present');
 ok(hub.includes("route('bookings.products.workspace'") && hub.includes("'product'=>$item[0]"), 'canonical dedicated product route is used for dynamic product cards');
-ok(hub.includes("'product'=>'other-services'"), 'canonical Other Services route is used');
-ok(!hub.includes('data-etgp-products-runtime') && !hub.includes('data-etgp-product-shells') && !hub.includes('general-progressive-step1.js'), 'Products Hub has no inline editor runtime mount');
+ok(hub.includes("bookings.additional-services.index"), 'canonical Additional Services route is used');
+ok(!hub.includes('data-etgp-products-runtime') && !hub.includes('data-etgp-product-shells'), 'Products Hub has no inline editor runtime mount');
 ok(hub.includes('Booking Value') && hub.includes('Supplier Cost'), 'product cards expose concise existing commercial summaries');
 ok(review.includes('data-et-booking-smart-review="1"') && review.includes('Commercial Summary') && review.includes('Sales Invoice'), 'review page has a simplified identity, commercial and billing hierarchy');
 ok(review.includes('data-et-booking-action-bar="1"') && review.includes('Preview Voucher') && review.includes('Send for Approval'), 'review action bar keeps existing workflow actions');

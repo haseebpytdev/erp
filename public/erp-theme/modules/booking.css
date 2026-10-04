@@ -69,6 +69,19 @@ body.et-ui-module-operations :where(.br-btn:not(.primary):not(.green),.et-ph-btn
 body.et-ui-module-operations :where(.br-btn,.et-ph-btn,.et-booking-focus-btn):focus-visible{outline:3px solid rgba(23,105,210,.28)!important;outline-offset:2px}
 
 body.et-ui-module-operations :where(.et-products-hub){max-width:1280px}
+body.et-ui-module-operations :where(.et-booking-workspace-header){display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin:0 0 18px;padding:2px 0 14px;border-bottom:1px solid var(--et-border)}
+body.et-ui-module-operations :where(.et-booking-header-kicker){color:var(--et-primary);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+body.et-ui-module-operations :where(.et-booking-workspace-header h1){margin:3px 0;color:var(--et-text);font-size:25px;line-height:1.18;font-weight:800}
+body.et-ui-module-operations :where(.et-booking-workspace-header p){margin:0;color:var(--et-muted);font-size:12px}
+body.et-ui-module-operations :where(.et-booking-header-right){display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+body.et-ui-module-operations :where(.et-booking-header-menu){display:flex;gap:6px;order:-1}
+body.et-ui-module-operations :where(.et-booking-progress){display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;color:var(--et-muted);font-size:11px;font-weight:800}
+body.et-ui-module-operations :where(.et-booking-progress a){display:inline-flex;align-items:center;gap:6px;color:var(--et-muted);text-decoration:none}
+body.et-ui-module-operations :where(.et-booking-progress a.current){color:var(--et-primary)}
+body.et-ui-module-operations :where(.et-booking-progress a.done){color:#16774d}
+body.et-ui-module-operations :where(.et-booking-progress span){display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#eef3f8;color:inherit;font-size:10px}
+body.et-ui-module-operations :where(.et-ph-card-muted){opacity:.72;background:#f8fafc}
+body.et-ui-module-operations :where(.et-ph-kv){grid-template-columns:repeat(4,minmax(0,1fr))}
 body.et-ui-module-operations :where(.et-ph-kicker){margin-bottom:4px;color:var(--et-primary);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
 body.et-ui-module-operations :where(.et-ph-workflow){display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px 13px;border:1px solid var(--et-border);border-radius:10px;background:#fff;color:var(--et-muted);font-size:11px;font-weight:800}
 body.et-ui-module-operations :where(.et-ph-workflow span){padding-right:10px;border-right:1px solid var(--et-border)}
@@ -104,7 +117,7 @@ body.et-ui-module-operations :where(.et-ph-state.selected){background:#e7f7ef;co
 body.et-ui-module-operations :where(.et-booking-smart-products){display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0;padding:14px 16px;border:1px solid var(--et-border);border-radius:10px;background:#fff;box-shadow:var(--et-shadow)}
 body.et-ui-module-operations :where(.et-booking-smart-products strong){font-size:13px;text-transform:uppercase;letter-spacing:.04em}
 body.et-ui-module-operations :where(.et-booking-smart-products span){flex:1;color:var(--et-muted);font-size:11px}
-@media(max-width:760px){body.et-ui-module-operations :where(.et-ph-top){flex-direction:column}.et-ph-actions{justify-content:flex-start!important}.et-ph-context{grid-template-columns:repeat(2,minmax(0,1fr))!important}.et-ph-grid{grid-template-columns:1fr!important}.et-ph-workflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){body.et-ui-module-operations :where(.et-booking-workspace-header){flex-direction:column}.et-booking-header-right{justify-content:flex-start!important}.et-booking-header-menu{order:0}.et-ph-top{flex-direction:column}.et-ph-actions{justify-content:flex-start!important}.et-ph-context{grid-template-columns:repeat(2,minmax(0,1fr))!important}.et-ph-grid{grid-template-columns:1fr!important}.et-ph-workflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:768px){
     body.et-ui-module-operations :where(.br-top){flex-direction:column;align-items:stretch}
 }
