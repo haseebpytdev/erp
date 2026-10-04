@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\GeneralBookingAdditionalServiceManager;
+use App\Services\Operations\GeneralBookingAdditionalServiceSalesInvoiceCoordinator;
 use App\Services\Operations\NativeBookingCustomerResolver;
 use App\Services\Operations\NativeErpLayoutResolver;
+use App\Services\Operations\NativeSalesInvoiceInspector;
 use App\Services\Operations\GeneralBookingAdditionalServiceWorkflowManager;
 use App\Services\Operations\GroupUmrahEditAuthority;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -47,6 +50,36 @@ final class GeneralBookingAdditionalServiceController extends Controller
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'batchId' => $batch, 'state' => $state, 'canApprove' => $authority->canReopen($request->user()),
             'customer' => $customer->resolve($booking),
         ]);
+    }
+
+    public function invoice(Request $request, int $booking, int $batch, GeneralBookingAdditionalServiceSalesInvoiceCoordinator $coordinator, NativeSalesInvoiceInspector $invoices): RedirectResponse
+    {
+        try {
+            $result = $coordinator->create($request, $booking, $batch);
+            $salesInvoiceId = (int) ($result['sales_invoice_id'] ?? 0);
+            if ($salesInvoiceId <= 0) {
+                return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch])
+                    ->withErrors(['invoice' => 'The supplementary Sales Invoice could not be safely resolved.']);
+            }
+            $url = $invoices->nativeInvoiceUrl($salesInvoiceId);
+            if (! is_string($url) || trim($url) === '') {
+                $url = url('/sales/invoices/'.$salesInvoiceId);
+            }
+            $message = ($result['status'] ?? null) === 'already_invoiced'
+                ? 'Supplementary Sales Invoice already exists. Existing invoice opened.'
+                : 'Supplementary Sales Invoice created successfully.';
+            return redirect()->to($url)->with('success', $message);
+        } catch (ValidationException $e) {
+            $message = $e->getMessageBag()->first('batch')
+                ?: $e->getMessageBag()->first('invoice')
+                ?: 'The supplementary Sales Invoice request was not allowed.';
+            return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch])
+                ->withErrors(['invoice' => $message]);
+        } catch (Throwable $e) {
+            report($e);
+            return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch])
+                ->withErrors(['invoice' => 'Supplementary Sales Invoice could not be created or safely opened.']);
+        }
     }
 
     public function workflow(Request $request, int $booking, int $batch, string $action, GeneralBookingAdditionalServiceWorkflowManager $workflow): RedirectResponse

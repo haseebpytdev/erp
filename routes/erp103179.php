@@ -333,6 +333,8 @@ Route::post('/operations/bookings/{booking}/additional-services/start', [General
     ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.start');
 Route::get('/operations/bookings/{booking}/additional-services/{batch}', [GeneralBookingAdditionalServiceController::class, 'show'])
     ->whereNumber('booking')->whereNumber('batch')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.show');
+Route::post('/operations/bookings/{booking}/additional-services/{batch}/sales-invoice', [GeneralBookingAdditionalServiceController::class, 'invoice'])
+    ->whereNumber('booking')->whereNumber('batch')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.invoice');
 Route::get('/operations/bookings/{booking}/additional-services/{batch}/products/{product}', [GeneralBookingAdditionalServiceProductController::class, 'edit'])
     ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.products.edit');
 Route::post('/operations/bookings/{booking}/additional-services/{batch}/products/{product}/items', [GeneralBookingAdditionalServiceProductController::class, 'store'])
