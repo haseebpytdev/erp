@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Schema;
 /** Atomic append-only native projection for approved supplementary batches. */
 final class GeneralBookingAdditionalServiceMaterializer
 {
+    private array $existingServiceIds = [];
     public function __construct(
         private readonly GeneralBookingAdditionalServiceMaterializationPlanner $planner,
         private readonly GeneralBookingAdditionalServiceSnapshotIntegrity $integrity,
@@ -25,6 +26,10 @@ final class GeneralBookingAdditionalServiceMaterializer
             $batch = DB::table('general_booking_billing_batches')->where('id',$batchId)->where('booking_id',$bookingId)->lockForUpdate()->first();
             if (!$batch) return $this->blocked('batch_missing');
             $items = DB::table('general_booking_billing_batch_items')->where('batch_id',$batchId)->where('booking_id',$bookingId)->orderBy('line_no')->orderBy('id')->lockForUpdate()->get();
+            $existingServiceIds = Schema::hasTable('booking_services')
+                ? DB::table('booking_services')->where('booking_id',$bookingId)->pluck('id')->map(fn($id)=>(int)$id)->all()
+                : [];
+            $this->existingServiceIds = $existingServiceIds;
             $plan = $this->planner->plan($bookingId,$batchId);
             if (($plan['code']??null)==='already_materialized') { $this->verifyLinks($bookingId,$plan,$items); return ['ok'=>true,'code'=>'already_materialized','idempotent'=>true,'materialization_state'=>'already_materialized','travel_ready_reset'=>false]; }
             if (($plan['ready']??false)!==true || ($plan['materialization_state']??'')!=='unmaterialized') return $this->blocked((string)($plan['code']??'materialization_blocked'));
@@ -33,7 +38,13 @@ final class GeneralBookingAdditionalServiceMaterializer
             foreach ($plan['items'] as $itemPlan) {
                 $item=$items->firstWhere('id',(int)($itemPlan['id']??0)); if(!$item)throw new \RuntimeException('Locked supplementary item disappeared.');
                 $product=strtolower((string)$item->product_type); $runtime=$product==='air'?($air[$this->airGroupKeyForItem((int)$item->id,$plan['product_groups']??[])]??null):null;
+                if ($product !== 'air' && (($itemPlan['service_strategy'] ?? '') !== 'new_service' || ($itemPlan['existing_booking_service_id'] ?? null) !== null)) {
+                    throw new \RuntimeException('Unmaterialized supplementary items must use new_service.');
+                }
                 $link=$this->materializeItem($bookingId,$booking,$item,$itemPlan,$runtime,$userId);
+                if ($product !== 'air' && in_array((int)($link['booking_service_id'] ?? 0), $this->existingServiceIds, true)) {
+                    throw new \RuntimeException('Supplementary service was not newly created.');
+                }
                 $updated=DB::table('general_booking_billing_batch_items')->where('id',$item->id)->where('batch_id',$batchId)->whereNull('source_table')->whereNull('source_id')->whereNull('booking_service_id')->whereNull('product_service_id')->update($link+['updated_at'=>now()]);
                 if($updated!==1)throw new \RuntimeException('Supplementary item link was concurrently changed.');
             }
