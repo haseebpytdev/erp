@@ -1,5 +1,5 @@
 @php($bookingReference = $booking['booking_reference'] ?? $booking['booking_no'] ?? ('Booking #'.$bookingId))
-<header class="et-booking-workspace-header" data-et-booking-workspace-header="1">
+<header class="et-booking-workspace-header et-dedicated-product-header etgp-toolbar" data-et-booking-workspace-header="1" data-et-dedicated-product-header="1" data-etgp-booking-context="1">
   {{-- Native shell compatibility: etgp-toolbar / data-etgp-booking-context remain the dedicated context authority. --}}
   {{-- Booking identity/customer/status authorities: booking_reference, customer, $lock['status']. --}}
   <div class="et-booking-header-left">
