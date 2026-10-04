@@ -970,6 +970,13 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     $action = strtolower((string) $route->getActionName());
     $uri = strtolower(trim((string) $route->uri(), '/'));
 
+    // Additional Services is a separate supplementary draft workflow and
+    // must retain the permanent ERP shell rather than the focused booking
+    // canvas used by native booking/product routes.
+    if (str_starts_with($name, 'bookings.additional-services.')) {
+        return;
+    }
+
     $isNativeBookingEntry = (
         in_array($name, [
             'operations.bookings.create',

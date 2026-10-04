@@ -7,6 +7,7 @@ use App\Support\Release\Erp11330StabilizationCleaner;
 use App\Services\Operations\ServerSidebarComposer;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
 use App\Services\Operations\DedicatedProductTimingContext;
@@ -136,32 +137,22 @@ class ApplyErpReleaseMetadata
             || str_contains($html, 'System Health & Updates')
             || str_contains($html, 'Safe web-based application maintenance')
         ) {
-            $databaseReady = $this->databaseReady($release);
+            $migrationStatus = $this->migrationStatus($release);
+            $statusMessage = match ($migrationStatus['status']) {
+                'current' => 'Database schema is current — no pending migrations.',
+                'pending' => 'Database upgrade pending — '.(int) ($migrationStatus['pending_count'] ?? 0).' migration(s) require execution.',
+                default => 'Database migration status could not be verified.',
+            };
 
-            if ($databaseReady) {
-                $html = str_replace(
-                    'Database is current through ERP-10.1.',
-                    'Database is current through ERP-11.3.',
-                    $html
-                );
-
-                $html = str_replace(
-                    'Database is current through ERP-10.1',
-                    'Database is current through ERP-11.3',
-                    $html
-                );
-            } else {
-                $html = str_replace(
-                    'Database is current through ERP-10.1.',
-                    'Database upgrade required for ERP-11.3 Payments, Receipts & Advance Adjustment core tables.',
-                    $html
-                );
-
-                $html = str_replace(
-                    'Database is current through ERP-10.1',
-                    'Database upgrade required for ERP-11.3 Payments, Receipts & Advance Adjustment core tables',
-                    $html
-                );
+            foreach ([
+                'Database is current through ERP-10.1.',
+                'Database is current through ERP-10.1',
+                'Database is current through ERP-11.3.',
+                'Database is current through ERP-11.3',
+                'Database schema is up to date.',
+                'Database schema is up to date',
+            ] as $legacyStatus) {
+                $html = str_replace($legacyStatus, $statusMessage, $html);
             }
 
             /*
@@ -366,35 +357,41 @@ class ApplyErpReleaseMetadata
         return 'standard';
     }
 
-    private function databaseReady(array $release): bool
+    private function migrationStatus(array $release): array
     {
         try {
-            foreach (($release['required_tables'] ?? []) as $table) {
-                if (! Schema::hasTable($table)) {
-                    return false;
-                }
+            $migrationFiles = glob(database_path('migrations/*.php'));
+            if ($migrationFiles === false) {
+                return ['status' => 'unknown', 'pending_count' => null];
             }
 
-            foreach (($release['required_columns'] ?? []) as $table => $columns) {
-                if (! Schema::hasTable($table)) {
-                    return false;
-                }
+            $discovered = array_values(array_filter(array_map(
+                static fn (string $file): string => pathinfo($file, PATHINFO_FILENAME),
+                $migrationFiles
+            )));
 
-                foreach ($columns as $column) {
-                    if (! Schema::hasColumn($table, $column)) {
-                        return false;
-                    }
-                }
+            if ($discovered === [] || ! Schema::hasTable('migrations')) {
+                return ['status' => 'unknown', 'pending_count' => null];
             }
 
-            return true;
+            $recorded = DB::table('migrations')
+                ->pluck('migration')
+                ->map(static fn ($migration): string => (string) $migration)
+                ->all();
+
+            $pending = array_values(array_diff($discovered, $recorded));
+
+            return [
+                'status' => $pending === [] ? 'current' : 'pending',
+                'pending_count' => count($pending),
+            ];
         } catch (\Throwable) {
             /*
              * Do not break the ERP page merely because schema introspection
-             * failed. The old health message will be replaced with the safe
-             * "upgrade required" label instead.
+             * failed. Unknown migration state must never be presented as
+             * current.
              */
-            return false;
+            return ['status' => 'unknown', 'pending_count' => null];
         }
     }
 }

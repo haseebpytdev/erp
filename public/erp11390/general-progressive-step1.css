@@ -96,14 +96,13 @@ html.etgp-step1-live-11390 section.content{
 }
 
 
-/* ERP-11.3.90 first-paint reveal contract. */
+/* ERP-11.3.90 first-paint enhancement contract.
+ * Server-rendered Booking/Product content remains visible while the
+ * progressive client enhances it. The client fallback is secondary safety,
+ * never the page-visibility authority.
+ */
 html.et-general-progressive-step1-11390{
   scrollbar-gutter:stable;
-}
-
-html.et-general-progressive-step1-11390:not(.etgp-step1-ready-11390):not(.etgp-step1-fallback-11390)
-  section.content > *{
-  display:none!important;
 }
 
 /* Header */
