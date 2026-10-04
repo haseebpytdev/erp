@@ -56,6 +56,12 @@ final class GeneralBookingAdditionalServiceController extends Controller
     {
         try {
             $result = $coordinator->create($request, $booking, $batch);
+            $status = strtolower(trim((string) ($result['status'] ?? '')));
+            if (! in_array($status, ['created', 'already_invoiced'], true)) {
+                throw ValidationException::withMessages([
+                    'invoice' => 'Supplementary Sales Invoice operation returned an invalid status.',
+                ]);
+            }
             $salesInvoiceId = (int) ($result['sales_invoice_id'] ?? 0);
             if ($salesInvoiceId <= 0) {
                 return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch])
@@ -65,7 +71,7 @@ final class GeneralBookingAdditionalServiceController extends Controller
             if (! is_string($url) || trim($url) === '') {
                 $url = url('/sales/invoices/'.$salesInvoiceId);
             }
-            $message = ($result['status'] ?? null) === 'already_invoiced'
+            $message = $status === 'already_invoiced'
                 ? 'Supplementary Sales Invoice already exists. Existing invoice opened.'
                 : 'Supplementary Sales Invoice created successfully.';
             return redirect()->to($url)->with('success', $message);

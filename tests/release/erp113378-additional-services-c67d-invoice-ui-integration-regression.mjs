@@ -21,11 +21,19 @@ const excludes = (source, needle, message) => ok(!source.includes(needle), messa
 
 includes(controller, 'public function invoice(', 'C67D_CONTROLLER_ACTION_EXISTS');
 includes(controller, '$coordinator->create($request, $booking, $batch)', 'C67D_CONTROLLER_USES_COORDINATOR');
+includes(controller, "$status = strtolower(trim((string) ($result['status'] ?? '')))", 'C67D_COORDINATOR_STATUS_NORMALIZED');
+includes(controller, "in_array($status, ['created', 'already_invoiced'], true)", 'C67D_ALLOWED_COORDINATOR_STATUSES');
+includes(controller, 'operation returned an invalid status.', 'C67D_UNKNOWN_COORDINATOR_STATUS_FAILS_CLOSED');
+ok(controller.indexOf("in_array($status, ['created', 'already_invoiced'], true)") < controller.indexOf("$salesInvoiceId = (int)"), 'C67D_STATUS_VALIDATION_BEFORE_INVOICE_ID');
+ok(controller.indexOf("in_array($status, ['created', 'already_invoiced'], true)") < controller.indexOf('nativeInvoiceUrl($salesInvoiceId)'), 'C67D_STATUS_VALIDATION_BEFORE_REDIRECT');
 excludes(controller, 'createFromBookingServices(', 'C67D_CONTROLLER_DOES_NOT_USE_NATIVE_BASE_CREATOR');
 excludes(controller, 'createFromBooking(', 'C67D_CONTROLLER_DOES_NOT_USE_CREATE_FROM_BOOKING');
 excludes(controller, 'NativeSalesInvoiceRuntimeBridge', 'C67D_CONTROLLER_DOES_NOT_USE_RUNTIME_BRIDGE');
 includes(controller, '$salesInvoiceId = (int) ($result[\'sales_invoice_id\'] ?? 0)', 'C67D_VALID_INVOICE_ID_REQUIRED');
 includes(controller, '$invoices->nativeInvoiceUrl($salesInvoiceId)', 'C67D_NATIVE_INVOICE_URL_AUTHORITY');
+includes(controller, "status === 'already_invoiced'", 'C67D_ALREADY_INVOICED_STATUS_USES_EXISTING_MESSAGE');
+includes(controller, 'Supplementary Sales Invoice created successfully.', 'C67D_CREATED_STATUS_USES_CREATED_MESSAGE');
+includes(controller, 'Supplementary Sales Invoice already exists. Existing invoice opened.', 'C67D_ALREADY_INVOICED_STATUS_USES_EXISTING_MESSAGE');
 includes(controller, 'catch (ValidationException $e)', 'C67D_VALIDATION_EXCEPTION_HANDLED');
 includes(controller, 'catch (Throwable $e)', 'C67D_UNEXPECTED_EXCEPTION_REPORTED');
 includes(controller, 'report($e)', 'C67D_UNEXPECTED_EXCEPTION_REPORTED');
