@@ -139,14 +139,14 @@ final class BookingProductSummaryResolver
         $sale = 0.0; $cost = 0.0;
         foreach ($rows as $row) {
             $data = (array) $row;
-            $meta = $this->hotelMetadata($data);
+            $meta = $this->hotelMetadata($data, $table, $columns);
             $nights = (int) ($this->firstNumber($data, ['nights', 'total_nights', 'night_count']) ?: ($meta['nights'] ?? 0));
-            $rowSale = $this->firstNumber($data, ['selling_total','customer_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']);
-            $rowCost = $this->firstNumber($data, ['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost']);
+            $rowSale = (float) ($this->hotelMeaningfulNumber($data, ['selling_total','customer_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']) ?? 0);
+            $rowCost = (float) ($this->hotelMeaningfulNumber($data, ['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost']) ?? 0);
             if ($rowSale == 0.0) $rowSale = (float) ($meta['customer_total'] ?? 0);
             if ($rowCost == 0.0) $rowCost = (float) ($meta['vendor_total'] ?? 0);
-            $saleRate = $this->firstNumber($data, ['sale_rate','selling_rate','customer_rate','sale_price','selling_price','customer_price','nightly_sale_rate','selling_price_per_night','customer_price_per_night']);
-            $costRate = $this->firstNumber($data, ['cost_rate','supplier_rate','vendor_rate','cost_price','supplier_cost','vendor_cost','purchase_price','nightly_cost_rate','cost_price_per_night','supplier_price_per_night','vendor_price_per_night']);
+            $saleRate = (float) ($this->hotelMeaningfulNumber($data, ['sale_rate','selling_rate','customer_rate','sale_price','selling_price','customer_price','sale','sell_price','room_sale_rate','nightly_sale_rate','selling_price_per_night','customer_price_per_night']) ?? 0);
+            $costRate = (float) ($this->hotelMeaningfulNumber($data, ['cost_rate','supplier_rate','vendor_rate','cost_price','supplier_cost','vendor_cost','cost','purchase_price','room_cost_rate','nightly_cost_rate','cost_price_per_night','supplier_price_per_night','vendor_price_per_night']) ?? 0);
             if ($saleRate == 0.0) $saleRate = (float) ($meta['sale_rate'] ?? 0);
             if ($costRate == 0.0) $costRate = (float) ($meta['cost_rate'] ?? 0);
             if ($rowSale == 0.0 && $saleRate != 0.0 && $nights > 0) $rowSale = $saleRate * $nights;
@@ -156,20 +156,64 @@ final class BookingProductSummaryResolver
         return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
     }
 
-    private function hotelMetadata(array $row): array
+    private function hotelMeaningfulNumber(array $row, array $fields): ?float
     {
-        foreach (['meta','metadata','extra_data','details_json','attributes'] as $field) {
+        foreach ($fields as $field) {
+            if (! array_key_exists($field, $row) || $row[$field] === null || $row[$field] === '' || ! is_numeric($row[$field])) continue;
+            $value = (float) $row[$field];
+            if (abs($value) > 0.000001) return $value;
+        }
+        return null;
+    }
+
+    private function hotelMetadata(array $row, string $table, array $columns): array
+    {
+        foreach ($this->hotelJsonCarrierFields($table, $columns) as $field) {
             if (! array_key_exists($field, $row)) continue;
             $decoded = is_array($row[$field]) ? $row[$field] : json_decode((string) ($row[$field] ?? ''), true);
             if (is_array($decoded['et_erp_hotel_stay'] ?? null)) return $decoded['et_erp_hotel_stay'];
         }
-        foreach ($row as $value) {
-            if (! is_string($value) || ! str_contains($value, 'ETERP_HOTEL_STAY')) continue;
-            $json = trim((string) preg_replace('/^.*?ETERP_HOTEL_STAY\s*/s', '', $value));
-            $decoded = json_decode($json, true);
+        foreach ($this->hotelTaggedCarrierFields($table, $columns) as $field) {
+            if (! array_key_exists($field, $row)) continue;
+            $decoded = $this->hotelTaggedPayload((string) ($row[$field] ?? ''));
             if (is_array($decoded)) return $decoded;
         }
         return [];
+    }
+
+    private function hotelJsonCarrierFields(string $table, array $columns): array
+    {
+        $fields = array_values(array_intersect(['meta','metadata','extra_data','details_json','attributes'], $columns));
+        try {
+            foreach ((array) Schema::getColumns($table) as $meta) {
+                $name = (string) ($meta['name'] ?? $meta['column_name'] ?? '');
+                $type = strtolower((string) ($meta['type_name'] ?? $meta['type'] ?? ''));
+                if ($name !== '' && in_array($name, $columns, true) && str_contains($type, 'json')) $fields[] = $name;
+            }
+        } catch (Throwable) {}
+        return array_values(array_unique($fields));
+    }
+
+    private function hotelTaggedCarrierFields(string $table, array $columns): array
+    {
+        $fields = array_values(array_intersect(['notes','remarks','internal_notes','description','details','other_details','comment','comments'], $columns));
+        try {
+            foreach ((array) Schema::getColumns($table) as $meta) {
+                $name = (string) ($meta['name'] ?? $meta['column_name'] ?? '');
+                $type = strtolower((string) ($meta['type_name'] ?? $meta['type'] ?? ''));
+                if ($name !== '' && in_array($name, $columns, true) && (str_contains($type, 'char') || str_contains($type, 'text'))) $fields[] = $name;
+            }
+        } catch (Throwable) {}
+        return array_values(array_unique($fields));
+    }
+
+    private function hotelTaggedPayload(string $value): ?array
+    {
+        if (! preg_match('/\[\[ETERP_HOTEL_STAY:([A-Za-z0-9+\/]+=*)\]\]/', $value, $match)) return null;
+        $json = base64_decode($match[1], true);
+        if ($json === false) return null;
+        $decoded = json_decode($json, true);
+        return is_array($decoded) ? $decoded : null;
     }
 
     private function transportSnapshotSummary(iterable $serviceRows): array

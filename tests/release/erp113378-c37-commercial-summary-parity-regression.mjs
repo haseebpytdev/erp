@@ -11,7 +11,7 @@ const progressive = read('public/erp11390/general-progressive-step1.js');
 const release = read('config/et_erp_release.php');
 const lock = read('app/Services/Operations/BookingEditLockResolver.php');
 const css = read('public/erp11390/general-progressive-step1.css');
-const hotel = resolver.slice(resolver.indexOf('private function hotelSummary'), resolver.indexOf('private function hotelMetadata'));
+const hotel = resolver.slice(resolver.indexOf('private function hotelSummary'));
 
 ok(resolver.includes('private function airSummary'), 'Air has a dedicated lightweight summary authority');
 ok(resolver.includes('DB::table(\'booking_services\')') && resolver.includes("where('product_service_id', (int) $master['id'])"), 'Air presence is scoped to saved native Air services');
@@ -42,8 +42,13 @@ ok(hotel.includes('selling_total') && hotel.includes('customer_total') && hotel.
 ok(hotel.includes('net_supplier_cost') && hotel.includes('supplier_total') && hotel.includes('vendor_amount') && hotel.includes('gross_cost'), 'Hotel supplier aliases are executable in the Hotel path');
 ok(hotel.includes('sale_rate') && hotel.includes('cost_rate') && hotel.includes('nights') && hotel.includes('hotelMetadata'), 'Hotel rate/nights and metadata fallback are executable');
 ok(!hotel.includes('GeneralBookingHotelProductController') && !hotel.includes('->show('), 'Hotel summary has no controller fan-out or writes');
+ok(hotel.includes('hotelMeaningfulNumber') && hotel.includes('selling_total') && hotel.includes('customer_total') && hotel.includes('supplier_total') && hotel.includes('vendor_total'), 'Hotel meaningful aliases skip zero legacy siblings');
+ok(hotel.includes("'sale','sell_price','room_sale_rate'") && hotel.includes("'cost','purchase_price','room_cost_rate'"), 'Hotel complete native rate aliases are covered');
+ok(hotel.includes('hotelJsonCarrierFields') && hotel.includes('hotelTaggedCarrierFields') && hotel.includes('Schema::getColumns'), 'Hotel native JSON/text carrier discovery is preserved');
+ok(hotel.includes('ETERP_HOTEL_STAY:') && hotel.includes('base64_decode($match[1], true)') && hotel.includes('json_decode($json, true)'), 'Hotel tagged payload uses strict base64 and JSON decoding');
+ok(hotel.includes("return null;") && hotel.includes('preg_match'), 'Invalid Hotel tagged metadata fails closed');
 ok(resolver.includes('customer_amount') && resolver.includes('selling_amount') && resolver.includes('gross_sale') && resolver.includes('supplier_amount_pkr') && resolver.includes('vendor_total_pkr') && resolver.includes('cost_amount_pkr'), 'Transport and Visa native aliases remain covered');
 ok(resolver.includes('serviceSalePresent ? $serviceSale : $detailSale') && resolver.includes('hasCommercialField'), 'Air zero-valued snapshots do not imply missing commercial data');
 ok(css.includes('.etgp-toolbar-left-actions'), 'Left toolbar action row has active geometry authority');
 
-console.log('C37_CORRECTIVE3_REGRESSION=PASS (33 assertions)');
+console.log('C37_CORRECTIVE4_REGRESSION=PASS (38 assertions)');
