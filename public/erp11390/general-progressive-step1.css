@@ -701,6 +701,49 @@ html.et-general-progressive-step1-11390{
   }
 }
 
+html.et-c45-booking-dashboard .etgp-toolbar{
+  padding:12px 14px;
+  border:1px solid #dfe7f1;
+  border-radius:12px;
+  background:#f7f9fc;
+}
+
+html.et-c45-booking-dashboard .etgp-kpi{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+html.et-c45-booking-dashboard [data-etgp-booking-lock],
+html.et-c45-booking-dashboard [data-et-server-booking-lock="1"]{
+  display:flex!important;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+html.et-c45-booking-dashboard .etgp-booking-lock-invoice{
+  margin-left:auto;
+  white-space:nowrap;
+  font-weight:700;
+}
+
+html.et-c45-booking-dashboard .etgp-booking-lock-invoice a{
+  color:#1769d2;
+  text-decoration:underline;
+}
+
+@media(max-width:620px){
+  html.et-c45-booking-dashboard .etgp-booking-lock-invoice{margin-left:0;width:100%;}
+}
+
+@media(max-width:820px){
+  html.et-c45-booking-dashboard .etgp-toolbar-actions{width:100%;}
+}
+
 @media(max-width:620px){
   .etgp-header-summary{
     grid-template-columns:repeat(2,minmax(0,1fr));

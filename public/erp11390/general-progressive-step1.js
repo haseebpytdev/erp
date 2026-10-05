@@ -387,6 +387,7 @@ var metricSnapshot=function(
 var buildMetricGrid=function(
   metrics
 ){
+  var c45=etgpIsMainBookingDashboardC45();
   var grid=create(
     'section',
     'etgp-kpis'
@@ -422,7 +423,7 @@ var buildMetricGrid=function(
       )
     );
 
-    if(snapshot.note){
+    if(snapshot.note&&(!c45||(label==='Passengers'||label==='Tickets'))){
       card.appendChild(
         create(
           'div',
@@ -469,6 +470,23 @@ var bookingReference=function(root){
   return match
     ? match[0].toUpperCase()
     : 'Booking';
+};
+
+var etgpIsMainBookingDashboardC45=function(){
+  return /^\/operations\/bookings\/\d+\/?$/i.test(String(window.location.pathname||''));
+};
+
+var etgpNormalizeBookingShellTitle11390=function(reference){
+  if(!etgpIsMainBookingDashboardC45())return false;
+  var wanted=plain(reference);
+  if(!wanted)return false;
+  var candidates=Array.prototype.slice.call(document.querySelectorAll('h1,h2'));
+  for(var i=0;i<candidates.length;i++){
+    var node=candidates[i];
+    if(node.closest('.etgp-step1,.et-booking-workspace-header,[data-et-booking-workspace-header="1"]'))continue;
+    if(plain(node.textContent)===wanted){node.textContent='Booking Dashboard';return true;}
+  }
+  return false;
 };
 
 /* ERP-11.3.305 — portable product-workspace compatibility authority.
@@ -820,6 +838,7 @@ var etgpBookingCommercialDisplay113302=function(data){
 };
 var etgpRenderBookingCommercialSummary113302=function(root){
   if(!root)return;
+  var c45=etgpIsMainBookingDashboardC45();
   var card=root.querySelector('[data-etgp-booking-commercial-summary]');
   if(!card){
     card=create('section','etgp-card etgp-booking-commercial-summary');
@@ -827,7 +846,8 @@ var etgpRenderBookingCommercialSummary113302=function(root){
     var head=create('div','etgp-card-head etgp-booking-commercial-head');
     head.appendChild(create('div','etgp-card-copy'));
     head.firstChild.appendChild(create('h2','etgp-card-title','Booking Commercial Summary'));
-    head.firstChild.appendChild(create('p','etgp-card-note','Read-only booking-wide totals from saved product authorities. Detailed commercials remain within each product workspace.'));
+    if(!c45)head.firstChild.appendChild(create('p','etgp-card-note','Read-only booking-wide totals from saved product authorities. Detailed commercials remain within each product workspace.'));
+
     card.appendChild(head);card.appendChild(create('div','etgp-booking-commercial-grid'));
     var footer=create('div','etgp-booking-commercial-footer');footer.appendChild(create('span','','Final Booking Value'));footer.appendChild(create('strong','etgp-booking-commercial-final','Unavailable'));card.appendChild(footer);
     var cost=create('div','etgp-booking-commercial-footer');cost.appendChild(create('span','','Supplier Cost Total'));cost.appendChild(create('strong','etgp-booking-commercial-supplier','Unavailable'));card.appendChild(cost);
@@ -895,9 +915,10 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       var serverSelected=Array.isArray(data.selected_products)?data.selected_products.map(function(key){return String(key||'').toLowerCase();}):[];
       var selectionChanged=serverSelected.join(',')!==etgpServerSelectedProducts113180.join(',');
       etgpServerSelectedProducts113180=serverSelected;
-      etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),'Resolved from saved booking commercial authority');
+      etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),'');
+      var c45=etgpIsMainBookingDashboardC45();
       var blockers=Array.isArray(data.readiness_blockers)?data.readiness_blockers:[];
-      etgpAirSetKpi113124('Travel Status',etgpHumanizeTravelStatus11390(data.travel_status||'PendingTravel'),blockers.length?blockers[0]:'All selected travel services are ready');
+      etgpAirSetKpi113124('Travel Status',etgpHumanizeTravelStatus11390(data.travel_status||'PendingTravel'),c45?'':(blockers.length?blockers[0]:'All selected travel services are ready'));
       etgpApplyBookingLock113162(data);
       if(selectionChanged&&typeof renderProducts==='function'){
         var root=document.querySelector('.etgp-step1');
@@ -913,11 +934,20 @@ var etgpApplyBookingLock113162=function(data){
   if(etgpDedicatedAirActive113318())return;
   var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('main');
   if(!root)return;
+  var c45=etgpIsMainBookingDashboardC45();
   var invoice=data&&data.sales_invoice||null;
-  var info=root.querySelector('[data-etgp-invoice-status]');
-  if(!info){info=document.createElement('div');info.setAttribute('data-etgp-invoice-status','1');info.style.cssText='margin:8px 0;padding:8px 12px;border:1px solid #dce7f3;border-radius:8px;background:#fff;font-size:11px';root.insertBefore(info,root.firstChild);}
-  var invoiceLabel=invoice?String(invoice.number||('#'+invoice.id))+' · '+String(invoice.status||'Draft').replace(/_/g,' '):'Not Created';
-  info.innerHTML='<strong>Sales Invoice:</strong> '+invoiceLabel+(invoice?' <a target="_blank" rel="noopener noreferrer" href="'+String(data.sales_invoice_url||'')+'">Open Sales Invoice</a>':'');
+  if(!c45){
+    var legacyInvoice=root.querySelector('[data-etgp-invoice-status]');
+    if(!legacyInvoice){
+      legacyInvoice=create('div','etgp-invoice-status');
+      legacyInvoice.setAttribute('data-etgp-invoice-status','1');
+      legacyInvoice.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #dfe7f1;border-radius:8px;background:#f7f9fc;color:#46566d;font-size:11px';
+      root.appendChild(legacyInvoice);
+    }
+    legacyInvoice.innerHTML=invoice&&data&&data.sales_invoice_url
+      ? 'Open Sales Invoice: <a href="'+String(data.sales_invoice_url)+'" target="_blank" rel="noopener noreferrer">'+String(invoice.number||('#'+invoice.id))+'</a>'
+      : 'Sales Invoice status unavailable.';
+  }
   var locked=!!(data&&data.booking_locked===true);
   /* Preserve the explicit server response contract: data.booking_locked!==true
      must never be treated as editable data when no normalized lifecycle exists. */
@@ -926,6 +956,7 @@ var etgpApplyBookingLock113162=function(data){
   etgpBookingLockState113162={locked:locked,status:String(data&& (data.booking_status||data.status||'DRAFT')||'DRAFT'),reason:String(data&&data.booking_lock_reason||'')};
   root.dataset.etgpBookingLocked=locked?'1':'0';
   if(!locked){
+    if(c45)Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-invoice]')).forEach(function(el){el.remove();});
     document.documentElement.classList.remove('et-booking-locked-113162');
     var unlockedCard=root.querySelector('.etgp-passenger-card');
     if(unlockedCard)unlockedCard.dataset.etgpBookingLocked='0';
@@ -946,6 +977,18 @@ var etgpApplyBookingLock113162=function(data){
   if(serverBanner&&banner)banner.remove();
   if(!serverBanner&&!banner){banner=document.createElement('div');banner.setAttribute('data-etgp-booking-lock','1');banner.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font-size:11px;font-weight:700';root.insertBefore(banner,root.firstChild);}
   if(banner)banner.textContent=String(data&&data.booking_lock_reason||'Booking is locked after approval. Reopen the booking before making changes.');
+  if(c45)Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-invoice]')).forEach(function(el){el.remove();});
+  if(c45&&invoice&&data&&data.sales_invoice_url&&(serverBanner||banner)){
+    var invoiceFragment=create('span','etgp-booking-lock-invoice');
+    invoiceFragment.setAttribute('data-etgp-lock-invoice','1');
+    invoiceFragment.appendChild(create('span','', 'Sales Invoice: '));
+    var invoiceLink=create('a','',String(invoice.number||('#'+invoice.id)));
+    invoiceLink.href=String(data.sales_invoice_url);
+    invoiceLink.target='_blank';
+    invoiceLink.rel='noopener noreferrer';
+    invoiceFragment.appendChild(invoiceLink);
+    (serverBanner||banner).appendChild(invoiceFragment);
+  }
   var passengerCard=root.querySelector('.etgp-passenger-card');
   if(passengerCard){
     passengerCard.dataset.etgpBookingLocked='1';
@@ -1117,7 +1160,11 @@ var etgpAirSetKpi113124=function(labelWanted,valueText,noteText){
     if(noteText!==undefined){
       var note=card.querySelector('.etgp-kpi-note');
       if(!note&&noteText){note=create('div','etgp-kpi-note','');card.appendChild(note);}
-      if(note)note.textContent=String(noteText||'');
+      if(note&&noteText)note.textContent=String(noteText);
+      if(note&&!noteText){
+        if(etgpIsMainBookingDashboardC45()&&note.parentNode)note.parentNode.removeChild(note);
+        else note.textContent='';
+      }
     }
   });
 };
@@ -2524,7 +2571,7 @@ var etgpEnsureTransportSelectionForm113179=function(bookingId,retire){
 
 var etgpMainBookingOverview11390=function(root){
   if(root&&root.dataset&&root.dataset.etgpDedicatedProduct==='1')return false;
-  return /^\/operations\/bookings\/\d+\/?$/i.test(String(window.location.pathname||''));
+  return etgpIsMainBookingDashboardC45();
 };
 
 /* C36-C1: the native page heading is a source panel, not a second workspace
@@ -5028,6 +5075,8 @@ var adoptC36ProductSummary11390=function(content,root){
 
 var build=function(){
   etgpSeedInitialBookingLock113162();
+  var c45=etgpIsMainBookingDashboardC45();
+  if(c45)document.documentElement.classList.add('et-c45-booking-dashboard');
   var content=document.querySelector(
     'section.content'
   );
@@ -5133,8 +5182,6 @@ var build=function(){
     )
   );
 
-  var toolbarLeftActions=create('div','etgp-toolbar-left-actions');
-
   var toolbarActions=create(
     'div',
     'etgp-toolbar-actions'
@@ -5147,13 +5194,25 @@ var build=function(){
     )
   );
 
-  actionUnits(hero).forEach(function(unit){
+  var toolbarLeftActions=create('div','etgp-toolbar-left-actions');
+  var actionList=actionUnits(hero);
+  if(c45)actionList.sort(function(a,b){
+    var rank=function(unit){
+      var label=norm(unit.textContent||unit.value||'');
+      if(label.indexOf('booking register')!==-1)return 0;
+      if(label.indexOf('client preview')!==-1)return 1;
+      if(label==='menu'||label.indexOf('menu')!==-1)return 2;
+      return 9;
+    };
+    return rank(a)-rank(b);
+  });
+  actionList.forEach(function(unit){
     var label=norm(unit.textContent||unit.value||'');
-    if(label==='menu'||label.indexOf('booking register')!==-1)toolbarLeftActions.appendChild(unit);
+    if(c45)toolbarActions.appendChild(unit);
+    else if(label==='menu'||label.indexOf('booking register')!==-1)toolbarLeftActions.appendChild(unit);
     else toolbarActions.appendChild(unit);
   });
-  toolbarLeft.appendChild(toolbarLeftActions);
-
+  if(!c45)toolbarLeft.appendChild(toolbarLeftActions);
   toolbar.appendChild(
     toolbarLeft
   );
@@ -5248,14 +5307,7 @@ var build=function(){
       'Booking Header'
     )
   );
-  bookingTitle.appendChild(
-    create(
-      'span',
-      'etgp-card-inline-note',
-      'Customer, branch, agent, salesperson and travel context.'
-    )
-  );
-
+  if(!c45)bookingTitle.appendChild(create('span','etgp-card-inline-note','Customer, branch, agent, salesperson and travel context.'));
   bookingHead.appendChild(
     bookingTitle
   );
@@ -5328,13 +5380,7 @@ var build=function(){
       'Passengers'
     )
   );
-  passengerCopy.appendChild(
-    create(
-      'p',
-      'etgp-card-note',
-      'Add a passenger below. Saved Passenger Master records are suggested automatically by name or passport.'
-    )
-  );
+  if(!c45)passengerCopy.appendChild(create('p','etgp-card-note','Add a passenger below. Saved Passenger Master records are suggested automatically by name or passport.'));
   passengerHead.appendChild(
     passengerCopy
   );
@@ -5450,6 +5496,7 @@ var build=function(){
   content.appendChild(
     root
   );
+  etgpNormalizeBookingShellTitle11390(reference);
   /* The summary is server-rendered before enhancement and may be a sibling
      of section.content. Adopt that same node before obsolete content cleanup
      so it cannot remain on a competing outer canvas. */
