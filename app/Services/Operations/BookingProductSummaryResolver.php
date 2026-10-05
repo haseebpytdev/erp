@@ -38,6 +38,9 @@ final class BookingProductSummaryResolver
                 'transport' => $this->transportTable(),
                 'visa' => 'booking_visa_services',
             };
+            if ($product === 'hotel') {
+                return $this->hotelSummary($booking, $serviceIds);
+            }
             if ($product === 'transport' && (! $table || ! Schema::hasTable($table))) {
                 return $this->transportSnapshotSummary($serviceRows);
             }
@@ -109,6 +112,64 @@ final class BookingProductSummaryResolver
             if ($name !== '' && str_starts_with(strtolower($name), 'booking_') && str_contains(strtolower($name), 'transport')) return $name;
         }
         return null;
+    }
+
+    private function hotelSummary(int $booking, array $serviceIds): array
+    {
+        $authority = app(GeneralBookingHotelNativeStoreResolver::class)->resolve();
+        $table = (string) ($authority['table'] ?? '');
+        if ($table === '' || ! Schema::hasTable($table)) return $this->empty();
+        $columns = Schema::getColumnListing($table);
+        $query = DB::table($table);
+        $mode = (string) ($authority['ownership_mode'] ?? '');
+        if ($mode === 'direct_booking') {
+            $bookingColumn = (string) ($authority['booking_column'] ?? '');
+            if ($bookingColumn === '' || ! in_array($bookingColumn, $columns, true)) return $this->empty();
+            $query->where($bookingColumn, $booking);
+        } elseif ($mode === 'service_link') {
+            $serviceColumn = (string) ($authority['service_link_column'] ?? '');
+            if ($serviceColumn === '' || ! in_array($serviceColumn, $columns, true) || $serviceIds === []) return $this->empty();
+            $query->whereIn($serviceColumn, $serviceIds);
+        } else {
+            return $this->empty();
+        }
+        if (in_array('deleted_at', $columns, true)) $query->whereNull('deleted_at');
+        $rows = $query->get();
+        if ($rows->isEmpty()) return $this->empty();
+        $sale = 0.0; $cost = 0.0;
+        foreach ($rows as $row) {
+            $data = (array) $row;
+            $meta = $this->hotelMetadata($data);
+            $nights = (int) ($this->firstNumber($data, ['nights', 'total_nights', 'night_count']) ?: ($meta['nights'] ?? 0));
+            $rowSale = $this->firstNumber($data, ['selling_total','customer_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']);
+            $rowCost = $this->firstNumber($data, ['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost']);
+            if ($rowSale == 0.0) $rowSale = (float) ($meta['customer_total'] ?? 0);
+            if ($rowCost == 0.0) $rowCost = (float) ($meta['vendor_total'] ?? 0);
+            $saleRate = $this->firstNumber($data, ['sale_rate','selling_rate','customer_rate','sale_price','selling_price','customer_price','nightly_sale_rate','selling_price_per_night','customer_price_per_night']);
+            $costRate = $this->firstNumber($data, ['cost_rate','supplier_rate','vendor_rate','cost_price','supplier_cost','vendor_cost','purchase_price','nightly_cost_rate','cost_price_per_night','supplier_price_per_night','vendor_price_per_night']);
+            if ($saleRate == 0.0) $saleRate = (float) ($meta['sale_rate'] ?? 0);
+            if ($costRate == 0.0) $costRate = (float) ($meta['cost_rate'] ?? 0);
+            if ($rowSale == 0.0 && $saleRate != 0.0 && $nights > 0) $rowSale = $saleRate * $nights;
+            if ($rowCost == 0.0 && $costRate != 0.0 && $nights > 0) $rowCost = $costRate * $nights;
+            $sale += $rowSale; $cost += $rowCost;
+        }
+        return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
+    }
+
+    private function hotelMetadata(array $row): array
+    {
+        foreach (['meta','metadata','extra_data','details_json','attributes'] as $field) {
+            if (! array_key_exists($field, $row)) continue;
+            $decoded = is_array($row[$field]) ? $row[$field] : json_decode((string) ($row[$field] ?? ''), true);
+            if (is_array($decoded['et_erp_hotel_stay'] ?? null)) return $decoded['et_erp_hotel_stay'];
+        }
+        foreach ($row as $value) {
+            if (! is_string($value) || ! str_contains($value, 'ETERP_HOTEL_STAY')) continue;
+            $json = trim((string) preg_replace('/^.*?ETERP_HOTEL_STAY\s*/s', '', $value));
+            $decoded = json_decode($json, true);
+            if (is_array($decoded)) return $decoded;
+        }
+        return [];
     }
 
     private function transportSnapshotSummary(iterable $serviceRows): array

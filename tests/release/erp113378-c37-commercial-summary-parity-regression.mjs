@@ -11,6 +11,7 @@ const progressive = read('public/erp11390/general-progressive-step1.js');
 const release = read('config/et_erp_release.php');
 const lock = read('app/Services/Operations/BookingEditLockResolver.php');
 const css = read('public/erp11390/general-progressive-step1.css');
+const hotel = resolver.slice(resolver.indexOf('private function hotelSummary'), resolver.indexOf('private function hotelMetadata'));
 
 ok(resolver.includes('private function airSummary'), 'Air has a dedicated lightweight summary authority');
 ok(resolver.includes('DB::table(\'booking_services\')') && resolver.includes("where('product_service_id', (int) $master['id'])"), 'Air presence is scoped to saved native Air services');
@@ -36,8 +37,13 @@ ok(lock.includes("$approved = $approvalKey === 'approved'") && lock.includes("$c
 ok(progressive.includes('/\\bBK-\\d{4}-\\d{4,12}\\b/i'), 'Booking reference parser accepts BK-2026-0047');
 ok(progressive.includes('etgp-toolbar-left-actions') && progressive.includes("label==='menu'") && progressive.includes("label.indexOf('booking register')!==-1"), 'Menu and Booking Register are appended to the left toolbar');
 ok(progressive.includes('etgpHumanizeTravelStatus11390') && progressive.includes("return 'Pending Travel'"), 'Travel status is humanized for presentation only');
-ok(resolver.includes('customer_amount') && resolver.includes('selling_amount') && resolver.includes('gross_sale') && resolver.includes('supplier_amount_pkr') && resolver.includes('vendor_total_pkr') && resolver.includes('cost_amount_pkr'), 'Hotel and Transport native aliases are covered');
+ok(hotel.includes("ownership_mode") && hotel.includes('booking_column') && hotel.includes('service_link_column') && hotel.includes('whereIn'), 'Hotel ownership mode and service-link scoping are executable');
+ok(hotel.includes('selling_total') && hotel.includes('customer_total') && hotel.includes('gross_sale'), 'Hotel customer aliases are executable in the Hotel path');
+ok(hotel.includes('net_supplier_cost') && hotel.includes('supplier_total') && hotel.includes('vendor_amount') && hotel.includes('gross_cost'), 'Hotel supplier aliases are executable in the Hotel path');
+ok(hotel.includes('sale_rate') && hotel.includes('cost_rate') && hotel.includes('nights') && hotel.includes('hotelMetadata'), 'Hotel rate/nights and metadata fallback are executable');
+ok(!hotel.includes('GeneralBookingHotelProductController') && !hotel.includes('->show('), 'Hotel summary has no controller fan-out or writes');
+ok(resolver.includes('customer_amount') && resolver.includes('selling_amount') && resolver.includes('gross_sale') && resolver.includes('supplier_amount_pkr') && resolver.includes('vendor_total_pkr') && resolver.includes('cost_amount_pkr'), 'Transport and Visa native aliases remain covered');
 ok(resolver.includes('serviceSalePresent ? $serviceSale : $detailSale') && resolver.includes('hasCommercialField'), 'Air zero-valued snapshots do not imply missing commercial data');
 ok(css.includes('.etgp-toolbar-left-actions'), 'Left toolbar action row has active geometry authority');
 
-console.log('C37_CORRECTIVE2_REGRESSION=PASS (28 assertions)');
+console.log('C37_CORRECTIVE3_REGRESSION=PASS (33 assertions)');
