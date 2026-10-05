@@ -294,11 +294,6 @@ final class BookingWorkspaceShellPresenter
 HTML;
                 $html=$this->insertNearBookingHeader($html, $locked);
             }
-            $reviewEntry = '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/review')).'" '
-                .'class="et-booking-focus-btn primary" data-et-booking-review-entry="1" data-primary="1">Review Booking</a>';
-            if (! str_contains($html, 'data-et-booking-review-entry="1"') && stripos($html, '</body>') !== false) {
-                $html = preg_replace('/<\/body>/i', $reviewEntry."\n</body>", $html, 1) ?? $html;
-            }
             // C36-C2: the server-rendered summary inside the controlled
             // booking canvas is the sole Products authority. Do not append a
             // second footer launcher outside section.content.
@@ -345,7 +340,7 @@ HTML;
                 .'<dl><div><dt>Items</dt><dd>'.$count.'</dd></div><div><dt>Booking Value</dt><dd>'.number_format((float) ($row['customer_total'] ?? 0), 2).'</dd></div><div><dt>Supplier Cost</dt><dd>'.number_format((float) ($row['supplier_total'] ?? 0), 2).'</dd></div><div><dt>Margin</dt><dd>'.number_format((float) ($row['margin'] ?? 0), 2).'</dd></div></dl>'
                 .'<a class="et-booking-focus-btn primary" data-primary="1" href="'.e($url).'">'.e($action).'</a></article>';
         }
-        $html .= '</div><div class="et-c36-product-summary-actions"><a class="et-booking-focus-btn primary" data-primary="1" href="'.e(url('/operations/bookings/'.$bookingId.'/products')).'">Open Products</a></div></section>';
+        $html .= '</div><div class="et-c36-product-summary-actions"><a class="et-booking-focus-btn primary" data-primary="1" data-et-booking-review-entry="1" href="'.e(url('/operations/bookings/'.$bookingId.'/review')).'">Review Booking</a></div></section>';
         return $html;
     }
 

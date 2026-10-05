@@ -38,15 +38,27 @@ final class BookingProductSummaryResolver
                 'transport' => $this->transportTable(),
                 'visa' => 'booking_visa_services',
             };
+            if ($product === 'transport' && (! $table || ! Schema::hasTable($table))) {
+                return $this->transportSnapshotSummary($serviceRows);
+            }
             if (! $table || ! Schema::hasTable($table)) return $this->empty();
             $columns = Schema::getColumnListing($table);
             $query = DB::table($table);
             if (in_array('booking_id', $columns, true)) $query->where('booking_id', $booking);
             elseif (in_array('booking_service_id', $columns, true)) $query->whereIn('booking_service_id', $serviceIds ?: [-1]);
             $rows = $query->get();
-            $sale = $this->sum($rows, ['customer_total','selling_total','sale_total','total_sale','sale_amount']);
-            $cost = $this->sum($rows, ['supplier_total','vendor_total','cost_total','total_cost','cost_amount']);
-            return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
+            if ($product === 'transport' && $rows->isEmpty()) return $this->transportSnapshotSummary($serviceRows);
+            if ($product === 'visa') {
+                $sale = $this->sum($rows, ['sale_pkr','customer_total','selling_total','sale_total','total_sale','sale_amount']);
+                $cost = $this->sum($rows, ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','cost_amount']);
+                $margin = $this->sum($rows, ['margin_pkr']);
+                if (abs($margin) <= 0.00001 && ($sale !== 0.0 || $cost !== 0.0)) $margin = $sale - $cost;
+            } else {
+                $sale = $this->sum($rows, ['customer_total','selling_total','sale_total','total_sale','sale_amount']);
+                $cost = $this->sum($rows, ['supplier_total','vendor_total','cost_total','total_cost','cost_amount']);
+                $margin = $sale - $cost;
+            }
+            return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
         } catch (Throwable) { return $this->empty(); }
     }
 
@@ -95,6 +107,34 @@ final class BookingProductSummaryResolver
             if ($name !== '' && str_starts_with(strtolower($name), 'booking_') && str_contains(strtolower($name), 'transport')) return $name;
         }
         return null;
+    }
+
+    private function transportSnapshotSummary(iterable $serviceRows): array
+    {
+        $rows = [];
+        foreach ($serviceRows as $service) {
+            $data = (array) $service;
+            foreach (['meta', 'metadata', 'extra_data', 'details_json', 'attributes', 'notes', 'remarks', 'internal_notes', 'description', 'details', 'other_details', 'comment', 'comments'] as $field) {
+                if (! array_key_exists($field, $data)) continue;
+                $raw = $data[$field];
+                $decoded = is_array($raw) ? $raw : json_decode((string) ($raw ?? ''), true);
+                if (is_array($decoded)) {
+                    $candidate = $decoded['et_erp_transport_rows']['transports'] ?? ($decoded['transports'] ?? null);
+                    if (is_array($candidate)) { $rows = array_merge($rows, array_values(array_filter($candidate, 'is_array'))); continue; }
+                }
+                $text = (string) ($raw ?? '');
+                if (str_contains($text, 'ETERP_TRANSPORT_ROWS')) {
+                    $json = trim((string) preg_replace('/^.*?ETERP_TRANSPORT_ROWS\s*/s', '', $text));
+                    $decoded = json_decode($json, true);
+                    $candidate = is_array($decoded) ? ($decoded['transports'] ?? null) : null;
+                    if (is_array($candidate)) $rows = array_merge($rows, array_values(array_filter($candidate, 'is_array')));
+                }
+            }
+        }
+        if ($rows === []) return $this->empty();
+        $sale = 0.0; $cost = 0.0;
+        foreach ($rows as $row) { $sale += (float) ($row['sale_amount'] ?? 0); $cost += (float) ($row['cost_amount'] ?? ($row['cost_rate'] ?? 0)); }
+        return ['count' => count($rows), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
     }
 
     private function sum(iterable $rows, array $fields): float

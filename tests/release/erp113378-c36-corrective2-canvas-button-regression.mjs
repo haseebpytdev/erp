@@ -14,7 +14,7 @@ ok(!presenter.includes('$productLauncher =') && presenter.includes('data-et-smar
 ok(presenter.includes('data-et-c36-product-summary="1"') && presenter.includes('data-et-smart-products-entry="1"'), 'Products summary is inside the canonical booking presentation');
 ok(!presenter.includes('$productLauncher ='), 'independent outer footer launcher is removed');
 ok(presenter.includes("preg_replace('/<\\/main>/i', $summary"), 'summary is server-seeded before progressive canvas adoption');
-ok(presenter.includes('Open Products'), 'Products action label is present in source markup');
+ok(!presenter.includes('>Open Products</a>') && presenter.includes('Review Booking'), 'Products footer uses the Review Booking action');
 ok(bookingCss.includes('.et-c36-product-summary-grid') && bookingCss.includes('grid-template-columns:repeat(4,minmax(0,1fr))'), 'desktop Products summary uses the booking grid');
 ok(bookingCss.includes('@media(max-width:900px)') && bookingCss.includes('repeat(2,minmax(0,1fr))'), 'tablet Products summary uses two columns');
 ok(bookingCss.includes('@media(max-width:600px)') && bookingCss.includes('grid-template-columns:1fr'), 'mobile Products summary uses one column');

@@ -930,6 +930,10 @@ var etgpApplyBookingLock113162=function(data){
   }
   document.documentElement.classList.add('et-booking-locked-113162');
   var serverBanner=document.querySelector('[data-et-server-booking-lock="1"]');
+  if(serverBanner&&serverBanner.parentNode!==root){
+    var toolbar=root.querySelector('.etgp-toolbar,.et-booking-workspace-header,[data-et-booking-workspace-header="1"]');
+    if(toolbar&&toolbar.parentNode===root)toolbar.insertAdjacentElement('afterend',serverBanner);else root.insertBefore(serverBanner,root.firstChild);
+  }
   var banner=root.querySelector('[data-etgp-booking-lock]');
   if(serverBanner&&banner)banner.remove();
   if(!serverBanner&&!banner){banner=document.createElement('div');banner.setAttribute('data-etgp-booking-lock','1');banner.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font-size:11px;font-weight:700';root.insertBefore(banner,root.firstChild);}
