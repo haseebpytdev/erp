@@ -129,6 +129,7 @@ body.et-ui-module-operations :where(.et-c36-product-summary-card>div span){font-
 body.et-ui-module-operations :where(.et-c36-product-summary-card dl){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:10px 0}
 body.et-ui-module-operations :where(.et-c36-product-summary-card dt){font-size:9px;color:var(--et-muted);text-transform:uppercase}
 body.et-ui-module-operations :where(.et-c36-product-summary-card dd){margin:2px 0 0;font-size:11px;color:var(--et-text);font-weight:800}
+body.et-ui-module-operations :where(.et-c36-product-summary-actions){display:flex;justify-content:flex-end;margin-top:12px}
 html.et-booking-focus-prepaint .et-c36-product-summary~.etgp-products-card,
 html.et-booking-focus-prepaint .et-c36-product-summary~[data-etgp-product-shells]{display:none!important}
 html.et-booking-focus-prepaint [data-et-server-booking-lock="1"]{margin:0 0 12px}

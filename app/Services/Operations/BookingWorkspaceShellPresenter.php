@@ -299,14 +299,9 @@ HTML;
             if (! str_contains($html, 'data-et-booking-review-entry="1"') && stripos($html, '</body>') !== false) {
                 $html = preg_replace('/<\/body>/i', $reviewEntry."\n</body>", $html, 1) ?? $html;
             }
-            $productLauncher = '<section data-et-smart-products-entry="1" class="et-booking-smart-products"><strong>Products</strong><span>Manage Air, Hotel, Transport, Visa and Other Services</span><a class="et-booking-focus-btn primary" data-primary="1" href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/products')).'">Open Products</a></section>';
-            if (! str_contains($html, 'data-et-smart-products-entry="1"')) {
-                if (stripos($html, '</main>') !== false) {
-                    $html = preg_replace('/<\/main>/i', $productLauncher."\n</main>", $html, 1) ?? $html;
-                } elseif (stripos($html, '</section>') !== false) {
-                    $html = preg_replace('/<\/section>/i', $productLauncher."\n</section>", $html, 1) ?? $html;
-                }
-            }
+            // C36-C2: the server-rendered summary inside the controlled
+            // booking canvas is the sole Products authority. Do not append a
+            // second footer launcher outside section.content.
         }
 
         if (($isNativeBookingWorkspacePath || preg_match('#^operations/bookings/\d+/products/air$#', $path) === 1)
@@ -338,7 +333,7 @@ HTML;
         $summary = $this->productSummaries->resolve($bookingId);
         $locked = (bool) ($lock['locked'] ?? false);
         $labels = ['air' => 'Air / Tickets', 'hotel' => 'Hotel', 'transport' => 'Transport', 'visa' => 'Visa'];
-        $html = '<section class="et-c36-product-summary" data-et-c36-product-summary="1"><div class="et-c36-product-summary-head"><h2>Products</h2><span>Dedicated workspaces own product editing</span></div><div class="et-c36-product-summary-grid">';
+        $html = '<section class="et-c36-product-summary" data-et-c36-product-summary="1" data-et-smart-products-entry="1"><div class="et-c36-product-summary-head"><h2>Products</h2><span>Dedicated workspaces own product editing</span></div><div class="et-c36-product-summary-grid">';
         foreach ($labels as $key => $label) {
             $row = $summary[$key] ?? [];
             $count = (int) ($row['count'] ?? 0);
@@ -350,7 +345,8 @@ HTML;
                 .'<dl><div><dt>Items</dt><dd>'.$count.'</dd></div><div><dt>Booking Value</dt><dd>'.number_format((float) ($row['customer_total'] ?? 0), 2).'</dd></div><div><dt>Supplier Cost</dt><dd>'.number_format((float) ($row['supplier_total'] ?? 0), 2).'</dd></div><div><dt>Margin</dt><dd>'.number_format((float) ($row['margin'] ?? 0), 2).'</dd></div></dl>'
                 .'<a class="et-booking-focus-btn primary" data-primary="1" href="'.e($url).'">'.e($action).'</a></article>';
         }
-        return $html.'</div></section>';
+        $html .= '</div><div class="et-c36-product-summary-actions"><a class="et-booking-focus-btn primary" data-primary="1" href="'.e(url('/operations/bookings/'.$bookingId.'/products')).'">Open Products</a></div></section>';
+        return $html;
     }
 
     private function insertNearBookingHeader(string $html, string $notice): string
