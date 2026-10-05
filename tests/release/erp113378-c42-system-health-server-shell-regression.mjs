@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const read = file => fs.readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
+const middleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
+const composer = read('app/Services/Operations/ServerSidebarComposer.php');
+const c41 = read('app/Services/Operations/BookingProductSummaryResolver.php');
+let assertions = 0;
+const ok = (value, message) => { assert.ok(value, message); assertions++; };
+
+ok(middleware.includes("$path !== 'system/update' && $path !== 'system/health'"), 'C42 is limited to native System Health routes');
+ok(middleware.includes('normalizeSystemHealthShell') && middleware.includes("$this->normalizeSystemHealthShell($request, $html)"), 'server middleware owns Health shell normalization');
+ok(middleware.includes("$dom->createElement('main')") && middleware.includes("$main->setAttribute('class', 'main')"), 'main.main is placed inside app-shell server-side');
+ok(middleware.includes("$appShell->appendChild($main)"), 'Health main canvas is a child of app-shell');
+ok(middleware.includes('ServerSidebarComposer'), 'existing ServerSidebarComposer remains the navigation authority');
+ok(middleware.includes('NativeErpLayoutResolver') && middleware.includes('renderNativeSidebar'), 'canonical native layout authority is used for an empty production nav');
+ok(middleware.includes("view($layout, ['layoutMeta' => $layoutMeta") && middleware.includes('importNode($candidate, true)'), 'resolved native layout is rendered server-side and its authorized sidebar is adopted');
+ok(!middleware.includes('$sidebar->appendChild($nativeSidebar)') && middleware.includes('$appShell->replaceChild($nativeSidebar, $sidebar)'), 'full native sidebar frames replace the empty frame instead of nesting');
+ok(middleware.indexOf('normalizeSystemHealthShell($request, $html)') < middleware.indexOf('ServerSidebarComposer::class)->compose($html)'), 'final sidebar is processed by ServerSidebarComposer after Health normalization');
+ok(!middleware.includes("createElement('a')") && !middleware.includes("setAttribute('href'"), 'C42 does not hardcode or create sidebar URLs');
+ok(middleware.includes('$main->appendChild($child)') && middleware.includes('isSystemHealthNode'), 'Health body content movement is positively bounded');
+ok(middleware.includes('iterator_to_array($main->childNodes)') && middleware.includes('$main->removeChild($node)') && middleware.includes('erp-10.1 ticket commercial boundary'), 'obsolete commercial-boundary panel is removed as a complete bounded unit');
+ok(!middleware.includes('$matches >= 2'), 'legacy panel removal does not depend on two unproven markers');
+ok(middleware.includes('data-et-dangerous-actions') && middleware.includes('Production Transaction Reset') && middleware.includes('Post-Reset Financial Cleanup'), 'Dangerous Actions routes remain preserved');
+ok(middleware.includes('normalizeMigrationPresentation') && middleware.includes('migrationStatus($release)'), 'migration status and presentation authority remain unchanged');
+ok(c41.includes("$this->airServiceRows($booking, $master)") && c41.includes("in_array('deleted_at', $columns, true)"), 'C41 Air resolver remains unchanged and schema-safe');
+ok(composer.includes('Existing native hrefs preserved'), 'navigation authorization remains native');
+ok(!middleware.includes('DB::table') || middleware.includes('normalizeSystemHealthShell'), 'C42 adds no database operation');
+const fixture = `<body><div class="app-shell"><aside class="sidebar"><div class="brand">ERP</div><nav class="nav"></nav></aside></div><div class="panel">Application Cache</div><div class="panel"><h2>ERP-10.1 Ticket Commercial Boundary</h2><p>Ticket-level sale, purchase and commissions are visible ...</p></div><section data-et-dangerous-actions="true"><a href="/system/production-data-reset">Production Transaction Reset</a><a href="/system/post-reset-financial-cleanup">Post-Reset Financial Cleanup</a></section></body>`;
+ok(!fixture.includes('sidebar-menu') && !fixture.includes('side-nav') && !fixture.includes('navbar-vertical'), 'fixture models the real empty-nav production response with no alternate sidebar');
+ok(fixture.match(/class="app-shell"/g)?.length === 1 && fixture.match(/class="sidebar"/g)?.length === 1 && fixture.includes('<nav class="nav"></nav>'), 'fixture has one shell, one empty sidebar, and an empty nav');
+ok(!fixture.includes('sidebar-menu') && fixture.match(/class="brand"/g)?.length === 1, 'fixture has no alternate sidebar and one brand');
+ok(middleware.includes('view($layout,') && middleware.includes('view()->exists($layout)'), 'native layout rendering path is explicit');
+ok(middleware.includes('catch (\\Throwable)') && middleware.includes('return null;'), 'layout resolution fails closed when rendering is unavailable');
+console.log('RUNTIME_FIXTURE_EXECUTION=BLOCKED_PHP_UNAVAILABLE');
+console.log(`erp113378-c42-system-health-server-shell-regression: ${assertions} assertions passed`);

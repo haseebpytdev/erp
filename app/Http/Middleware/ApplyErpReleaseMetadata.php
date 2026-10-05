@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Support\Release\Erp11310ObsoleteFileCleaner;
 use App\Support\Release\Erp11330StabilizationCleaner;
 use App\Services\Operations\ServerSidebarComposer;
+use App\Services\Operations\NativeErpLayoutResolver;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -118,6 +119,12 @@ class ApplyErpReleaseMetadata
             $html
         );
 
+        // C42: the native /system/update host can render its sidebar and
+        // Health content as sibling BODY nodes instead of the authenticated
+        // ERP shell. Normalize that response server-side before the canonical
+        // sidebar composer processes the final sidebar.
+        $html = $this->normalizeSystemHealthShell($request, $html);
+
         try {
             $html = app(ServerSidebarComposer::class)->compose($html);
         } catch (\Throwable $e) {
@@ -212,6 +219,160 @@ class ApplyErpReleaseMetadata
         $timing?->stop('release_response');
         $timing?->stop('release_metadata');
         return $response;
+    }
+
+    /** Keep native System Health inside the same server-rendered ERP shell. */
+    private function normalizeSystemHealthShell(Request $request, string $html): string
+    {
+        $path = strtolower(trim($request->path(), '/'));
+        if ($path !== 'system/update' && $path !== 'system/health') return $html;
+        if (! class_exists(\DOMDocument::class)) return $html;
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if (! $loaded) return $html;
+
+        $xpath = new \DOMXPath($dom);
+        $body = $xpath->query('//body')->item(0);
+        if (! $body instanceof \DOMElement) return $html;
+
+        $classHas = static fn (\DOMElement $node, string $class): bool => in_array(
+            $class,
+            preg_split('/\s+/', trim($node->getAttribute('class'))) ?: [],
+            true
+        );
+        $appShell = null;
+        foreach ($xpath->query('.//*', $body) as $node) {
+            if ($node instanceof \DOMElement && $classHas($node, 'app-shell')) {
+                $appShell = $node;
+                break;
+            }
+        }
+        if (! $appShell instanceof \DOMElement) return $html;
+
+        $sidebar = null;
+        foreach ($appShell->childNodes as $child) {
+            if ($child instanceof \DOMElement && ($classHas($child, 'sidebar') || $classHas($child, 'sidebar-menu') || $classHas($child, 'side-nav') || $classHas($child, 'navbar-vertical'))) {
+                $sidebar = $child;
+                break;
+            }
+        }
+        if (! $sidebar instanceof \DOMElement) return $html;
+
+        $main = null;
+        foreach ($appShell->childNodes as $child) {
+            if ($child instanceof \DOMElement && strtolower($child->tagName) === 'main' && $classHas($child, 'main')) {
+                $main = $child;
+                break;
+            }
+        }
+        if (! $main instanceof \DOMElement) {
+            $main = $dom->createElement('main');
+            $main->setAttribute('class', 'main');
+            $appShell->appendChild($main);
+        }
+
+        // If the native sidebar shell is empty, render the authenticated native
+        // ERP layout authority and adopt its existing sidebar. Never manufacture
+        // hard-coded URLs or mine unrelated Health content for navigation.
+        $hasSidebarLink = $xpath->query('.//a[@href]', $sidebar)->length > 0;
+        if (! $hasSidebarLink) {
+            $nativeSidebar = $this->renderNativeSidebar($dom);
+            if ($nativeSidebar instanceof \DOMNode) {
+                $nativeIsFrame = $nativeSidebar instanceof \DOMElement && $this->isSidebarFrame($nativeSidebar);
+                $nativeIsSurface = $nativeSidebar instanceof \DOMElement && strtolower($nativeSidebar->tagName) === 'nav';
+                if ($nativeIsFrame && $sidebar->parentNode === $appShell) {
+                    $appShell->replaceChild($nativeSidebar, $sidebar);
+                    $sidebar = $nativeSidebar;
+                    $hasSidebarLink = true;
+                } elseif ($nativeIsSurface) {
+                    $nav = null;
+                    foreach ($sidebar->childNodes as $child) {
+                        if ($child instanceof \DOMElement && strtolower($child->tagName) === 'nav') {
+                            $nav = $child;
+                            break;
+                        }
+                    }
+                    if ($nav instanceof \DOMElement && $nav->parentNode === $sidebar) {
+                        $sidebar->replaceChild($nativeSidebar, $nav);
+                        $hasSidebarLink = true;
+                    }
+                }
+            }
+        }
+
+        // Move only positively identified Health presentation nodes into the
+        // shell main canvas; framework overlays and unrelated body containers
+        // retain their original authority.
+        $outside = [];
+        foreach (iterator_to_array($body->childNodes) as $child) {
+            if (! $child instanceof \DOMElement || $child === $appShell || in_array(strtolower($child->tagName), ['script', 'style', 'link'], true)) continue;
+            if ($this->isSystemHealthNode($child)) $outside[] = $child;
+        }
+        foreach ($outside as $child) $main->appendChild($child);
+
+        // Remove the obsolete bounded commercial-boundary panel only on Health.
+        $markers = ['erp-10.1 ticket commercial boundary', 'ticket-level sale, purchase and commissions are visible'];
+        foreach (iterator_to_array($main->childNodes) as $node) {
+            if (! $node instanceof \DOMElement || $node->hasAttribute('data-et-dangerous-actions')) continue;
+            $text = strtolower(trim(preg_replace('/\s+/', ' ', $node->textContent)));
+            $legacyIdentity = str_contains($text, $markers[0]) || str_contains($text, $markers[1]);
+            $boundedPanel = in_array(strtolower($node->tagName), ['section', 'article', 'div'], true)
+                && (str_contains(' '.strtolower(trim($node->getAttribute('class'))).' ', ' panel ')
+                    || str_contains(' '.strtolower(trim($node->getAttribute('class'))).' ', ' card ')
+                    || str_contains($text, $markers[0]));
+            if ($legacyIdentity && $boundedPanel) {
+                $main->removeChild($node);
+                break;
+            }
+        }
+
+        $normalized = $dom->saveHTML();
+        return $normalized;
+    }
+
+    /** Render and extract the authenticated sidebar from the canonical native layout. */
+    private function renderNativeSidebar(\DOMDocument $target): ?\DOMNode
+    {
+        try {
+            $layoutMeta = app(NativeErpLayoutResolver::class)->resolve();
+            $layout = (string) ($layoutMeta['layout'] ?? '');
+            if ($layout === '' || ! view()->exists($layout)) return null;
+            $rendered = view($layout, ['layoutMeta' => $layoutMeta, 'content' => '', 'slot' => ''])->render();
+            $source = new \DOMDocument('1.0', 'UTF-8');
+            $previous = libxml_use_internal_errors(true);
+            $loaded = $source->loadHTML('<?xml encoding="UTF-8">'.$rendered, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+            if (! $loaded) return null;
+            $sourceXpath = new \DOMXPath($source);
+            foreach ($sourceXpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " sidebar ") or contains(concat(" ", normalize-space(@class), " "), " sidebar-menu ") or contains(concat(" ", normalize-space(@class), " "), " side-nav ") or contains(concat(" ", normalize-space(@class), " "), " navbar-vertical ")]') as $candidate) {
+                if ($candidate instanceof \DOMElement && $sourceXpath->query('.//a[@href]', $candidate)->length > 0) return $target->importNode($candidate, true);
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+        return null;
+    }
+
+    private function isSidebarFrame(\DOMElement $node): bool
+    {
+        $classes = preg_split('/\s+/', trim($node->getAttribute('class'))) ?: [];
+        return (bool) array_intersect(['sidebar', 'sidebar-menu', 'side-nav', 'navbar-vertical'], $classes);
+    }
+
+    /** Keep only known System Health presentation nodes in the shell canvas. */
+    private function isSystemHealthNode(\DOMElement $node): bool
+    {
+        foreach (['data-et-health-section', 'data-et-dangerous-actions', 'data-et-production-reset'] as $attribute) if ($node->hasAttribute($attribute)) return (bool) $node->hasAttribute($attribute);
+        $text = strtolower(trim(preg_replace('/\s+/', ' ', $node->textContent)));
+        foreach (['application cache', 'database maintenance', 'safe web-based application maintenance', 'dangerous actions', 'migration status', 'system health', 'erp-10.1 ticket commercial boundary', 'ticket-level sale, purchase and commissions are visible'] as $marker) if (str_contains($text, $marker)) return str_contains($text, $marker);
+        $classes = strtolower(' '.trim($node->getAttribute('class')).' ');
+        foreach ([' health ', ' system-health ', ' maintenance '] as $class) if (str_contains($classes, $class)) return str_contains($classes, $class);
+        return false;
     }
 
     /** Keep the native shell title route-aware without rewriting report headings. */
