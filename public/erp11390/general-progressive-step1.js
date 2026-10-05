@@ -4999,6 +4999,21 @@ markPassengerFormLayout=function(passengerCard){
   passengerActionTray(passengerCard);
 };
 
+/* Adopt the exact server-rendered Products summary into the progressive
+ * Booking canvas before legacy native content is removed. The presenter is
+ * intentionally the sole business-data authority; this only relocates its
+ * existing DOM node into the same root as the header, progress, KPIs and
+ * passenger panels. */
+var adoptC36ProductSummary11390=function(content,root){
+  if(!content||!root)return null;
+  var summary=document.querySelector('main [data-et-c36-product-summary="1"]')
+    || document.querySelector('[data-et-c36-product-summary="1"]');
+  if(!summary||root.contains(summary))return summary;
+  root.appendChild(summary);
+  summary.setAttribute('data-et-c36-canvas-adopted','1');
+  return summary;
+};
+
 var build=function(){
   etgpSeedInitialBookingLock113162();
   var content=document.querySelector(
@@ -5420,6 +5435,13 @@ var build=function(){
     productShells
   );
   content.appendChild(
+    root
+  );
+  /* The summary is server-rendered before enhancement and may be a sibling
+     of section.content. Adopt that same node before obsolete content cleanup
+     so it cannot remain on a competing outer canvas. */
+  adoptC36ProductSummary11390(
+    content,
     root
   );
   /* Apply the server-seeded lock before product/Air rendering can expose
