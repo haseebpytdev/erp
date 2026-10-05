@@ -23,11 +23,13 @@ final class BookingProductSummaryResolver
     {
         try {
             $master = app(NativeProductServiceResolver::class)->{'find'.ucfirst($product)}();
-            $serviceRows = Schema::hasTable('booking_services') && $master
-                ? DB::table('booking_services')->where('booking_id', $booking)->where('product_service_id', (int) $master['id'])
-                    ->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); })
-                    ->get()
-                : collect();
+            $serviceRows = $product === 'air'
+                ? $this->airServiceRows($booking, $master)
+                : (Schema::hasTable('booking_services') && $master
+                    ? DB::table('booking_services')->where('booking_id', $booking)->where('product_service_id', (int) $master['id'])
+                        ->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); })
+                        ->get()
+                    : collect());
             $serviceIds = $serviceRows->pluck('id')->map(static fn ($id): int => (int) $id)->all();
             if ($product === 'air') {
                 return $this->airSummary($serviceRows, $serviceIds);
@@ -63,6 +65,26 @@ final class BookingProductSummaryResolver
             }
             return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
         } catch (Throwable) { return $this->empty(); }
+    }
+
+    private function airServiceRows(int $booking, ?array $master): iterable
+    {
+        if (! Schema::hasTable('booking_services')) return collect();
+        $columns = Schema::getColumnListing('booking_services');
+        if (! in_array('booking_id', $columns, true)) return collect();
+        $query = DB::table('booking_services')->where('booking_id', $booking)
+            ->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); });
+        if ($master && (int) ($master['id'] ?? 0) > 0) {
+            return $query->where('product_service_id', (int) $master['id'])->get();
+        }
+        return $query->get()->filter(function (object $row): bool {
+            $data = (array) $row;
+            $values = array_intersect_key($data, array_flip([
+                'service_name', 'name', 'title', 'description', 'details', 'service_type', 'product_type',
+            ]));
+            $identity = strtolower(implode(' ', array_map('strval', $values)));
+            return str_contains($identity, 'air') || str_contains($identity, 'flight') || str_contains($identity, 'ticket');
+        })->values();
     }
 
     private function airSummary(iterable $serviceRows, array $serviceIds): array
