@@ -7,7 +7,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class BookingWorkspaceShellPresenter
 {
-    public function __construct(private readonly BookingEditLockResolver $bookingLocks) {}
+    public function __construct(
+        private readonly BookingEditLockResolver $bookingLocks,
+        private readonly BookingProductSummaryResolver $productSummaries,
+    ) {}
 
     public function transform(Request $request, Response $response): Response
     {
@@ -80,6 +83,7 @@ final class BookingWorkspaceShellPresenter
                 '#^operations/bookings/\d+/.+$#',
                 $path
             ) === 1
+            && ! preg_match('#^operations/bookings/\d+/services/\d+/details$#', $path)
             && ! str_ends_with(
                 $path,
                 '/sales-invoice'
@@ -136,7 +140,6 @@ final class BookingWorkspaceShellPresenter
         }
         $html = $this->addHtmlClass($html, 'et-booking-unified-canvas-11375');
         $html = $this->addHtmlAttribute($html, 'data-et-booking-focus-shell', 'ERP-11.3.75');
-
         // Seed the authoritative lifecycle before the progressive client builds
         // passenger/product/Air editors.  This prevents a locked page from
         // briefly rendering editable controls while the summary request loads.
@@ -147,6 +150,11 @@ final class BookingWorkspaceShellPresenter
             $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $initialBookingLock['locked'] ? '1' : '0');
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));
+        }
+        if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $summaryMatch)
+            && ! str_contains($html, 'data-et-c36-product-summary="1"')) {
+            $summary = $this->productSummaryMarkup((int) $summaryMatch[1], $initialBookingLock);
+            $html = preg_replace('/<\/main>/i', $summary."\n</main>", $html, 1) ?? $html;
         }
 
         /*
@@ -205,7 +213,7 @@ final class BookingWorkspaceShellPresenter
             $html = $style.$html;
         }
 
-        $assetVersion = rawurlencode((string) config('et_erp_release.version', 'ERP-11.3'));
+        $assetVersion = rawurlencode((string) config('et_erp_release.asset_version', config('et_erp_release.version', 'ERP-11.3')));
         if (preg_match('#^operations/bookings/\d+/products/visa$#', $path) === 1
             && ! str_contains($html, 'data-et-dedicated-visa-css="')
             && stripos($html, '</head>') !== false
@@ -218,7 +226,7 @@ final class BookingWorkspaceShellPresenter
         }
         $script = '<script src="'
             .e(route('system.erp-assets.booking-focus'))
-            .'?v=11.3.98" defer data-et-booking-focus-js="ERP-11.3.98"></script>';
+            .'?v='.$assetVersion.'" defer data-et-booking-focus-js="'.$assetVersion.'"></script>';
 
         if ($isProductsWorkspacePath) {
             $script = '<script src="'.e(route('system.erp-assets.dedicated-product-core')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-core="'.$assetVersion.'"></script>'.$script;
@@ -254,7 +262,7 @@ final class BookingWorkspaceShellPresenter
         }
 
         if (
-            ! str_contains($html, 'data-et-booking-focus-js="ERP-11.3.98"')
+            ! str_contains($html, 'data-et-booking-focus-js="'.$assetVersion.'"')
             && stripos($html, '</body>') !== false
         ) {
             $scripts = $script;
@@ -279,12 +287,12 @@ final class BookingWorkspaceShellPresenter
         if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $bookingMatch)) {
             $lock=$initialBookingLock ?? $this->bookingLocks->resolve((int)$bookingMatch[1]);
             if($lock['locked']&&!str_contains($html,'data-et-server-booking-lock="1"')){
-                $message=e($lock['reason']);
+                $message=e($this->lockPresentationMessage((string) ($lock['status'] ?? 'CONFIRMED')));
                 $locked=<<<HTML
-<div data-et-server-booking-lock="1" style="padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font:700 11px Arial,sans-serif">{$message}</div>
+<div data-et-server-booking-lock="1" data-et-lock-status="{$message}" style="padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font:700 11px Arial,sans-serif">{$message}</div>
 <script>(function(){function lock(){var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('.page-body');if(!root)return;root.querySelectorAll('input,select,textarea').forEach(function(e){e.disabled=true;e.setAttribute('aria-disabled','true')});root.querySelectorAll('button,[role="button"]').forEach(function(e){if(/\b(add|remove|delete|edit|apply|save|bulk|update|create|toggle)\b/i.test(e.textContent||e.value||'')){e.hidden=true;e.disabled=true}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock);else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true})})();</script>
 HTML;
-                $html=preg_replace('/<\/body>/i',$locked."\n</body>",$html,1)??$html;
+                $html=$this->insertNearBookingHeader($html, $locked);
             }
             $reviewEntry = '<a href="'.e(url('/operations/bookings/'.(int) $bookingMatch[1].'/review')).'" '
                 .'class="et-booking-focus-btn primary" data-et-booking-review-entry="1" data-primary="1">Review Booking</a>';
@@ -313,6 +321,51 @@ HTML;
         $response->setContent($html);
 
         return $response;
+    }
+
+    private function lockPresentationMessage(string $status): string
+    {
+        $label = match (strtoupper(trim($status))) {
+            'TRAVEL_READY', 'TRAVEL READY' => 'Travel Ready',
+            'APPROVED' => 'Approved',
+            default => 'Confirmed',
+        };
+        return $label.' booking — editing is locked. Reopen the booking to make changes.';
+    }
+
+    private function productSummaryMarkup(int $bookingId, ?array $lock): string
+    {
+        $summary = $this->productSummaries->resolve($bookingId);
+        $locked = (bool) ($lock['locked'] ?? false);
+        $labels = ['air' => 'Air / Tickets', 'hotel' => 'Hotel', 'transport' => 'Transport', 'visa' => 'Visa'];
+        $html = '<section class="et-c36-product-summary" data-et-c36-product-summary="1"><div class="et-c36-product-summary-head"><h2>Products</h2><span>Dedicated workspaces own product editing</span></div><div class="et-c36-product-summary-grid">';
+        foreach ($labels as $key => $label) {
+            $row = $summary[$key] ?? [];
+            $count = (int) ($row['count'] ?? 0);
+            $state = $count > 0 ? ($locked ? 'Read Only' : 'Added') : 'Not Added';
+            $action = $locked ? 'View' : ($count > 0 ? 'Edit' : 'Open');
+            $url = url('/operations/bookings/'.$bookingId.'/products/'.$key);
+            $html .= '<article class="et-c36-product-summary-card" data-product="'.e($key).'">'
+                .'<div><strong>'.e($label).'</strong><span>'.e($state).'</span></div>'
+                .'<dl><div><dt>Items</dt><dd>'.$count.'</dd></div><div><dt>Booking Value</dt><dd>'.number_format((float) ($row['customer_total'] ?? 0), 2).'</dd></div><div><dt>Supplier Cost</dt><dd>'.number_format((float) ($row['supplier_total'] ?? 0), 2).'</dd></div><div><dt>Margin</dt><dd>'.number_format((float) ($row['margin'] ?? 0), 2).'</dd></div></dl>'
+                .'<a class="et-booking-focus-btn primary" data-primary="1" href="'.e($url).'">'.e($action).'</a></article>';
+        }
+        return $html.'</div></section>';
+    }
+
+    private function insertNearBookingHeader(string $html, string $notice): string
+    {
+        foreach (['.et-booking-workspace-header', '[data-et-booking-workspace-header="1"]', '.etgp-booking-card', '.page-body'] as $selector) {
+            $pattern = match ($selector) {
+                '.et-booking-workspace-header' => '/(<(?:header|section|div)\\b[^>]*class=(?:"[^"]*\\bet-booking-workspace-header\\b[^"]*"|\'[^\']*\\bet-booking-workspace-header\\b[^\']*\')[^>]*>)/i',
+                '[data-et-booking-workspace-header="1"]' => '/(<(?:header|section|div)\\b[^>]*data-et-booking-workspace-header="1"[^>]*>)/i',
+                '.etgp-booking-card' => '/(<(?:section|div)\\b[^>]*class=(?:"[^"]*\\betgp-booking-card\\b[^"]*"|\'[^\']*\\betgp-booking-card\\b[^\']*\')[^>]*>)/i',
+                default => '/(<(?:main|section|div)\\b[^>]*class=(?:"[^"]*\\bpage-body\\b[^"]*"|\'[^\']*\\bpage-body\\b[^\']*\')[^>]*>)/i',
+            };
+            $updated = preg_replace($pattern, '$1'.$notice, $html, 1, $count);
+            if ($count === 1 && $updated !== null) return $updated;
+        }
+        return preg_replace('/<body\\b[^>]*>/i', '$0'.$notice, $html, 1) ?? $html;
     }
 
     private function addHtmlClass(string $html, string $class): string

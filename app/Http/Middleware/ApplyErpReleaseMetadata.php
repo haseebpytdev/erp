@@ -97,6 +97,7 @@ class ApplyErpReleaseMetadata
 
         $release = config('et_erp_release', []);
         $version = (string) ($release['version'] ?? 'v1.1.33.0-ERP11.3');
+        $assetVersion = (string) ($release['asset_version'] ?? $version);
         $package = (string) ($release['package'] ?? 'ERP-11.3 Unified Travel ERP');
         $packageDetail = (string) ($release['package_detail'] ?? 'Native one-page Group Package flow + dynamic release health');
 
@@ -127,7 +128,7 @@ class ApplyErpReleaseMetadata
         $html = $this->compactSidebarReleaseBlock($html, $package, $version);
 
         $html = $this->normalizeTravelReportHostTitle($request, $html);
-        $html = $this->injectProfessionalUi($request, $html, $version);
+        $html = $this->injectProfessionalUi($request, $html, $version, $assetVersion);
 
         /*
          * Only calculate DB readiness on the actual System Health page.
@@ -143,6 +144,12 @@ class ApplyErpReleaseMetadata
                 'pending' => 'Database upgrade pending — '.(int) ($migrationStatus['pending_count'] ?? 0).' migration(s) require execution.',
                 default => 'Database migration status could not be verified.',
             };
+
+            // C36: make the migration action state server-authoritative before
+            // the enhancement bundle paints. Current and unknown states fail
+            // closed; pending remains actionable. The C69 calculation above
+            // is intentionally untouched.
+            $html = $this->normalizeMigrationPresentation($html, $migrationStatus['status'], $statusMessage);
 
             foreach ([
                 'Database is current through ERP-10.1.',
@@ -261,7 +268,7 @@ class ApplyErpReleaseMetadata
         return substr($html, 0, $offset).$updated.substr($html, $offset + strlen($fragment));
     }
 
-    private function injectProfessionalUi(Request $request, string $html, string $version): string
+    private function injectProfessionalUi(Request $request, string $html, string $version, string $assetVersion): string
     {
         if (str_contains($html, 'data-et-professional-ui=')) {
             return $html;
@@ -300,8 +307,8 @@ class ApplyErpReleaseMetadata
             $dedicatedProduct = strtolower($productMatch[1]);
         }
         $dedicatedQuery = $dedicated ? '&dedicated=1'.($dedicatedProduct !== '' ? '&product='.rawurlencode($dedicatedProduct) : '') : '';
-        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($version).'&module='.rawurlencode($module).'&role='.rawurlencode($role).$dedicatedQuery);
-        $scriptUrl = e(route('system.erp-assets.erp-professional-js').'?v='.rawurlencode($version).'&module='.rawurlencode($module).'&role='.rawurlencode($role));
+        $styleUrl = e(route('system.erp-assets.erp-professional-css').'?v='.rawurlencode($assetVersion).'&module='.rawurlencode($module).'&role='.rawurlencode($role).$dedicatedQuery);
+        $scriptUrl = e(route('system.erp-assets.erp-professional-js').'?v='.rawurlencode($assetVersion).'&module='.rawurlencode($module).'&role='.rawurlencode($role));
         $assets = '<link rel="stylesheet" href="'.$styleUrl.'" data-et-professional-ui="'.$marker.'">'
             .'<script src="'.$scriptUrl.'" defer data-et-professional-ui-script="'.$marker.'"></script>';
 
@@ -393,5 +400,26 @@ class ApplyErpReleaseMetadata
              */
             return ['status' => 'unknown', 'pending_count' => null];
         }
+    }
+
+    private function normalizeMigrationPresentation(string $html, string $status, string $statusMessage): string
+    {
+        $marker = '<div data-et-migration-presentation="'.e($status).'" data-et-migration-message="'.e($statusMessage).'" hidden></div>';
+        if (! str_contains($html, 'data-et-migration-presentation=')) {
+            $html = str_contains($html, '</main>')
+                ? str_replace('</main>', $marker.'</main>', $html)
+                : str_replace('</body>', $marker.'</body>', $html);
+        }
+        if ($status !== 'pending') {
+            $html = preg_replace('/<(?:a|button|form)\\b[^>]*>.*?Run\\s+Safe\\s+Database\\s+Upgrade.*?<\/(?:a|button|form)>/is', '', $html) ?? $html;
+            $html = preg_replace('/<form\\b[^>]*>.*?Run\\s+Safe\\s+Database\\s+Upgrade.*?<\/form>/is', '', $html) ?? $html;
+        }
+        foreach ([
+            'Air tickets are now atomic commercial records with customer sale, supplier purchase and forecast commission links.',
+            'Ticket-level commercial details are available from the booking workspace.',
+        ] as $legacyCopy) {
+            $html = str_replace($legacyCopy, '', $html);
+        }
+        return $html;
     }
 }

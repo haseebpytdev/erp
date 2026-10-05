@@ -51,6 +51,7 @@ body.et-ui-module-operations :where(.br-btn){
 }
 body.et-ui-module-operations :where(.br-btn.primary){background:var(--et-primary)!important;border-color:var(--et-primary)!important;color:#fff!important}
 /* ERP-11.3.378 C36: booking action state authority lives in the active theme. */
+body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]){background:var(--et-primary)!important;border-color:var(--et-primary)!important;color:#fff!important}
 body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]),
 body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]):hover,
 body.et-ui-module-operations :where(.br-btn.primary,.et-ph-btn.primary,.et-booking-focus-btn.primary,.et-booking-focus-btn[data-primary="1"]):visited,
@@ -82,7 +83,7 @@ body.et-ui-module-operations :where(.et-booking-progress a.current){color:var(--
 body.et-ui-module-operations :where(.et-booking-progress a.done){color:#16774d}
 body.et-ui-module-operations :where(.et-booking-progress span){display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#eef3f8;color:inherit;font-size:10px}
 body.et-ui-module-operations :where(.et-ph-card-muted){opacity:.72;background:#f8fafc}
-body.et-ui-module-operations :where(.et-ph-kv){grid-template-columns:repeat(4,minmax(0,1fr))}
+body.et-ui-module-operations :where(.et-ph-kv){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 15px}
 body.et-ui-module-operations :where(.et-ph-kicker){margin-bottom:4px;color:var(--et-primary);font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
 body.et-ui-module-operations :where(.et-ph-workflow){display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;padding:10px 13px;border:1px solid var(--et-border);border-radius:10px;background:#fff;color:var(--et-muted);font-size:11px;font-weight:800}
 body.et-ui-module-operations :where(.et-ph-workflow span){padding-right:10px;border-right:1px solid var(--et-border)}
@@ -107,7 +108,6 @@ body.et-ui-module-operations :where(.et-ph-grid){display:grid;grid-template-colu
 body.et-ui-module-operations :where(.et-ph-card){padding:17px;border:1px solid var(--et-border);border-radius:var(--et-radius);background:#fff;box-shadow:var(--et-shadow)}
 body.et-ui-module-operations :where(.et-ph-card h2){margin:0;color:var(--et-text);font-size:15px;line-height:1.25}
 body.et-ui-module-operations :where(.et-ph-card p){min-height:34px;margin:10px 0;color:var(--et-muted);font-size:11px;line-height:1.45}
-body.et-ui-module-operations :where(.et-ph-kv){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 15px}
 body.et-ui-module-operations :where(.et-ph-kv div){padding:8px;border:1px solid var(--et-border);border-radius:7px;background:#f8fafc}
 body.et-ui-module-operations :where(.et-ph-kv span){display:block;color:var(--et-muted);font-size:9px;font-weight:800;text-transform:uppercase}
 body.et-ui-module-operations :where(.et-ph-kv strong){display:block;margin-top:3px;color:var(--et-text);font-size:12px}
@@ -118,7 +118,24 @@ body.et-ui-module-operations :where(.et-ph-state.selected){background:#e7f7ef;co
 body.et-ui-module-operations :where(.et-booking-smart-products){display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0;padding:14px 16px;border:1px solid var(--et-border);border-radius:10px;background:#fff;box-shadow:var(--et-shadow)}
 body.et-ui-module-operations :where(.et-booking-smart-products strong){font-size:13px;text-transform:uppercase;letter-spacing:.04em}
 body.et-ui-module-operations :where(.et-booking-smart-products span){flex:1;color:var(--et-muted);font-size:11px}
+body.et-ui-module-operations :where(.et-c36-product-summary){margin:16px 0;padding:14px 16px;border:1px solid var(--et-border);border-radius:10px;background:#fff;box-shadow:var(--et-shadow)}
+body.et-ui-module-operations :where(.et-c36-product-summary-head){display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+body.et-ui-module-operations :where(.et-c36-product-summary-head h2){margin:0;color:var(--et-text);font-size:15px}
+body.et-ui-module-operations :where(.et-c36-product-summary-head span){color:var(--et-muted);font-size:11px}
+body.et-ui-module-operations :where(.et-c36-product-summary-grid){display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+body.et-ui-module-operations :where(.et-c36-product-summary-card){padding:11px;border:1px solid var(--et-border);border-radius:8px;background:#f8fafc}
+body.et-ui-module-operations :where(.et-c36-product-summary-card>div){display:flex;align-items:center;justify-content:space-between;gap:6px}
+body.et-ui-module-operations :where(.et-c36-product-summary-card>div span){font-size:9px;color:var(--et-muted);text-transform:uppercase;font-weight:800}
+body.et-ui-module-operations :where(.et-c36-product-summary-card dl){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:10px 0}
+body.et-ui-module-operations :where(.et-c36-product-summary-card dt){font-size:9px;color:var(--et-muted);text-transform:uppercase}
+body.et-ui-module-operations :where(.et-c36-product-summary-card dd){margin:2px 0 0;font-size:11px;color:var(--et-text);font-weight:800}
+html.et-booking-focus-prepaint .et-c36-product-summary~.etgp-products-card,
+html.et-booking-focus-prepaint .et-c36-product-summary~[data-etgp-product-shells]{display:none!important}
+html.et-booking-focus-prepaint [data-et-server-booking-lock="1"]{margin:0 0 12px}
+html.et-booking-focus-prepaint .et-c36-product-summary a.et-booking-focus-btn.primary{color:#fff!important;background:var(--et-primary)!important;border-color:var(--et-primary)!important}
 @media(max-width:760px){body.et-ui-module-operations :where(.et-booking-workspace-header){flex-direction:column}.et-booking-header-right{justify-content:flex-start!important}.et-booking-header-menu{order:0}.et-ph-top{flex-direction:column}.et-ph-actions{justify-content:flex-start!important}.et-ph-context{grid-template-columns:repeat(2,minmax(0,1fr))!important}.et-ph-grid{grid-template-columns:1fr!important}.et-ph-workflow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){body.et-ui-module-operations :where(.et-ph-kv,.et-c36-product-summary-grid){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){body.et-ui-module-operations :where(.et-ph-kv,.et-c36-product-summary-grid){grid-template-columns:1fr}body.et-ui-module-operations :where(.et-c36-product-summary-head){align-items:flex-start;flex-direction:column}}
 @media(max-width:768px){
     body.et-ui-module-operations :where(.br-top){flex-direction:column;align-items:stretch}
 }
@@ -190,6 +207,19 @@ body.et-ui-module-operations :where(.et-booking-smart-products span){flex:1;colo
     background:#f7f9fc;
     border-color:#b9c8da;
 }
+body.et-ui-module-operations a.et-booking-focus-btn.primary,
+body.et-ui-module-operations button.et-booking-focus-btn.primary,
+body.et-ui-module-operations .et-booking-focus-btn[data-primary="1"]{background:var(--et-primary)!important;border-color:var(--et-primary)!important;color:#fff!important}
+body.et-ui-module-operations a.et-booking-focus-btn.primary:hover,
+body.et-ui-module-operations button.et-booking-focus-btn.primary:hover,
+body.et-ui-module-operations .et-booking-focus-btn[data-primary="1"]:hover{background:#125bb8!important;border-color:#125bb8!important;color:#fff!important}
+body.et-ui-module-operations a.et-booking-focus-btn.primary:visited,
+body.et-ui-module-operations a.et-booking-focus-btn.primary:focus-visible,
+body.et-ui-module-operations a.et-booking-focus-btn.primary:active,
+body.et-ui-module-operations button.et-booking-focus-btn.primary:focus-visible,
+body.et-ui-module-operations button.et-booking-focus-btn.primary:active{color:#fff!important}
+body.et-ui-module-operations .et-booking-focus-btn.primary:disabled,
+body.et-ui-module-operations .et-booking-focus-btn[data-primary="1"][aria-disabled="true"]{background:#8fa8c5!important;border-color:#8fa8c5!important;color:#fff!important;cursor:not-allowed;opacity:.72}
 /*
  * Shared compact action geometry across native Booking Workspace and nested
  * product steps. Product-specific buttons keep their colors; only dimensions

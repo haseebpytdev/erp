@@ -166,6 +166,27 @@ var pageRegisterLink=Array.prototype.slice.call(
   return t==='booking register'||t==='back to booking register';
 });
 
+/* C36: keep one focused booking identity and canonicalize only explicitly
+ * identified Visa service links. Unknown service details remain native. */
+var etC36NormalizeBookingIdentityAndProductLinks=function(){
+  var root=document.querySelector('[data-booking-workspace],.etgp-step1,main');
+  if(!root)return;
+  var identity=String(root.getAttribute('data-booking-reference')||(root.dataset&&root.dataset.bookingReference)||'').trim();
+  Array.prototype.slice.call(document.querySelectorAll('.page-header h1,.page-header h2,.page-title')).forEach(function(title){
+    if(title.closest('.et-booking-workspace-header,[data-et-booking-workspace-header="1"]'))return;
+    var text=norm(title.textContent);
+    if(identity&&text.indexOf(norm(identity))!==-1){var block=title.closest('.page-header')||title;block.setAttribute('data-et-c36-duplicate-booking-identity','1');block.hidden=true;}
+  });
+  Array.prototype.slice.call(root.querySelectorAll('a[href*="/services/"][href*="/details"],button[data-service-product]')).forEach(function(link){
+    var parent=link.closest('[data-product]');
+    var product=String(link.getAttribute('data-product')||link.getAttribute('data-service-product')||(parent&&parent.getAttribute('data-product'))||'').toLowerCase();
+    if(product!=='visa')return;
+    var match=String(link.getAttribute('href')||'').match(/\/operations\/bookings\/(\d+)/i);if(!match)return;
+    link.setAttribute('href','/operations/bookings/'+match[1]+'/products/visa');
+  });
+};
+etC36NormalizeBookingIdentityAndProductLinks();
+
 var reviewHeaderActions=document.querySelector('[data-et-booking-review-header-actions="1"]');
 if(reviewHeaderActions){
   var reviewRoot=document.querySelector('[data-et-booking-review-root="1"]');

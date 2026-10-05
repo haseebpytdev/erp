@@ -2515,6 +2515,22 @@ var etgpMainBookingOverview11390=function(root){
   return /^\/operations\/bookings\/\d+\/?$/i.test(String(window.location.pathname||''));
 };
 
+/* C36: the native Booking page is a summary/navigation surface. Dedicated
+ * product workspaces are the only editor authorities. Remove any legacy
+ * editor fragments that a native response or an earlier enhancement placed
+ * inside the focused booking document; never touch dedicated product roots. */
+var etgpRemoveLegacyMainProductEditors11390=function(root){
+  if(!etgpMainBookingOverview11390(root))return;
+  var selectors=['.etgp-products-card','[data-etgp-product-shells]','[data-etgp-product-buttons]','.etgp-air-workspace','.etgp-hotel-workspace','.etgp-transport-workspace','.etgp-visa-workspace','.etgp-product-editor','.etgp-service-editor'];
+  selectors.forEach(function(selector){Array.prototype.slice.call(root.querySelectorAll(selector)).forEach(function(node){node.remove();});});
+  Array.prototype.slice.call(root.querySelectorAll('button,input[type="submit"]')).forEach(function(button){
+    var label=String(button.textContent||button.value||'').replace(/\s+/g,' ').trim().toLowerCase();
+    if(label==='save transport data'||/^save (air|hotel|transport|visa)\b/.test(label))button.remove();
+  });
+  root.setAttribute('data-et-c36-summary-only','1');
+};
+window.etgpRemoveLegacyMainProductEditors11390=etgpRemoveLegacyMainProductEditors11390;
+
 var renderProducts=function(
   root,
   reference,
@@ -5398,10 +5414,11 @@ var build=function(){
   Array.prototype.slice.call(
     content.children
   ).forEach(function(child){
-    if(child!==root){
+    if(child!==root && !(child.matches&&child.matches('[data-et-c36-product-summary="1"]'))){
       child.remove();
     }
   });
+  etgpRemoveLegacyMainProductEditors11390(root);
 
   html.classList.remove(
     'et-booking-unified-canvas-11375'
