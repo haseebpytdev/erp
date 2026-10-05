@@ -2515,6 +2515,26 @@ var etgpMainBookingOverview11390=function(root){
   return /^\/operations\/bookings\/\d+\/?$/i.test(String(window.location.pathname||''));
 };
 
+/* C36-C1: the native page heading is a source panel, not a second workspace
+ * identity. Suppress only a booking-reference heading inside the focused
+ * native document; the rebuilt etgp-toolbar remains the sole identity. */
+var etgpSuppressDuplicateNativeBookingIdentity11390=function(content,reference){
+  if(!content||!reference)return 0;
+  var hidden=0,needle=String(reference).replace(/\s+/g,' ').trim().toLowerCase();
+  Array.prototype.slice.call(content.querySelectorAll('.page-header h1,.page-header h2,.page-title')).forEach(function(title){
+    if(title.closest('.etgp-step1,.et-booking-workspace-header,[data-et-booking-workspace-header="1"]'))return;
+    var text=String(title.textContent||'').replace(/\s+/g,' ').trim().toLowerCase();
+    if(needle&&text&&(text===needle||text.indexOf(needle)!==-1)){
+      var block=title.closest('.page-header')||title;
+      block.setAttribute('data-et-c36-native-identity-suppressed','1');
+      block.hidden=true;
+      hidden+=1;
+    }
+  });
+  return hidden;
+};
+window.etgpSuppressDuplicateNativeBookingIdentity11390=etgpSuppressDuplicateNativeBookingIdentity11390;
+
 /* C36: the native Booking page is a summary/navigation surface. Dedicated
  * product workspaces are the only editor authorities. Remove any legacy
  * editor fragments that a native response or an earlier enhancement placed
@@ -5032,6 +5052,8 @@ var build=function(){
   );
   root.dataset.bookingReference=
     reference;
+
+  etgpSuppressDuplicateNativeBookingIdentity11390(content,reference);
 
   moveAlerts(
     content,
