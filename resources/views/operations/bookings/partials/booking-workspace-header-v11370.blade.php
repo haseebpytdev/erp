@@ -3,6 +3,9 @@
   {{-- Native shell compatibility: etgp-toolbar / data-etgp-booking-context remain the dedicated context authority. --}}
   {{-- Booking identity/customer/status authorities: booking_reference, customer, $lock['status']. --}}
   <div class="et-booking-header-left">
+    <div class="et-booking-header-tools" data-et-booking-header-tools="1">
+      <a class="et-btn secondary" href="{{ url('/operations/bookings') }}">Booking Register</a>
+    </div>
     <div class="et-booking-header-kicker">Booking Workspace</div>
     <h1>{{ $bookingReference }}</h1>
     <p>{{ $customer['name'] ?? 'Customer pending' }} · {{ $booking['booking_type'] ?? $booking['type'] ?? 'General' }} · {{ $booking['branch_name'] ?? $booking['office_name'] ?? 'Head Office' }}</p>
@@ -11,7 +14,6 @@
     </nav>
   </div>
   <div class="et-booking-header-right">
-    <div class="et-booking-header-menu"><a class="et-btn secondary" href="{{ url('/operations/bookings/'.$bookingId) }}">Menu</a><a class="et-btn secondary" href="{{ url('/operations/bookings') }}">Booking Register</a></div>
     <span class="et-status" data-et-booking-status="1">{{ $lock['status'] ?? 'Draft' }}</span>
     @if(!empty($lock['locked']))<span class="et-status" data-et-status="draft">Read-only</span>@endif
     @if(($headerAction ?? null)){!! $headerAction !!}@endif

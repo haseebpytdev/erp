@@ -14,13 +14,13 @@ ok(routes.includes("->name('bookings.products.show')") && routes.includes("->whe
 ok(view.includes("url('/operations/bookings/'.$bookingId)") && view.includes('Booking &amp; Passengers'), 'Products page links back to Booking & Passengers');
 ok(view.includes('et-ph-step current') && view.includes('aria-current="step"') && view.includes('Products'), 'Products page marks Step 2 current');
 ok(view.includes('Booking &amp; Passengers') && view.includes('Products') && view.includes('Review'), 'Products page renders the three-step flow');
-ok(view.includes('Air / Tickets') && view.includes('Hotel') && view.includes('Transport') && view.includes('Visa') && view.includes('Other Services'), 'Products Hub contains the five product cards');
+ok(view.includes('Air / Tickets') && view.includes('Hotel') && view.includes('Transport') && view.includes('Visa') && view.includes('Other Services'), 'Products Hub contains the four primary products and secondary Other Services');
 ok(view.includes("array_key_exists('customer_total',$summary)") && view.includes("array_key_exists('supplier_total',$summary)"), 'Products cards display only existing product summary authorities');
 ok(controller.includes('BookingProductSummaryResolver') && !controller.includes("->show($request, $booking)->getData"), 'Products Hub uses the lightweight summary authority');
 ok(controller.includes('product_customer_totals') === false && controller.includes('DB::table(\'bookings\')'), 'Products Hub does not create a commercial calculation or selection store');
 ok(controller.includes('BookingEditLockResolver') && view.includes("$lock['locked']"), 'Products Hub reuses the server booking lock authority');
 ok(view.includes("$lock['locked'] ? 'View'") && view.includes("'Open Air'"), 'Locked cards expose view-only actions while Draft exposes open actions');
-ok(view.includes('et-ph-card-muted') && view.includes('Other Services'), 'Other Services is de-emphasized without a fake editor');
+ok(view.includes('et-ph-card-muted') && view.includes('data-et-secondary-product="other-services"') && view.includes('Other Services'), 'Other Services is de-emphasized outside the primary grid without a fake editor');
 ok(step1.includes("['1','Booking & Passengers']") && step1.includes("['2','Products']") && step1.includes("['3','Review']"), 'Step 1 keeps the approved labels');
 ok(step1.includes("var step=create(item[0]==='2'?'a':'div'") && step1.includes("step.href='/operations/bookings/'+String(etgpBookingId11397()||'')+'/products'"), 'Step 1 Products is a normal same-origin link to the independent Products document');
 ok(step1.includes('etgpMainBookingOverview11390') && step1.includes('if(etgpMainBookingOverview11390(root))return;'), 'Main Booking deterministically skips detailed product rendering');

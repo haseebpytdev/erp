@@ -42,7 +42,7 @@ ok(routes.includes("name('bookings.additional-services.products.edit')"), 'Addit
 
 // C69 active operations CSS contract.
 for (const token of [
-  'et-page', 'et378-page', 'et-eyebrow', 'et-grid', 'et-grid-3', 'et-grid-5',
+  'et-page', 'et378-page', 'et-eyebrow', 'et-grid', 'et-grid-3', 'et-grid-4',
   'et-card-label', 'et-card-heading', 'et-alert', 'et-alert-warning',
   'et-alert-info', 'et-alert-danger', 'et-alert-success', 'et-list-row',
   'et-summary', 'et-empty-state', 'et-muted',
@@ -53,8 +53,8 @@ for (const token of [
 ok(coreCss.includes('.et-btn'), 'existing active et-btn authority is retained');
 ok(coreCss.includes('.et-card'), 'existing active et-card authority is retained');
 ok(bookingCss.includes('body.et-ui-module-operations'), 'Additional Services CSS is scoped to operations');
-ok(bookingCss.includes('grid-template-columns:repeat(3,minmax(0,1fr))'), 'desktop summary uses three columns');
-ok(bookingCss.includes('grid-template-columns:repeat(5,minmax(0,1fr))'), 'desktop product grid uses five columns');
+ok(bookingCss.includes('grid-template-columns:repeat(4,minmax(0,1fr))'), 'desktop summary uses four columns');
+ok(bookingCss.includes('.et-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))'), 'desktop product grid uses four columns');
 ok(bookingCss.includes('@media(max-width:640px)'), 'Additional Services CSS has responsive collapse');
 
 // C69 health authority: migration files and migrations table are authoritative.

@@ -13,8 +13,8 @@
         <div class="et-alert et-alert-info">{{ $state['entry_message'] }}</div>
     @endif
     @if($errors->has('additional_services'))<div class="et-alert et-alert-danger">{{ $errors->first('additional_services') }}</div>@endif
-    <div class="et-grid et-grid-4">
-        <section class="et-card"><div class="et-card-label">Booking</div><strong>{{ $state['booking']['booking_reference'] ?? $state['booking']['reference_no'] ?? ('#'.$bookingId) }}</strong><div>{{ $customer['name'] ?? $customer['customer_name'] ?? 'Customer' }}</div><small>Status: {{ $state['booking_status'] ?? 'Unknown' }}</small></section>
+    <div class="et-grid et-grid-3">
+        <section class="et-card"><div class="et-card-label">Booking</div><strong>{{ $state['booking']['booking_reference'] ?? $state['booking']['booking_no'] ?? $state['booking']['reference_no'] ?? ('#'.$bookingId) }}</strong><div>{{ $customer['name'] ?? $customer['customer_name'] ?? 'Customer' }}</div><small>Status: {{ $state['booking_status'] ?? 'Unknown' }}</small></section>
         <section class="et-card"><div class="et-card-label">Base Invoice</div>@php($base=$state['base_batch'] ?? null)<strong>{{ $base['invoice']['invoice_no'] ?? 'Not linked' }}</strong><div>{{ number_format((float)($base['customer_total'] ?? 0), 2) }}</div><small>{{ $base['status'] ?? 'Awaiting adoption' }}</small></section>
         <section class="et-card"><div class="et-card-label">Billing Summary</div><div>Total Active Invoiced <strong>{{ number_format((float)($state['total_invoiced'] ?? 0), 2) }}</strong></div><div>Total Posted <strong>{{ number_format((float)($state['total_posted'] ?? 0), 2) }}</strong></div><div>Approved Uninvoiced <strong>{{ number_format((float)($state['approved_uninvoiced_total'] ?? 0), 2) }}</strong></div></section>
     </div>

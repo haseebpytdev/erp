@@ -12,7 +12,7 @@ const ok = (value, message) => { assert.ok(value, message); pass++; };
 ok(hub.includes('data-et-booking-smart-overview="1"'), 'smart booking header is marked in the runtime product overview');
 ok(hub.includes('booking_reference') && hub.includes('customer') && hub.includes('$lock[\'status\']'), 'header uses booking, customer and persisted status authorities');
 ok(hub.includes('data-et-booking-workflow="1"') && hub.includes('Passengers') && hub.includes('Products') && hub.includes('Billing / Travel'), 'compact workflow strip is present and dynamic');
-ok(hub.includes('data-et-product-card="{{ $item[0] }}"') && hub.includes('data-et-product-card="other-services"'), 'five product overview cards are present');
+ok(hub.includes('data-et-product-card="{{ $item[0] }}"') && hub.includes('data-et-secondary-product="other-services"'), 'four primary product cards and a secondary Other Services panel are present');
 ok(hub.includes("route('bookings.products.workspace'") && hub.includes("'product'=>$item[0]"), 'canonical dedicated product route is used for dynamic product cards');
 ok(hub.includes("bookings.additional-services.index"), 'canonical Additional Services route is used');
 ok(!hub.includes('data-etgp-products-runtime') && !hub.includes('data-etgp-product-shells'), 'Products Hub has no inline editor runtime mount');

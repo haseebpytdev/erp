@@ -235,7 +235,36 @@
     };
     const databaseHeading = exactLeaf(document, 'Database Upgrade') || exactLeaf(document, 'Database Maintenance');
     const databasePanel = findHealthPanel(databaseHeading, 'Run Safe Database Upgrade', ['Application Cache', 'Dangerous Actions']);
-    if (databasePanel) databasePanel.dataset.etHealthSection = 'database-maintenance';
+    if (databasePanel) {
+      databasePanel.dataset.etHealthSection = 'database-maintenance';
+      /* The middleware remains the migration-status authority. This is only
+       * presentation: never offer an upgrade action when that authority says
+       * the schema is current, and fail closed when it cannot be verified. */
+      const databaseText = normalize(databasePanel.textContent);
+      const migrationCurrent = databaseText.includes('no pending migrations')
+        || databaseText.includes('schema is current')
+        || databaseText.includes('schema is up to date');
+      const migrationPending = databaseText.includes('upgrade pending')
+        || databaseText.includes('require execution');
+      const migrationUnknown = databaseText.includes('could not be verified')
+        || (!migrationCurrent && !migrationPending);
+      if (migrationCurrent || migrationUnknown) {
+        databasePanel.dataset.etMigrationAction = migrationCurrent ? 'not-required' : 'unavailable';
+        databasePanel.querySelectorAll('form').forEach(form => { form.hidden = true; form.setAttribute('aria-hidden', 'true'); });
+        databasePanel.querySelectorAll('a,button,input[type="submit"],input[type="button"]').forEach(action => {
+          action.setAttribute('aria-disabled', 'true');
+          action.setAttribute('tabindex', '-1');
+          action.hidden = true;
+        });
+        const note = document.createElement('p');
+        note.className = 'et-health-maintenance-note';
+        note.dataset.etMigrationActionNote = databasePanel.dataset.etMigrationAction;
+        note.textContent = migrationCurrent ? 'No Database Upgrade Required.' : 'Database upgrade availability could not be verified.';
+        databasePanel.appendChild(note);
+      } else if (migrationPending) {
+        databasePanel.dataset.etMigrationAction = 'pending';
+      }
+    }
     const cacheHeading = exactLeaf(document, 'Application Cache');
     const cachePanel = findHealthPanel(cacheHeading, 'Clear Application Cache', ['Database Upgrade', 'Database Maintenance', 'Dangerous Actions']);
     if (cachePanel) cachePanel.dataset.etHealthSection = 'application-cache';
