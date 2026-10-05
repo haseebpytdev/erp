@@ -143,10 +143,14 @@ final class BookingProductSummaryResolver
             $nights = (int) ($this->firstNumber($data, ['nights', 'total_nights', 'night_count']) ?: ($meta['nights'] ?? 0));
             $rowSale = (float) ($this->hotelMeaningfulNumber($data, ['selling_total','customer_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']) ?? 0);
             $rowCost = (float) ($this->hotelMeaningfulNumber($data, ['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost']) ?? 0);
+            if ($rowSale == 0.0) $rowSale = $this->hotelSemanticNumber($data, $table, $columns, 'customer_total');
+            if ($rowCost == 0.0) $rowCost = $this->hotelSemanticNumber($data, $table, $columns, 'vendor_total');
             if ($rowSale == 0.0) $rowSale = (float) ($meta['customer_total'] ?? 0);
             if ($rowCost == 0.0) $rowCost = (float) ($meta['vendor_total'] ?? 0);
             $saleRate = (float) ($this->hotelMeaningfulNumber($data, ['sale_rate','selling_rate','customer_rate','sale_price','selling_price','customer_price','sale','sell_price','room_sale_rate','nightly_sale_rate','selling_price_per_night','customer_price_per_night']) ?? 0);
             $costRate = (float) ($this->hotelMeaningfulNumber($data, ['cost_rate','supplier_rate','vendor_rate','cost_price','supplier_cost','vendor_cost','cost','purchase_price','room_cost_rate','nightly_cost_rate','cost_price_per_night','supplier_price_per_night','vendor_price_per_night']) ?? 0);
+            if ($saleRate == 0.0) $saleRate = $this->hotelSemanticNumber($data, $table, $columns, 'sale_rate');
+            if ($costRate == 0.0) $costRate = $this->hotelSemanticNumber($data, $table, $columns, 'cost_rate');
             if ($saleRate == 0.0) $saleRate = (float) ($meta['sale_rate'] ?? 0);
             if ($costRate == 0.0) $costRate = (float) ($meta['cost_rate'] ?? 0);
             if ($rowSale == 0.0 && $saleRate != 0.0 && $nights > 0) $rowSale = $saleRate * $nights;
@@ -164,6 +168,38 @@ final class BookingProductSummaryResolver
             if (abs($value) > 0.000001) return $value;
         }
         return null;
+    }
+
+    private function hotelSemanticNumber(array $row, string $table, array $columns, string $kind): float
+    {
+        $metadata = $this->hotelColumnMetadata($table);
+        foreach ($columns as $field) {
+            if (! array_key_exists($field, $row) || ! is_numeric($row[$field])) continue;
+            $type = strtolower((string) (($metadata[$field]['type_name'] ?? $metadata[$field]['type'] ?? '')));
+            if (! preg_match('/int|decimal|numeric|number|double|float|real/', $type)) continue;
+            $name = strtolower($field);
+            if (preg_match('/(^|_)(id|tax|discount|commission|markup|incentive|margin|profit|other)(_|$)/', $name)) continue;
+            $isTotal = str_contains($name, 'total') || str_contains($name, 'amount') || str_contains($name, 'gross') || str_contains($name, 'net');
+            $isRate = str_contains($name, 'rate') || str_contains($name, 'price') || str_contains($name, 'nightly') || str_contains($name, 'per_night');
+            $saleSide = str_contains($name, 'sale') || str_contains($name, 'sell') || str_contains($name, 'customer');
+            $costSide = str_contains($name, 'cost') || str_contains($name, 'purchase') || str_contains($name, 'supplier') || str_contains($name, 'vendor');
+            $matches = match ($kind) {
+                'customer_total' => $saleSide && $isTotal && ! $isRate,
+                'vendor_total' => $costSide && $isTotal && ! $isRate,
+                'sale_rate' => $saleSide && $isRate && ! $isTotal,
+                'cost_rate' => $costSide && $isRate && ! $isTotal,
+                default => false,
+            };
+            if ($matches && abs((float) $row[$field]) > 0.000001) return (float) $row[$field];
+        }
+        return 0.0;
+    }
+
+    private function hotelColumnMetadata(string $table): array
+    {
+        $result = [];
+        try { foreach ((array) Schema::getColumns($table) as $meta) { $name = (string) ($meta['name'] ?? $meta['column_name'] ?? ''); if ($name !== '') $result[$name] = $meta; } } catch (Throwable) {}
+        return $result;
     }
 
     private function hotelMetadata(array $row, string $table, array $columns): array
@@ -188,7 +224,7 @@ final class BookingProductSummaryResolver
             foreach ((array) Schema::getColumns($table) as $meta) {
                 $name = (string) ($meta['name'] ?? $meta['column_name'] ?? '');
                 $type = strtolower((string) ($meta['type_name'] ?? $meta['type'] ?? ''));
-                if ($name !== '' && in_array($name, $columns, true) && str_contains($type, 'json')) $fields[] = $name;
+                if ($name !== '' && in_array($name, $columns, true) && (str_contains($type, 'json') || (preg_match('/meta|json|data|details|attributes/i', $name) && preg_match('/char|text|string|json/', $type)))) $fields[] = $name;
             }
         } catch (Throwable) {}
         return array_values(array_unique($fields));
@@ -196,14 +232,15 @@ final class BookingProductSummaryResolver
 
     private function hotelTaggedCarrierFields(string $table, array $columns): array
     {
-        $fields = array_values(array_intersect(['notes','remarks','internal_notes','description','details','other_details','comment','comments'], $columns));
+        $preferred = ['notes','remarks','internal_notes','description','details','other_details','comment','comments'];
+        $fields = [];
         try {
             foreach ((array) Schema::getColumns($table) as $meta) {
                 $name = (string) ($meta['name'] ?? $meta['column_name'] ?? '');
                 $type = strtolower((string) ($meta['type_name'] ?? $meta['type'] ?? ''));
-                if ($name !== '' && in_array($name, $columns, true) && (str_contains($type, 'char') || str_contains($type, 'text'))) $fields[] = $name;
+                if ($name !== '' && in_array($name, $columns, true) && in_array($name, $preferred, true) && preg_match('/char|varchar|text|tinytext|mediumtext|longtext/', $type)) $fields[] = $name;
             }
-        } catch (Throwable) {}
+        } catch (Throwable) { $fields = array_values(array_intersect($preferred, $columns)); }
         return array_values(array_unique($fields));
     }
 

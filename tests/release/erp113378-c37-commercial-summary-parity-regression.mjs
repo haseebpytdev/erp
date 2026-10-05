@@ -45,10 +45,12 @@ ok(!hotel.includes('GeneralBookingHotelProductController') && !hotel.includes('-
 ok(hotel.includes('hotelMeaningfulNumber') && hotel.includes('selling_total') && hotel.includes('customer_total') && hotel.includes('supplier_total') && hotel.includes('vendor_total'), 'Hotel meaningful aliases skip zero legacy siblings');
 ok(hotel.includes("'sale','sell_price','room_sale_rate'") && hotel.includes("'cost','purchase_price','room_cost_rate'"), 'Hotel complete native rate aliases are covered');
 ok(hotel.includes('hotelJsonCarrierFields') && hotel.includes('hotelTaggedCarrierFields') && hotel.includes('Schema::getColumns'), 'Hotel native JSON/text carrier discovery is preserved');
+ok(hotel.includes("preg_match('/meta|json|data|details|attributes/i'") && hotel.includes("preg_match('/char|varchar|text|tinytext|mediumtext|longtext/"), 'Hotel text JSON carriers and tagged carriers are narrowly scoped');
+ok(hotel.includes('hotelSemanticNumber') && hotel.includes('hotelColumnMetadata') && hotel.includes('isTotal') && hotel.includes('isRate'), 'Hotel semantic numeric schema fallback is guarded');
 ok(hotel.includes('ETERP_HOTEL_STAY:') && hotel.includes('base64_decode($match[1], true)') && hotel.includes('json_decode($json, true)'), 'Hotel tagged payload uses strict base64 and JSON decoding');
 ok(hotel.includes("return null;") && hotel.includes('preg_match'), 'Invalid Hotel tagged metadata fails closed');
 ok(resolver.includes('customer_amount') && resolver.includes('selling_amount') && resolver.includes('gross_sale') && resolver.includes('supplier_amount_pkr') && resolver.includes('vendor_total_pkr') && resolver.includes('cost_amount_pkr'), 'Transport and Visa native aliases remain covered');
 ok(resolver.includes('serviceSalePresent ? $serviceSale : $detailSale') && resolver.includes('hasCommercialField'), 'Air zero-valued snapshots do not imply missing commercial data');
 ok(css.includes('.etgp-toolbar-left-actions'), 'Left toolbar action row has active geometry authority');
 
-console.log('C37_CORRECTIVE4_REGRESSION=PASS (38 assertions)');
+console.log('C37_CORRECTIVE5_REGRESSION=PASS (40 assertions)');
