@@ -148,7 +148,10 @@
   }
 
   const healthTitle = exactLeaf(document, 'System Health & Updates');
-  if (healthTitle && path.startsWith('system')) {
+  const systemModule = body.dataset.etUiModule === 'system';
+  const boundedHealthStructure = !!document.querySelector('[data-et-health-section], [data-et-migration-presentation], [data-et-dangerous-actions="true"]');
+  const isSystemHealth = systemModule && (boundedHealthStructure || path.startsWith('system'));
+  if ((healthTitle && path.startsWith('system')) || isSystemHealth) {
     body.dataset.etSystemHealthPhase1 = 'true';
     const obsoleteHealthCopy = [
       'no-ssh maintenance',

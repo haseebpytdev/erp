@@ -31,6 +31,7 @@ final class ErpProfessionalUiAssetController extends Controller
             'purchase' => 'registers.css', 'sales' => 'sales-invoice.css',
             'accounting' => 'accounting.css', 'reports' => 'accounting.css',
             'travel' => 'travel-masters.css', 'master-data' => 'travel-masters.css',
+            'system' => 'system.css',
         ];
         // Available module authorities: base_path('public/erp-theme/et-focused-shell.css'),
         // base_path('public/erp-theme/modules/dashboard.css'),
@@ -38,7 +39,8 @@ final class ErpProfessionalUiAssetController extends Controller
         // base_path('public/erp-theme/modules/registers.css'),
         // base_path('public/erp-theme/modules/sales-invoice.css'),
         // base_path('public/erp-theme/modules/accounting.css'),
-        // base_path('public/erp-theme/modules/travel-masters.css').
+        // base_path('public/erp-theme/modules/travel-masters.css'),
+        // base_path('public/erp-theme/modules/system.css').
         if (isset($moduleFiles[$module])) {
             $freshTheme[] = base_path('public/erp-theme/modules/'.$moduleFiles[$module]);
         }

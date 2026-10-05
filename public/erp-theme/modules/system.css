@@ -1,0 +1,140 @@
+/* ERP-11.3.378-C40: the active, system-only Health presentation authority. */
+body.et-ui-professional.et-ui-module-system .app-shell{
+  display:grid!important;
+  grid-template-columns:208px minmax(0,1fr)!important;
+  min-width:0!important;
+  min-height:100vh!important;
+}
+body.et-ui-professional.et-ui-module-system .app-shell>.sidebar{
+  width:208px!important;
+  min-width:208px!important;
+  position:relative!important;
+  inset:auto!important;
+}
+body.et-ui-professional.et-ui-module-system .app-shell>main.main{
+  min-width:0!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0 24px 28px!important;
+  overflow:visible!important;
+}
+body.et-ui-professional.et-ui-module-system .sidebar-menu{
+  display:flex!important;
+  flex-direction:column!important;
+  width:auto!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  visibility:visible!important;
+  position:static!important;
+  inset:auto!important;
+  margin:0!important;
+  padding:8px!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+body.et-ui-professional.et-ui-module-system .sidebar-menu a[href]{
+  display:flex!important;
+  align-items:center!important;
+  min-height:34px!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  padding:7px 9px!important;
+  border:0!important;
+  border-left:3px solid transparent!important;
+  border-radius:6px!important;
+  color:#cbd8e8!important;
+  text-decoration:none!important;
+}
+body.et-ui-professional.et-ui-module-system .sidebar-menu a[href]:hover,
+body.et-ui-professional.et-ui-module-system .sidebar-menu a.active,
+body.et-ui-professional.et-ui-module-system .sidebar-menu a.et-ui-current,
+body.et-ui-professional.et-ui-module-system .sidebar-menu a[aria-current="page"]{
+  color:#fff!important;
+  background:rgba(16,85,176,.72)!important;
+}
+body.et-ui-professional.et-ui-module-system .sidebar-menu a>span:first-child,
+body.et-ui-professional.et-ui-module-system .sidebar-menu a>i:first-child,
+body.et-ui-professional.et-ui-module-system .sidebar-menu a>svg:first-child{
+  width:18px!important;
+  min-width:18px!important;
+  height:18px!important;
+  flex:0 0 18px!important;
+  margin-right:8px!important;
+}
+body.et-ui-professional.et-ui-module-system .sidebar-menu .nav-section,
+body.et-ui-professional.et-ui-module-system .sidebar-menu .nav-heading,
+body.et-ui-professional.et-ui-module-system .sidebar-menu .menu-title,
+body.et-ui-professional.et-ui-module-system .sidebar-menu .et-ui-nav-section{
+  margin:14px 6px 7px!important;
+  color:#a8bfd9!important;
+  font-size:9.5px!important;
+  font-weight:800!important;
+  letter-spacing:.11em!important;
+  text-transform:uppercase!important;
+}
+body.et-ui-professional.et-ui-module-system .et-health-page-root{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+body.et-ui-professional.et-ui-module-system .et-health-status-grid{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr))!important;
+  gap:10px!important;
+  margin:12px 0!important;
+}
+body.et-ui-professional.et-ui-module-system .et-health-status{
+  min-height:92px!important;
+  padding:13px!important;
+  border:1px solid var(--et-border)!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+body.et-ui-professional.et-ui-module-system [data-et-health-section]{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:12px 0!important;
+  padding:16px!important;
+  box-sizing:border-box!important;
+  border:1px solid var(--et-border)!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+body.et-ui-professional.et-ui-module-system [data-et-dangerous-actions="true"]{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  margin:18px 0!important;
+  padding:14px!important;
+  border:1px solid #efc7cc!important;
+  border-left:4px solid var(--et-danger)!important;
+  border-radius:10px!important;
+  background:#fff8f8!important;
+  box-shadow:none!important;
+}
+body.et-ui-professional.et-ui-module-system [data-et-obsolete-health-copy="hidden"]{display:none!important;}
+body.et-ui-professional.et-ui-module-system [data-et-migration-presentation="current"] form,
+body.et-ui-professional.et-ui-module-system [data-et-migration-presentation="current"] a,
+body.et-ui-professional.et-ui-module-system [data-et-migration-presentation="current"] button,
+body.et-ui-professional.et-ui-module-system [data-et-migration-presentation="unknown"] form,
+body.et-ui-professional.et-ui-module-system [data-et-migration-presentation="unknown"] a,
+body.et-ui-professional.et-ui-module-system [data-et-migration-presentation="unknown"] button{display:none!important;}
+@media(max-width:768px){
+  body.et-ui-professional.et-ui-module-system .et-health-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
+@media(max-width:420px){
+  body.et-ui-professional.et-ui-module-system .et-health-status-grid{grid-template-columns:1fr!important;}
+}
