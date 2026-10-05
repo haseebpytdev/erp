@@ -49,13 +49,13 @@ final class BookingProductSummaryResolver
             $rows = $query->get();
             if ($product === 'transport' && $rows->isEmpty()) return $this->transportSnapshotSummary($serviceRows);
             if ($product === 'visa') {
-                $sale = $this->sum($rows, ['sale_pkr','customer_total','selling_total','sale_total','total_sale','sale_amount']);
-                $cost = $this->sum($rows, ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','cost_amount']);
+                $sale = $this->sum($rows, ['sale_pkr','customer_total','selling_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']);
+                $cost = $this->sum($rows, ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost','net_supplier_cost']);
                 $margin = $this->sum($rows, ['margin_pkr']);
                 if (abs($margin) <= 0.00001 && ($sale !== 0.0 || $cost !== 0.0)) $margin = $sale - $cost;
             } else {
-                $sale = $this->sum($rows, ['customer_total','selling_total','sale_total','total_sale','sale_amount']);
-                $cost = $this->sum($rows, ['supplier_total','vendor_total','cost_total','total_cost','cost_amount']);
+                $sale = $this->sum($rows, ['sale_amount','selling_total','customer_total','sale_total','total_sale','customer_amount','selling_amount','customer_price','sale_price','selling_price']);
+                $cost = $this->sum($rows, ['supplier_amount_pkr','vendor_total_pkr','cost_amount_pkr','supplier_total_pkr','supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price']);
                 $margin = $sale - $cost;
             }
             return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
@@ -69,6 +69,8 @@ final class BookingProductSummaryResolver
 
         $serviceSale = $this->sumAirCustomer($services);
         $serviceCost = $this->sumAirSupplier($services);
+        $serviceSalePresent = $this->hasCommercialField($services, ['selling_total','customer_sale','customer_sell','customer_sale_amount','customer_sell_amount','sale_amount','sell_amount','selling_price','sale_price','customer_price','customer_total','receivable_amount']);
+        $serviceCostPresent = $this->hasCommercialField($services, ['net_supplier_cost','supplier_cost','supplier_cost_amount','net_cost','purchase_cost','purchase_price','supplier_total','cost_amount']);
 
         // Persisted booking_services snapshots are the Air commercial authority.
         // Detail rows are only a compatibility fallback for older rows without
@@ -90,8 +92,8 @@ final class BookingProductSummaryResolver
             $detailCost = $this->sumAirSupplier($details);
         }
 
-        $sale = $serviceSale > 0 ? $serviceSale : $detailSale;
-        $cost = $serviceCost > 0 ? $serviceCost : $detailCost;
+        $sale = $serviceSalePresent ? $serviceSale : $detailSale;
+        $cost = $serviceCostPresent ? $serviceCost : $detailCost;
         return [
             'count' => $services->count(),
             'customer_total' => round($sale, 2),
@@ -199,6 +201,17 @@ final class BookingProductSummaryResolver
             return $value;
         }
         return null;
+    }
+
+    private function hasCommercialField(iterable $rows, array $fields): bool
+    {
+        foreach ($rows as $row) {
+            $data = (array) $row;
+            foreach ($fields as $field) {
+                if (array_key_exists($field, $data) && $data[$field] !== null && $data[$field] !== '' && is_numeric($data[$field])) return true;
+            }
+        }
+        return false;
     }
 
     private function firstNumber(array $row, array $fields): float

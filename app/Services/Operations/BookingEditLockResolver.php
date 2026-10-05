@@ -26,10 +26,11 @@ final class BookingEditLockResolver
         $approvalKey = $this->key($approval ?: 'draft');
         $travelKey = $this->key($travel ?: 'pendingtravel');
         $pending = in_array($approvalKey, ['pending','pending approval','submitted','awaiting approval'], true);
-        $approved = in_array($approvalKey, ['approved','confirmed'], true);
+        $approved = $approvalKey === 'approved';
+        $confirmed = $approvalKey === 'confirmed';
         $ready = in_array($travelKey, ['ready','travel ready','travelready'], true);
-        $locked = $pending || $approved || $ready;
-        $label = $ready ? 'Travel Ready' : ($approved ? 'Approved' : ($pending ? 'Pending Approval' : $this->label($approvalKey)));
+        $locked = $pending || $approved || $confirmed || $ready;
+        $label = $ready ? 'Travel Ready' : ($approved ? 'Approved' : ($confirmed ? 'Confirmed' : ($pending ? 'Pending Approval' : $this->label($approvalKey))));
 
         return [
             'locked'=>$locked,

@@ -144,6 +144,25 @@ html.et-general-progressive-step1-11390{
   line-height:1.3;
 }
 
+.etgp-toolbar-left-actions{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:5px;
+}
+
+.etgp-toolbar-left-actions a,
+.etgp-toolbar-left-actions button,
+.etgp-toolbar-left-actions summary,
+.etgp-toolbar-left-actions input[type="submit"]{
+  min-height:29px!important;
+  padding:4px 8px!important;
+  border-radius:7px!important;
+  font-size:8.5px!important;
+  line-height:1!important;
+}
+
 .etgp-toolbar-actions{
   display:flex;
   align-items:center;

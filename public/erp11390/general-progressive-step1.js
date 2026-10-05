@@ -464,7 +464,7 @@ var refreshMetricGrid=function(
 var bookingReference=function(root){
   var match=String(
     root&&root.textContent||''
-  ).match(/\bBK-\d{4}-\d{5,8}\b/i);
+  ).match(/\bBK-\d{4}-\d{4,12}\b/i);
 
   return match
     ? match[0].toUpperCase()
@@ -608,6 +608,14 @@ var actionUnits=function(hero){
   });
 
   return units;
+};
+
+var etgpHumanizeTravelStatus11390=function(value){
+  var raw=String(value||'').trim();
+  var key=raw.replace(/[_-]+/g,' ').replace(/\s+/g,' ');
+  if(/^pendingtravel$/i.test(raw)||/^pending travel$/i.test(key))return 'Pending Travel';
+  if(/^travelready$/i.test(raw)||/^travel ready$/i.test(key))return 'Travel Ready';
+  return key.replace(/\b\w/g,function(ch){return ch.toUpperCase();})||'Pending Travel';
 };
 
 var bookingStatus=function(hero){
@@ -889,7 +897,7 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       etgpServerSelectedProducts113180=serverSelected;
       etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),'Resolved from saved booking commercial authority');
       var blockers=Array.isArray(data.readiness_blockers)?data.readiness_blockers:[];
-      etgpAirSetKpi113124('Travel Status',data.travel_status||'PendingTravel',blockers.length?blockers[0]:'All selected travel services are ready');
+      etgpAirSetKpi113124('Travel Status',etgpHumanizeTravelStatus11390(data.travel_status||'PendingTravel'),blockers.length?blockers[0]:'All selected travel services are ready');
       etgpApplyBookingLock113162(data);
       if(selectionChanged&&typeof renderProducts==='function'){
         var root=document.querySelector('.etgp-step1');
@@ -5125,6 +5133,8 @@ var build=function(){
     )
   );
 
+  var toolbarLeftActions=create('div','etgp-toolbar-left-actions');
+
   var toolbarActions=create(
     'div',
     'etgp-toolbar-actions'
@@ -5137,13 +5147,12 @@ var build=function(){
     )
   );
 
-  actionUnits(
-    hero
-  ).forEach(function(unit){
-    toolbarActions.appendChild(
-      unit
-    );
+  actionUnits(hero).forEach(function(unit){
+    var label=norm(unit.textContent||unit.value||'');
+    if(label==='menu'||label.indexOf('booking register')!==-1)toolbarLeftActions.appendChild(unit);
+    else toolbarActions.appendChild(unit);
   });
+  toolbarLeft.appendChild(toolbarLeftActions);
 
   toolbar.appendChild(
     toolbarLeft

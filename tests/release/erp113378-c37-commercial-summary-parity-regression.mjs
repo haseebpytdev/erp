@@ -9,6 +9,8 @@ const operational = read('app/Http/Controllers/Operations/GeneralBookingOperatio
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 const progressive = read('public/erp11390/general-progressive-step1.js');
 const release = read('config/et_erp_release.php');
+const lock = read('app/Services/Operations/BookingEditLockResolver.php');
+const css = read('public/erp11390/general-progressive-step1.css');
 
 ok(resolver.includes('private function airSummary'), 'Air has a dedicated lightweight summary authority');
 ok(resolver.includes('DB::table(\'booking_services\')') && resolver.includes("where('product_service_id', (int) $master['id'])"), 'Air presence is scoped to saved native Air services');
@@ -16,7 +18,7 @@ ok(resolver.includes("'selling_total', 'customer_sale', 'customer_sell', 'custom
 ok(resolver.includes("'net_supplier_cost', 'supplier_cost', 'supplier_cost_amount', 'net_cost'"), 'Air supplier commercial aliases are supported');
 ok(resolver.includes("'base_fare', 'basic_fare") && resolver.includes("'airline_taxes', 'taxes', 'tax_amount'"), 'Air customer fallback uses the established fare and tax interpretation');
 ok(resolver.includes("'supplier_base_fare', 'base_fare', 'basic_fare'") && resolver.includes("'supplier_taxes', 'airline_taxes', 'taxes'"), 'Air supplier fallback uses the established native cost interpretation');
-ok(resolver.includes('serviceSale > 0 ? $serviceSale : $detailSale'), 'Persisted service totals win with detail compatibility fallback');
+ok(resolver.includes('serviceSalePresent ? $serviceSale : $detailSale'), 'Persisted service totals win with detail compatibility fallback');
 ok(resolver.includes("'count' => $services->count()"), 'Air item count is based on saved service groups');
 ok(!resolver.includes('ticket_number') && !resolver.includes("'ticket_count'"), 'Air presence does not depend on ticket issuance');
 ok(!resolver.includes('GeneralBookingOperationalSummaryController') && !resolver.includes('GeneralBookingAirProductController'), 'Product resolver remains read-only and controller-free');
@@ -29,6 +31,13 @@ ok(presenter.includes('et-c36-product-summary-actions') && presenter.includes("u
 ok(resolver.includes('transportSnapshotSummary') && resolver.includes("'transports'"), 'Transport snapshot carrier fallback is implemented');
 ok(resolver.includes("'sale_pkr','customer_total") && resolver.includes("'vendor_cost_pkr','supplier_total") && resolver.includes("'margin_pkr'"), 'Visa native commercial columns are supported');
 ok(progressive.includes('data-et-server-booking-lock="1"') && progressive.includes('insertAdjacentElement') && progressive.includes('etgp-toolbar'), 'Existing lock notice is adopted into etgp-step1 near the toolbar');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C37'") && release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'C37 asset revision advances without changing application version');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C37.1'") && release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'C37.1 asset revision advances without changing application version');
+ok(lock.includes("$approved = $approvalKey === 'approved'") && lock.includes("$confirmed = $approvalKey === 'confirmed'") && lock.includes("$confirmed ? 'Confirmed'"), 'Confirmed and Approved retain distinct presentation labels');
+ok(progressive.includes('/\\bBK-\\d{4}-\\d{4,12}\\b/i'), 'Booking reference parser accepts BK-2026-0047');
+ok(progressive.includes('etgp-toolbar-left-actions') && progressive.includes("label==='menu'") && progressive.includes("label.indexOf('booking register')!==-1"), 'Menu and Booking Register are appended to the left toolbar');
+ok(progressive.includes('etgpHumanizeTravelStatus11390') && progressive.includes("return 'Pending Travel'"), 'Travel status is humanized for presentation only');
+ok(resolver.includes('customer_amount') && resolver.includes('selling_amount') && resolver.includes('gross_sale') && resolver.includes('supplier_amount_pkr') && resolver.includes('vendor_total_pkr') && resolver.includes('cost_amount_pkr'), 'Hotel and Transport native aliases are covered');
+ok(resolver.includes('serviceSalePresent ? $serviceSale : $detailSale') && resolver.includes('hasCommercialField'), 'Air zero-valued snapshots do not imply missing commercial data');
+ok(css.includes('.etgp-toolbar-left-actions'), 'Left toolbar action row has active geometry authority');
 
-console.log('C37_CORRECTIVE1_REGRESSION=PASS (20 assertions)');
+console.log('C37_CORRECTIVE2_REGRESSION=PASS (28 assertions)');

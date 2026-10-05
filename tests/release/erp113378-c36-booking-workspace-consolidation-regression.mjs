@@ -23,7 +23,7 @@ ok(bookingCss.includes('grid-template-columns:repeat(4,minmax(0,1fr))') && booki
 ok(!/\.et-ph-kv\)\{display:grid;grid-template-columns:repeat\(3/.test(bookingCss), 'conflicting three-column KPI rule is absent');
 ok(/a\.et-booking-focus-btn\.primary[\s\S]*?background:var\(--et-primary\)/.test(bookingCss), 'Open Products normal primary background is active');
 ok(bookingCss.includes(':visited') && bookingCss.includes(':focus-visible') && bookingCss.includes(':active') && bookingCss.includes(':disabled'), 'primary action states remain readable');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C37'"), 'C37 has deterministic presentation asset revision');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C37.1'"), 'C37.1 has deterministic presentation asset revision');
 ok(middleware.includes("$release['asset_version']") && middleware.includes("rawurlencode($assetVersion)"), 'professional asset URLs use presentation revision');
 ok(presenter.includes("config('et_erp_release.asset_version"), 'booking assets use presentation revision');
 ok(c69.includes('no pending migrations') && c69.includes('migrationUnknown'), 'C69 migration status authority is preserved');

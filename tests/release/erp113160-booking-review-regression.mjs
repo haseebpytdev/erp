@@ -43,7 +43,7 @@ has(controller,"'pending_approval'",'submit transition uses native booking workf
 has(controller,"'approved'",'approved transition is supported');
 has(controller,"'reopened'",'controlled admin reopen is supported');
 has(controller,"$state['ready']",'Travel Ready action cannot bypass readiness resolver');
-has(lockResolver,"['approved','confirmed']",'approved/confirmed booking is locked');
+has(lockResolver,"$locked = $pending || $approved || $confirmed || $ready;",'approved/confirmed booking is locked');
 has(lockResolver,"['pending','pending approval'",'pending approval is also locked');
 lacks(guard,'canReopen','administrators must reopen instead of bypassing the lock');
 has(view,'Booking Review &amp; Process','approved page heading exists');

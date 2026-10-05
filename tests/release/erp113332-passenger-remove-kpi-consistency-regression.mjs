@@ -130,7 +130,7 @@ ok(!removalAllowed('UNKNOWN'), 'unknown Air status fails closed');
 ok(removeController.includes('BookingEditLockResolver') && removeController.includes("$lock['locked']"), 'server booking lock authority is enforced');
 ok(removeController.includes('ticket_number') && removeController.includes('issue_date'), 'remove path audits ticket/document and issue-date aliases');
 ok(removeController.includes("'passenger' => $label.' has an unknown status; removal is blocked for safety.'"), 'unknown status has an explicit fail-closed error');
-ok(lockResolver.includes("$locked = $pending || $approved || $ready;"), 'existing native booking lock resolver remains the authority');
+ok(lockResolver.includes("$locked = $pending || $approved || $confirmed || $ready;") && lockResolver.includes("$confirmed = $approvalKey === 'confirmed';"), 'existing native booking lock resolver remains the authority');
 ok(removeController.includes('reconcileAirServiceSnapshots($booking, $affectedAirServiceIds)'), 'passenger removal reconciles Air service snapshots atomically');
 ok(removeController.includes('$affectedAirServiceIds = $this->cleanupBookingPassengerDependencies($booking, $passenger);'), 'affected Air service IDs are captured from cleanup');
 ok(removeController.includes('pluck(\'booking_service_id\')') && removeController.includes('->unique()->values()->all()'), 'distinct affected Air service IDs are captured before delete');
