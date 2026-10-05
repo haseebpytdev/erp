@@ -572,8 +572,7 @@ class ApplyErpReleaseMetadata
                 : str_replace('</body>', $marker.'</body>', $html);
         }
         if ($status !== 'pending') {
-            $html = preg_replace('/<(?:a|button|form)\\b[^>]*>.*?Run\\s+Safe\\s+Database\\s+Upgrade.*?<\/(?:a|button|form)>/is', '', $html) ?? $html;
-            $html = preg_replace('/<form\\b[^>]*>.*?Run\\s+Safe\\s+Database\\s+Upgrade.*?<\/form>/is', '', $html) ?? $html;
+            $html = $this->suppressMigrationActionBounded($html);
         }
         foreach ([
             'Air tickets are now atomic commercial records with customer sale, supplier purchase and forecast commission links.',
@@ -582,5 +581,43 @@ class ApplyErpReleaseMetadata
             $html = str_replace($legacyCopy, '', $html);
         }
         return $html;
+    }
+
+    /** Suppress only the exact Safe Database Upgrade action; preserve its panel. */
+    private function suppressMigrationActionBounded(string $html): string
+    {
+        if (! class_exists(\DOMDocument::class)) return $html;
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if (! $loaded) return $html;
+        $xpath = new \DOMXPath($dom);
+        $normalize = static fn (string $value): string => strtolower(trim((string) preg_replace('/\s+/', ' ', html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'))));
+        $target = null;
+        foreach ($xpath->query('//a | //button | //input[translate(@type, "SUBMITBUTTON", "submitbutton")="submit" or translate(@type, "SUBMITBUTTON", "submitbutton")="button"]') as $node) {
+            if (! $node instanceof \DOMElement) continue;
+            $label = strtolower($node->tagName) === 'input' ? (string) $node->getAttribute('value') : (string) $node->textContent;
+            if ($normalize($label) === 'run safe database upgrade') {
+                $target = $node;
+                break;
+            }
+        }
+        if (! $target instanceof \DOMElement) return $html;
+        $target->setAttribute('hidden', 'hidden');
+        $target->setAttribute('aria-hidden', 'true');
+        $target->setAttribute('aria-disabled', 'true');
+        $target->setAttribute('tabindex', '-1');
+        if (in_array(strtolower($target->tagName), ['button', 'input'], true)) {
+            $target->setAttribute('disabled', 'disabled');
+        }
+        $form = $target->parentNode;
+        if ($form instanceof \DOMElement && strtolower($form->tagName) === 'form') {
+            $form->setAttribute('aria-hidden', 'true');
+            $form->setAttribute('aria-disabled', 'true');
+        }
+        $normalized = $dom->saveHTML();
+        return $normalized;
     }
 }
