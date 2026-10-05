@@ -72,8 +72,12 @@ final class BookingProductSummaryResolver
         if (! Schema::hasTable('booking_services')) return collect();
         $columns = Schema::getColumnListing('booking_services');
         if (! in_array('booking_id', $columns, true)) return collect();
-        $query = DB::table('booking_services')->where('booking_id', $booking)
-            ->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); });
+        $query = DB::table('booking_services')->where('booking_id', $booking);
+        if (in_array('deleted_at', $columns, true)) {
+            $query->where(function ($q): void {
+                $q->whereNull('deleted_at')->orWhere('deleted_at', '');
+            });
+        }
         if ($master && (int) ($master['id'] ?? 0) > 0) {
             return $query->where('product_service_id', (int) $master['id'])->get();
         }
