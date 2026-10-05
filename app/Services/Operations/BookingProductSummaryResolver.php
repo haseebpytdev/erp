@@ -240,7 +240,7 @@ final class BookingProductSummaryResolver
                 $type = strtolower((string) ($meta['type_name'] ?? $meta['type'] ?? ''));
                 if ($name !== '' && in_array($name, $columns, true) && in_array($name, $preferred, true) && preg_match('/char|varchar|text|tinytext|mediumtext|longtext/', $type)) $fields[] = $name;
             }
-        } catch (Throwable) { $fields = array_values(array_intersect($preferred, $columns)); }
+        } catch (Throwable) { return []; }
         return array_values(array_unique($fields));
     }
 

@@ -47,10 +47,12 @@ ok(hotel.includes("'sale','sell_price','room_sale_rate'") && hotel.includes("'co
 ok(hotel.includes('hotelJsonCarrierFields') && hotel.includes('hotelTaggedCarrierFields') && hotel.includes('Schema::getColumns'), 'Hotel native JSON/text carrier discovery is preserved');
 ok(hotel.includes("preg_match('/meta|json|data|details|attributes/i'") && hotel.includes("preg_match('/char|varchar|text|tinytext|mediumtext|longtext/"), 'Hotel text JSON carriers and tagged carriers are narrowly scoped');
 ok(hotel.includes('hotelSemanticNumber') && hotel.includes('hotelColumnMetadata') && hotel.includes('isTotal') && hotel.includes('isRate'), 'Hotel semantic numeric schema fallback is guarded');
+ok(hotel.includes('private function hotelTaggedCarrierFields') && hotel.includes('catch (Throwable) { return []; }') && !hotel.includes('catch (Throwable) { $fields = array_values(array_intersect($preferred, $columns)); }'), 'Hotel tagged carrier type discovery fails closed on metadata errors');
+ok(hotel.includes("in_array($name, $preferred, true)") && hotel.includes("preg_match('/char|varchar|text|tinytext|mediumtext|longtext/'"), 'Hotel tagged carrier whitelist and type guard are mandatory');
 ok(hotel.includes('ETERP_HOTEL_STAY:') && hotel.includes('base64_decode($match[1], true)') && hotel.includes('json_decode($json, true)'), 'Hotel tagged payload uses strict base64 and JSON decoding');
 ok(hotel.includes("return null;") && hotel.includes('preg_match'), 'Invalid Hotel tagged metadata fails closed');
 ok(resolver.includes('customer_amount') && resolver.includes('selling_amount') && resolver.includes('gross_sale') && resolver.includes('supplier_amount_pkr') && resolver.includes('vendor_total_pkr') && resolver.includes('cost_amount_pkr'), 'Transport and Visa native aliases remain covered');
 ok(resolver.includes('serviceSalePresent ? $serviceSale : $detailSale') && resolver.includes('hasCommercialField'), 'Air zero-valued snapshots do not imply missing commercial data');
 ok(css.includes('.etgp-toolbar-left-actions'), 'Left toolbar action row has active geometry authority');
 
-console.log('C37_CORRECTIVE5_REGRESSION=PASS (40 assertions)');
+console.log('C37_CORRECTIVE6_REGRESSION=PASS (42 assertions)');
