@@ -274,7 +274,6 @@ class ApplyErpReleaseMetadata
             $main->setAttribute('class', 'main');
             $appShell->appendChild($main);
         }
-
         // If the native sidebar shell is empty, render the authenticated native
         // ERP layout authority and adopt its existing sidebar. Never manufacture
         // hard-coded URLs or mine unrelated Health content for navigation.
@@ -313,22 +312,6 @@ class ApplyErpReleaseMetadata
             if ($this->isSystemHealthNode($child)) $outside[] = $child;
         }
         foreach ($outside as $child) $main->appendChild($child);
-
-        // Remove the obsolete bounded commercial-boundary panel only on Health.
-        $markers = ['erp-10.1 ticket commercial boundary', 'ticket-level sale, purchase and commissions are visible'];
-        foreach (iterator_to_array($main->childNodes) as $node) {
-            if (! $node instanceof \DOMElement || $node->hasAttribute('data-et-dangerous-actions')) continue;
-            $text = strtolower(trim(preg_replace('/\s+/', ' ', $node->textContent)));
-            $legacyIdentity = str_contains($text, $markers[0]) || str_contains($text, $markers[1]);
-            $boundedPanel = in_array(strtolower($node->tagName), ['section', 'article', 'div'], true)
-                && (str_contains(' '.strtolower(trim($node->getAttribute('class'))).' ', ' panel ')
-                    || str_contains(' '.strtolower(trim($node->getAttribute('class'))).' ', ' card ')
-                    || str_contains($text, $markers[0]));
-            if ($legacyIdentity && $boundedPanel) {
-                $main->removeChild($node);
-                break;
-            }
-        }
 
         $normalized = $dom->saveHTML();
         return $normalized;

@@ -19,8 +19,7 @@ ok(!middleware.includes('$sidebar->appendChild($nativeSidebar)') && middleware.i
 ok(middleware.indexOf('normalizeSystemHealthShell($request, $html)') < middleware.indexOf('ServerSidebarComposer::class)->compose($html)'), 'final sidebar is processed by ServerSidebarComposer after Health normalization');
 ok(!middleware.includes("createElement('a')") && !middleware.includes("setAttribute('href'"), 'C42 does not hardcode or create sidebar URLs');
 ok(middleware.includes('$main->appendChild($child)') && middleware.includes('isSystemHealthNode'), 'Health body content movement is positively bounded');
-ok(middleware.includes('iterator_to_array($main->childNodes)') && middleware.includes('$main->removeChild($node)') && middleware.includes('erp-10.1 ticket commercial boundary'), 'obsolete commercial-boundary panel is removed as a complete bounded unit');
-ok(!middleware.includes('$matches >= 2'), 'legacy panel removal does not depend on two unproven markers');
+ok(!middleware.includes('$main->removeChild($node)') && !middleware.includes('Remove the obsolete bounded commercial-boundary panel only on Health.'), 'legacy commercial cleanup is intentionally absent so native Health content cannot be deleted');
 ok(middleware.includes('data-et-dangerous-actions') && middleware.includes('Production Transaction Reset') && middleware.includes('Post-Reset Financial Cleanup'), 'Dangerous Actions routes remain preserved');
 ok(middleware.includes('normalizeMigrationPresentation') && middleware.includes('migrationStatus($release)'), 'migration status and presentation authority remain unchanged');
 ok(c41.includes("$this->airServiceRows($booking, $master)") && c41.includes("in_array('deleted_at', $columns, true)"), 'C41 Air resolver remains unchanged and schema-safe');
