@@ -7,6 +7,7 @@ use App\Services\Operations\BookingEditLockResolver;
 use App\Services\Operations\DedicatedProductTimingContext;
 use App\Services\Operations\NativeBookingCustomerResolver;
 use App\Services\Operations\NativeErpLayoutResolver;
+use App\Services\Operations\ProductWorkspaceContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -75,6 +76,7 @@ final class ProductWorkspaceController extends Controller
             'customer' => $customerIdentity,
             'lock' => $lock,
             'product' => $product,
+            'context' => new ProductWorkspaceContext((int) $row->id, $product, 'ORIGINAL'),
             'selectedProducts' => [],
         ];
     }

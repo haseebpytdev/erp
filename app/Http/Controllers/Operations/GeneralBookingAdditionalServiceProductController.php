@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\GeneralBookingAdditionalServiceItemManager;
 use App\Services\Operations\NativeErpLayoutResolver;
+use App\Services\Operations\ProductWorkspaceContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,7 +17,14 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     {
         $state = $items->editor($booking, $batch, $product, $request->integer('item') ?: null);
         abort_if(($state['batch_missing'] ?? false) || ($state['item_missing'] ?? false), 404);
-        return view('operations.bookings.additional-services.product', ['layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'batchId' => $batch, 'state' => $state, 'product' => $product]);
+        return view('operations.bookings.additional-services.product', [
+            'layoutMeta' => $layout->resolve(),
+            'bookingId' => $booking,
+            'batchId' => $batch,
+            'state' => $state,
+            'product' => $product,
+            'context' => new ProductWorkspaceContext($booking, $product, 'SUPPLEMENTARY', $batch),
+        ]);
     }
 
     public function store(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
