@@ -14,15 +14,15 @@ let assertions = 0;
 const ok = (value, message) => { assert.ok(value, message); assertions++; };
 const mainDashboardPath = path => /^operations\/bookings\/\d+\/?$/i.test(path);
 const normalizeOuterHeading = html => html.replace(
-  /(<(?:header|div|section)\b[^>]*class=(?:"[^"]*\bpage-header\b[^"]*"|'[^']*\bpage-header\b[^']*')[^>]*>.*?<h[12]\b[^>]*>).*?(<\/h[12]>)/is,
-  '$1Booking Dashboard$2'
+  /(<header\b[^>]*class=(?:"[^"]*\btopbar\b[^"]*"|'[^']*\btopbar\b[^']*')[^>]*>.*?<([a-z][a-z0-9:-]*)\b[^>]*class=(?:"[^"]*\btop-title\b[^"]*"|'[^']*\btop-title\b[^']*')[^>]*>).*?(<\/\2>)/is,
+  '$1Booking Dashboard$3'
 );
 
 ok(presenter.includes('isMainBookingDashboardPath'), 'server presenter owns the exact dashboard route gate');
 ok(presenter.includes("preg_match('#^operations/bookings/\\d+/?$#', $path)"), 'main booking route is exact and trailing-slash safe');
 ok(presenter.includes('normalizeMainBookingOuterHeading'), 'server outer-heading normalizer exists');
-ok(presenter.includes('class=(?:"[^"]*\\bpage-header\\b') && presenter.includes('<h[12]'), 'normalizer targets the page-header heading markup');
-ok(presenter.includes("'$1Booking Dashboard$2'"), 'authoritative outer heading becomes Booking Dashboard');
+ok(presenter.includes('class=(?:"[^"]*\\btopbar\\b') && presenter.includes('top-title'), 'normalizer targets the production topbar title markup');
+ok(presenter.includes("'$1Booking Dashboard$3'"), 'authoritative outer heading becomes Booking Dashboard');
 ok(!presenter.includes("str_replace('BK-"), 'no global booking-reference replacement exists');
 ok(!presenter.includes("preg_replace('/BK-"), 'no broad BK reference rewrite exists');
 ok(presenter.includes('BookingWorkspaceShellPresenter'), 'response presenter remains the server-side authority');
@@ -43,10 +43,10 @@ for (const path of ['operations/bookings/27', 'operations/bookings/27/']) {
   ok(mainDashboardPath(path), `main dashboard path is accepted: ${path}`);
 }
 
-const representativeDashboard = '<div class="page-header"><h1>BK-2026-0027</h1></div>'
+const representativeDashboard = '<header class="topbar"><div><div class="top-title">BK-2026-0027</div></div></header>'
   + '<section class="etgp-booking-card"><h1>BK-2026-0027</h1></section>';
 const normalizedDashboard = normalizeOuterHeading(representativeDashboard);
-ok(normalizedDashboard.includes('<div class="page-header"><h1>Booking Dashboard</h1></div>'), 'outer page heading is normalized');
+ok(normalizedDashboard.includes('<header class="topbar"><div><div class="top-title">Booking Dashboard</div></div></header>'), 'production topbar title is normalized');
 ok((normalizedDashboard.match(/BK-2026-0027/g) || []).length === 1, 'booking identity reference remains exactly once');
 ok(normalizedDashboard.includes('<section class="etgp-booking-card"><h1>BK-2026-0027</h1></section>'), 'identity card reference is outside the mutation target');
 

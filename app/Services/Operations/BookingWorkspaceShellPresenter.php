@@ -337,9 +337,9 @@ HTML;
 
     private function normalizeMainBookingOuterHeading(string $html): string
     {
-        $pattern = '/(<(?:header|div|section)\b[^>]*class=(?:"[^"]*\bpage-header\b[^"]*"|\'[^\']*\bpage-header\b[^\']*\')[^>]*>.*?<h[12]\b[^>]*>).*?(<\/h[12]>)/is';
+        $pattern = '/(<header\b[^>]*class=(?:"[^"]*\btopbar\b[^"]*"|\'[^\']*\btopbar\b[^\']*\')[^>]*>.*?<([a-z][a-z0-9:-]*)\b[^>]*class=(?:"[^"]*\btop-title\b[^"]*"|\'[^\']*\btop-title\b[^\']*\')[^>]*>).*?(<\/\2>)/is';
 
-        return preg_replace($pattern, '$1Booking Dashboard$2', $html, 1) ?? $html;
+        return preg_replace($pattern, '$1Booking Dashboard$3', $html, 1) ?? $html;
     }
 
     private function productSummaryMarkup(int $bookingId, ?array $lock): string
