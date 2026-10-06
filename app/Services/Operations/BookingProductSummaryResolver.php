@@ -32,7 +32,7 @@ final class BookingProductSummaryResolver
                     : collect());
             $serviceIds = $serviceRows->pluck('id')->map(static fn ($id): int => (int) $id)->all();
             if ($product === 'air') {
-                return $this->airSummary($serviceRows, $serviceIds);
+                return $this->withApprovedSupplements($booking, $product, $this->airSummary($serviceRows, $serviceIds));
             }
             $table = match ($product) {
                 'air' => 'air_ticket_details',
@@ -41,18 +41,20 @@ final class BookingProductSummaryResolver
                 'visa' => 'booking_visa_services',
             };
             if ($product === 'hotel') {
-                return $this->hotelSummary($booking, $serviceIds);
+                $hotel = $this->hotelSummary($booking, $serviceIds);
+                if ((int) ($hotel['count'] ?? 0) === 0) $hotel = $this->serviceSnapshotSummary($serviceRows, 'hotel');
+                return $this->withApprovedSupplements($booking, $product, $hotel);
             }
             if ($product === 'transport' && (! $table || ! Schema::hasTable($table))) {
-                return $this->transportSnapshotSummary($serviceRows);
+                return $this->withApprovedSupplements($booking, $product, $this->transportSnapshotSummary($serviceRows));
             }
-            if (! $table || ! Schema::hasTable($table)) return $this->empty();
+            if (! $table || ! Schema::hasTable($table)) return $this->withApprovedSupplements($booking, $product, $this->empty());
             $columns = Schema::getColumnListing($table);
             $query = DB::table($table);
             if (in_array('booking_id', $columns, true)) $query->where('booking_id', $booking);
             elseif (in_array('booking_service_id', $columns, true)) $query->whereIn('booking_service_id', $serviceIds ?: [-1]);
             $rows = $query->get();
-            if ($product === 'transport' && $rows->isEmpty()) return $this->transportSnapshotSummary($serviceRows);
+            if ($product === 'transport' && $rows->isEmpty()) return $this->withApprovedSupplements($booking, $product, $this->transportSnapshotSummary($serviceRows));
             if ($product === 'visa') {
                 $sale = $this->sum($rows, ['sale_pkr','customer_total','selling_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']);
                 $cost = $this->sum($rows, ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost','net_supplier_cost']);
@@ -63,8 +65,72 @@ final class BookingProductSummaryResolver
                 $cost = $this->sum($rows, ['supplier_amount_pkr','vendor_total_pkr','cost_amount_pkr','supplier_total_pkr','supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price']);
                 $margin = $sale - $cost;
             }
-            return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
-        } catch (Throwable) { return $this->empty(); }
+            $summary = ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
+            if ($product === 'visa' && $rows->isEmpty()) $summary = $this->serviceSnapshotSummary($serviceRows, $product);
+            return $this->withApprovedSupplements($booking, $product, $summary);
+        } catch (Throwable) { return $this->withApprovedSupplements($booking, $product, $this->empty()); }
+    }
+
+    /** Merge only approved supplementary draft snapshots into the read-only card. */
+    private function withApprovedSupplements(int $booking, string $product, array $native): array
+    {
+        $supplement = $this->approvedSupplementSummary($booking, $product);
+        $nativeCount = (int) ($native['count'] ?? 0);
+        $supplementCount = (int) ($supplement['count'] ?? 0);
+        return [
+            'count' => $nativeCount + $supplementCount,
+            'customer_total' => round((float) ($native['customer_total'] ?? 0) + (float) ($supplement['customer_total'] ?? 0), 2),
+            'supplier_total' => round((float) ($native['supplier_total'] ?? 0) + (float) ($supplement['supplier_total'] ?? 0), 2),
+            'margin' => round((float) ($native['margin'] ?? 0) + (float) ($supplement['margin'] ?? 0), 2),
+            'origins' => array_values(array_merge((array) ($native['origins'] ?? ['ORIGINAL']), (array) ($supplement['origins'] ?? []))),
+            'supplement_only' => $nativeCount === 0 && $supplementCount > 0,
+        ];
+    }
+
+    private function approvedSupplementSummary(int $booking, string $product): array
+    {
+        if (! Schema::hasTable('general_booking_billing_batches') || ! Schema::hasTable('general_booking_billing_batch_items')) return $this->empty();
+        $batchColumns = Schema::getColumnListing('general_booking_billing_batches');
+        $itemColumns = Schema::getColumnListing('general_booking_billing_batch_items');
+        foreach (['booking_id', 'batch_type', 'status'] as $column) if (! in_array($column, $batchColumns, true)) return $this->empty();
+        foreach (['batch_id', 'product_type'] as $column) if (! in_array($column, $itemColumns, true)) return $this->empty();
+        $query = DB::table('general_booking_billing_batch_items as i')
+            ->join('general_booking_billing_batches as b', 'b.id', '=', 'i.batch_id')
+            ->select('i.*', 'b.batch_no')
+            ->where('b.booking_id', $booking)
+            ->where('b.batch_type', 'supplementary')
+            ->where('b.status', 'approved')
+            ->where('i.product_type', $product);
+        $items = $query->get();
+        $sale = 0.0; $cost = 0.0; $count = 0; $origins = [];
+        foreach ($items as $item) {
+            // A future native materialization can link an item to its native
+            // booking service; in that case the native resolver is authoritative
+            // and this snapshot is excluded to prevent double counting.
+            if (isset($item->booking_service_id) && (int) $item->booking_service_id > 0) continue;
+            $snapshot = json_decode((string) ($item->product_snapshot ?? ''), true);
+            $snapshot = is_array($snapshot) ? $snapshot : [];
+            $sale += (float) ($item->sale_amount ?? $snapshot['sale_amount'] ?? $snapshot['customer_total'] ?? 0);
+            $cost += (float) ($item->supplier_cost_snapshot ?? $snapshot['supplier_cost'] ?? $snapshot['cost_amount'] ?? 0);
+            $count++;
+            $origins[] = 'ADDITIONAL SERVICES #'.(int) ($item->batch_no ?? 0);
+        }
+        return ['count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2), 'origins' => array_values(array_unique($origins))];
+    }
+
+    private function serviceSnapshotSummary(iterable $serviceRows, string $product): array
+    {
+        $saleFields = ['hotel' => ['selling_total','customer_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale'], 'visa' => ['sale_pkr','customer_total','selling_total','sale_total','customer_amount','sale_amount','selling_amount','gross_sale'], 'transport' => ['sale_amount','selling_total','customer_total','sale_total','customer_amount','selling_amount','sale_price']][$product] ?? [];
+        $costFields = ['hotel' => ['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost'], 'visa' => ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost','net_supplier_cost'], 'transport' => ['supplier_amount','vendor_total','cost_amount','cost_price','supplier_cost']][$product] ?? [];
+        $sale = 0.0; $cost = 0.0; $count = 0;
+        foreach ($serviceRows as $row) {
+            $data = (array) $row;
+            $rowSale = $this->firstMeaningful($data, $saleFields);
+            $rowCost = $this->firstMeaningful($data, $costFields);
+            if ($rowSale === null && $rowCost === null) continue;
+            $sale += (float) ($rowSale ?? 0); $cost += (float) ($rowCost ?? 0); $count++;
+        }
+        return ['count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
     }
 
     private function airServiceRows(int $booking, ?array $master): iterable

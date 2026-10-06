@@ -1,0 +1,53 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+
+const root = path.resolve(import.meta.dirname, '../..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const resolver = read('app/Services/Operations/BookingProductSummaryResolver.php');
+const commercial = read('app/Services/Operations/GeneralBookingCommercialSummaryResolver.php');
+const hub = read('app/Http/Controllers/Operations/BookingProductsHubController.php');
+const billing = read('app/Services/Operations/GeneralBookingBillingStateResolver.php');
+const c41 = read('tests/release/erp113378-c41-air-booking-service-schema-compatibility-regression.mjs');
+const c49a = read('tests/release/erp113378-c49a-shared-supplementary-product-workspaces-regression.mjs');
+const routes = read('routes/erp103179.php');
+
+let assertions = 0;
+const ok = (value, message) => { assertions++; assert.ok(value, message); };
+
+ok(resolver.includes("'air' => $this->summary($booking, 'air')") && resolver.includes("'hotel' => $this->summary($booking, 'hotel')"), 'Air and Hotel use one resolver');
+ok(resolver.includes("'transport' => $this->summary($booking, 'transport')") && resolver.includes("'visa' => $this->summary($booking, 'visa')"), 'Transport and Visa use one resolver');
+ok(resolver.includes('withApprovedSupplements') && resolver.includes('approvedSupplementSummary'), 'approved supplementary source is normalized through resolver');
+ok(resolver.includes('serviceSnapshotSummary') && resolver.includes("$product === 'visa' && $rows->isEmpty()"), 'Visa and legacy product snapshots have a native-service fallback');
+ok(resolver.includes("$hotel['count'] ?? 0") && resolver.includes("serviceSnapshotSummary($serviceRows, 'hotel')"), 'Hotel falls back to persisted service commercial snapshots');
+ok(resolver.includes("where('b.batch_type', 'supplementary')") && resolver.includes("where('b.status', 'approved')"), 'only approved supplementary batches are included');
+ok(resolver.includes("where('i.product_type', $product)"), 'supplementary items remain product scoped');
+ok(resolver.includes('general_booking_billing_batch_items as i') && resolver.includes("where('b.booking_id', $booking)"), 'supplementary source remains booking scoped');
+ok(resolver.includes('booking_service_id') && resolver.includes('prevent double counting'), 'native materialization double-count guard exists');
+ok(resolver.includes("'sale_amount'") && resolver.includes("'supplier_cost'") && resolver.includes("'cost_amount'"), 'supplementary commercial snapshot fallback exists');
+ok(resolver.includes("'count' => $nativeCount + $supplementCount"), 'native and approved supplement item counts aggregate');
+ok(resolver.includes("'customer_total' => round((float) ($native['customer_total'] ?? 0) + (float) ($supplement['customer_total'] ?? 0), 2)"), 'customer totals aggregate without hardcoding');
+ok(resolver.includes("'supplier_total' => round((float) ($native['supplier_total'] ?? 0) + (float) ($supplement['supplier_total'] ?? 0), 2)"), 'supplier totals aggregate without hardcoding');
+ok(resolver.includes("'margin' => round((float) ($native['margin'] ?? 0) + (float) ($supplement['margin'] ?? 0), 2)"), 'margins aggregate from product authorities');
+for (const field of ['selling_total','customer_sale','customer_sell','customer_sale_amount','customer_sell_amount','sale_amount','sell_amount','selling_price','sale_price','customer_price','customer_total','receivable_amount']) ok(resolver.includes(`'${field}'`), `Air customer field ${field} remains supported`);
+for (const field of ['net_supplier_cost','supplier_cost','supplier_cost_amount','net_cost','purchase_cost','purchase_price','supplier_total','cost_amount']) ok(resolver.includes(`'${field}'`), `Air supplier field ${field} remains supported`);
+ok(resolver.includes("in_array('deleted_at', $columns, true)") && resolver.includes('airServiceRows'), 'C41 schema-safe Air behavior preserved');
+ok(!resolver.includes('GeneralBookingAirProductController::show') && !resolver.includes('GeneralBookingHotelProductController::show'), 'summary remains lightweight and controller-free');
+ok(!resolver.includes('GeneralBookingTransportProductController::show') && !resolver.includes('GeneralBookingVisaProductController::show'), 'no product-controller fan-out added');
+ok(commercial.includes('product_customer_totals') && commercial.includes('grossCustomer'), 'commercial summary consumes normalized product summaries');
+ok(commercial.includes('BookingProductSummaryResolver') && commercial.includes('$canonical[$key]'), 'commercial roll-up and cards share normalized authority');
+ok(hub.includes('BookingProductSummaryResolver') && hub.includes('snapshots'), 'dashboard cards use resolver snapshots');
+ok(billing.includes('approvedBatchNeedsInvoice') && billing.includes('supplementary_batches'), 'approved supplementary lifecycle authority remains unchanged');
+ok(c41.includes('deleted_at') && c49a.includes('ProductWorkspaceContext'), 'C41 and C49A regression protections remain present');
+ok(routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), 'supplementary supported product routes remain unchanged');
+ok(!routes.includes('supplementary-sales-invoice') && !resolver.includes('createSalesInvoice'), 'no supplementary invoice logic added');
+ok(!fs.readdirSync(path.join(root, 'database/migrations')).some((name) => name.includes('c49b')), 'no C49B migration added');
+ok(!resolver.includes('sales_invoices'), 'invoice totals are not product-card authority');
+ok(resolver.includes("'origins'") && resolver.includes('ADDITIONAL SERVICES #'), 'source provenance is available to cards');
+ok(resolver.includes("$item->booking_service_id") && resolver.includes('continue;'), 'materialized native links are excluded from supplement snapshot totals');
+ok(resolver.includes("'supplement_only' => $nativeCount === 0 && $supplementCount > 0"), 'supplement-only cards are identified');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+ok(presenter.includes('$supplementOnly') && presenter.includes("? 'View'"), 'supplement-only cards cannot expose native Edit');
+ok(presenter.includes("url('/operations/bookings/'.$bookingId.'/review')"), 'supplement-only cards use a safe review route');
+
+console.log(`ERP378 C49B PRODUCT CARD CONSISTENCY: PASS (${assertions} assertions)`);

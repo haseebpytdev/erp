@@ -9,13 +9,20 @@ namespace App\Services\Operations;
  */
 final class GeneralBookingCommercialSummaryResolver
 {
+    public function __construct(private readonly BookingProductSummaryResolver $productSummaries)
+    {
+    }
+
     public function resolve(array $booking, array $air, array $hotel, array $transport, array $visa): array
     {
         $snapshots = compact('air', 'hotel', 'transport', 'visa');
+        $canonical = isset($booking['id']) && (int) $booking['id'] > 0
+            ? $this->productSummaries->resolve((int) $booking['id'])
+            : [];
         $customer = [];
         $supplier = [];
         foreach ($snapshots as $key => $snapshot) {
-            $summary = (array) ($snapshot['summary'] ?? []);
+            $summary = (array) ($canonical[$key] ?? $snapshot['summary'] ?? []);
             $customer[$key] = round(max(0, (float) ($summary['customer_total'] ?? 0)), 2);
             $supplier[$key] = round(max(0, (float) ($this->supplierValue($key, $summary))), 2);
         }

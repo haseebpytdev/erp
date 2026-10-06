@@ -352,8 +352,12 @@ HTML;
             $row = $summary[$key] ?? [];
             $count = (int) ($row['count'] ?? 0);
             $state = $count > 0 ? ($locked ? 'Read Only' : 'Added') : 'Not Added';
+            $supplementOnly = (bool) ($row['supplement_only'] ?? false);
             $action = $locked ? 'View' : ($count > 0 ? 'Edit' : 'Open');
-            $url = url('/operations/bookings/'.$bookingId.'/products/'.$key);
+            if ($supplementOnly) $action = 'View';
+            $url = ($locked || $supplementOnly)
+                ? url('/operations/bookings/'.$bookingId.'/review')
+                : url('/operations/bookings/'.$bookingId.'/products/'.$key);
             $html .= '<article class="et-c36-product-summary-card" data-product="'.e($key).'">'
                 .'<div><strong>'.e($label).'</strong><span>'.e($state).'</span></div>'
                 .'<dl><div><dt>Items</dt><dd>'.$count.'</dd></div><div><dt>Booking Value</dt><dd>'.number_format((float) ($row['customer_total'] ?? 0), 2).'</dd></div><div><dt>Supplier Cost</dt><dd>'.number_format((float) ($row['supplier_total'] ?? 0), 2).'</dd></div><div><dt>Margin</dt><dd>'.number_format((float) ($row['margin'] ?? 0), 2).'</dd></div></dl>'
