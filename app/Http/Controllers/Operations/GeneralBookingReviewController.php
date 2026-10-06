@@ -68,7 +68,7 @@ final class GeneralBookingReviewController extends Controller
         ]);
     }
 
-    public function action(Request $request, int $booking, string $action, GroupUmrahEditAuthority $authority): mixed
+    public function action(Request $request, int $booking, string $action, GroupUmrahEditAuthority $authority, BookingBillingEditLockResolver $billingLocks): mixed
     {
         $row = $this->booking($booking); $columns = Schema::getColumnListing('bookings');
         if ($action === 'ready') {
@@ -104,6 +104,10 @@ final class GeneralBookingReviewController extends Controller
         }
         if ($action === 'reopen') {
             abort_unless($authority->canReopen($request->user()), 403, 'Only an Administrator may reopen an approved booking.');
+            $billing = $billingLocks->resolve($booking);
+            if ($billing['locked'] ?? false) {
+                return redirect()->route('bookings.review.show', ['booking' => $booking])->withErrors(['review' => (string) ($billing['reason'] ?? 'This booking is protected by its billing state.')]);
+            }
             DB::transaction(function () use ($booking, $statusField, $columns, $request): void {
                 $this->setStatus($booking, $statusField, 'reopened', $columns, $request);
                 $this->syncGeneralNativeConfirmation($booking, 'reopened', $statusField, $columns, $request);

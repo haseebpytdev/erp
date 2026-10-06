@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class EnforceGeneralBookingEditLock
 {
-    public function __construct(private readonly BookingEditLockResolver $locks, private readonly NativeSalesInvoiceInspector $invoices) {}
+    public function __construct(private readonly BookingEditLockResolver $locks, private readonly BookingBillingEditLockResolver $billingLocks, private readonly NativeSalesInvoiceInspector $invoices) {}
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -20,6 +20,14 @@ final class EnforceGeneralBookingEditLock
         if (in_array($reviewAction, ['submit','approve','reopen','ready'], true)) return $next($request);
         $routeBooking = $request->route('booking') ?? $request->route('id') ?? 0;
         $bookingId = $this->bookingId($routeBooking);
+        $billing = $this->billingLocks->resolve($bookingId);
+        if ($billing['locked'] ?? false) {
+            $message = (string) ($billing['reason'] ?? 'This booking is protected by its billing state.');
+            if ($request->expectsJson() || $request->ajax()) {
+                return new JsonResponse(['message' => $message, 'error' => 'booking_billing_locked', 'billing_state' => $billing['code'] ?? 'locked'], 423);
+            }
+            return redirect()->route('bookings.review.show', ['booking' => $bookingId])->withErrors(['booking' => $message]);
+        }
         $state = $this->locks->resolve($bookingId);
         if (! $state['locked']) {
             $keys=implode(' ',array_keys($request->all()));

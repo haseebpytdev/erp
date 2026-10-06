@@ -9,6 +9,7 @@ final class BookingWorkspaceShellPresenter
 {
     public function __construct(
         private readonly BookingEditLockResolver $bookingLocks,
+        private readonly BookingBillingEditLockResolver $billingLocks,
         private readonly BookingProductSummaryResolver $productSummaries,
     ) {}
 
@@ -157,8 +158,10 @@ final class BookingWorkspaceShellPresenter
         // briefly rendering editable controls while the summary request loads.
         $initialBookingLock = null;
         if (($isNativeBookingWorkspacePath || $isProductsWorkspacePath) && preg_match('#operations/bookings/(\d+)#', $path, $initialBookingMatch)) {
-            $initialBookingLock = $timing?->measure('presenter_lock_resolve', fn (): array => $this->bookingLocks->resolve((int) $initialBookingMatch[1]))
-                ?? $this->bookingLocks->resolve((int) $initialBookingMatch[1]);
+            $bookingId = (int) $initialBookingMatch[1];
+            $initialBookingLock = $timing?->measure('presenter_lock_resolve', function () use ($bookingId): array {
+                return $this->presentationLock($bookingId);
+            }) ?? $this->presentationLock($bookingId);
             $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $initialBookingLock['locked'] ? '1' : '0');
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));
@@ -297,7 +300,7 @@ final class BookingWorkspaceShellPresenter
         // Booking Review entry stays inside the existing focused booking shell.
         // It is injected only on the native GENERAL booking view/edit page.
         if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $bookingMatch)) {
-            $lock=$initialBookingLock ?? $this->bookingLocks->resolve((int)$bookingMatch[1]);
+            $lock=$initialBookingLock ?? $this->presentationLock((int)$bookingMatch[1]);
             if($lock['locked']&&!str_contains($html,'data-et-server-booking-lock="1"')){
                 $message=e($this->lockPresentationMessage((string) ($lock['status'] ?? 'CONFIRMED')));
                 $locked=<<<HTML
@@ -333,6 +336,15 @@ HTML;
             default => 'Confirmed',
         };
         return $label.' booking — editing is locked. Reopen the booking to make changes.';
+    }
+
+    private function presentationLock(int $bookingId): array
+    {
+        $billing = $this->billingLocks->resolve($bookingId);
+        if ($billing['locked'] ?? false) {
+            return ['locked' => true, 'status' => (string) ($billing['status'] ?? 'BILLING'), 'reason' => (string) ($billing['reason'] ?? '')];
+        }
+        return $this->bookingLocks->resolve($bookingId);
     }
 
     private function normalizeMainBookingOuterHeading(string $html): string
