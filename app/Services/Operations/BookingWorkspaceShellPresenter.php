@@ -217,6 +217,22 @@ final class BookingWorkspaceShellPresenter
 
         // Static focused-workspace CSS is served by the fresh Booking theme.
         $style = '';
+        if (! empty($initialBookingLock['billing_locked'])) {
+            // The passenger editor is progressively generated. Keep the
+            // server-seeded billing lock effective for late-created nodes;
+            // the existing JS observer still handles text-only mutation
+            // buttons, while this rule covers stable editor containers.
+            $style = '<style data-et-booking-billing-lock-presentation="1">'
+                .'html[data-et-booking-billing-locked="1"] .etgp-passenger-editor-host,'
+                .'html[data-et-booking-billing-locked="1"] .etgp-passenger-mode-panel,'
+                .'html[data-et-booking-billing-locked="1"] .etgp-passenger-quick-row,'
+                .'html[data-et-booking-billing-locked="1"] .etgp-passenger-actions,'
+                .'html[data-et-booking-billing-locked="1"] .etgp-quick-passenger-11397,'
+                .'html[data-et-booking-billing-locked="1"] [data-etgp-quick-passenger-11397],'
+                .'html[data-et-booking-billing-locked="1"] [data-etgp-passenger-mode-control]'
+                .'{display:none!important;visibility:hidden!important;}'
+                .'</style>';
+        }
 
         if (stripos($html, '</head>') !== false) {
             $html = preg_replace(

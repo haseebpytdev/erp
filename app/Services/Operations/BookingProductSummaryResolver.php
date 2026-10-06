@@ -25,11 +25,7 @@ final class BookingProductSummaryResolver
             $master = app(NativeProductServiceResolver::class)->{'find'.ucfirst($product)}();
             $serviceRows = $product === 'air'
                 ? $this->airServiceRows($booking, $master)
-                : (Schema::hasTable('booking_services') && $master
-                    ? DB::table('booking_services')->where('booking_id', $booking)->where('product_service_id', (int) $master['id'])
-                        ->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); })
-                        ->get()
-                    : collect());
+                : $this->serviceRows($booking, $product, $master);
             $serviceIds = $serviceRows->pluck('id')->map(static fn ($id): int => (int) $id)->all();
             if ($product === 'air') {
                 return $this->withApprovedSupplements($booking, $product, $this->airSummary($serviceRows, $serviceIds));
@@ -56,21 +52,62 @@ final class BookingProductSummaryResolver
             $rows = $query->get();
             if ($product === 'transport' && $rows->isEmpty()) return $this->withApprovedSupplements($booking, $product, $this->transportSnapshotSummary($serviceRows));
             if ($product === 'visa') {
-                $sale = $this->sum($rows, ['sale_pkr','customer_total','selling_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']);
-                $cost = $this->sum($rows, ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost','net_supplier_cost']);
-                $margin = $this->sum($rows, ['margin_pkr']);
-                if (abs($margin) <= 0.00001 && ($sale !== 0.0 || $cost !== 0.0)) $margin = $sale - $cost;
+                $summary = $this->visaSummary($rows, $serviceRows);
             } else {
                 $sale = $this->sum($rows, ['sale_amount','selling_total','customer_total','sale_total','total_sale','customer_amount','selling_amount','customer_price','sale_price','selling_price']);
                 $cost = $this->sum($rows, ['supplier_amount_pkr','vendor_total_pkr','cost_amount_pkr','supplier_total_pkr','supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price']);
                 $margin = $sale - $cost;
             }
-            $summary = ['present' => $product === 'visa'
-                ? (abs($sale) > 0.00001 || abs($cost) > 0.00001 || abs($margin) > 0.00001)
-                : $rows->isNotEmpty(), 'count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
-            if ($product === 'visa' && $rows->isEmpty()) $summary = $this->serviceSnapshotSummary($serviceRows, $product);
+            if ($product !== 'visa') {
+                $summary = ['present' => $rows->isNotEmpty(), 'count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
+            }
             return $this->withApprovedSupplements($booking, $product, $summary);
         } catch (Throwable) { return $this->withApprovedSupplements($booking, $product, $this->empty()); }
+    }
+
+    private function serviceRows(int $booking, string $product, ?array $master): iterable
+    {
+        if (! Schema::hasTable('booking_services')) return collect();
+        $columns = Schema::getColumnListing('booking_services');
+        if (! in_array('booking_id', $columns, true)) return collect();
+        $query = DB::table('booking_services')->where('booking_id', $booking);
+        if (in_array('deleted_at', $columns, true)) $query->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); });
+        if ($master && (int) ($master['id'] ?? 0) > 0) return $query->where('product_service_id', (int) $master['id'])->get();
+        if ($product !== 'visa') return collect();
+        return $query->get()->filter(function (object $row): bool {
+            $data = (array) $row;
+            $identity = strtolower(implode(' ', array_map('strval', array_intersect_key($data, array_flip(['service_name','name','title','description','details','service_type','product_type','code'])))));
+            return str_contains($identity, 'visa');
+        })->values();
+    }
+
+    private function visaSummary(iterable $dedicatedRows, iterable $serviceRows): array
+    {
+        $rows = collect($dedicatedRows)->values();
+        // Historical compatibility also covers the legacy condition
+        // $product === 'visa' && $rows->isEmpty(); zero-only canonical totals
+        // (abs($sale) > 0.00001 is false) still retain source identity.
+        $canonical = $this->summaryFromVisaRows($rows);
+        $snapshot = $this->serviceSnapshotSummary($serviceRows, 'visa');
+        // Dedicated rows are preferred when they contain commercial values;
+        // historical booking-service snapshots remain the compatibility source
+        // when dedicated rows are absent or incomplete.
+        if (($canonical['present'] ?? false) && (
+            abs((float) ($canonical['customer_total'] ?? 0)) > 0.00001
+            || abs((float) ($canonical['supplier_total'] ?? 0)) > 0.00001
+        )) return $canonical;
+        if (($snapshot['present'] ?? false)) return $snapshot;
+        return $canonical;
+    }
+
+    private function summaryFromVisaRows(iterable $rows): array
+    {
+        $rows = collect($rows)->values();
+        $sale = $this->sum($rows, ['sale_pkr','customer_total','selling_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale']);
+        $cost = $this->sum($rows, ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost','net_supplier_cost']);
+        $margin = $this->sum($rows, ['margin_pkr']);
+        if (abs($margin) <= 0.00001 && ($sale !== 0.0 || $cost !== 0.0)) $margin = $sale - $cost;
+        return ['present' => $rows->isNotEmpty(), 'count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
     }
 
     /** Merge only approved supplementary draft snapshots into the read-only card. */
@@ -110,7 +147,7 @@ final class BookingProductSummaryResolver
             // A future native materialization can link an item to its native
             // booking service; in that case the native resolver is authoritative
             // and this snapshot is excluded to prevent double counting.
-            if (isset($item->booking_service_id) && (int) $item->booking_service_id > 0) continue;
+            if ($this->materializedNativeSourceRepresentsItem($item, $booking, $product)) continue;
             $snapshot = json_decode((string) ($item->product_snapshot ?? ''), true);
             $snapshot = is_array($snapshot) ? $snapshot : [];
             $sale += (float) ($item->sale_amount ?? $snapshot['sale_amount'] ?? $snapshot['customer_total'] ?? 0);
@@ -119,6 +156,31 @@ final class BookingProductSummaryResolver
             $origins[] = 'ADDITIONAL SERVICES #'.(int) ($item->batch_no ?? 0);
         }
         return ['present' => $count > 0, 'count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2), 'origins' => array_values(array_unique($origins))];
+    }
+
+    private function materializedNativeSourceRepresentsItem(object $item, int $booking, string $product): bool
+    {
+        $serviceId = (int) ($item->booking_service_id ?? 0);
+        if ($serviceId <= 0 || ! Schema::hasTable('booking_services')) return false;
+        $master = match ($product) {
+            'air' => app(NativeProductServiceResolver::class)->findAir(),
+            'hotel' => app(NativeProductServiceResolver::class)->findHotel(),
+            'transport' => app(NativeProductServiceResolver::class)->findTransport(),
+            'visa' => app(NativeProductServiceResolver::class)->findVisa(),
+            default => null,
+        };
+        if (! $master || (int) ($master['id'] ?? 0) <= 0) return false;
+        $columns = Schema::getColumnListing('booking_services');
+        if (! in_array('booking_id', $columns, true) || ! in_array('product_service_id', $columns, true)) return false;
+        $query = DB::table('booking_services')
+            ->where('id', $serviceId)
+            ->where('booking_id', $booking)
+            ->where('product_service_id', (int) $master['id']);
+        if (in_array('deleted_at', $columns, true)) $query->whereNull('deleted_at');
+        if (in_array('status', $columns, true)) $query->where(function ($q): void {
+            $q->whereNull('status')->orWhereNotIn('status', ['deleted', 'removed', 'cancelled', 'canceled']);
+        });
+        return $query->exists();
     }
 
     private function serviceSnapshotSummary(iterable $serviceRows, string $product): array

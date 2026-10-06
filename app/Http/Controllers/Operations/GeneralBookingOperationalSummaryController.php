@@ -58,6 +58,9 @@ final class GeneralBookingOperationalSummaryController extends Controller
             'readiness_blockers' => $state['blockers'],
             'booking_locked' => $lock['locked'],
             'booking_lock_reason' => $lock['reason'],
+            // Workflow lifecycle is independent from the billing lock. The
+            // progressive workspace uses this normalized value for its badge.
+            'booking_status' => (string) ($lock['status'] ?? 'Draft'),
             'sales_invoice' => $invoice,
             'sales_invoice_url' => route('operations.bookings.sales-invoice.stable', ['booking'=>$booking]),
         ]);

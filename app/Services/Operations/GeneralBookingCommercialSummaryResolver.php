@@ -23,10 +23,11 @@ final class GeneralBookingCommercialSummaryResolver
         $supplier = [];
         foreach ($snapshots as $key => $snapshot) {
             $canonicalSummary = (array) ($canonical[$key] ?? []);
-            $snapshotSummary = (array) ($snapshot['summary'] ?? []);
-            // Canonical data is authoritative only when it proves source
-            // presence; empty compatibility reads must not erase history.
-            $summary = ($canonicalSummary['present'] ?? false) ? $canonicalSummary : $snapshotSummary;
+            // Product totals come exclusively from the effective resolver.
+            // The former divergent fallback was:
+            // ($canonicalSummary['present'] ?? false) ? $canonicalSummary : $snapshotSummary
+            // and is intentionally no longer used for any product.
+            $summary = $canonicalSummary;
             $customer[$key] = round(max(0, (float) ($summary['customer_total'] ?? 0)), 2);
             $supplier[$key] = round(max(0, (float) ($this->supplierValue($key, $summary))), 2);
         }
