@@ -65,7 +65,9 @@ final class BookingProductSummaryResolver
                 $cost = $this->sum($rows, ['supplier_amount_pkr','vendor_total_pkr','cost_amount_pkr','supplier_total_pkr','supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price']);
                 $margin = $sale - $cost;
             }
-            $summary = ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
+            $summary = ['present' => $product === 'visa'
+                ? (abs($sale) > 0.00001 || abs($cost) > 0.00001 || abs($margin) > 0.00001)
+                : $rows->isNotEmpty(), 'count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
             if ($product === 'visa' && $rows->isEmpty()) $summary = $this->serviceSnapshotSummary($serviceRows, $product);
             return $this->withApprovedSupplements($booking, $product, $summary);
         } catch (Throwable) { return $this->withApprovedSupplements($booking, $product, $this->empty()); }
@@ -78,6 +80,7 @@ final class BookingProductSummaryResolver
         $nativeCount = (int) ($native['count'] ?? 0);
         $supplementCount = (int) ($supplement['count'] ?? 0);
         return [
+            'present' => (bool) ($native['present'] ?? false) || $supplementCount > 0,
             'count' => $nativeCount + $supplementCount,
             'customer_total' => round((float) ($native['customer_total'] ?? 0) + (float) ($supplement['customer_total'] ?? 0), 2),
             'supplier_total' => round((float) ($native['supplier_total'] ?? 0) + (float) ($supplement['supplier_total'] ?? 0), 2),
@@ -115,22 +118,31 @@ final class BookingProductSummaryResolver
             $count++;
             $origins[] = 'ADDITIONAL SERVICES #'.(int) ($item->batch_no ?? 0);
         }
-        return ['count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2), 'origins' => array_values(array_unique($origins))];
+        return ['present' => $count > 0, 'count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2), 'origins' => array_values(array_unique($origins))];
     }
 
     private function serviceSnapshotSummary(iterable $serviceRows, string $product): array
     {
-        $saleFields = ['hotel' => ['selling_total','customer_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale'], 'visa' => ['sale_pkr','customer_total','selling_total','sale_total','customer_amount','sale_amount','selling_amount','gross_sale'], 'transport' => ['sale_amount','selling_total','customer_total','sale_total','customer_amount','selling_amount','sale_price']][$product] ?? [];
-        $costFields = ['hotel' => ['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost'], 'visa' => ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost','net_supplier_cost'], 'transport' => ['supplier_amount','vendor_total','cost_amount','cost_price','supplier_cost']][$product] ?? [];
+        $saleFields = ['hotel' => ['selling_total','customer_total','sale_total','total_sale','customer_amount','sale_amount','selling_amount','gross_sale'], 'visa' => ['sale_pkr','customer_total','selling_total','sale_total','customer_amount','sale_amount','selling_amount','gross_sale','selling_price','sale_price','customer_price','receivable_amount'], 'transport' => ['sale_amount','selling_total','customer_total','sale_total','customer_amount','selling_amount','sale_price']][$product] ?? [];
+        $costFields = ['hotel' => ['net_supplier_cost','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost'], 'visa' => ['vendor_cost_pkr','supplier_total','vendor_total','cost_total','total_cost','vendor_amount','cost_amount','supplier_amount','gross_cost','net_supplier_cost','supplier_cost','supplier_cost_amount','net_cost','purchase_cost','purchase_price','cost_amount'], 'transport' => ['supplier_amount','vendor_total','cost_amount','cost_price','supplier_cost']][$product] ?? [];
         $sale = 0.0; $cost = 0.0; $count = 0;
         foreach ($serviceRows as $row) {
             $data = (array) $row;
             $rowSale = $this->firstMeaningful($data, $saleFields);
             $rowCost = $this->firstMeaningful($data, $costFields);
-            if ($rowSale === null && $rowCost === null) continue;
+            $identity = $this->hasSourceIdentity($data, $product);
+            if ($rowSale === null && $rowCost === null && ! $identity) continue;
             $sale += (float) ($rowSale ?? 0); $cost += (float) ($rowCost ?? 0); $count++;
         }
-        return ['count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
+        return ['present' => $count > 0, 'count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
+    }
+
+    private function hasSourceIdentity(array $row, string $product): bool
+    {
+        foreach (['id', 'booking_service_id', 'product_service_id', 'booking_id', 'booking_passenger_id'] as $field) {
+            if (array_key_exists($field, $row) && $row[$field] !== null && $row[$field] !== '') return true;
+        }
+        return $product === 'visa' && (array_key_exists('sale_pkr', $row) || array_key_exists('vendor_cost_pkr', $row));
     }
 
     private function airServiceRows(int $booking, ?array $master): iterable
@@ -190,6 +202,7 @@ final class BookingProductSummaryResolver
         $sale = $serviceSalePresent ? $serviceSale : $detailSale;
         $cost = $serviceCostPresent ? $serviceCost : $detailCost;
         return [
+            'present' => $services->isNotEmpty(),
             'count' => $services->count(),
             'customer_total' => round($sale, 2),
             'supplier_total' => round($cost, 2),
@@ -249,7 +262,7 @@ final class BookingProductSummaryResolver
             if ($rowCost == 0.0 && $costRate != 0.0 && $nights > 0) $rowCost = $costRate * $nights;
             $sale += $rowSale; $cost += $rowCost;
         }
-        return ['count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
+        return ['present' => $rows->isNotEmpty(), 'count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
     }
 
     private function hotelMeaningfulNumber(array $row, array $fields): ?float
@@ -370,7 +383,7 @@ final class BookingProductSummaryResolver
         if ($rows === []) return $this->empty();
         $sale = 0.0; $cost = 0.0;
         foreach ($rows as $row) { $sale += (float) ($row['sale_amount'] ?? 0); $cost += (float) ($row['cost_amount'] ?? ($row['cost_rate'] ?? 0)); }
-        return ['count' => count($rows), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
+        return ['present' => count($rows) > 0, 'count' => count($rows), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
     }
 
     private function sum(iterable $rows, array $fields): float
@@ -456,5 +469,5 @@ final class BookingProductSummaryResolver
         return 0.0;
     }
 
-    private function empty(): array { return ['count' => 0, 'customer_total' => 0.0, 'supplier_total' => 0.0, 'margin' => 0.0]; }
+    private function empty(): array { return ['present' => false, 'count' => 0, 'customer_total' => 0.0, 'supplier_total' => 0.0, 'margin' => 0.0]; }
 }

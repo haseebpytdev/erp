@@ -165,6 +165,7 @@ final class BookingWorkspaceShellPresenter
             $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $initialBookingLock['locked'] ? '1' : '0');
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-billing-locked', ! empty($initialBookingLock['billing_locked']) ? '1' : '0');
         }
         if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $summaryMatch)
             && ! str_contains($html, 'data-et-c36-product-summary="1"')) {
@@ -302,7 +303,7 @@ final class BookingWorkspaceShellPresenter
         if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $bookingMatch)) {
             $lock=$initialBookingLock ?? $this->presentationLock((int)$bookingMatch[1]);
             if($lock['locked']&&!str_contains($html,'data-et-server-booking-lock="1"')){
-                $message=e($this->lockPresentationMessage((string) ($lock['status'] ?? 'CONFIRMED')));
+                $message=e($this->lockPresentationMessage($lock));
                 $locked=<<<HTML
 <div data-et-server-booking-lock="1" data-et-lock-status="{$message}" style="padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font:700 11px Arial,sans-serif">{$message}</div>
 <script>(function(){function lock(){var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]')||document.querySelector('.page-body');if(!root)return;root.querySelectorAll('input,select,textarea').forEach(function(e){e.disabled=true;e.setAttribute('aria-disabled','true')});root.querySelectorAll('button,[role="button"]').forEach(function(e){if(/\b(add|remove|delete|edit|apply|save|bulk|update|create|toggle)\b/i.test(e.textContent||e.value||'')){e.hidden=true;e.disabled=true}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',lock);else lock();new MutationObserver(lock).observe(document.documentElement,{childList:true,subtree:true})})();</script>
@@ -328,8 +329,11 @@ HTML;
         return $response;
     }
 
-    private function lockPresentationMessage(string $status): string
+    private function lockPresentationMessage(array $lock): string
     {
+        $reason = trim((string) ($lock['reason'] ?? ''));
+        if ($reason !== '') return $reason;
+        $status = (string) ($lock['status'] ?? 'CONFIRMED');
         $label = match (strtoupper(trim($status))) {
             'TRAVEL_READY', 'TRAVEL READY' => 'Travel Ready',
             'APPROVED' => 'Approved',
@@ -340,9 +344,16 @@ HTML;
 
     private function presentationLock(int $bookingId): array
     {
+        $workflow = $this->bookingLocks->resolve($bookingId);
         $billing = $this->billingLocks->resolve($bookingId);
         if ($billing['locked'] ?? false) {
-            return ['locked' => true, 'status' => (string) ($billing['status'] ?? 'BILLING'), 'reason' => (string) ($billing['reason'] ?? '')];
+            return [
+                'locked' => true,
+                'status' => (string) ($workflow['status'] ?? 'Draft'),
+                'reason' => (string) ($billing['reason'] ?? ''),
+                'billing_locked' => true,
+                'billing_code' => (string) ($billing['code'] ?? ''),
+            ];
         }
         return $this->bookingLocks->resolve($bookingId);
     }

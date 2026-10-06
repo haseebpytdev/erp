@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Operations;
 use App\Http\Controllers\Controller;
 use App\Services\Operations\BookingTravelReadinessResolver;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
+use App\Services\Operations\BookingBillingEditLockResolver;
 use App\Services\Operations\GeneralBookingCommercialSummaryResolver;
 use App\Services\Operations\GroupUmrahEditAuthority;
 use App\Services\Operations\NativeErpLayoutResolver;
@@ -21,7 +22,7 @@ use Throwable;
 
 final class GeneralBookingReviewController extends Controller
 {
-    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, NativeSalesInvoiceCreateCapability $invoiceCreateCapability, NativeBookingCustomerResolver $customerAuthority, BookingTravelReadinessResolver $readiness, BookingCommercialCompletenessResolver $commercialResolver, GeneralBookingCommercialSummaryResolver $commercialSummary, GroupUmrahEditAuthority $authority): View
+    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, NativeSalesInvoiceCreateCapability $invoiceCreateCapability, NativeBookingCustomerResolver $customerAuthority, BookingTravelReadinessResolver $readiness, BookingCommercialCompletenessResolver $commercialResolver, GeneralBookingCommercialSummaryResolver $commercialSummary, GroupUmrahEditAuthority $authority, BookingBillingEditLockResolver $billingLocks): View
     {
         $row = $this->booking($booking);
         $snapshots = $this->snapshots($request, $booking);
@@ -45,6 +46,7 @@ final class GeneralBookingReviewController extends Controller
         }
         $passengers = (array) ($snapshots['air']['passengers'] ?? $snapshots['visa']['passengers'] ?? []);
 
+        $billingLock = $billingLocks->resolve($booking);
         return view('operations.bookings.general-booking-review-v113160', [
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'booking' => $row,
             'company' => $company->get($row), 'identity' => $this->identity($row, $booking, $customerAuthority->resolve($booking)),
@@ -64,6 +66,7 @@ final class GeneralBookingReviewController extends Controller
             'internalNotes' => $this->first($row, ['internal_notes','booking_internal_notes','staff_notes','private_notes']),
             'internalField' => $this->column(['internal_notes','booking_internal_notes','staff_notes','private_notes']),
             'canReopen' => $authority->canReopen($request->user()),
+            'billingLock' => $billingLock,
             'canApprove' => $authority->canReopen($request->user()),
         ]);
     }

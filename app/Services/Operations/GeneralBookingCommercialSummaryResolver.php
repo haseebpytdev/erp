@@ -22,7 +22,11 @@ final class GeneralBookingCommercialSummaryResolver
         $customer = [];
         $supplier = [];
         foreach ($snapshots as $key => $snapshot) {
-            $summary = (array) ($canonical[$key] ?? $snapshot['summary'] ?? []);
+            $canonicalSummary = (array) ($canonical[$key] ?? []);
+            $snapshotSummary = (array) ($snapshot['summary'] ?? []);
+            // Canonical data is authoritative only when it proves source
+            // presence; empty compatibility reads must not erase history.
+            $summary = ($canonicalSummary['present'] ?? false) ? $canonicalSummary : $snapshotSummary;
             $customer[$key] = round(max(0, (float) ($summary['customer_total'] ?? 0)), 2);
             $supplier[$key] = round(max(0, (float) ($this->supplierValue($key, $summary))), 2);
         }
