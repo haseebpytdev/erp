@@ -915,8 +915,8 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       var serverSelected=Array.isArray(data.selected_products)?data.selected_products.map(function(key){return String(key||'').toLowerCase();}):[];
       var selectionChanged=serverSelected.join(',')!==etgpServerSelectedProducts113180.join(',');
       etgpServerSelectedProducts113180=serverSelected;
-      etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),'');
       var c45=etgpIsMainBookingDashboardC45();
+      etgpAirSetKpi113124('Booking Value',currency+' '+amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}),c45?'':'Resolved from saved booking commercial authority');
       var blockers=Array.isArray(data.readiness_blockers)?data.readiness_blockers:[];
       etgpAirSetKpi113124('Travel Status',etgpHumanizeTravelStatus11390(data.travel_status||'PendingTravel'),c45?'':(blockers.length?blockers[0]:'All selected travel services are ready'));
       etgpApplyBookingLock113162(data);
@@ -937,16 +937,17 @@ var etgpApplyBookingLock113162=function(data){
   var c45=etgpIsMainBookingDashboardC45();
   var invoice=data&&data.sales_invoice||null;
   if(!c45){
-    var legacyInvoice=root.querySelector('[data-etgp-invoice-status]');
-    if(!legacyInvoice){
-      legacyInvoice=create('div','etgp-invoice-status');
-      legacyInvoice.setAttribute('data-etgp-invoice-status','1');
-      legacyInvoice.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #dfe7f1;border-radius:8px;background:#f7f9fc;color:#46566d;font-size:11px';
-      root.appendChild(legacyInvoice);
+    var info=root.querySelector('[data-etgp-invoice-status]');
+    if(!info){
+      info=document.createElement('div');
+      info.setAttribute('data-etgp-invoice-status','1');
+      info.style.cssText='margin:8px 0;padding:8px 12px;border:1px solid #dce7f3;border-radius:8px;background:#fff;font-size:11px';
+      root.insertBefore(info,root.firstChild);
     }
-    legacyInvoice.innerHTML=invoice&&data&&data.sales_invoice_url
-      ? 'Open Sales Invoice: <a href="'+String(data.sales_invoice_url)+'" target="_blank" rel="noopener noreferrer">'+String(invoice.number||('#'+invoice.id))+'</a>'
-      : 'Sales Invoice status unavailable.';
+    var invoiceLabel=invoice
+      ? String(invoice.number||('#'+invoice.id))+' · '+String(invoice.status||'Draft').replace(/_/g,' ')
+      : 'Not Created';
+    info.innerHTML='<strong>Sales Invoice:</strong> '+invoiceLabel+(invoice?' <a target="_blank" rel="noopener noreferrer" href="'+String(data.sales_invoice_url||'')+'">Open Sales Invoice</a>':'');
   }
   var locked=!!(data&&data.booking_locked===true);
   /* Preserve the explicit server response contract: data.booking_locked!==true

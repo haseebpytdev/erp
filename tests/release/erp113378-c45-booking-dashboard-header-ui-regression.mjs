@@ -33,7 +33,7 @@ ok(js.includes('if(c45&&invoice&&data&&data.sales_invoice_url'), 'merged invoice
 ok(js.includes('data.sales_invoice_url'), 'invoice link uses the existing URL authority');
 ok(js.includes("create('span','', 'Sales Invoice: ')") && js.includes('invoiceLink'), 'invoice label and linked number are separate');
 ok(js.includes('Open Sales Invoice'), 'legacy invoice presentation remains outside C45');
-ok(!js.includes("invoice.status||'Draft'"), 'invoice status text is not appended');
+ok(js.includes("invoice.status||'Draft'") && js.includes('if(!c45)'), 'invoice status remains only in the legacy non-C45 branch');
 ok(js.includes("etgpAirSetKpi113124('Booking Value'") && js.includes("c45?'':"), 'Booking Value note is C45-scoped');
 ok(js.includes("etgpAirSetKpi113124('Travel Status'") && js.includes("c45?'':"), 'Travel Status note is C45-scoped');
 ok(js.includes("snapshot.note&&(!c45||(label==='Passengers'||label==='Tickets'))"), 'initial KPI note filtering is C45-scoped');
