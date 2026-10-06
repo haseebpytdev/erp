@@ -70,6 +70,18 @@ final class BookingWorkspaceShellPresenter
             preg_match('#^operations/bookings/\d+/products(?:/(?:air|hotel|transport|visa|other-services))?$#', $path) === 1
         );
 
+        // The native booking view owns the identity card reference, while its
+        // outer layout title is rendered by the installed ERP page header.
+        // Normalize only that outer heading on the exact dashboard route;
+        // product/review/invoice routes must retain their own titles.
+        $isMainBookingDashboardPath = (
+            preg_match('#^operations/bookings/\d+/?$#', $path) === 1
+        );
+
+        if ($isMainBookingDashboardPath) {
+            $html = $this->normalizeMainBookingOuterHeading($html);
+        }
+
         /*
          * ERP-11.3.46: native booking wizard steps are actual booking
          * workspaces too. They must not fall back to the permanent ERP sidebar
@@ -321,6 +333,13 @@ HTML;
             default => 'Confirmed',
         };
         return $label.' booking — editing is locked. Reopen the booking to make changes.';
+    }
+
+    private function normalizeMainBookingOuterHeading(string $html): string
+    {
+        $pattern = '/(<(?:header|div|section)\b[^>]*class=(?:"[^"]*\bpage-header\b[^"]*"|\'[^\']*\bpage-header\b[^\']*\')[^>]*>.*?<h[12]\b[^>]*>).*?(<\/h[12]>)/is';
+
+        return preg_replace($pattern, '$1Booking Dashboard$2', $html, 1) ?? $html;
     }
 
     private function productSummaryMarkup(int $bookingId, ?array $lock): string
