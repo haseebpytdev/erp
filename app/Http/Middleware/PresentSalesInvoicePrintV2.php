@@ -231,17 +231,56 @@ class PresentSalesInvoicePrintV2
             $openEnd = strpos($cell, '>');
             if ($openEnd === false) return $cell;
             $inner = substr($cell, $openEnd + 1, -5);
-            $plain = preg_replace('/<br\b[^>]*>/i', "\n", $inner) ?? $inner;
+            // Native invoice markup may use either <br> or block-level divs for
+            // passenger values. Treat those boundaries as data separators before
+            // stripping tags so a name and its fare type are not concatenated.
+            $plain = preg_replace('/<br\b[^>]*>|<\/(?:div|p|li|tr)>/i', "\n", $inner) ?? $inner;
             $plain = html_entity_decode(strip_tags($plain), ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $names = preg_split('/\s*(?:,|\R)\s*/u', trim($plain)) ?: [];
             $names = array_values(array_filter(array_map(static fn (string $name): string => trim($name), $names), static fn (string $name): bool => $name !== ''));
             if (count($names) <= 1) return $cell;
+
+            // A single Air passenger is rendered as name + secondary fare type,
+            // never as a numbered second passenger. Preserve the native label
+            // text while keeping the type visually subordinate.
+            if (count($names) === 2 && $this->isPassengerTypeLabel($names[1])) {
+                $primary = htmlspecialchars($names[0], ENT_QUOTES, 'UTF-8');
+                $type = htmlspecialchars($names[1], ENT_QUOTES, 'UTF-8');
+                return substr($cell, 0, $openEnd + 1)
+                    .'<div class="pax-name">'.$primary.'</div>'
+                    .'<div class="pax-type">'.$type.'</div></td>';
+            }
+
             $items = '';
+            $pairedTypes = count($names) > 2;
+            if ($pairedTypes) {
+                for ($index = 1; $index < count($names); $index += 2) {
+                    if (! $this->isPassengerTypeLabel($names[$index])) {
+                        $pairedTypes = false;
+                        break;
+                    }
+                }
+            }
+            if ($pairedTypes) {
+                $passengerNo = 1;
+                for ($index = 0; $index < count($names); $index += 2) {
+                    $items .= '<div class="pax-name">'.$passengerNo.'. '.htmlspecialchars($names[$index], ENT_QUOTES, 'UTF-8').'</div>';
+                    $items .= '<div class="pax-type">'.htmlspecialchars($names[$index + 1], ENT_QUOTES, 'UTF-8').'</div>';
+                    $passengerNo++;
+                }
+                return substr($cell, 0, $openEnd + 1).$items.'</td>';
+            }
             foreach ($names as $index => $name) {
                 $items .= '<div class="pax-name">'.($index + 1).'. '.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'</div>';
             }
             return substr($cell, 0, $openEnd + 1).$items.'</td>';
         }, $html) ?? $html;
+    }
+
+    private function isPassengerTypeLabel(string $value): bool
+    {
+        $normalized = strtoupper(trim(preg_replace('/[^A-Z0-9]+/i', '', $value) ?? ''));
+        return in_array($normalized, ['ADULT', 'CHILD', 'INFANT', 'ADT', 'CHD', 'INF', 'YOUTH', 'SENIOR'], true);
     }
 
     private function invoiceDataRowCount(string $table): int
