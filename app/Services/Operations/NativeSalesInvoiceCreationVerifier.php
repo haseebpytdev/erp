@@ -12,9 +12,12 @@ final class NativeSalesInvoiceCreationVerifier
 
     public function verify(int $bookingId,int $customerId,float $expectedTotal,int $minimumLines):array
     {
-        $summary=$this->invoices->summary($bookingId);
-        if((int)$summary['count']!==1||(int)$summary['all_count']!==1) $this->fail('Native creation must leave exactly one Sales Invoice for the booking.');
-        $invoice=(array)($summary['latest']??[]);
+        $activeBaseInvoices = $this->invoices->activeBaseInvoices($bookingId);
+        $activeBaseCount = count($activeBaseInvoices);
+        if ($activeBaseCount === 0 || $activeBaseCount > 1) {
+            $this->fail('Native creation must leave exactly one active BASE Sales Invoice for the booking.');
+        }
+        $invoice = (array) $activeBaseInvoices[0];
         $table=(string)($invoice['table']??'');$invoiceId=(int)($invoice['id']??0);
         if($table===''||$invoiceId<=0||!Schema::hasTable($table)) $this->fail('The native Sales Invoice could not be resolved after creation.');
         $columns=Schema::getColumnListing($table);$idColumn=$this->first($columns,['id','sales_invoice_id','invoice_id']);

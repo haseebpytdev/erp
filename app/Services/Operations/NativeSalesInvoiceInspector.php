@@ -27,6 +27,14 @@ class NativeSalesInvoiceInspector
     /** Return only an active BASE invoice that can block new base creation. */
     public function activeBase(int $bookingId): ?array
     {
+        return $this->activeBaseInvoices($bookingId)[0] ?? null;
+    }
+
+    /** Return every active BASE invoice for post-create cardinality checks. */
+    public function activeBaseInvoices(int $bookingId): array
+    {
+        $base = [];
+
         foreach (($this->summary($bookingId)['active_invoices'] ?? []) as $invoice) {
             $id = (int) ($invoice['id'] ?? 0);
             if ($id <= 0) continue;
@@ -34,14 +42,14 @@ class NativeSalesInvoiceInspector
             try {
                 $model = SalesInvoice::query()->find($id);
                 if ($model && app(BookingSalesInvoiceScopeResolver::class)->scope($model) === 'base') {
-                    return $invoice;
+                    $base[] = $invoice;
                 }
             } catch (\Throwable) {
                 continue;
             }
         }
 
-        return null;
+        return $base;
     }
 
     public function all(int $bookingId): array

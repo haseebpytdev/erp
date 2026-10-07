@@ -22,7 +22,7 @@ has(bridge,'$this->creator->create($request, $bookingId)','bridge delegates crea
 lacks(bridge,"DB::table('sales_invoices')->insert",'bridge has no fallback invoice persistence');
 lacks(bridge,"DB::table('journal",'bridge has no fallback journal persistence');
 has(creator,'$method->invokeArgs($native, $arguments)','adapter invokes the reflected host-native signature');
-has(verifier,"$summary['count']!==1||(int)$summary['all_count']!==1",'post-create validation requires exactly one invoice');
+has(verifier,'$activeBaseCount === 0 || $activeBaseCount > 1','post-create validation requires exactly one active BASE invoice');
 has(verifier,'!==$bookingId','post-create validation verifies booking linkage');
 has(verifier,'!==$customerId','post-create validation verifies customer linkage');
 has(verifier,"!=='draft'",'post-create validation requires Draft status');
