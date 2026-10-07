@@ -19,6 +19,8 @@ const c55 = read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php');
 const c54 = read('app/Http/Middleware/EnforceGeneralBookingEditLock.php');
 const c53 = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
 const bookingFocus = read('public/erp11335/booking-focus.js');
+const release = read('config/et_erp_release.php');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 
 ok(routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), 'all four supplementary products remain allow-listed');
 ok(routes.includes('bookings.additional-services.products.edit'), 'Additional Services product entry route exists');
@@ -60,5 +62,8 @@ ok(bookingFocus.includes("/^\\/operations\\/bookings\\/\\d+\\/?$/i"), 'supplemen
 ok(bookingFocus.includes("/additional-services'"), 'supplementary entry targets booking-scoped landing route');
 ok(bookingFocus.includes("clientPreviewLink.nextSibling"), 'supplementary entry is placed after Client Preview');
 ok(bookingFocus.includes("actionParent.insertBefore(additionalServicesLink"), 'supplementary entry is inserted in the booking action area, not the Menu');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C42'"), 'current public asset version is C42');
+ok(!release.includes("'asset_version' => 'ERP-11.3.378-C41'"), 'stale C41 asset version is not authoritative');
+ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes("rawurlencode($assetVersion)"), 'booking-focus asset remains release-version protected by the presenter pipeline');
 
 console.log('PASS ' + pass + ' ERP-11.3.378 C58 Unified Supplementary Product Workspace assertions');
