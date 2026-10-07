@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\Operations\BookingEditLockResolver;
+use App\Services\Operations\BookingBillingEditLockResolver;
 use App\Services\Operations\NativeSalesInvoiceInspector;
 use Closure;
 use Illuminate\Http\JsonResponse;
