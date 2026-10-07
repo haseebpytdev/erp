@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
 final class GeneralBookingAdditionalServiceManager
 {
     private const SCHEMA_MESSAGE = 'Additional Services requires the General Booking Billing database upgrade.';
-    private const ISSUED = ['approved', 'posted', 'posted_to_gl', 'final', 'finalized'];
+    private const BASE_ANCHOR_ALLOWED = ['draft', 'new', 'approved', 'posted', 'posted_to_gl', 'final', 'finalized'];
     private const PENDING = ['submitted', 'pending', 'pending_approval', 'awaiting_approval'];
     private const INACTIVE = ['cancelled', 'canceled', 'void', 'voided', 'rejected'];
     private const OPEN = ['draft', 'pending_approval', 'approved'];
@@ -100,7 +100,7 @@ final class GeneralBookingAdditionalServiceManager
         $candidate = $state['legacy_base_candidate'] ?? null;
         if (! $candidate) return $this->blocked($bookingId, 'base_invoice_missing', 'No active Base Sales Invoice was found.');
         $baseStatus = $this->status((string) ($candidate['status'] ?? ''));
-        if (! in_array($baseStatus, self::ISSUED, true)) return $this->blocked($bookingId, $this->baseStatusCode($baseStatus), 'The Base Sales Invoice must resolve to an issued commercial state first.');
+        if (! in_array($baseStatus, self::BASE_ANCHOR_ALLOWED, true)) return $this->blocked($bookingId, $this->baseStatusCode($baseStatus), 'The Base Sales Invoice is not eligible for supplementary drafting.');
 
         $invoiceId = (int) ($candidate['id'] ?? 0);
         $invoice = DB::table('sales_invoices')->where('id', $invoiceId)->first();
@@ -129,9 +129,9 @@ final class GeneralBookingAdditionalServiceManager
     private function baseStatus(int $bookingId, array $invoice): array
     {
         $status = $this->status((string) ($invoice['status'] ?? ''));
-        return in_array($status, self::ISSUED, true)
+        return in_array($status, self::BASE_ANCHOR_ALLOWED, true)
             ? ['ok' => true, 'status' => 'base_ready']
-            : $this->blocked($bookingId, $this->baseStatusCode($status), 'The Base Sales Invoice must resolve to an issued commercial state first.');
+            : $this->blocked($bookingId, $this->baseStatusCode($status), 'The Base Sales Invoice is not eligible for supplementary drafting.');
     }
 
     private function baseStatusCode(string $status): string
@@ -153,7 +153,7 @@ final class GeneralBookingAdditionalServiceManager
         } elseif (! ($state['all_linked_invoices'] ?? []) && is_array($state['legacy_base_candidate'] ?? null)) {
             $baseStatus = $this->status((string) ($state['legacy_base_candidate']['status'] ?? ''));
         }
-        $baseReady = $baseStatus !== null && in_array($baseStatus, self::ISSUED, true);
+        $baseReady = $baseStatus !== null && in_array($baseStatus, self::BASE_ANCHOR_ALLOWED, true);
         $baseAdoptable = ! ($state['base_invoice'] ?? null) && ! ($state['all_linked_invoices'] ?? []) && $baseReady;
         $baseAllowed = $baseReady || $baseAdoptable;
         $open = $this->openBatchState($state['supplementary_batches'] ?? []);
@@ -166,6 +166,9 @@ final class GeneralBookingAdditionalServiceManager
             : $this->baseStatusCode($baseStatus);
         $state['entry_code'] = ! $eligibility['allowed'] ? $eligibility['code'] : ($baseAllowed ? ($open['code'] ?? 'eligible') : $baseCode);
         $state['entry_message'] = $this->entryMessage((string) $state['entry_code']);
+        if (! $state['base_batch'] && ! ($state['all_linked_invoices'] ?? []) && is_array($state['legacy_base_candidate'] ?? null)) {
+            $state['base_invoice_display'] = $state['legacy_base_candidate'];
+        }
         $state['can_start'] = $state['can_start_new_batch'];
         return $state;
     }
@@ -201,9 +204,9 @@ final class GeneralBookingAdditionalServiceManager
     {
         $lock = $this->locks->fromRow($booking);
         $status = strtolower(trim((string) ($lock['status'] ?? 'draft')));
-        if (in_array($status, ['approved', 'travel ready'], true)) return ['allowed' => true, 'code' => 'eligible', 'message' => ''];
+        if (in_array($status, ['confirmed', 'approved', 'travel ready'], true)) return ['allowed' => true, 'code' => 'eligible', 'message' => ''];
         $code = $status === 'pending approval' ? 'pending_approval' : ($status === 'reopened' ? 'reopened' : 'draft');
-        return ['allowed' => false, 'code' => $code, 'message' => 'Additional Services is available only for Approved or Travel Ready bookings.'];
+        return ['allowed' => false, 'code' => $code, 'message' => 'Additional Services is available only for Confirmed, Approved, or Travel Ready bookings.'];
     }
 
     private function tablesReady(): bool

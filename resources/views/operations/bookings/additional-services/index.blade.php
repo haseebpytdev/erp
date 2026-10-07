@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="et-page et378-page">
-    @include('operations.bookings.partials.booking-workspace-header-v11370', ['headerAction' => ($state['can_start'] ?? false) ? '<form method="POST" action="'.route('bookings.additional-services.start', $bookingId).'">'.csrf_field().'<button class="et-btn primary" type="submit">+ Add Service</button></form>' : null])
+    @include('operations.bookings.partials.booking-workspace-header-v11370', ['booking' => $booking ?? ($state['booking'] ?? []), 'lock' => $lock ?? [], 'customer' => $customer ?? [], 'bookingId' => $bookingId, 'headerAction' => ($state['can_start'] ?? false) ? '<form method="POST" action="'.route('bookings.additional-services.start', $bookingId).'">'.csrf_field().'<button class="et-btn primary" type="submit">+ Add Service</button></form>' : null])
     <div class="et-page-header">
         <div><div class="et-eyebrow">GENERAL BOOKING</div><h1>Additional Services</h1><p>Start a supplementary service batch without reopening the approved booking.</p></div>
     </div>
@@ -15,7 +15,7 @@
     @if($errors->has('additional_services'))<div class="et-alert et-alert-danger">{{ $errors->first('additional_services') }}</div>@endif
     <div class="et-grid et-grid-3">
         <section class="et-card"><div class="et-card-label">Booking</div><strong>{{ $state['booking']['booking_reference'] ?? $state['booking']['booking_no'] ?? $state['booking']['reference_no'] ?? ('#'.$bookingId) }}</strong><div>{{ $customer['name'] ?? $customer['customer_name'] ?? 'Customer' }}</div><small>Status: {{ $state['booking_status'] ?? 'Unknown' }}</small></section>
-        <section class="et-card"><div class="et-card-label">Base Invoice</div>@php($base=$state['base_batch'] ?? null)<strong>{{ $base['invoice']['invoice_no'] ?? 'Not linked' }}</strong><div>{{ number_format((float)($base['customer_total'] ?? 0), 2) }}</div><small>{{ $base['status'] ?? 'Awaiting adoption' }}</small></section>
+        <section class="et-card"><div class="et-card-label">Base Invoice</div>@php($base=$state['base_batch'] ?? null) @php($candidate=$state['base_invoice_display'] ?? null)<strong>{{ $base['invoice']['invoice_no'] ?? ($candidate['invoice_no'] ?? 'Not linked') }}</strong><div>{{ number_format((float)($base['customer_total'] ?? ($candidate['grand_total'] ?? 0)), 2) }}</div><small>{{ $base['invoice']['status'] ?? ($candidate ? ucfirst((string)($candidate['status'] ?? 'Draft')).' · Awaiting adoption' : 'Awaiting adoption') }}</small></section>
         <section class="et-card"><div class="et-card-label">Billing Summary</div><div>Total Active Invoiced <strong>{{ number_format((float)($state['total_invoiced'] ?? 0), 2) }}</strong></div><div>Total Posted <strong>{{ number_format((float)($state['total_posted'] ?? 0), 2) }}</strong></div><div>Approved Uninvoiced <strong>{{ number_format((float)($state['approved_uninvoiced_total'] ?? 0), 2) }}</strong></div></section>
     </div>
     <section class="et-card">
