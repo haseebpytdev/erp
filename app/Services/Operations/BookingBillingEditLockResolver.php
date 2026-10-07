@@ -28,7 +28,7 @@ final class BookingBillingEditLockResolver
                     'locked' => true,
                     'code' => 'draft_invoice',
                     'status' => 'draft_invoice',
-                    'reason' => 'This booking has an active Draft Sales Invoice. Cancel the Draft Sales Invoice before reopening the original booking.',
+                    'reason' => 'This booking has an active Draft Sales Invoice. Cancel the Draft Sales Invoice before changing or progressing the original booking workflow.',
                     'invoice_no' => trim((string) ($row->invoice_no ?? '')),
                 ];
             }
