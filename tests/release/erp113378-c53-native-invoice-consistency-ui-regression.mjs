@@ -52,7 +52,7 @@ ok(coordinator.includes('createFromBookingServices'), 'supplementary coordinator
 ok(summary.includes('materializedNativeSourceRepresentsItem'), 'product summary authority remains protected');
 ok(passengerLock.includes('EnforceGeneralBookingEditLock'), 'passenger lock middleware remains present');
 ok(!read('public/erp11390/general-progressive-step1.js').includes('C53'), 'no public asset implementation was added');
-ok(config.includes("'asset_version' => 'ERP-11.3.378-C42'"), 'asset version remains current');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C43'"), 'asset version remains current');
 ok(config.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains unchanged');
 
 console.log(`C53 native invoice consistency UI regression: PASS (${assertions} assertions)`);

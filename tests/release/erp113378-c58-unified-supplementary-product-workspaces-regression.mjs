@@ -58,12 +58,12 @@ ok(items.includes("'supp-draft:'"), 'supplementary drafts remain identifiable be
 ok(items.includes("source_table' => null") && items.includes("booking_service_id' => null"), 'draft items do not mutate native booking services');
 ok(bookingFocus.includes("data-et-additional-services-entry"), 'booking dashboard supplementary entry marker exists');
 ok(bookingFocus.includes("additionalServicesLink.textContent='Additional Services'"), 'booking dashboard supplementary entry label is exact');
-ok(bookingFocus.includes("/^\\/operations\\/bookings\\/\\d+\\/?$/i"), 'supplementary entry is restricted to exact booking dashboard route');
+ok(bookingFocus.includes("/^\\/operations\\/bookings\\/[^\\/]+\\/?$/i"), 'supplementary entry is restricted to exact booking dashboard route');
 ok(bookingFocus.includes("/additional-services'"), 'supplementary entry targets booking-scoped landing route');
 ok(bookingFocus.includes("clientPreviewLink.nextSibling"), 'supplementary entry is placed after Client Preview');
 ok(bookingFocus.includes("actionParent.insertBefore(additionalServicesLink"), 'supplementary entry is inserted in the booking action area, not the Menu');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C42'"), 'current public asset version is C42');
-ok(!release.includes("'asset_version' => 'ERP-11.3.378-C41'"), 'stale C41 asset version is not authoritative');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C43'"), 'current public asset version is C43');
+ok(!release.includes("'asset_version' => 'ERP-11.3.378-C42'"), 'stale C42 asset version is not authoritative');
 ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes("rawurlencode($assetVersion)"), 'booking-focus asset remains release-version protected by the presenter pipeline');
 
 console.log('PASS ' + pass + ' ERP-11.3.378 C58 Unified Supplementary Product Workspace assertions');
