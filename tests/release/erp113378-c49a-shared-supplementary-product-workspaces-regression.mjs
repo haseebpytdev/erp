@@ -26,8 +26,8 @@ for (const product of ['air', 'hotel', 'transport', 'visa']) {
   ok(contract.includes("'" + product + "' =>"), `${product} contract fields exist`);
   ok(fields.includes(`$product==='${product}'`) || fields.includes(`$product==='${product}'`), `${product} fields render through shared partial`);
 }
-ok(supplementaryView.includes("partials.product-workspace-v113305") && sharedWorkspace.includes('shared-product-entry-fields') && sharedWorkspace.includes('data-billing-context="{{ $context->billingContext ?? \'ORIGINAL\' }}"'), 'supplementary view uses shared workspace/context');
-ok(supplementaryController.includes('new ProductWorkspaceContext($booking, $product, \'SUPPLEMENTARY\', $batch)'), 'supplementary controller supplies context');
+ok(supplementaryView.includes("partials.product-workspace-v113305") && sharedWorkspace.includes('data-etgp-dedicated-product-host') && sharedWorkspace.includes('data-billing-context="{{ $context->billingContext ?? \'ORIGINAL\' }}"'), 'supplementary view uses shared native workspace/context');
+ok(supplementaryController.includes('new ProductWorkspaceContext($booking, $product, \'SUPPLEMENTARY\', $batch'), 'supplementary controller supplies context');
 ok(originalController.includes('new ProductWorkspaceContext((int) $row->id, $product, \'ORIGINAL\')'), 'original controller supplies context');
 ok(originalView.includes('data-billing-context="{{ $context->billingContext ?? \'ORIGINAL\' }}"'), 'original view exposes original context');
 ok(manager.includes('SharedProductWorkspaceContract $products') && manager.includes('$this->products->normalize') && manager.includes('$this->products->validate') && manager.includes('$this->products->commercial'), 'supplementary manager delegates product contract');

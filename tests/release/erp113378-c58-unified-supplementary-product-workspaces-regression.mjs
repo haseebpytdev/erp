@@ -26,17 +26,17 @@ ok(routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), 'a
 ok(routes.includes('bookings.additional-services.products.edit'), 'Additional Services product entry route exists');
 ok(routes.includes('bookings.additional-services.index'), 'Additional Services landing route exists');
 ok(supplementaryController.includes('ProductWorkspaceContext'), 'supplementary controller creates explicit workspace context');
-ok(supplementaryController.includes("new ProductWorkspaceContext($booking, $product, 'SUPPLEMENTARY', $batch)"), 'supplementary batch identity is passed into context');
+ok(supplementaryController.includes("new ProductWorkspaceContext($booking, $product, 'SUPPLEMENTARY', $batch"), 'supplementary batch identity is passed into context');
 ok(supplementaryController.includes('GeneralBookingAdditionalServiceItemManager'), 'supplementary persistence uses batch item manager');
 ok(supplementaryController.includes('BookingEditLockResolver'), 'base booking lock authority remains available');
 ok(supplementaryView.includes("partials.product-workspace-v113305"), 'supplementary view reuses the normal product workspace');
 ok(!supplementaryView.includes('data-et-shared-product-workspace'), 'separate generic supplementary card markup is removed');
 ok(workspace.includes('$context->isSupplementary()'), 'one workspace branches by context instead of duplicating pages');
-ok(workspace.includes('shared-product-entry-fields'), 'supplementary workspace uses shared product fields');
+ok(workspace.includes('data-etgp-dedicated-product-host') && !workspace.includes('shared-product-entry-fields'), 'supplementary workspace uses native product fields');
 ok(workspace.includes('data-billing-context'), 'workspace exposes billing context');
 ok(workspace.includes('data-billing-batch-id'), 'workspace exposes supplementary batch identity');
-ok(workspace.includes('bookings.additional-services.items.store'), 'supplementary form persists through batch item route');
-ok(workspace.includes('bookings.additional-services.items.update'), 'supplementary edit persists through batch item route');
+ok(supplementaryController.includes('apiStore') && routes.includes('additional-services/{batch}/'), 'supplementary native payload persists through batch item authority');
+ok(items.includes('update(') && items.includes('general_booking_billing_batch_items'), 'supplementary edits remain batch item scoped');
 ok(fields.includes("in_array($product,['air','visa'],true)"), 'Air and Visa passenger fields remain shared');
 ok(fields.includes("$product==='hotel'"), 'Hotel fields remain shared');
 ok(fields.includes("$product==='transport'"), 'Transport fields remain shared');
@@ -62,7 +62,7 @@ ok(bookingFocus.includes("/^\\/operations\\/bookings\\/[^\\/]+\\/?$/i"), 'supple
 ok(bookingFocus.includes("/additional-services'"), 'supplementary entry targets booking-scoped landing route');
 ok(bookingFocus.includes("client.nextSibling"), 'supplementary entry is placed after Client Preview');
 ok(bookingFocus.includes('finalToolbar.insertBefore(link,before)'), 'supplementary entry is reconciled into the canonical toolbar');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C44'"), 'current public asset version is C44');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C45'"), 'current public asset version is C45');
 ok(!release.includes("'asset_version' => 'ERP-11.3.378-C42'"), 'stale C42 asset version is not authoritative');
 ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes("rawurlencode($assetVersion)"), 'booking-focus asset remains release-version protected by the presenter pipeline');
 

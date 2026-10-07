@@ -531,11 +531,25 @@ var etBookingWorkspaceContext113305=(function(){
     getProductSelection:function(reference){var ref=reference||api.getBookingReference();api.hydrateProductSelection(ref);return typeof loadSelected==='function'?loadSelected(ref):[];},
     saveProductSelection:function(reference,selection){var ref=reference||api.getBookingReference();api.hydrateProductSelection(ref);if(typeof saveSelected==='function')saveSelected(ref,selection||[]);},
     getCurrency:function(){var root=state.root;return String(root&&root.dataset&&root.dataset.currency||'PKR');},
-    getApiBase:function(){return '/system/erp-bookings';}
+    getApiBase:function(){return '/system/erp-bookings';},
+    getBillingContext:function(){var root=state.root;return String(root&&root.dataset&&root.dataset.billingContext||'ORIGINAL').toUpperCase();},
+    getBillingBatchId:function(){var root=state.root;return Number(root&&root.dataset&&root.dataset.billingBatchId||0)||0;}
   };
   if(typeof window!=='undefined')window.etBookingWorkspaceContext=api;
   return api;
 })();
+
+/* C62: the native renderers stay the single UI authority.  Only their
+ * request target changes when the same renderer is mounted in a supplementary
+ * draft; ORIGINAL URLs remain exactly the historical native endpoints. */
+var etgpProductEndpoint113305=function(bookingId,product,suffix){
+  var context=etBookingWorkspaceContext113305.getBillingContext();
+  var batch=etBookingWorkspaceContext113305.getBillingBatchId();
+  suffix=suffix||'';
+  if(context==='SUPPLEMENTARY'&&batch>0)return '/system/erp-bookings/'+bookingId+'/additional-services/'+batch+'/'+product+'-product'+suffix;
+  return '/system/erp-bookings/'+bookingId+'/'+product+'-product'+suffix;
+};
+if(typeof window!=='undefined')window.etgpProductEndpoint113305=etgpProductEndpoint113305;
 
 var directUnder=function(node,parent){
   var current=node;
@@ -1097,7 +1111,7 @@ var etgpAirErrorMessage113106=function(data,fallback){
 };
 
 var etgpAirRequest113106=function(bookingId,method,payload){
-  return fetch('/system/erp-bookings/'+bookingId+'/air-product',{
+  return fetch(etgpProductEndpoint113305(bookingId,'air'),{
     method:method,
     credentials:'same-origin',
     headers:{
@@ -1142,7 +1156,7 @@ var etgpAirApplyDraft113119=function(data,bookingId){
 };
 
 var etgpAirLoad113106=function(bookingId){
-  return fetch('/system/erp-bookings/'+bookingId+'/air-product',{
+  return fetch(etgpProductEndpoint113305(bookingId,'air'),{
     method:'GET',
     credentials:'same-origin',
     headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}
@@ -1787,14 +1801,14 @@ var etgpHotelError113127=function(data,fallback){
   return data&&data.message?String(data.message):fallback;
 };
 var etgpHotelRequest113127=function(bookingId,method,payload){
-  return fetch('/system/erp-bookings/'+bookingId+'/hotel-product',{
+  return fetch(etgpProductEndpoint113305(bookingId,'hotel'),{
     method:method,credentials:'same-origin',
     headers:{'Accept':'application/json','Content-Type':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':etgpCsrf11397()},
     body:payload===undefined?undefined:JSON.stringify(payload)
   }).then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error(etgpHotelError113127(data,'Hotel Data request failed.'));return data;});});
 };
 var etgpHotelLoad113127=function(bookingId){
-  return fetch('/system/erp-bookings/'+bookingId+'/hotel-product',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
+  return fetch(etgpProductEndpoint113305(bookingId,'hotel'),{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
     .then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error(etgpHotelError113127(data,'Hotel Data could not be loaded.'));return data;});});
 };
 var etgpHotelDraftKey113127=function(bookingId){return 'etgp-hotel-product-draft-v113132:'+String(bookingId||'');};
@@ -1966,14 +1980,14 @@ var etgpTransportError113139=function(data,fallback){
   return data&&data.message?String(data.message):fallback;
 };
 var etgpTransportRequest113139=function(bookingId,method,payload){
-  return fetch('/system/erp-bookings/'+bookingId+'/transport-product',{
+  return fetch(etgpProductEndpoint113305(bookingId,'transport'),{
     method:method,credentials:'same-origin',
     headers:{'Accept':'application/json','Content-Type':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN':etgpCsrf11397()},
     body:payload===undefined?undefined:JSON.stringify(payload)
   }).then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error(etgpTransportError113139(data,'Transport Data request failed.'));return data;});});
 };
 var etgpTransportLoad113139=function(bookingId){
-  return fetch('/system/erp-bookings/'+bookingId+'/transport-product',{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
+  return fetch(etgpProductEndpoint113305(bookingId,'transport'),{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
     .then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error(etgpTransportError113139(data,'Transport Data could not be loaded.'));return data;});});
 };
 var etgpTransportDraftKey113139=function(bookingId){return 'etgp-transport-product-draft-v113141:'+String(bookingId||'');};
@@ -2577,7 +2591,7 @@ var etgpEnsureTransportSelectionForm113179=function(bookingId,retire){
   var id='etgp-transport-selection-form-'+String(bookingId)+'-'+(retire?'retire':'activate');
   var form=document.getElementById(id);
   if(form)return id;
-  form=create('form','etgp-transport-selection-form-113179');form.id=id;form.method='POST';form.action='/system/erp-bookings/'+String(bookingId)+'/transport-product/selection';form.hidden=true;
+  form=create('form','etgp-transport-selection-form-113179');form.id=id;form.method='POST';form.action=etgpProductEndpoint113305(bookingId,'transport','/selection');form.hidden=true;
   var csrf=create('input','');csrf.type='hidden';csrf.name='_token';csrf.value=String(etgpCsrf11397());form.appendChild(csrf);
   if(retire){var method=create('input','');method.type='hidden';method.name='_method';method.value='DELETE';form.appendChild(method);}
   document.body.appendChild(form);

@@ -11,7 +11,7 @@ ok(s.includes('passenger_snapshot')&&s.includes('ActiveBookingPassengerResolver'
 ok(s.includes('airlineOptions')&&s.includes('airlines()'), 'airline options use read-only catalog authority');
 ok(s.includes("$snapshot['airline_name'] = $airline['name']")&&s.includes("$snapshot['airline_code'] = $airline['code']"), 'airline identity resolved server-side');
 ok(s.includes("throw new \\InvalidArgumentException('Airline is not valid.')"), 'invalid airline id rejected');
-ok(w.includes('shared-product-entry-fields')&&fields.includes('name="airline_id"')&&fields.includes('airlines'), 'airline editor exposes ERP-backed options');
+ok(w.includes('data-etgp-dedicated-product-host')&&fields.includes('name="airline_id"')&&fields.includes('airlines'), 'airline editor uses native ERP-backed workspace');
 ok(s.includes('canonicalDate')&&s.includes('canonicalDateTime')&&s.includes("/^\\d{4}-\\d{2}-\\d{2}$/"), 'strict canonical date validation');
 ok(s.includes("Invalid date/time format."), 'strict canonical datetime validation');
 ok(c.includes('abort_if(($state[\'batch_missing\'] ?? false) || ($state[\'item_missing\'] ?? false), 404)'), 'real missing batch/item remain 404');

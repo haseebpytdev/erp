@@ -35,7 +35,7 @@ ok(!service.includes('GeneralBookingAirProductController') && !service.includes(
 ok(!service.includes('sales_invoices') && !service.includes('journal_entries') && !service.includes('supplier_costings'), 'no native accounting writes');
 ok(!service.includes('booking_services') && !service.includes('booking_transport_segments') && !service.includes('booking_visa_services'), 'no native product writes');
 ok(show.includes('Items') && show.includes('Edit') && show.includes('Remove'), 'draft summary and item actions');
-ok(product.includes("partials.product-workspace-v113305") && workspace.includes('shared-product-entry-fields') && fields.includes("$product==='hotel'") && fields.includes("$product==='transport'"), 'product editors');
+ok(product.includes("partials.product-workspace-v113305") && workspace.includes('data-etgp-dedicated-product-host') && fields.includes("$product==='hotel'") && fields.includes("$product==='transport'"), 'product editors use native dedicated host');
 ok(controller.includes('GeneralBookingAdditionalServiceItemManager'), 'dedicated item controller');
 ok(!routes.includes('Submit for Approval') && !service.includes('invoice_created'), 'no workflow/materialization');
 ok(!service.includes('travel_report') && !service.includes('voucher'), 'no draft reporting integration');

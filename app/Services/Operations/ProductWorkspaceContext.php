@@ -10,6 +10,7 @@ final readonly class ProductWorkspaceContext
         public string $product,
         public string $billingContext = 'ORIGINAL',
         public ?int $billingBatchId = null,
+        public ?int $billingBatchNo = null,
     ) {
         if (! in_array($this->billingContext, ['ORIGINAL', 'SUPPLEMENTARY'], true)) {
             throw new \InvalidArgumentException('Invalid product workspace billing context.');
@@ -26,7 +27,7 @@ final readonly class ProductWorkspaceContext
 
     public function banner(): ?string
     {
-        return $this->isSupplementary() ? 'Additional Services #'.$this->billingBatchId : null;
+        return $this->isSupplementary() ? 'Additional Services #'.$this->billingBatchNo : null;
     }
 
     public function attributes(): array
@@ -36,6 +37,7 @@ final readonly class ProductWorkspaceContext
             'product' => $this->product,
             'billing_context' => $this->billingContext,
             'billing_batch_id' => $this->billingBatchId,
+            'billing_batch_no' => $this->billingBatchNo,
         ];
     }
 }

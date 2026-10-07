@@ -10,7 +10,8 @@
   function request(id, method, body) {
     var options = { method: method || 'GET', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } };
     if (method && method !== 'GET') { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body || {}); }
-    return fetch('/system/erp-bookings/' + id + '/visa-product', options).then(function (response) {
+    var endpoint = window.etgpProductEndpoint113305 ? window.etgpProductEndpoint113305(id, 'visa') : '/system/erp-bookings/' + id + '/visa-product';
+    return fetch(endpoint, options).then(function (response) {
       return response.json().catch(function () { return {}; }).then(function (data) { if (!response.ok || data.ok === false) throw Error(data.message || 'Visa request failed.'); return data; });
     });
   }

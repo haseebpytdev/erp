@@ -16,10 +16,10 @@ final class SharedProductWorkspaceContract
     public function fields(string $product): array
     {
         return match ($this->assertProduct($product)) {
-            'air' => ['booking_passenger_id','airline_id','airline_code','airline_name','flight_number','pnr','from','to','departure_at','arrival_at','booking_class','baggage','vendor_id','sale_price','cost_price'],
-            'hotel' => ['vendor_id','city','hotel_id','hotel_name','room_type','board','check_in','check_out','sale_rate','cost_rate','confirmation_no'],
-            'transport' => ['vendor_id','route_source_key','from_location','to_location','vehicle_type','service_date','company_name','driver_name','contact_number','plate_number','brn_number','sale_price','cost_price'],
-            'visa' => ['booking_passenger_id','country','visa_type','provider_type','visa_rate_card_id','saudi_company_id','saudi_company_name','pakistani_iata_id','pakistani_iata_name','vendor_id','application_reference','sale_price','cost_price'],
+            'air' => ['booking_passenger_id','airline_id','airline_code','airline_name','flight_number','pnr','from','to','departure_at','arrival_at','booking_class','baggage','vendor_id','sale_price','cost_price','segments','itinerary','ticket_groups','tickets','fare_commercials','customer_total','supplier_total','currency_code','exchange_rate','notes'],
+            'hotel' => ['vendor_id','city_id','city','hotel_id','hotel_name','room_type','board','check_in','check_out','sale_rate','cost_rate','confirmation_no','stays','rooms','currency_code','exchange_rate','notes'],
+            'transport' => ['vendor_id','route_master_id','route_source_table','route_source_key','route_name','from_location','to_location','vehicle_master_id','vehicle_source_table','vehicle_type','quantity','service_date','company_name','driver_name','driver_cell','contact_number','plate_number','brn_number','sale_amount','sale_price','cost_rate','cost_price','cost_currency','exchange_rate','cost_amount','margin','notes'],
+            'visa' => ['booking_passenger_id','country','visa_type','provider_type','visa_rate_card_id','saudi_company_id','saudi_company_name','pakistani_iata_id','pakistani_iata_name','vendor_id','application_reference','visa_number','status','issue_date','expiry_date','sale_pkr','sale_price','cost_rate','cost_price','currency_code','notes','visas'],
         };
     }
 

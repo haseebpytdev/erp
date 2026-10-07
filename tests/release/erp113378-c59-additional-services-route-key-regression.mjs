@@ -29,11 +29,11 @@ ok(dashboardGate.test('/operations/bookings/123') && dashboardGate.test('/operat
 ok(!dashboardGate.test('/operations/bookings/123/products/transport') && !dashboardGate.test('/operations/bookings/BK-2026-0024/additional-services') && !dashboardGate.test('/operations/bookings/BK-2026-0024/review'), 'nested product, Additional Services, and review routes do not match the dashboard gate');
 ok(routes.includes("bookings.additional-services.index"), 'Additional Services landing route remains named');
 ok(routes.includes("additional-services/start"), 'New Batch route remains present');
-ok(workspace.includes('shared-product-entry-fields'), 'Air/Hotel/Transport/Visa supplementary fields remain shared');
+ok(workspace.includes('data-etgp-dedicated-product-host'), 'Air/Hotel/Transport/Visa supplementary fields use native shared workspace');
 ok(context.includes("['ORIGINAL', 'SUPPLEMENTARY']") && context.includes('billingBatchId'), 'ProductWorkspaceContext separation remains');
 ok(items.includes('general_booking_billing_batch_items'), 'supplementary persistence remains batch scoped');
 ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes('rawurlencode($assetVersion)'), 'booking-focus remains release-version cache busted');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C44'"), 'active asset version is C44');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C45'"), 'active asset version is C45');
 ok(c57.includes('verticalizePassengerCells'), 'C57 remains protected');
 ok(c56.includes('activeBaseInvoices'), 'C56 remains protected');
 ok(c55.includes('activeBase'), 'C55 remains protected');
