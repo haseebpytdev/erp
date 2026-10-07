@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\GeneralBookingAdditionalServiceItemManager;
+use App\Services\Operations\BookingEditLockResolver;
+use App\Services\Operations\NativeBookingCustomerResolver;
 use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Operations\ProductWorkspaceContext;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,13 +16,19 @@ use Throwable;
 
 final class GeneralBookingAdditionalServiceProductController extends Controller
 {
-    public function edit(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items, NativeErpLayoutResolver $layout): View
+    public function edit(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items, NativeErpLayoutResolver $layout, BookingEditLockResolver $locks, NativeBookingCustomerResolver $customer): View
     {
         $state = $items->editor($booking, $batch, $product, $request->integer('item') ?: null);
         abort_if(($state['batch_missing'] ?? false) || ($state['item_missing'] ?? false), 404);
+        $bookingRow = DB::table('bookings')->where('id', $booking)->first();
+        abort_unless($bookingRow, 404);
         return view('operations.bookings.additional-services.product', [
             'layoutMeta' => $layout->resolve(),
             'bookingId' => $booking,
+            'booking' => (array) $bookingRow,
+            'customer' => $customer->resolve($booking),
+            'lock' => $locks->fromRow((array) $bookingRow),
+            'selectedProducts' => [],
             'batchId' => $batch,
             'state' => $state,
             'product' => $product,

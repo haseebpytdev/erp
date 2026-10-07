@@ -13,6 +13,7 @@ const context = read('app/Services/Operations/ProductWorkspaceContext.php');
 const supplementaryView = read('resources/views/operations/bookings/additional-services/product.blade.php');
 const fields = read('resources/views/operations/bookings/partials/shared-product-entry-fields.blade.php');
 const originalView = read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
+const sharedWorkspace = originalView;
 const hub = read('resources/views/operations/bookings/products-hub-v113304.blade.php');
 
 let assertions = 0;
@@ -25,7 +26,7 @@ for (const product of ['air', 'hotel', 'transport', 'visa']) {
   ok(contract.includes("'" + product + "' =>"), `${product} contract fields exist`);
   ok(fields.includes(`$product==='${product}'`) || fields.includes(`$product==='${product}'`), `${product} fields render through shared partial`);
 }
-ok(supplementaryView.includes("shared-product-entry-fields") && supplementaryView.includes('data-billing-context="{{ $context->billingContext }}"'), 'supplementary view uses shared workspace/context');
+ok(supplementaryView.includes("partials.product-workspace-v113305") && sharedWorkspace.includes('shared-product-entry-fields') && sharedWorkspace.includes('data-billing-context="{{ $context->billingContext ?? \'ORIGINAL\' }}"'), 'supplementary view uses shared workspace/context');
 ok(supplementaryController.includes('new ProductWorkspaceContext($booking, $product, \'SUPPLEMENTARY\', $batch)'), 'supplementary controller supplies context');
 ok(originalController.includes('new ProductWorkspaceContext((int) $row->id, $product, \'ORIGINAL\')'), 'original controller supplies context');
 ok(originalView.includes('data-billing-context="{{ $context->billingContext ?? \'ORIGINAL\' }}"'), 'original view exposes original context');

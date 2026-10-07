@@ -1,0 +1,57 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+let pass = 0;
+const ok = (value, label) => { assert.ok(value, label); pass++; };
+const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+
+const routes = read('routes/erp103179.php');
+const supplementaryController = read('app/Http/Controllers/Operations/GeneralBookingAdditionalServiceProductController.php');
+const supplementaryView = read('resources/views/operations/bookings/additional-services/product.blade.php');
+const workspace = read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
+const fields = read('resources/views/operations/bookings/partials/shared-product-entry-fields.blade.php');
+const context = read('app/Services/Operations/ProductWorkspaceContext.php');
+const items = read('app/Services/Operations/GeneralBookingAdditionalServiceItemManager.php');
+const hub = read('app/Http/Controllers/Operations/BookingProductsHubController.php');
+const c57 = read('app/Http/Middleware/PresentSalesInvoicePrintV2.php');
+const c56 = read('app/Services/Operations/NativeSalesInvoiceCreationVerifier.php');
+const c55 = read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php');
+const c54 = read('app/Http/Middleware/EnforceGeneralBookingEditLock.php');
+const c53 = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
+
+ok(routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), 'all four supplementary products remain allow-listed');
+ok(routes.includes('bookings.additional-services.products.edit'), 'Additional Services product entry route exists');
+ok(routes.includes('bookings.additional-services.index'), 'Additional Services landing route exists');
+ok(supplementaryController.includes('ProductWorkspaceContext'), 'supplementary controller creates explicit workspace context');
+ok(supplementaryController.includes("new ProductWorkspaceContext($booking, $product, 'SUPPLEMENTARY', $batch)"), 'supplementary batch identity is passed into context');
+ok(supplementaryController.includes('GeneralBookingAdditionalServiceItemManager'), 'supplementary persistence uses batch item manager');
+ok(supplementaryController.includes('BookingEditLockResolver'), 'base booking lock authority remains available');
+ok(supplementaryView.includes("partials.product-workspace-v113305"), 'supplementary view reuses the normal product workspace');
+ok(!supplementaryView.includes('data-et-shared-product-workspace'), 'separate generic supplementary card markup is removed');
+ok(workspace.includes('$context->isSupplementary()'), 'one workspace branches by context instead of duplicating pages');
+ok(workspace.includes('shared-product-entry-fields'), 'supplementary workspace uses shared product fields');
+ok(workspace.includes('data-billing-context'), 'workspace exposes billing context');
+ok(workspace.includes('data-billing-batch-id'), 'workspace exposes supplementary batch identity');
+ok(workspace.includes('bookings.additional-services.items.store'), 'supplementary form persists through batch item route');
+ok(workspace.includes('bookings.additional-services.items.update'), 'supplementary edit persists through batch item route');
+ok(fields.includes("in_array($product,['air','visa'],true)"), 'Air and Visa passenger fields remain shared');
+ok(fields.includes("$product==='hotel'"), 'Hotel fields remain shared');
+ok(fields.includes("$product==='transport'"), 'Transport fields remain shared');
+ok(fields.includes("$product==='visa'"), 'Visa fields remain shared');
+ok(context.includes("['ORIGINAL', 'SUPPLEMENTARY']"), 'base and supplementary contexts are explicit');
+ok(context.includes('billingBatchId'), 'context carries nullable batch identity');
+ok(context.includes('Supplementary product workspaces require a billing batch'), 'supplementary context fails closed without a batch');
+ok(items.includes('general_booking_billing_batch_items'), 'supplementary data remains batch-item scoped');
+ok(items.includes('lockWritableBatch'), 'supplementary editability remains server-guarded');
+ok(hub.includes('BookingProductSummaryResolver'), 'base Products hub keeps lightweight summary authority');
+ok(c57.includes('verticalizePassengerCells'), 'C57 print presentation remains');
+ok(c56.includes('activeBaseInvoices'), 'C56 active BASE verifier remains');
+ok(c55.includes('activeBase'), 'C55 historical BASE recreation remains');
+ok(c54.includes('BookingBillingEditLockResolver'), 'C54 middleware namespace correction remains');
+ok(c53.includes('BaseSalesInvoiceConsistencyResolver'), 'C53 consistency protection remains');
+ok(!workspace.includes('GeneralBookingAdditionalServiceProductController'), 'shared workspace has no controller fan-out');
+ok(!workspace.includes('SalesInvoiceService::createFromBooking'), 'workspace does not alter invoice creation');
+ok(items.includes("'supp-draft:'"), 'supplementary drafts remain identifiable before materialization');
+ok(items.includes("source_table' => null") && items.includes("booking_service_id' => null"), 'draft items do not mutate native booking services');
+
+console.log('PASS ' + pass + ' ERP-11.3.378 C58 Unified Supplementary Product Workspace assertions');

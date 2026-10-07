@@ -1,6 +1,6 @@
 import fs from 'node:fs'; import path from 'node:path'; import assert from 'node:assert/strict';
 const root=path.resolve(import.meta.dirname,'../..'); const read=f=>fs.readFileSync(path.join(root,f),'utf8');
-const s=read('app/Services/Operations/GeneralBookingAdditionalServiceItemManager.php'); const c=read('app/Http/Controllers/Operations/GeneralBookingAdditionalServiceProductController.php'); const v=read('resources/views/operations/bookings/additional-services/product.blade.php'); const show=read('resources/views/operations/bookings/additional-services/show.blade.php');
+const s=read('app/Services/Operations/GeneralBookingAdditionalServiceItemManager.php'); const c=read('app/Http/Controllers/Operations/GeneralBookingAdditionalServiceProductController.php'); const v=read('resources/views/operations/bookings/additional-services/product.blade.php'); const show=read('resources/views/operations/bookings/additional-services/show.blade.php'); const w=read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php'); const fields=read('resources/views/operations/bookings/partials/shared-product-entry-fields.blade.php');
 let n=0; const ok=(x,m)=>{n++;assert.ok(x,m)};
 ok(s.includes('Crypt::encryptString')&&s.includes('draft_item_token')&&s.includes('Crypt::decryptString'),'server-issued route-scoped token');
 ok(s.includes('where(\'source_key\', $sourceKey)')&&s.includes("'reused' => true"),'retry reuses existing item');
@@ -9,9 +9,9 @@ ok(s.includes('booking_passenger_id')&&s.includes('passenger_snapshot'),'passeng
 ok(s.includes('Required field missing')&&s.includes('is_numeric'),'required and numeric validation');
 ok(s.includes('DateTimeImmutable')&&s.includes('diff'),'hotel date-diff authority');
 ok(s.includes('fare_as')&&s.includes('passenger_type')&&s.includes('passport'),'robust passenger snapshot');
-for(const label of ['Vendor','vendor_id']) ok(v.includes(label),'vendor control');
-ok(v.includes('airline_name')&&v.includes('sale_price')&&v.includes('cost_price'),'air commercial fields');
-ok(v.includes('confirmation_no'),'hotel confirmation field');
+for(const label of ['Vendor','vendor_id']) ok(fields.includes(label),'vendor control');
+ok(fields.includes('airline_name')&&fields.includes('sale_price')&&fields.includes('cost_price'),'air commercial fields');
+ok(fields.includes('confirmation_no'),'hotel confirmation field');
 ok(c.includes("item_missing")&&c.includes('abort_if'),'missing edit item blocked');
 ok(s.includes("where('product_type', $product)")&&s.includes('form_values'),'edit product scope and hydration');
 ok(show.includes('draftWritable')&&show.includes('@if($draftWritable)'),'non-draft actions hidden');
