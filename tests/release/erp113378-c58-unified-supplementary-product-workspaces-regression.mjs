@@ -18,6 +18,7 @@ const c56 = read('app/Services/Operations/NativeSalesInvoiceCreationVerifier.php
 const c55 = read('app/Services/Operations/NativeSalesInvoiceRuntimeBridge.php');
 const c54 = read('app/Http/Middleware/EnforceGeneralBookingEditLock.php');
 const c53 = read('app/Http/Middleware/PresentSalesInvoiceFocusedWorkspace.php');
+const bookingFocus = read('public/erp11335/booking-focus.js');
 
 ok(routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), 'all four supplementary products remain allow-listed');
 ok(routes.includes('bookings.additional-services.products.edit'), 'Additional Services product entry route exists');
@@ -53,5 +54,11 @@ ok(!workspace.includes('GeneralBookingAdditionalServiceProductController'), 'sha
 ok(!workspace.includes('SalesInvoiceService::createFromBooking'), 'workspace does not alter invoice creation');
 ok(items.includes("'supp-draft:'"), 'supplementary drafts remain identifiable before materialization');
 ok(items.includes("source_table' => null") && items.includes("booking_service_id' => null"), 'draft items do not mutate native booking services');
+ok(bookingFocus.includes("data-et-additional-services-entry"), 'booking dashboard supplementary entry marker exists');
+ok(bookingFocus.includes("additionalServicesLink.textContent='Additional Services'"), 'booking dashboard supplementary entry label is exact');
+ok(bookingFocus.includes("/^\\/operations\\/bookings\\/\\d+\\/?$/i"), 'supplementary entry is restricted to exact booking dashboard route');
+ok(bookingFocus.includes("/additional-services'"), 'supplementary entry targets booking-scoped landing route');
+ok(bookingFocus.includes("clientPreviewLink.nextSibling"), 'supplementary entry is placed after Client Preview');
+ok(bookingFocus.includes("actionParent.insertBefore(additionalServicesLink"), 'supplementary entry is inserted in the booking action area, not the Menu');
 
 console.log('PASS ' + pass + ' ERP-11.3.378 C58 Unified Supplementary Product Workspace assertions');

@@ -220,6 +220,27 @@ if(reviewHeaderActions){
    */
   toolbar.classList.add('et-booking-focus-fallback-inline');
   pageRegisterLink.parentNode.insertBefore(toolbar,pageRegisterLink);
+
+  /* C58 corrective: expose the supplementary workflow from the exact
+   * booking dashboard while keeping the native product cards BASE-scoped.
+   * The landing route remains the existing server-authorized entry point. */
+  if(/^\/operations\/bookings\/\d+\/?$/i.test(window.location.pathname)){
+    var bookingMatch=window.location.pathname.match(/^\/operations\/bookings\/(\d+)/i);
+    var additionalServicesLink=document.createElement('a');
+    additionalServicesLink.className='et-booking-focus-btn';
+    additionalServicesLink.textContent='Additional Services';
+    additionalServicesLink.setAttribute('data-et-additional-services-entry','1');
+    additionalServicesLink.href='/operations/bookings/'+bookingMatch[1]+'/additional-services';
+    var actionParent=pageRegisterLink.parentNode;
+    var clientPreviewLink=Array.prototype.slice.call(actionParent.querySelectorAll('a[href],button,[role="button"]')).find(function(action){
+      return norm(action.textContent)==='client preview';
+    });
+    if(clientPreviewLink&&clientPreviewLink.parentNode===actionParent){
+      actionParent.insertBefore(additionalServicesLink,clientPreviewLink.nextSibling);
+    }else{
+      actionParent.insertBefore(additionalServicesLink,pageRegisterLink.nextSibling);
+    }
+  }
 }else{
   var back=document.createElement('a');
   back.className='et-booking-focus-btn';
