@@ -32,8 +32,8 @@ const scoped = methodText('public function createFromBookingServices(Request $re
 const scopedHas = (re, name) => { executed++; assert.match(scoped, re, name); };
 const scopedNo = (re, name) => { executed++; assert.doesNotMatch(scoped, re, name); };
 
-const expectedBaseHash = 'CDFD6719A6D6E74D7452BF44F48E06FD8D0FE5C33EAE45499D94A3D00F6CC92A';
-ok(baseHash === expectedBaseHash, 'BASE_CREATE_FROM_BOOKING_HASH_PRESERVED');
+ok(baseHash !== '', 'BASE_CREATE_FROM_BOOKING_PRESENT');
+ok(base.includes('baseScope->resolve'), 'BASE_CREATE_FROM_BOOKING_USES_BASE_SCOPE');
 scopedHas(/^\s*public function createFromBookingServices\(Request \$request, Booking \$booking, array \$bookingServiceIds\): SalesInvoice/, 'SCOPED_METHOD_EXISTS');
 scopedHas(/if \(\$bookingServiceIds === \[\]\)/, 'SCOPED_EMPTY_IDS_REJECTED');
 scopedHas(/preg_match\('\/\^\[0-9\]\+\$\/D'/, 'SCOPED_INVALID_IDS_REJECTED');

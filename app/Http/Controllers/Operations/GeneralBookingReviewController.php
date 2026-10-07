@@ -12,6 +12,8 @@ use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Operations\NativeSalesInvoiceInspector;
 use App\Services\Operations\NativeSalesInvoiceCreateCapability;
 use App\Services\Operations\NativeBookingCustomerResolver;
+use App\Services\Sales\BaseSalesInvoiceConsistencyResolver;
+use App\Models\SalesInvoice;
 use App\Services\Organization\CompanyProfileSnapshotService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +24,7 @@ use Throwable;
 
 final class GeneralBookingReviewController extends Controller
 {
-    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, NativeSalesInvoiceCreateCapability $invoiceCreateCapability, NativeBookingCustomerResolver $customerAuthority, BookingTravelReadinessResolver $readiness, BookingCommercialCompletenessResolver $commercialResolver, GeneralBookingCommercialSummaryResolver $commercialSummary, GroupUmrahEditAuthority $authority, BookingBillingEditLockResolver $billingLocks): View
+    public function show(Request $request, int $booking, NativeErpLayoutResolver $layout, CompanyProfileSnapshotService $company, NativeSalesInvoiceInspector $invoices, NativeSalesInvoiceCreateCapability $invoiceCreateCapability, NativeBookingCustomerResolver $customerAuthority, BookingTravelReadinessResolver $readiness, BookingCommercialCompletenessResolver $commercialResolver, GeneralBookingCommercialSummaryResolver $commercialSummary, GroupUmrahEditAuthority $authority, BookingBillingEditLockResolver $billingLocks, BaseSalesInvoiceConsistencyResolver $invoiceConsistencyResolver): View
     {
         $row = $this->booking($booking);
         $snapshots = $this->snapshots($request, $booking);
@@ -47,6 +49,10 @@ final class GeneralBookingReviewController extends Controller
         $passengers = (array) ($snapshots['air']['passengers'] ?? $snapshots['visa']['passengers'] ?? []);
 
         $billingLock = $billingLocks->resolve($booking);
+        $invoiceConsistency = null;
+        if (is_array($latestInvoice) && (int) ($latestInvoice['id'] ?? 0) > 0) {
+            try { $invoiceConsistency = $invoiceConsistencyResolver->resolve(SalesInvoice::query()->findOrFail((int) $latestInvoice['id'])); } catch (Throwable) { $invoiceConsistency = null; }
+        }
         return view('operations.bookings.general-booking-review-v113160', [
             'layoutMeta' => $layout->resolve(), 'bookingId' => $booking, 'booking' => $row,
             'company' => $company->get($row), 'identity' => $this->identity($row, $booking, $customerAuthority->resolve($booking)),
@@ -67,6 +73,7 @@ final class GeneralBookingReviewController extends Controller
             'internalField' => $this->column(['internal_notes','booking_internal_notes','staff_notes','private_notes']),
             'canReopen' => $authority->canReopen($request->user()),
             'billingLock' => $billingLock,
+            'invoiceConsistency' => $invoiceConsistency,
             'canApprove' => $authority->canReopen($request->user()),
         ]);
     }
@@ -88,6 +95,10 @@ final class GeneralBookingReviewController extends Controller
         $statusField = $this->firstColumn($columns, ['approval_status','workflow_status','booking_status','status']);
         abort_unless($statusField, 422, 'The native booking workflow status field is unavailable.');
         if ($action === 'submit') {
+            $billing = $billingLocks->resolve($booking);
+            if ($this->billingBlocksWorkflow($billing)) {
+                return back()->withErrors(['review' => $this->billingWorkflowMessage($billing, 'resubmitting the original booking for approval')]);
+            }
             $snapshots = $this->snapshots($request, $booking); $state=app(BookingCommercialCompletenessResolver::class)->resolve($this->selected($snapshots,$booking),...array_values($snapshots));
             if (!$state['complete']) return back()->withErrors(['review' => 'Cannot send for approval: '.implode(' ', $state['reasons'])]);
             DB::transaction(function () use ($booking, $statusField, $columns, $request): void {
@@ -99,6 +110,10 @@ final class GeneralBookingReviewController extends Controller
         if ($action === 'approve') {
             abort_unless($authority->canReopen($request->user()), 403, 'Only an authorized approver may approve this booking.');
             abort_unless($this->approvalStatus($row) === 'Pending Approval', 422, 'Only a pending booking can be approved.');
+            $billing = $billingLocks->resolve($booking);
+            if ($this->billingBlocksWorkflow($billing)) {
+                return back()->withErrors(['review' => $this->billingWorkflowMessage($billing, 'approving the corrected booking')]);
+            }
             DB::transaction(function () use ($booking, $statusField, $columns, $request): void {
                 $this->setStatus($booking, $statusField, 'approved', $columns, $request);
                 $this->syncGeneralNativeConfirmation($booking, 'CONFIRMED', $statusField, $columns, $request);
@@ -134,6 +149,19 @@ final class GeneralBookingReviewController extends Controller
     }
 
     private function booking(int $id): array { abort_unless(Schema::hasTable('bookings'),404); $row=DB::table('bookings')->where('id',$id)->first(); abort_unless($row,404); return (array)$row; }
+    private function billingBlocksWorkflow(array $billing): bool
+    {
+        return (bool) ($billing['locked'] ?? false)
+            && in_array((string) ($billing['code'] ?? ''), ['draft_invoice','final_invoice','approved_supplement','supplement_invoice'], true);
+    }
+
+    private function billingWorkflowMessage(array $billing, string $action): string
+    {
+        if (($billing['code'] ?? '') === 'draft_invoice') {
+            return 'This booking has an active Draft Sales Invoice. Cancel the Draft Sales Invoice before '.$action.'.';
+        }
+        return (string) ($billing['reason'] ?? 'This booking is protected by its billing state.');
+    }
     private function snapshots(Request $request,int $id): array { return [
         'air'=>$this->safe(fn()=>app(GeneralBookingAirProductController::class)->show($request,$id)->getData(true)),
         'hotel'=>$this->safe(fn()=>app(GeneralBookingHotelProductController::class)->show($request,$id)->getData(true)),

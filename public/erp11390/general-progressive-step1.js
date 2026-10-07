@@ -637,15 +637,18 @@ var etgpHumanizeTravelStatus11390=function(value){
 };
 
 var bookingStatus=function(hero){
-  if(!hero)return 'DRAFT';
-
   var allowed=[
     'draft',
     'pending',
     'pending approval',
     'confirmed',
+    'reopened',
     'cancelled'
   ];
+
+  var seeded=document.documentElement&&document.documentElement.getAttribute('data-et-booking-status');
+  if(seeded&&allowed.indexOf(norm(seeded))!==-1)return plain(seeded);
+  if(!hero)return 'DRAFT';
 
   var match=Array.prototype.slice.call(
     hero.querySelectorAll(
@@ -660,6 +663,16 @@ var bookingStatus=function(hero){
   return match
     ? plain(match.textContent)
     : 'DRAFT';
+};
+
+var etgpSetVisibleBookingStatus113162=function(value){
+  var allowed=['draft','pending','pending approval','confirmed','reopened','cancelled'];
+  var raw=String(value||'').trim();
+  if(!raw||allowed.indexOf(norm(raw))===-1)return;
+  if(document.documentElement)document.documentElement.setAttribute('data-et-booking-status',raw);
+  var root=document.querySelector('.etgp-step1')||document.querySelector('[data-booking-workspace]');
+  if(root)root.setAttribute('data-et-booking-status',raw);
+  Array.prototype.slice.call(document.querySelectorAll('.etgp-status')).forEach(function(node){node.textContent=plain(raw);});
 };
 
 var hideDuplicateHeading=function(
@@ -955,6 +968,7 @@ var etgpApplyBookingLock113162=function(data){
   if(data&&data.booking_status)locked=locked||etgpNormalizeBookingLockState113162(data.booking_status);
   if(data&&data.status)locked=locked||etgpNormalizeBookingLockState113162(data.status);
   etgpBookingLockState113162={locked:locked,status:String(data&& (data.booking_status||data.status||'DRAFT')||'DRAFT'),reason:String(data&&data.booking_lock_reason||'')};
+  if(data&&data.booking_status)etgpSetVisibleBookingStatus113162(data.booking_status);
   root.dataset.etgpBookingLocked=locked?'1':'0';
   if(!locked){
     if(c45)Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-invoice]')).forEach(function(el){el.remove();});

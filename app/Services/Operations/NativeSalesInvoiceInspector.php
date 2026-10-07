@@ -6,6 +6,8 @@ use Illuminate\Routing\Route as LaravelRoute;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use App\Models\SalesInvoice;
+use App\Services\Sales\BaseSalesInvoiceConsistencyResolver;
 
 /**
  * ERP-10.31.72
@@ -184,6 +186,13 @@ class NativeSalesInvoiceInspector
         $status=str_replace([' ','-'],'_',strtolower(trim((string)($invoice['status'] ?? 'draft'))));
         $label=ucwords(str_replace('_',' ',$status));
         $definition=null;
+        $consistency = null;
+        if ($invoiceId > 0) {
+            try {
+                $model = SalesInvoice::query()->find($invoiceId);
+                if ($model) $consistency = app(BaseSalesInvoiceConsistencyResolver::class)->resolve($model);
+            } catch (\Throwable) { $consistency = null; }
+        }
 
         if (in_array($status,['draft','new'],true)) {
             $definition=['routes'=>['sales.invoices.submit'],'keywords'=>['submit'],'label'=>'Submit for Approval'];
@@ -223,7 +232,10 @@ class NativeSalesInvoiceInspector
             }
         }
 
-        return ['status'=>$status,'status_label'=>$label ?: 'Unknown','action'=>$action,'invoice'=>$invoice];
+        if ($status === 'draft' && is_array($consistency) && ($consistency['scope'] ?? 'base') === 'base' && ($consistency['status'] ?? 'IN_SYNC') !== 'IN_SYNC') {
+            $action = null;
+        }
+        return ['status'=>$status,'status_label'=>$label ?: 'Unknown','action'=>$action,'invoice'=>$invoice,'consistency'=>$consistency];
     }
 
     private function resolveNativeInvoiceWorkflowRoute(int $invoiceId,array $preferredNames,array $keywords): ?array

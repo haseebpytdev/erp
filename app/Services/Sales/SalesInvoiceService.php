@@ -28,13 +28,15 @@ class SalesInvoiceService
         private readonly DocumentNumberService $numbers,
         private readonly PeriodGuard $periodGuard,
         private readonly InvoiceAccountingService $accounting,
+        private readonly BaseBookingInvoiceScopeResolver $baseScope,
+        private readonly BaseSalesInvoiceConsistencyResolver $baseConsistency,
     ) {}
 
     public function createFromBooking(Request $request, Booking $booking): SalesInvoice
     {
         if ($booking->status !== 'CONFIRMED') throw ValidationException::withMessages(['booking'=>'Only a confirmed booking can create a Sales Invoice.']);
         $booking->loadMissing(['company','customer.customerProfile','passengers','services.product','services.passengers']);
-        $activeServices = $booking->services->where('status','!=','CANCELLED');
+        $activeServices = collect($this->baseScope->resolve($booking)['expected_services'] ?? []);
         if ($activeServices->isEmpty()) throw ValidationException::withMessages(['booking'=>'The booking has no active services to invoice.']);
         if ($booking->salesInvoices()->whereIn('status',['DRAFT','PENDING_APPROVAL','APPROVED','POSTED'])->exists()) {
             throw ValidationException::withMessages(['booking'=>'This booking already has an active Sales Invoice. Open that invoice instead of creating a duplicate.']);
@@ -124,6 +126,8 @@ class SalesInvoiceService
             $lockedBooking=Booking::query()->whereKey($booking->id)->lockForUpdate()->firstOrFail();
             if ($lockedBooking->status !== 'CONFIRMED') throw ValidationException::withMessages(['booking'=>'Booking status changed before invoicing. Refresh and try again.']);
             $lockedBooking->loadMissing(['company','customer.customerProfile','passengers','services.product','services.passengers']);
+            $activeServices = collect($this->baseScope->resolve($lockedBooking)['expected_services'] ?? []);
+            if ($activeServices->isEmpty()) throw ValidationException::withMessages(['booking'=>'The booking has no active base services to invoice.']);
             $selectedServices=$lockedBooking->services->whereIn('id',$normalized)->values();
             if ($selectedServices->count()!==count($normalized)) throw ValidationException::withMessages(['booking_services'=>'Every selected booking service must belong to this booking.']);
             if ($selectedServices->contains(fn($service): bool=>strtoupper((string)$service->status)==='CANCELLED')) throw ValidationException::withMessages(['booking_services'=>'Cancelled booking services cannot be invoiced.']);
@@ -183,6 +187,7 @@ class SalesInvoiceService
     public function submit(Request $request, SalesInvoice $invoice, ?string $remarks=null): void
     {
         if($invoice->status!=='DRAFT')throw ValidationException::withMessages(['invoice'=>'Only a draft Sales Invoice can be submitted.']);
+        $this->guardBaseConsistency($invoice);
         $this->validateInvoice($invoice);
         $invoice->update(['status'=>'PENDING_APPROVAL','submitted_by'=>$request->user()->id,'submitted_at'=>now(),'updated_by'=>$request->user()->id]);
         $this->action($invoice,$request,'SUBMIT','DRAFT','PENDING_APPROVAL',$remarks);
@@ -195,6 +200,7 @@ class SalesInvoiceService
         $policy=ApprovalPolicy::query()->where('company_id',$invoice->company_id)->where('key','SALES_INVOICE_APPROVAL')->where('is_active',true)->first();
         if($policy?->prevent_self_approval && $invoice->created_by===$request->user()->id && !$request->user()->is_super_admin)throw ValidationException::withMessages(['approval'=>'Maker/checker policy prevents approval of your own Sales Invoice.']);
         if(!$request->user()->canApprove('SALES_INVOICE_APPROVAL',(float)$invoice->grand_total))throw ValidationException::withMessages(['approval'=>'Your Sales Invoice approval authority is insufficient for this amount.']);
+        $this->guardBaseConsistency($invoice);
         $this->validateInvoice($invoice);
         $invoice->update(['status'=>'APPROVED','approved_by'=>$request->user()->id,'approved_at'=>now(),'updated_by'=>$request->user()->id]);
         $this->action($invoice,$request,'APPROVE','PENDING_APPROVAL','APPROVED',$remarks);
@@ -204,6 +210,7 @@ class SalesInvoiceService
     public function post(Request $request, SalesInvoice $invoice, ?string $remarks=null): void
     {
         if($invoice->status!=='APPROVED')throw ValidationException::withMessages(['invoice'=>'Only an approved Sales Invoice can be posted.']);
+        $this->guardBaseConsistency($invoice);
         $this->validateInvoice($invoice);
         $journal=$this->accounting->post($invoice,$request->user()->id);
         $invoice->refresh();
@@ -217,6 +224,17 @@ class SalesInvoiceService
         $invoice->update(['status'=>'CANCELLED','cancelled_by'=>$request->user()->id,'cancelled_at'=>now(),'cancellation_reason'=>$reason,'updated_by'=>$request->user()->id]);
         $this->action($invoice,$request,'CANCEL','DRAFT','CANCELLED',$reason);
         AuditService::log($request,'sales_invoice.cancelled',$invoice,['status'=>'DRAFT'],['status'=>'CANCELLED','reason'=>$reason]);
+    }
+
+    private function guardBaseConsistency(SalesInvoice $invoice): void
+    {
+        if (! $invoice->booking_id || $this->baseConsistency->resolve($invoice)['scope'] !== 'base') return;
+        $state = $this->baseConsistency->resolve($invoice);
+        if (($state['status'] ?? 'MISMATCH') === 'IN_SYNC') return;
+        $detail = [];
+        if ($state['missing_service_ids'] ?? []) $detail[] = 'Missing '.count($state['missing_service_ids']).' booking service(s).';
+        if ($state['stale_service_ids'] ?? []) $detail[] = 'Stale '.count($state['stale_service_ids']).' invoice service(s).';
+        throw ValidationException::withMessages(['invoice' => 'This base Sales Invoice is out of sync with its booking. Cancel the Draft invoice and recreate it from the approved booking before continuing. '.implode(' ', $detail)]);
     }
 
     private function serviceDetailSnapshot($service): ?array
