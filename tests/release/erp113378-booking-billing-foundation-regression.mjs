@@ -28,7 +28,7 @@ ok(inspector.includes("'sales_invoices'") && bridge.includes('lockForUpdate'), '
 ok(migration.includes('sales_invoice_id') && migration.includes('invoice_no_snapshot'), 'native sales invoice identity is explicit');
 ok(migration.includes('source_snapshot_hash') && migration.includes('product_snapshot') && migration.includes('source_hash'), 'immutable batch and item snapshots are stored');
 ok(!migration.includes('DB::table') && !migration.includes('->insert(') && !migration.includes('->update('), 'migration performs no existing-data backfill');
-ok(bridge.includes("$invoiceSummary['all_count']") && inspector.includes("'all_count'=>count($invoices)"), 'current exact-one general booking guard remains present');
+ok(bridge.includes('$this->invoices->activeBase($bookingId)') && inspector.includes("'active_invoices'=>$active"), 'active BASE general booking guard remains present');
 ok(resolver.includes('foreach ($batches as $batch)') && resolver.includes('canonicalBatchType'), 'un-invoiced base and supplementary batches remain visible');
 ok(resolver.includes("isset($linkedBatchIds[(int) $batch->id])") && resolver.includes('approvedBatchNeedsInvoice'), 'approved un-invoiced total requires no linked invoice');
 ok(resolver.includes('legacyAdoptionState') && contract.includes('canceled') && contract.includes('voided'), 'legacy candidates exclude cancelled and void invoices');

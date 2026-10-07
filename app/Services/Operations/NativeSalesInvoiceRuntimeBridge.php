@@ -48,14 +48,9 @@ final class NativeSalesInvoiceRuntimeBridge
 
             // This check is inside the locked transaction so two POSTs cannot
             // both pass the earlier controller/UI check.
-            $invoiceSummary = $this->invoices->summary($bookingId);
-            $existing = $invoiceSummary['latest'] ?? null;
+            $existing = $this->invoices->activeBase($bookingId);
 
-            if ((int) ($invoiceSummary['all_count'] ?? 0) > 0) {
-                if (! $existing) {
-                    $this->fail('A historical Sales Invoice already exists for this booking. No duplicate invoice was created.');
-                }
-
+            if ($existing) {
                 return ['created' => false, 'invoice' => $existing];
             }
 

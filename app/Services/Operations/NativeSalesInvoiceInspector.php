@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use App\Models\SalesInvoice;
+use App\Services\Sales\BookingSalesInvoiceScopeResolver;
 use App\Services\Sales\BaseSalesInvoiceConsistencyResolver;
 
 /**
@@ -23,6 +24,26 @@ use App\Services\Sales\BaseSalesInvoiceConsistencyResolver;
  */
 class NativeSalesInvoiceInspector
 {
+    /** Return only an active BASE invoice that can block new base creation. */
+    public function activeBase(int $bookingId): ?array
+    {
+        foreach (($this->summary($bookingId)['active_invoices'] ?? []) as $invoice) {
+            $id = (int) ($invoice['id'] ?? 0);
+            if ($id <= 0) continue;
+
+            try {
+                $model = SalesInvoice::query()->find($id);
+                if ($model && app(BookingSalesInvoiceScopeResolver::class)->scope($model) === 'base') {
+                    return $invoice;
+                }
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
     public function all(int $bookingId): array
     {
         $linked = $this->linkedInvoices($bookingId);

@@ -173,7 +173,7 @@ final class StableBookingSalesInvoiceController extends Controller
     private function find(int $bookingId): ?array
     {
         try {
-            return $this->invoices->find(
+            return $this->invoices->activeBase(
                 $bookingId
             );
         } catch (Throwable $error) {

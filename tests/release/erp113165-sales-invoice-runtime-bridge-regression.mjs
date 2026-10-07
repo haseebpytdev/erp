@@ -16,8 +16,8 @@ has(capability,"method_exists($service, 'createFromBooking')",'host createFromBo
 has(controller,'if (! $this->createCapability->enabled())','controller blocks mutation when host capability is missing');
 has(bridge,'DB::transaction(function ()','native creation and validation share one transaction');
 has(bridge,'->lockForUpdate()','booking row serializes repeated POSTs');
-has(bridge,"$invoiceSummary = $this->invoices->summary($bookingId)",'duplicate guard runs inside the transaction');
-has(bridge,"$invoiceSummary['all_count']",'duplicate guard includes historical non-active invoices');
+has(bridge,'$this->invoices->activeBase($bookingId)','duplicate guard runs inside the transaction');
+has(bridge,'$this->invoices->activeBase($bookingId)','duplicate guard blocks only an active BASE invoice');
 has(bridge,'$this->creator->create($request, $bookingId)','bridge delegates creation only to native adapter');
 lacks(bridge,"DB::table('sales_invoices')->insert",'bridge has no fallback invoice persistence');
 lacks(bridge,"DB::table('journal",'bridge has no fallback journal persistence');
