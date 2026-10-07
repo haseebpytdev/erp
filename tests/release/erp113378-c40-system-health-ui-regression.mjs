@@ -24,6 +24,6 @@ ok(middleware.includes('migrationStatus($release)'), 'migration authority remain
 ok(middleware.includes("$status !== 'pending'"), 'current and unknown upgrade actions fail closed');
 ok(css.includes('Application Cache') === false, 'cache behavior remains markup/API-owned');
 ok(middleware.includes('data-et-dangerous-actions="true"'), 'Dangerous Actions routes remain server-rendered');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C43'"), 'current immutable asset revision is active');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C44'"), 'current immutable asset revision is active');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version is unchanged');
 console.log(`erp113378-c40-system-health-ui-regression: ${assertions} assertions passed`);

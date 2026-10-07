@@ -40,7 +40,7 @@ ok(c53.includes('Cancel Draft Invoice'), 'C53 regression preserves cancellation 
 ok(c53.includes('Save Draft'), 'C53 regression preserves draft save contract');
 ok(c53.includes('supplementary'), 'C53 regression covers supplementary isolation');
 ok(!read('config/et_erp_release.php').includes('C54'), 'no asset bump was introduced');
-ok(config.includes("'asset_version' => 'ERP-11.3.378-C43'"), 'asset version remains current');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C44'"), 'asset version remains current');
 ok(!read('public/erp11390/general-progressive-step1.js').includes('C54'), 'public assets remain unchanged');
 
 const badNamespace = [resolverPath, middlewarePath, 'app/Services/Operations/BookingWorkspaceShellPresenter.php']

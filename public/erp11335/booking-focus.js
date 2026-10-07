@@ -10,7 +10,58 @@ var etBookingFocusState={
   menu:null,
   toolbar:null,
   eventsBound:false,
-  unifiedMenu:false
+  unifiedMenu:false,
+  additionalObserver:null
+};
+var etBookingFocusReconcileAdditionalServices=function(){
+  var path=String(window.location.pathname||'');
+  var match=path.match(/^\/operations\/bookings\/([^\/]+)\/?$/i);
+  if(!match)return false;
+  var normalise=function(value){return String(value||'').replace(/\s+/g,' ').trim().toLowerCase();};
+  var links=Array.prototype.slice.call(document.querySelectorAll('[data-et-additional-services-entry="1"]'));
+  var link=links.shift()||null;
+  if(!link){
+    link=document.createElement('a');
+    link.className='et-booking-focus-btn';
+    link.textContent='Additional Services';
+    link.setAttribute('data-et-additional-services-entry','1');
+  }
+  link.href='/operations/bookings/'+match[1]+'/additional-services';
+  links.forEach(function(duplicate){if(duplicate&&duplicate!==link)duplicate.remove();});
+  var finalToolbar=document.querySelector('.etgp-toolbar-actions');
+  if(finalToolbar){
+    var actions=Array.prototype.slice.call(finalToolbar.querySelectorAll('a[href],button,[role="button"]'));
+    var client=actions.find(function(action){return normalise(action.textContent)==='client preview';});
+    var menu=actions.find(function(action){var label=normalise(action.textContent);return label==='menu'||label.indexOf('menu')!==-1;});
+    var before=menu&&menu.parentNode===finalToolbar?menu:(client&&client.parentNode===finalToolbar?client.nextSibling:null);
+    if(before)finalToolbar.insertBefore(link,before);else finalToolbar.appendChild(link);
+    return true;
+  }
+  var pageRegister=Array.prototype.slice.call(document.querySelectorAll('a[href],button,[role="button"]')).find(function(action){
+    return normalise(action.textContent)==='booking register'||normalise(action.textContent)==='back to booking register';
+  });
+  var parent=pageRegister&&pageRegister.parentNode;
+  if(parent){
+    var nativeActions=Array.prototype.slice.call(parent.querySelectorAll('a[href],button,[role="button"]'));
+    var nativeClient=nativeActions.find(function(action){return normalise(action.textContent)==='client preview';});
+    var nativeBefore=nativeClient&&nativeClient.parentNode===parent?nativeClient.nextSibling:pageRegister.nextSibling;
+    parent.insertBefore(link,nativeBefore||null);
+  }
+  return false;
+};
+window.etBookingFocusReconcileAdditionalServices=etBookingFocusReconcileAdditionalServices;
+var etBookingFocusWatchAdditionalServices=function(){
+  var path=String(window.location.pathname||'');
+  if(!/^\/operations\/bookings\/[^\/]+\/?$/i.test(path)||typeof MutationObserver==='undefined'||!document.body)return;
+  if(etBookingFocusReconcileAdditionalServices())return;
+  if(etBookingFocusState.additionalObserver)etBookingFocusState.additionalObserver.disconnect();
+  etBookingFocusState.additionalObserver=new MutationObserver(function(){
+    if(etBookingFocusReconcileAdditionalServices()){
+      etBookingFocusState.additionalObserver.disconnect();
+      etBookingFocusState.additionalObserver=null;
+    }
+  });
+  etBookingFocusState.additionalObserver.observe(document.body,{childList:true,subtree:true});
 };
 var etBookingFocusClose=function(){
   var sidebar=etBookingFocusState.sidebar;
@@ -224,23 +275,7 @@ if(reviewHeaderActions){
   /* C58 corrective: expose the supplementary workflow from the exact
    * booking dashboard while keeping the native product cards BASE-scoped.
    * The landing route remains the existing server-authorized entry point. */
-  if(/^\/operations\/bookings\/[^\/]+\/?$/i.test(window.location.pathname)){
-    var bookingMatch=window.location.pathname.match(/^\/operations\/bookings\/([^\/]+)/i);
-    var additionalServicesLink=document.createElement('a');
-    additionalServicesLink.className='et-booking-focus-btn';
-    additionalServicesLink.textContent='Additional Services';
-    additionalServicesLink.setAttribute('data-et-additional-services-entry','1');
-    additionalServicesLink.href='/operations/bookings/'+bookingMatch[1]+'/additional-services';
-    var actionParent=pageRegisterLink.parentNode;
-    var clientPreviewLink=Array.prototype.slice.call(actionParent.querySelectorAll('a[href],button,[role="button"]')).find(function(action){
-      return norm(action.textContent)==='client preview';
-    });
-    if(clientPreviewLink&&clientPreviewLink.parentNode===actionParent){
-      actionParent.insertBefore(additionalServicesLink,clientPreviewLink.nextSibling);
-    }else{
-      actionParent.insertBefore(additionalServicesLink,pageRegisterLink.nextSibling);
-    }
-  }
+  etBookingFocusWatchAdditionalServices();
 }else{
   var back=document.createElement('a');
   back.className='et-booking-focus-btn';
@@ -434,6 +469,7 @@ var normalizeNestedGroupPackageShell=function(){
     'ERP-11.3.55'
   );
 
+  etBookingFocusWatchAdditionalServices();
   return true;
 };
 
