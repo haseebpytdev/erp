@@ -17,19 +17,39 @@ use Throwable;
 
 final class GeneralBookingAdditionalServiceProductController extends Controller
 {
+    private const PRODUCTS = ['air', 'hotel', 'transport', 'visa'];
+
     /** Native read contract over a supplementary batch; base rows are replaced
      * by the current batch snapshots before the response reaches the UI. */
     public function apiShow(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items): JsonResponse
     {
+        $product = $this->productKey($product);
         $state = $items->editor($booking, $batch, $product);
         abort_if(($state['batch_missing'] ?? false) || ($state['schema_ready'] ?? true) === false, 404);
-        $native = match ($product) {
-            'air' => app(\App\Http\Controllers\Operations\GeneralBookingAirProductController::class)->show($request, $booking),
-            'hotel' => app(\App\Http\Controllers\Operations\GeneralBookingHotelProductController::class)->show($request, $booking),
-            'transport' => app(\App\Http\Controllers\Operations\GeneralBookingTransportProductController::class)->show($request, $booking),
-            'visa' => app(\App\Http\Controllers\Operations\GeneralBookingVisaProductController::class)->show($request, $booking),
-        };
-        $payload = $native->getData(true);
+        try {
+            $native = match ($product) {
+                'air' => app(\App\Http\Controllers\Operations\GeneralBookingAirProductController::class)->show($request, $booking),
+                'hotel' => app(\App\Http\Controllers\Operations\GeneralBookingHotelProductController::class)->show($request, $booking),
+                'transport' => app(\App\Http\Controllers\Operations\GeneralBookingTransportProductController::class)->show($request, $booking),
+                'visa' => app(\App\Http\Controllers\Operations\GeneralBookingVisaProductController::class)->show($request, $booking),
+            };
+            $payload = $native->getData(true);
+        } catch (Throwable $exception) {
+            // A supplementary GET is a read-only editor bootstrap.  Native
+            // Transport may have no master/service row on older installations;
+            // preserve an empty native-shaped response instead of turning a
+            // missing optional authority into HTTP 500.  Writes still use the
+            // manager's strict validation path below.
+            if ($product !== 'transport') throw $exception;
+            $payload = [
+                'ok' => true,
+                'booking_id' => $booking,
+                'booking' => ['currency' => 'PKR'],
+                'routes' => [], 'vehicles' => [], 'suppliers' => [],
+                'transports' => [], 'summary' => [],
+                'capabilities' => ['booking_'.'services' => false, 'transport_table' => null, 'snapshot_carrier' => false],
+            ];
+        }
         $snapshots = collect($state['items'] ?? [])->filter(fn (array $row): bool => strtolower((string) ($row['product_type'] ?? '')) === $product)->map(function (array $row): array {
             $snapshot = json_decode((string) ($row['product_snapshot'] ?? ''), true);
             return is_array($snapshot) ? $snapshot + ['supplementary_item_id' => (int) ($row['id'] ?? 0)] : [];
@@ -45,6 +65,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     /** Accept the native renderer payload while writing only batch items. */
     public function apiStore(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items): JsonResponse
     {
+        $product = $this->productKey($product);
         $rows = match ($product) { 'air' => $request->input('tickets', $request->input('ticket_groups.0.tickets', [])), 'hotel' => $request->input('stays', []), 'transport' => $request->input('transports', []), 'visa' => $request->input('visas', $request->input('visa_rows', [])) };
         if (! is_array($rows)) $rows = [];
         $existing = collect($items->editor($booking, $batch, $product)['items'] ?? [])->filter(fn (array $row): bool => strtolower((string) ($row['product_type'] ?? '')) === $product)->values();
@@ -69,6 +90,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
 
     public function edit(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items, NativeErpLayoutResolver $layout, BookingEditLockResolver $locks, NativeBookingCustomerResolver $customer): View
     {
+        $product = $this->productKey($product);
         $state = $items->editor($booking, $batch, $product, $request->integer('item') ?: null);
         abort_if(($state['batch_missing'] ?? false) || ($state['item_missing'] ?? false), 404);
         $bookingRow = DB::table('bookings')->where('id', $booking)->first();
@@ -89,6 +111,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
 
     public function store(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
     {
+        $product = $this->productKey($product);
         try { $result = $items->create($booking, $batch, $product, $request->except(['_token']), (int) ($request->user()?->id ?? 0)); }
         catch (\InvalidArgumentException $e) { return back()->withErrors(['product' => $e->getMessage()]); }
         catch (Throwable $e) { report($e); return back()->withErrors(['product' => 'The supplementary item could not be saved safely.']); }
@@ -98,6 +121,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
 
     public function update(Request $request, int $booking, int $batch, string $product, int $item, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
     {
+        $product = $this->productKey($product);
         try { $result = $items->update($booking, $batch, $item, $product, $request->except(['_token','_method'])); }
         catch (\InvalidArgumentException $e) { return back()->withErrors(['product' => $e->getMessage()]); }
         catch (Throwable $e) { report($e); return back()->withErrors(['product' => 'The supplementary item could not be updated safely.']); }
@@ -107,10 +131,18 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
 
     public function destroy(int $booking, int $batch, string $product, int $item, GeneralBookingAdditionalServiceItemManager $items): RedirectResponse
     {
+        $product = $this->productKey($product);
         try { $result = $items->delete($booking, $batch, $item, $product); }
         catch (\InvalidArgumentException $e) { return back()->withErrors(['product' => $e->getMessage()]); }
         catch (Throwable $e) { report($e); return back()->withErrors(['product' => 'The supplementary item could not be removed safely.']); }
         if (! ($result['ok'] ?? false)) return back()->withErrors(['product' => $result['message'] ?? 'Draft item could not be removed.']);
         return redirect()->route('bookings.additional-services.show', ['booking' => $booking, 'batch' => $batch]);
+    }
+
+    private function productKey(string $product): string
+    {
+        $product = strtolower(trim($product));
+        abort_unless(in_array($product, self::PRODUCTS, true), 404);
+        return $product;
     }
 }

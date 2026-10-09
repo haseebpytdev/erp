@@ -27,7 +27,7 @@ ok(js.includes('etgpProductEndpoint113305'), 'single context-aware request autho
 ok(js.includes("'/system/erp-bookings/'+bookingId+'/additional-services/'+batch+'/'+product+'-product'"), 'supplementary API is batch scoped');
 ok(js.includes("product+'-product'+suffix"), 'all product endpoints use the same adapter');
 ok(visa.includes('etgpProductEndpoint113305') && visa.includes("'/system/erp-bookings/' + id + '/visa-product'"), 'Visa core preserves original fallback and supplementary adapter');
-ok(routes.includes("'/system/erp-bookings/{booking}/additional-services/{batch}/'.$supplementaryProduct.'-product'"), 'batch-scoped GET/PUT routes declared');
+ok(routes.includes("'/system/erp-bookings/{booking}/additional-services/{batch}/{product}-product'") && routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), 'batch-scoped GET/PUT routes declared');
 ok(routes.includes('GeneralBookingAdditionalServiceProductController::class, \'apiShow\''), 'supplementary GET is controller-backed');
 ok(routes.includes('GeneralBookingAdditionalServiceProductController::class, \'apiStore\''), 'supplementary PUT is controller-backed');
 ok(controller.includes('->where(\'batch_id\', $batchId)') || controller.includes("$state['items']"), 'GET rows are read from current batch');

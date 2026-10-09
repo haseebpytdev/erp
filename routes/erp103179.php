@@ -337,12 +337,15 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/sales-in
     ->whereNumber('booking')->whereNumber('batch')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.invoice');
 Route::get('/operations/bookings/{booking}/additional-services/{batch}/products/{product}', [GeneralBookingAdditionalServiceProductController::class, 'edit'])
     ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.products.edit');
-foreach (['air','hotel','transport','visa'] as $supplementaryProduct) {
-    Route::get('/system/erp-bookings/{booking}/additional-services/{batch}/'.$supplementaryProduct.'-product', [GeneralBookingAdditionalServiceProductController::class, 'apiShow'])
-        ->whereNumber('booking')->whereNumber('batch')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.'.$supplementaryProduct.'.show');
-    Route::put('/system/erp-bookings/{booking}/additional-services/{batch}/'.$supplementaryProduct.'-product', [GeneralBookingAdditionalServiceProductController::class, 'apiStore'])
-        ->whereNumber('booking')->whereNumber('batch')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.additional-services.'.$supplementaryProduct.'.store');
-}
+// Bind product as a route parameter so Laravel supplies apiShow/apiStore's
+// required argument.  The controller repeats the allow-list fail-closed;
+// the public suffixes remain /{product}-product for native renderer parity.
+Route::get('/system/erp-bookings/{booking}/additional-services/{batch}/{product}-product', [GeneralBookingAdditionalServiceProductController::class, 'apiShow'])
+    ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])
+    ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.product.show');
+Route::put('/system/erp-bookings/{booking}/additional-services/{batch}/{product}-product', [GeneralBookingAdditionalServiceProductController::class, 'apiStore'])
+    ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])
+    ->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.additional-services.product.store');
 Route::post('/system/erp-bookings/{booking}/additional-services/{batch}/transport-product/selection', [GeneralBookingAdditionalServiceProductController::class, 'apiTransportSelection'])
     ->whereNumber('booking')->whereNumber('batch')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.additional-services.transport.activate');
 Route::post('/operations/bookings/{booking}/additional-services/{batch}/products/{product}/items', [GeneralBookingAdditionalServiceProductController::class, 'store'])

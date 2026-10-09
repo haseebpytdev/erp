@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+let pass = 0;
+const ok = (value, label) => { assert.ok(value, label); pass++; };
+const read = path => fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
+
+const routes = read('routes/erp103179.php');
+const controller = read('app/Http/Controllers/Operations/GeneralBookingAdditionalServiceProductController.php');
+const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
+const partial = read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php');
+const productView = read('resources/views/operations/bookings/additional-services/product.blade.php');
+const js = read('public/erp11390/general-progressive-step1.js');
+const manager = read('app/Services/Operations/GeneralBookingAdditionalServiceItemManager.php');
+const release = read('config/et_erp_release.php');
+
+const products = ['air', 'hotel', 'transport', 'visa'];
+products.forEach(product => {
+  ok(routes.includes("{product}-product") && routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), `${product} API argument binding`);
+  ok(js.includes(`additional-services/'+batch+'/'+product+'-product`), `${product} supplementary URL adapter`);
+});
+ok(controller.includes('private const PRODUCTS') && controller.includes('productKey(string $product)') && controller.includes('abort_unless(in_array($product, self::PRODUCTS, true), 404)'), 'unknown product fails closed');
+ok(presenter.includes("additional-services/\\d+/products/(?:air|hotel|transport|visa)") && presenter.includes('et-booking-products-prepaint'), 'supplementary product path receives native prepaint');
+ok(presenter.includes('data-et-dedicated-product-core') && presenter.includes('data-et-general-progressive-css'), 'supplementary product assets remain native');
+ok(presenter.includes('$isSupplementaryProductPath ? \'0\'') && partial.includes("$context->isSupplementary() ? '0'"), 'base lock is not reused as supplementary editor lock');
+ok(partial.includes('data-etgp-dedicated-product="1"') && productView.includes('etgpMountDedicatedProduct113305'), 'one native renderer and shared product shell');
+ok(manager.includes("=== 'supplementary'") && manager.includes("=== 'draft'") && manager.includes('general_booking_invoice_links'), 'supplementary draft write guards remain batch scoped');
+ok(controller.includes("if ($product !== 'transport') throw $exception") && controller.includes("'transports' => []"), 'empty transport GET fails safe without native row');
+ok(!controller.includes('->store($request, $booking)') && !controller.includes('ensureTransportService($booking'), 'GET performs no native transport write/master creation');
+ok(js.includes("return '/system/erp-bookings/'+bookingId+'/'+product+'-product'+suffix"), 'original endpoints preserved');
+ok(partial.includes('data-billing-context') && partial.includes('data-billing-batch-id') && partial.includes('batch'), 'batch identity remains explicit');
+ok(!partial.includes('shared-product-entry-fields') && !productView.includes('shared-product-entry-fields'), 'old generic supplementary form remains absent');
+ok(!routes.includes('database/migrations') && !release.includes('C63'), 'no migration/schema or application version change');
+
+console.log('PASS ' + pass + ' ERP-11.3.378 C63 supplementary product runtime and shell assertions');

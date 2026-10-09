@@ -69,7 +69,13 @@ final class BookingWorkspaceShellPresenter
 
         $isProductsWorkspacePath = (
             preg_match('#^operations/bookings/\d+/products(?:/(?:air|hotel|transport|visa|other-services))?$#', $path) === 1
+            || preg_match('#^operations/bookings/\d+/additional-services/\d+/products/(?:air|hotel|transport|visa)$#', $path) === 1
         );
+
+        $isSupplementaryProductPath = preg_match(
+            '#^operations/bookings/\d+/additional-services/\d+/products/(?:air|hotel|transport|visa)$#',
+            $path
+        ) === 1;
 
         // The native booking view owns the identity card reference, while its
         // outer layout title is rendered by the installed ERP page header.
@@ -162,7 +168,7 @@ final class BookingWorkspaceShellPresenter
             $initialBookingLock = $timing?->measure('presenter_lock_resolve', function () use ($bookingId): array {
                 return $this->presentationLock($bookingId);
             }) ?? $this->presentationLock($bookingId);
-            $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $initialBookingLock['locked'] ? '1' : '0');
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $isSupplementaryProductPath ? '0' : ($initialBookingLock['locked'] ? '1' : '0'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-billing-locked', ! empty($initialBookingLock['billing_locked']) ? '1' : '0');
@@ -217,7 +223,7 @@ final class BookingWorkspaceShellPresenter
 
         // Static focused-workspace CSS is served by the fresh Booking theme.
         $style = '';
-        if (! empty($initialBookingLock['billing_locked'])) {
+        if (! empty($initialBookingLock['billing_locked']) && ! $isSupplementaryProductPath) {
             // The passenger editor is progressively generated. Keep the
             // server-seeded billing lock effective for late-created nodes;
             // the existing JS observer still handles text-only mutation
@@ -246,7 +252,7 @@ final class BookingWorkspaceShellPresenter
         }
 
         $assetVersion = rawurlencode((string) config('et_erp_release.asset_version', config('et_erp_release.version', 'ERP-11.3')));
-        if (preg_match('#^operations/bookings/\d+/products/visa$#', $path) === 1
+        if (preg_match('#^operations/bookings/\d+/(?:products/visa|additional-services/\d+/products/visa)$#', $path) === 1
             && ! str_contains($html, 'data-et-dedicated-visa-css="')
             && stripos($html, '</head>') !== false
         ) {
@@ -262,9 +268,9 @@ final class BookingWorkspaceShellPresenter
 
         if ($isProductsWorkspacePath) {
             $script = '<script src="'.e(route('system.erp-assets.dedicated-product-core')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-core="'.$assetVersion.'"></script>'.$script;
-            if (preg_match('#^operations/bookings/\d+/products/air$#', $path) === 1) {
+            if (preg_match('#^operations/bookings/\d+/(?:products/air|additional-services/\d+/products/air)$#', $path) === 1) {
                 $script .= '<script src="'.e(route('system.erp-assets.products-air')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-air="'.$assetVersion.'"></script>';
-            } elseif (preg_match('#^operations/bookings/\d+/products/visa$#', $path) === 1) {
+            } elseif (preg_match('#^operations/bookings/\d+/(?:products/visa|additional-services/\d+/products/visa)$#', $path) === 1) {
                 $script .= '<script src="'.e(route('system.erp-assets.products-visa-core')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-visa-core="'.$assetVersion.'"></script>';
                 $script .= '<script src="'.e(route('system.erp-assets.products-visa')).'?v='.rawurlencode($assetVersion).'" data-et-dedicated-product-visa="'.$assetVersion.'"></script>';
             }
@@ -281,7 +287,7 @@ final class BookingWorkspaceShellPresenter
 
         if (
             str_contains($html, 'et-general-progressive-step1-11390')
-            && ! preg_match('#^operations/bookings/\d+/products/(?:air|visa)$#', $path)
+            && ! preg_match('#^operations/bookings/\d+/(?:products/(?:air|visa)|additional-services/\d+/products/(?:air|visa))$#', $path)
             && ! str_contains($html, 'data-et-general-progressive-css="'.$assetVersion.'"')
             && stripos($html, '</head>') !== false
         ) {
@@ -299,7 +305,7 @@ final class BookingWorkspaceShellPresenter
         ) {
             $scripts = $script;
 
-            if (str_contains($html, 'et-general-progressive-step1-11390') && ! preg_match('#^operations/bookings/\d+/products/(?:air|visa)$#', $path)) {
+            if (str_contains($html, 'et-general-progressive-step1-11390') && ! preg_match('#^operations/bookings/\d+/(?:products/(?:air|visa)|additional-services/\d+/products/(?:air|visa))$#', $path)) {
                 if (! str_contains($html, 'data-et-visa-core=')) {
                     $scripts .= "\n".$visaCoreScript;
                 }
