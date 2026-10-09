@@ -71,7 +71,7 @@ ok(/\$action = null/.test(inspector), 'out-of-sync Draft Submit action is suppre
 ok(inspector.includes("'consistency'=>$consistency"), 'invoice workflow exposes consistency diagnostics');
 
 ok(/cancelled.*canceled.*void.*voided.*rejected/.test(read('app/Services/Operations/NativeSalesInvoiceInspector.php')), 'cancelled history is excluded from active inspector');
-ok(config.includes("'asset_version' => 'ERP-11.3.378-C46'"), 'asset revision is bumped for C63 runtime guard');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C47'"), 'asset revision is bumped for C63 writable-state guard');
 ok(!config.includes("'asset_version' => 'ERP-11.3.378-C40'"), 'old active asset revision is removed');
 ok(!invoice.includes('general_booking_invoice_links'), 'SalesInvoiceService does not collapse supplementary scope into scoped creator');
 ok(read('app/Services/Sales/AirTicketInvoiceCommercialSyncService.php').includes('ticketRows'), 'Air sync is passenger-ticket driven');

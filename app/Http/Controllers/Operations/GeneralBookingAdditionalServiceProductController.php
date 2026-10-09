@@ -41,7 +41,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         elseif ($product === 'hotel') { $payload['stays'] = $snapshots; $payload['summary'] = []; }
         elseif ($product === 'transport') { $payload['transports'] = $snapshots; $payload['summary'] = []; }
         else { $payload['visa_rows'] = $snapshots; $payload['summary'] = []; }
-        $payload['supplementary_context'] = ['batch_id' => $batch, 'batch_no' => (int) ($state['batch']['batch_no'] ?? 0), 'product' => $product];
+        $payload['supplementary_context'] = ['batch_id' => $batch, 'batch_no' => (int) ($state['batch']['batch_no'] ?? 0), 'product' => $product, 'writable' => (bool) ($state['writable'] ?? false)];
         return response()->json($payload);
     }
 
@@ -68,7 +68,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     {
         $state = $items->editor($booking, $batch, 'transport');
         abort_if(($state['batch_missing'] ?? false) || ! ($state['writable'] ?? false), 409);
-        return response()->json(['ok' => true, 'supplementary_context' => ['batch_id' => $batch, 'batch_no' => (int) ($state['batch']['batch_no'] ?? 0)]]);
+        return response()->json(['ok' => true, 'supplementary_context' => ['batch_id' => $batch, 'batch_no' => (int) ($state['batch']['batch_no'] ?? 0), 'writable' => (bool) ($state['writable'] ?? false)]]);
     }
 
     public function edit(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items, NativeErpLayoutResolver $layout, BookingEditLockResolver $locks, NativeBookingCustomerResolver $customer): View

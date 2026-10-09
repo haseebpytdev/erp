@@ -76,6 +76,8 @@ final class BookingWorkspaceShellPresenter
             '#^operations/bookings/\d+/additional-services/\d+/products/(?:air|hotel|transport|visa)$#',
             $path
         ) === 1;
+        $supplementaryWritable = $isSupplementaryProductPath
+            && preg_match('/data-billing-writable=["\']1["\']/i', $html) === 1;
 
         // The native booking view owns the identity card reference, while its
         // outer layout title is rendered by the installed ERP page header.
@@ -168,10 +170,13 @@ final class BookingWorkspaceShellPresenter
             $initialBookingLock = $timing?->measure('presenter_lock_resolve', function () use ($bookingId): array {
                 return $this->presentationLock($bookingId);
             }) ?? $this->presentationLock($bookingId);
-            $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $isSupplementaryProductPath ? '0' : ($initialBookingLock['locked'] ? '1' : '0'));
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $isSupplementaryProductPath ? ($supplementaryWritable ? '0' : '1') : ($initialBookingLock['locked'] ? '1' : '0'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-billing-locked', ! empty($initialBookingLock['billing_locked']) ? '1' : '0');
+            if ($isSupplementaryProductPath) {
+                $html = $this->addHtmlAttribute($html, 'data-et-booking-billing-writable', $supplementaryWritable ? '1' : '0');
+            }
         }
         if ($isNativeBookingWorkspacePath && preg_match('#operations/bookings/(\d+)#', $path, $summaryMatch)
             && ! str_contains($html, 'data-et-c36-product-summary="1"')) {

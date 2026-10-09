@@ -896,8 +896,9 @@ var etgpSeedInitialBookingLock113162=function(){
   if(!html||!html.getAttribute)return etgpBookingLockState113162;
   var marker=html.getAttribute('data-et-booking-locked');
   var status=html.getAttribute('data-et-booking-status')||'DRAFT';
+  var supplementaryWorkspace=typeof etBookingWorkspaceContext113305!=='undefined'&&etBookingWorkspaceContext113305.getBillingContext() === 'SUPPLEMENTARY';
   var supplementary=etgpIsSupplementaryDraftWorkspace113305();
-  var locked=!supplementary&&(marker==='1'||etgpNormalizeBookingLockState113162(status));
+  var locked=supplementaryWorkspace?!supplementary:(marker==='1'||etgpNormalizeBookingLockState113162(status));
   etgpBookingLockState113162={locked:locked,status:status,reason:String(html.getAttribute('data-et-booking-lock-reason')||'')};
   if(locked)html.classList&&html.classList.add('et-booking-locked-113162');
   else html.classList&&html.classList.remove('et-booking-locked-113162');
@@ -906,10 +907,13 @@ var etgpSeedInitialBookingLock113162=function(){
 window.etgpSeedInitialBookingLock113162=etgpSeedInitialBookingLock113162;
 var etgpIsSupplementaryDraftWorkspace113305=function(){
   var context=typeof etBookingWorkspaceContext113305!=='undefined'?etBookingWorkspaceContext113305:null;
-  if(context&&context.getBillingContext() === 'SUPPLEMENTARY'&&context.getBillingBatchId()>0)return true;
+  if(context&&context.getBillingContext() === 'SUPPLEMENTARY'&&context.getBillingBatchId()>0){
+    var contextRoot=context.getRoot&&context.getRoot();
+    return String(contextRoot&&contextRoot.dataset&&contextRoot.dataset.billingWritable||'0')==='1';
+  }
   var root=document&&document.querySelector?document.querySelector('[data-etgp-dedicated-product="1"],.etgp-step1'):null;
   var dataset=root&&root.dataset||{};
-  return String(dataset.billingContext||'').toUpperCase()==='SUPPLEMENTARY'&&Number(dataset.billingBatchId||0)>0;
+  return String(dataset.billingContext||'').toUpperCase()==='SUPPLEMENTARY'&&Number(dataset.billingBatchId||0)>0&&String(dataset.billingWritable||'0')==='1';
 };
 window.etgpIsSupplementaryDraftWorkspace113305=etgpIsSupplementaryDraftWorkspace113305;
 var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
@@ -986,12 +990,13 @@ var etgpApplyBookingLock113162=function(data){
       : 'Not Created';
     info.innerHTML='<strong>Sales Invoice:</strong> '+invoiceLabel+(invoice?' <a target="_blank" rel="noopener noreferrer" href="'+String(data.sales_invoice_url||'')+'">Open Sales Invoice</a>':'');
   }
+  var supplementaryWorkspace=typeof etBookingWorkspaceContext113305!=='undefined'&&etBookingWorkspaceContext113305.getBillingContext() === 'SUPPLEMENTARY';
   var supplementary=etgpIsSupplementaryDraftWorkspace113305();
-  var locked=!supplementary&&!!(data&&data.booking_locked===true);
+  var locked=supplementaryWorkspace?!supplementary:!!(data&&data.booking_locked===true);
   /* Preserve the explicit server response contract: data.booking_locked!==true
      must never be treated as editable data when no normalized lifecycle exists. */
-  if(!supplementary&&data&&data.booking_status)locked=locked||etgpNormalizeBookingLockState113162(data.booking_status);
-  if(!supplementary&&data&&data.status)locked=locked||etgpNormalizeBookingLockState113162(data.status);
+  if(!supplementaryWorkspace&&data&&data.booking_status)locked=locked||etgpNormalizeBookingLockState113162(data.booking_status);
+  if(!supplementaryWorkspace&&data&&data.status)locked=locked||etgpNormalizeBookingLockState113162(data.status);
   etgpBookingLockState113162={locked:locked,status:String(data&& (data.booking_status||data.status||'DRAFT')||'DRAFT'),reason:String(data&&data.booking_lock_reason||'')};
   if(data&&data.booking_status)etgpSetVisibleBookingStatus113162(data.booking_status);
   root.dataset.etgpBookingLocked=locked?'1':'0';
