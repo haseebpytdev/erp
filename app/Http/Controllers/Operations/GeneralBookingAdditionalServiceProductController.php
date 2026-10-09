@@ -26,30 +26,13 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         $product = $this->productKey($product);
         $state = $items->editor($booking, $batch, $product);
         abort_if(($state['batch_missing'] ?? false) || ($state['schema_ready'] ?? true) === false, 404);
-        try {
-            $native = match ($product) {
-                'air' => app(\App\Http\Controllers\Operations\GeneralBookingAirProductController::class)->show($request, $booking),
-                'hotel' => app(\App\Http\Controllers\Operations\GeneralBookingHotelProductController::class)->show($request, $booking),
-                'transport' => app(\App\Http\Controllers\Operations\GeneralBookingTransportProductController::class)->show($request, $booking),
-                'visa' => app(\App\Http\Controllers\Operations\GeneralBookingVisaProductController::class)->show($request, $booking),
-            };
-            $payload = $native->getData(true);
-        } catch (Throwable $exception) {
-            // A supplementary GET is a read-only editor bootstrap.  Native
-            // Transport may have no master/service row on older installations;
-            // preserve an empty native-shaped response instead of turning a
-            // missing optional authority into HTTP 500.  Writes still use the
-            // manager's strict validation path below.
-            if ($product !== 'transport') throw $exception;
-            $payload = [
-                'ok' => true,
-                'booking_id' => $booking,
-                'booking' => ['currency' => 'PKR'],
-                'routes' => [], 'vehicles' => [], 'suppliers' => [],
-                'transports' => [], 'summary' => [],
-                'capabilities' => ['booking_'.'services' => false, 'transport_table' => null, 'snapshot_carrier' => false],
-            ];
-        }
+        $native = match ($product) {
+            'air' => app(\App\Http\Controllers\Operations\GeneralBookingAirProductController::class)->show($request, $booking),
+            'hotel' => app(\App\Http\Controllers\Operations\GeneralBookingHotelProductController::class)->show($request, $booking),
+            'transport' => app(\App\Http\Controllers\Operations\GeneralBookingTransportProductController::class)->show($request, $booking),
+            'visa' => app(\App\Http\Controllers\Operations\GeneralBookingVisaProductController::class)->show($request, $booking),
+        };
+        $payload = $native->getData(true);
         $snapshots = collect($state['items'] ?? [])->filter(fn (array $row): bool => strtolower((string) ($row['product_type'] ?? '')) === $product)->map(function (array $row): array {
             $snapshot = json_decode((string) ($row['product_snapshot'] ?? ''), true);
             return is_array($snapshot) ? $snapshot + ['supplementary_item_id' => (int) ($row['id'] ?? 0)] : [];

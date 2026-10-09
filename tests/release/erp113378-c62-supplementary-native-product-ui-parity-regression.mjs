@@ -53,7 +53,7 @@ ok(partial.includes('{{ $context->banner() }} · Draft'), 'draft context indicat
 ok(partial.includes('booking-workspace-header'), 'shared booking header remains one header');
 ok(!partial.includes('<form method="POST"'), 'no duplicate simplified form remains');
 ok(routes.includes("$name !== 'bookings.additional-services.products.edit'"), 'product edit receives focused workspace presentation');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C45'"), 'public asset version bumped to C45');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C46'"), 'public asset version bumped to C46');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version unchanged');
 ok(!partial.includes('booking_services') && !controller.includes('booking_services'), 'supplementary UI layer adds no native product writes');
 ok(manager.includes('general_booking_billing_batch_items'), 'supplementary persistence remains batch item authority');

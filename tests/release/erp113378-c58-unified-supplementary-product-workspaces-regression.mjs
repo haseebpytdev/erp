@@ -62,7 +62,7 @@ ok(bookingFocus.includes("/^\\/operations\\/bookings\\/[^\\/]+\\/?$/i"), 'supple
 ok(bookingFocus.includes("/additional-services'"), 'supplementary entry targets booking-scoped landing route');
 ok(bookingFocus.includes("client.nextSibling"), 'supplementary entry is placed after Client Preview');
 ok(bookingFocus.includes('finalToolbar.insertBefore(link,before)'), 'supplementary entry is reconciled into the canonical toolbar');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C45'"), 'current public asset version is C45');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C46'"), 'current public asset version is C46');
 ok(!release.includes("'asset_version' => 'ERP-11.3.378-C42'"), 'stale C42 asset version is not authoritative');
 ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes("rawurlencode($assetVersion)"), 'booking-focus asset remains release-version protected by the presenter pipeline');
 

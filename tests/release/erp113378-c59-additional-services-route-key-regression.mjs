@@ -33,7 +33,7 @@ ok(workspace.includes('data-etgp-dedicated-product-host'), 'Air/Hotel/Transport/
 ok(context.includes("['ORIGINAL', 'SUPPLEMENTARY']") && context.includes('billingBatchId'), 'ProductWorkspaceContext separation remains');
 ok(items.includes('general_booking_billing_batch_items'), 'supplementary persistence remains batch scoped');
 ok(presenter.includes("system.erp-assets.booking-focus") && presenter.includes('rawurlencode($assetVersion)'), 'booking-focus remains release-version cache busted');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C45'"), 'active asset version is C45');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C46'"), 'active asset version is C46');
 ok(c57.includes('verticalizePassengerCells'), 'C57 remains protected');
 ok(c56.includes('activeBaseInvoices'), 'C56 remains protected');
 ok(c55.includes('activeBase'), 'C55 remains protected');

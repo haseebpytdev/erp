@@ -896,12 +896,22 @@ var etgpSeedInitialBookingLock113162=function(){
   if(!html||!html.getAttribute)return etgpBookingLockState113162;
   var marker=html.getAttribute('data-et-booking-locked');
   var status=html.getAttribute('data-et-booking-status')||'DRAFT';
-  var locked=marker==='1'||etgpNormalizeBookingLockState113162(status);
+  var supplementary=etgpIsSupplementaryDraftWorkspace113305();
+  var locked=!supplementary&&(marker==='1'||etgpNormalizeBookingLockState113162(status));
   etgpBookingLockState113162={locked:locked,status:status,reason:String(html.getAttribute('data-et-booking-lock-reason')||'')};
   if(locked)html.classList&&html.classList.add('et-booking-locked-113162');
+  else html.classList&&html.classList.remove('et-booking-locked-113162');
   return etgpBookingLockState113162;
 };
 window.etgpSeedInitialBookingLock113162=etgpSeedInitialBookingLock113162;
+var etgpIsSupplementaryDraftWorkspace113305=function(){
+  var context=typeof etBookingWorkspaceContext113305!=='undefined'?etBookingWorkspaceContext113305:null;
+  if(context&&context.getBillingContext() === 'SUPPLEMENTARY'&&context.getBillingBatchId()>0)return true;
+  var root=document&&document.querySelector?document.querySelector('[data-etgp-dedicated-product="1"],.etgp-step1'):null;
+  var dataset=root&&root.dataset||{};
+  return String(dataset.billingContext||'').toUpperCase()==='SUPPLEMENTARY'&&Number(dataset.billingBatchId||0)>0;
+};
+window.etgpIsSupplementaryDraftWorkspace113305=etgpIsSupplementaryDraftWorkspace113305;
 var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
   if(etgpDedicatedAirActive113318())return Promise.resolve(null);
   bookingId=Number(bookingId||0);if(!bookingId)return Promise.resolve(null);
@@ -976,11 +986,12 @@ var etgpApplyBookingLock113162=function(data){
       : 'Not Created';
     info.innerHTML='<strong>Sales Invoice:</strong> '+invoiceLabel+(invoice?' <a target="_blank" rel="noopener noreferrer" href="'+String(data.sales_invoice_url||'')+'">Open Sales Invoice</a>':'');
   }
-  var locked=!!(data&&data.booking_locked===true);
+  var supplementary=etgpIsSupplementaryDraftWorkspace113305();
+  var locked=!supplementary&&!!(data&&data.booking_locked===true);
   /* Preserve the explicit server response contract: data.booking_locked!==true
      must never be treated as editable data when no normalized lifecycle exists. */
-  if(data&&data.booking_status)locked=locked||etgpNormalizeBookingLockState113162(data.booking_status);
-  if(data&&data.status)locked=locked||etgpNormalizeBookingLockState113162(data.status);
+  if(!supplementary&&data&&data.booking_status)locked=locked||etgpNormalizeBookingLockState113162(data.booking_status);
+  if(!supplementary&&data&&data.status)locked=locked||etgpNormalizeBookingLockState113162(data.status);
   etgpBookingLockState113162={locked:locked,status:String(data&& (data.booking_status||data.status||'DRAFT')||'DRAFT'),reason:String(data&&data.booking_lock_reason||'')};
   if(data&&data.booking_status)etgpSetVisibleBookingStatus113162(data.booking_status);
   root.dataset.etgpBookingLocked=locked?'1':'0';
@@ -5979,8 +5990,8 @@ window.etgpMountDedicatedProduct113305=function(root){
   var key=String(root.dataset.etgpProductKey||'').toLowerCase();
   var allowed=['air','hotel','transport','visa'];
   if(allowed.indexOf(key)===-1)return false;
-  etgpSeedInitialBookingLock113162();
   etBookingWorkspaceContext113305.setRoot(root,root.dataset.bookingReference||'');
+  etgpSeedInitialBookingLock113162();
   var host=root.querySelector('[data-etgp-dedicated-product-body]');
   if(!host)return false;
   root.dataset.etgpDedicatedMounted='1';
