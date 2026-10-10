@@ -87,6 +87,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
                 'fare_commercials' => is_array($payload['fare_commercials'] ?? null) ? $payload['fare_commercials'] : [],
             ]];
         $out = [];
+        if (count($groups) > 1) $this->validateAirGlobalOwnership($payload['segments'] ?? [], $groups);
         foreach ($groups as $groupIndex => $group) {
             if (! is_array($group)) continue;
             $common = is_array($group['common'] ?? null) ? $group['common'] : [];
@@ -177,6 +178,30 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         $owned = array_values(array_filter($normalized, fn (array $segment): bool => in_array((string) $segment['client_key'], $wanted, true)));
         if (count($owned) !== count($wanted)) throw new \InvalidArgumentException('Air group segment ownership is incomplete.');
         return $owned;
+    }
+    private function validateAirGlobalOwnership(mixed $segments, array $groups): void
+    {
+        if (! is_array($segments) || $segments === []) throw new \InvalidArgumentException('Air multi-group segment set cannot be empty.');
+        $keys = [];
+        foreach (array_values($segments) as $index => $segment) {
+            if (! is_array($segment)) throw new \InvalidArgumentException('Air segment is invalid.');
+            $key = (string) ($segment['client_key'] ?? $segment['segment_key'] ?? $this->stableSegmentKey($segment, $index));
+            if ($key === '') throw new \InvalidArgumentException('Air segment key is missing.');
+            $keys[] = $key;
+        }
+        $known = array_fill_keys($keys, true); $owned = [];
+        foreach ($groups as $group) {
+            $groupKeys = $group['segment_keys'] ?? null;
+            if (! is_array($groupKeys) || $groupKeys === []) throw new \InvalidArgumentException('Air group must own at least one segment.');
+            $groupKeys = array_map('strval', $groupKeys);
+            if (count($groupKeys) !== count(array_unique($groupKeys))) throw new \InvalidArgumentException('Air group segment ownership is duplicated.');
+            foreach ($groupKeys as $key) {
+                if (! isset($known[$key])) throw new \InvalidArgumentException('Air group references an unknown segment.');
+                if (isset($owned[$key])) throw new \InvalidArgumentException('Air segment belongs to multiple groups.');
+                $owned[$key] = true;
+            }
+        }
+        if (count($owned) !== count($keys)) throw new \InvalidArgumentException('Air top-level segment is orphaned.');
     }
     private function stableSegmentKey(array $segment, int $position = 0): string
     { return 'supp-segment-'.hash('sha256', json_encode([$segment['from'] ?? null,$segment['to'] ?? null,$segment['departure_at'] ?? null,$segment['arrival_at'] ?? null,$segment['flight_number'] ?? null,$position], JSON_UNESCAPED_SLASHES)); }
