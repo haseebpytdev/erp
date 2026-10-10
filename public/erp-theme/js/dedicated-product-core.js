@@ -27,6 +27,7 @@
     getBillingBatchId:billingBatchId,
     getProductScope:function(product,booking){return {booking_id:Number(booking||core.getBookingId())||0,billing_context:billingContext(),billing_batch_id:billingContext()==='SUPPLEMENTARY'?billingBatchId():0,product:String(product||core.getProductKey()).toLowerCase()};},
     getDraftScopeKey:function(product,booking){return keyFor(product,booking);},
+    getProductEndpoint:function(product,booking,suffix){var p=String(product||core.getProductKey()).toLowerCase(),b=Number(booking||core.getBookingId())||0,s=String(suffix||'');if(billingContext()==='SUPPLEMENTARY'&&billingBatchId()>0)return '/system/erp-bookings/'+b+'/additional-services/'+billingBatchId()+'/'+p+'-product'+s;return '/system/erp-bookings/'+b+'/'+p+'-product'+s;},
     getApiBase:function(){var c=context();return c&&typeof c.getApiBase==='function'?c.getApiBase():'/system/erp-bookings';},
     getCsrfToken:function(){var m=document.querySelector('meta[name="csrf-token"]');return m?String(m.content||''):'';},
     getLockState:function(){var locked=directRootValue('etgpBookingLocked');var status=directRootValue('etgpBookingStatus');if(locked||status)return {locked:locked==='1'||['PENDING APPROVAL','APPROVED','TRAVEL READY'].indexOf(status.toUpperCase())!==-1,status:status||'DRAFT',reason:directRootValue('etgpBookingLockReason')};var c=context();return c&&typeof c.getLockState==='function'?c.getLockState():{locked:false,status:'DRAFT',reason:''};},

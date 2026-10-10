@@ -26,6 +26,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         $product = $this->productKey($product);
         $state = $items->editor($booking, $batch, $product);
         abort_if(($state['batch_missing'] ?? false) || ($state['schema_ready'] ?? true) === false, 404);
+        $request->attributes->set('supplementary_product_read_only', true);
         $native = match ($product) {
             'air' => app(\App\Http\Controllers\Operations\GeneralBookingAirProductController::class)->show($request, $booking),
             'hotel' => app(\App\Http\Controllers\Operations\GeneralBookingHotelProductController::class)->show($request, $booking),
@@ -49,6 +50,9 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
     public function apiStore(Request $request, int $booking, int $batch, string $product, GeneralBookingAdditionalServiceItemManager $items): JsonResponse
     {
         $product = $this->productKey($product);
+        $state = $items->editor($booking, $batch, $product);
+        abort_if(($state['batch_missing'] ?? false) || ($state['schema_ready'] ?? true) === false, 404);
+        abort_unless(($state['writable'] ?? false) === true, 409, 'Only a writable supplementary Draft batch can be edited.');
         $rows = match ($product) { 'air' => $request->input('tickets', $request->input('ticket_groups.0.tickets', [])), 'hotel' => $request->input('stays', []), 'transport' => $request->input('transports', []), 'visa' => $request->input('visas', $request->input('visa_rows', [])) };
         if (! is_array($rows)) $rows = [];
         $existing = collect($items->editor($booking, $batch, $product)['items'] ?? [])->filter(fn (array $row): bool => strtolower((string) ($row['product_type'] ?? '')) === $product)->values();

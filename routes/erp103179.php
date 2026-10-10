@@ -345,7 +345,7 @@ Route::get('/system/erp-bookings/{booking}/additional-services/{batch}/{product}
     ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.product.show');
 Route::put('/system/erp-bookings/{booking}/additional-services/{batch}/{product}-product', [GeneralBookingAdditionalServiceProductController::class, 'apiStore'])
     ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])
-    ->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.additional-services.product.store');
+    ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.product.store');
 Route::post('/system/erp-bookings/{booking}/additional-services/{batch}/transport-product/selection', [GeneralBookingAdditionalServiceProductController::class, 'apiTransportSelection'])
     ->whereNumber('booking')->whereNumber('batch')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.additional-services.transport.activate');
 Route::post('/operations/bookings/{booking}/additional-services/{batch}/products/{product}/items', [GeneralBookingAdditionalServiceProductController::class, 'store'])

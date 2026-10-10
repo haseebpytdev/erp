@@ -25,11 +25,11 @@ ok(product.includes('data-billing-writable="{{ $context->isSupplementary() ? ($s
 ok(!product.includes('$lock[\'locked\'] =') && !product.includes('$lock["locked"] ='), 'base lock object is not mutated');
 ok(middleware.includes('additional-services/[^/]+/products/(?:air|hotel|transport|visa)'), 'C64 focused supplementary path classifier remains present');
 ['air', 'hotel', 'transport', 'visa'].forEach(productKey => ok(middleware.includes('products/(?:air|hotel|transport|visa)'), `${productKey} supplementary role remains covered`));
-ok(/'corrective_build'\s*=>\s*'C(?:65|66|67|68)'/.test(release), 'corrective build metadata remains explicit');
-ok(/'corrective_name'\s*=>\s*'(?:Supplementary Presentation Polish|System Health Identity|System Health Identity Dedup|Supplementary All-Product Billing Isolation)'/.test(release), 'corrective name metadata remains explicit');
+ok(/'corrective_build'\s*=>\s*'C(?:65|66|67|68|69)'/.test(release), 'corrective build metadata remains explicit');
+ok(/'corrective_name'\s*=>\s*'(?:Supplementary Presentation Polish|System Health Identity|System Health Identity Dedup|Supplementary All-Product Billing Isolation|Supplementary Air Execution Isolation)'/.test(release), 'corrective name metadata remains explicit');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release remains unchanged');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C68'"), 'current asset revision is C68');
+ok(/'asset_version' => 'ERP-11\.3\.378-C(?:68|69)'/.test(release), 'current asset revision is active');
 ok(middleware.includes('DOMDocument') && middleware.includes('applicationCards'), 'Health identity uses a structural Application-card target');
 ok(middleware.includes("metric-label") && middleware.includes("metric-value"), 'Health target requires native Application metric markup');
 ok(middleware.includes('data-et-corrective-build'), 'Application card receives corrective build marker');

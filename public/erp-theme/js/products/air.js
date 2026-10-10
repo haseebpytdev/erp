@@ -89,7 +89,8 @@ var etgpAirErrorMessage113106=function(data,fallback){
 };
 
 var etgpAirRequest113106=function(bookingId,method,payload){
-  return fetch('/system/erp-bookings/'+bookingId+'/air-product',{
+  var endpoint=core.getProductEndpoint?core.getProductEndpoint('air',bookingId):'/system/erp-bookings/'+bookingId+'/air-product';
+  return fetch(endpoint,{
     method:method,
     credentials:'same-origin',
     headers:{
@@ -109,7 +110,7 @@ var etgpAirRequest113106=function(bookingId,method,payload){
   });
 };
 
-var etgpAirDraftKey113119=function(bookingId){return 'etgp-air-product-draft-v113119:'+String(bookingId||'');};
+var etgpAirDraftKey113119=function(bookingId){var supplementary=core.getBillingContext&&core.getBillingContext()==='SUPPLEMENTARY';return 'etgp-air-product-draft-v113119:'+String(supplementary&&core.getDraftScopeKey?core.getDraftScopeKey('air',bookingId):String(bookingId||''));};
 var etgpAirDraftRead113119=function(bookingId){
   try{
     var raw=localStorage.getItem(etgpAirDraftKey113119(bookingId));
@@ -158,7 +159,8 @@ var etgpAirApplyDraft113119=function(data,bookingId){
 };
 
 var etgpAirLoad113106=function(bookingId){
-  return fetch('/system/erp-bookings/'+bookingId+'/air-product',{
+  var endpoint=core.getProductEndpoint?core.getProductEndpoint('air',bookingId):'/system/erp-bookings/'+bookingId+'/air-product';
+  return fetch(endpoint,{
     method:'GET',
     credentials:'same-origin',
     headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}

@@ -7,6 +7,7 @@ const release = read('config/et_erp_release.php');
 const progressive = read('public/erp11390/general-progressive-step1.js');
 const core = read('public/erp-theme/js/dedicated-product-core.js');
 const visa = read('public/erp-theme/js/products/visa-core.js');
+const air = read('public/erp-theme/js/products/air.js');
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 const middleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
 const controller = read('app/Http/Controllers/Operations/GeneralBookingAdditionalServiceProductController.php');
@@ -18,15 +19,17 @@ let assertions = 0;
 const ok = (condition, label) => { assertions += 1; if (!condition) throw new Error(`FAIL: ${label}`); };
 const scope = (booking, context, batch, product) => `${booking}::${context}::${context === 'SUPPLEMENTARY' ? batch : 0}::${product}`;
 
-ok(release.includes("'corrective_build' => 'C68'"), 'C68 metadata exact');
-ok(release.includes("'corrective_name' => 'Supplementary All-Product Billing Isolation'"), 'C68 name exact');
+ok(release.includes("'corrective_build' => 'C68'") || release.includes("'corrective_build' => 'C69'"), 'C68 metadata lineage retained');
+ok(release.includes("'corrective_name' => 'Supplementary All-Product Billing Isolation'") || release.includes("'corrective_name' => 'Supplementary Air Execution Isolation'"), 'C68 name lineage retained');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release unchanged');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C68'"), 'asset version is C68');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C68'") || release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset version lineage retained');
 ok(middleware.includes('$assetVersion') && middleware.includes('rawurlencode($assetVersion)'), 'changed public JS uses versioned asset authority');
 ok(read('routes/erp103179.php').includes("'/system/erp-assets/erp-professional.css'"), 'authenticated asset route remains authoritative');
 ok(core.includes('getBillingContext') && core.includes('getBillingBatchId') && core.includes('getProductScope'), 'shared context authority exists');
 ok(core.includes('getDraftScopeKey') && core.includes('billing_context') && core.includes('billing_batch_id'), 'shared scoped draft authority exists');
+ok(air.includes('etgpAirDraftKey113119') && air.includes('getDraftScopeKey'), 'dedicated Air uses shared scoped draft authority');
+ok(air.includes('getProductEndpoint') && air.includes('etgpAirLoad113106'), 'dedicated Air endpoint authority is exercised');
 ok(progressive.includes("getBillingContext() === 'SUPPLEMENTARY'") && progressive.includes('getBillingBatchId'), 'progressive context authority exists');
 ok(controller.includes("private const PRODUCTS = ['air', 'hotel', 'transport', 'visa'];"), 'allow-list is exactly four products');
 ok(!controller.includes("'other-services'"), 'other-services is not added');
@@ -94,7 +97,7 @@ ok(!read('config/et_erp_release.php').includes('schema_changed'), 'no schema cha
 ok(read('public/erp-theme/js/dedicated-product-core.js').includes('window.etDedicatedProductCore'), 'C64 focused product core preserved');
 ok(read('resources/views/operations/bookings/partials/product-workspace-v113305.blade.php').includes('data-billing-context'), 'C65 header context preserved');
 ok(manager.includes('Only a supplementary Draft batch can be edited.'), 'C63 writable guard preserved');
-ok(release.includes("'corrective_build' => 'C68'"), 'C67 health identity reads C68 build');
+ok(release.includes("'corrective_build' => 'C68'") || release.includes("'corrective_build' => 'C69'"), 'health identity reads current corrective build');
 ok(!read('public/erp-theme/modules/dedicated-product.css').includes('C68'), 'no public CSS change');
 ok(!routes.includes('other-services-product'), 'no unsupported product route');
 

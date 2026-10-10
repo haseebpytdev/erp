@@ -38,7 +38,9 @@ final class GeneralBookingAirProductController extends Controller
     public function show(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
-        $airReconciliation = $this->reconcileRemovedPassengerAirRows($booking);
+        $airReconciliation = $request->attributes->get('supplementary_product_read_only') === true
+            ? ['blockers' => [], 'deleted' => 0, 'skipped' => true]
+            : $this->reconcileRemovedPassengerAirRows($booking);
         $passengers = $this->bookingPassengers($booking);
         $services = $this->findAirServices($booking);
         $groups = $this->ticketGroupsSnapshot($booking, $services, $passengers);
