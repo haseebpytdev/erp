@@ -44,7 +44,7 @@ ok(js.includes('groupMain.appendChild(commercialColumn);') && js.indexOf('groupM
 ok(js.includes('page.appendChild(totals);') && js.indexOf('page.appendChild(totals);')>js.indexOf('groupMain.appendChild(ticketColumn);'), 'group summary remains below both group tables');
 ok(css.includes('etgp-air-multi-group-totals-113324'), 'page-level multi-group totals use scoped Air CSS');
 ok(!js.includes('etgpAirRender113106(groupHost'), 'group editor rendering does not recursively remount the page');
-ok(js.includes("if(!groups.length){renderTicketGroupEditor113106(host,data,bookingId);return;}") && !js.includes("group-new-'+bookingId"), 'empty ticket_groups stay empty and use the native single Air renderer');
+ok(js.includes("var serverGroups=Array.isArray(data&&data.ticket_groups)?data.ticket_groups:[];var zeroState=!serverGroups.length") && js.includes("etgp-air-multi-group-page-113324"), 'empty ticket_groups use the current multi-group Air renderer with a client-only visual group');
 ok(!js.includes('c77PreparedData.ticket_groups') && js.includes('service_id:null') && js.includes('etgp-air-multi-group-page-113324'), 'single real group uses the multi-group renderer without synthetic identity');
 ok(js.includes('etgpAirDefaultSegmentType113329') && js.includes("segmentList.querySelectorAll('[data-etgp-air-segment-113106]').length") && js.includes("segment_type:etgpAirDefaultSegmentType113329(existingCount)"), 'new itinerary segments use the current row count for outbound/return/connection defaults');
 ok(js.includes('box.appendChild(customer);box.appendChild(vendor);return {box:box,customer:customer,vendor:vendor};') && !js.includes('answerMargin'), 'fare Answer renders Customer and Vendor only while totals retain margin authority');

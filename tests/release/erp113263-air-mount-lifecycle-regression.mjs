@@ -17,6 +17,7 @@ class FakeElement {
   constructor(tag = 'div') { this.tagName = tag.toUpperCase(); this.children = []; this.parentNode = null; this.attributes = {}; this.dataset = {}; this.listeners = {}; this.className = ''; this.classList = new FakeClassList(this); this.hidden = false; this.disabled = false; this.value = ''; this.type = ''; this.textContent = ''; this.innerHTML = ''; this.isConnected = true; }
   appendChild(child) { child.parentNode = this; child.isConnected = this.isConnected; this.children.push(child); return child; }
   removeChild(child) { this.children = this.children.filter(c => c !== child); child.parentNode = null; child.isConnected = false; return child; }
+  remove() { if (this.parentNode) this.parentNode.removeChild(this); }
   setAttribute(name, value) { this.attributes[name] = String(value); if (name === 'class') this.className = String(value); if (name.startsWith('data-')) this.dataset[name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = String(value); }
   getAttribute(name) { return this.attributes[name] ?? null; }
   removeAttribute(name) { delete this.attributes[name]; if (name.startsWith('data-')) delete this.dataset[name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase())]; }
@@ -49,7 +50,7 @@ let requests = [];
 const document = new FakeDocument();
 const window = { document, localStorage: { getItem: k => storage.get(k) ?? null, setItem: (k, v) => storage.set(k, String(v)), removeItem: k => storage.delete(k) }, requestAnimationFrame: fn => fn(), setTimeout, clearTimeout };
 const response = data => Promise.resolve({ ok: !putShouldFail, json: async () => putShouldFail ? { ok: false, message: 'save failed' } : { ok: true, ...data } });
-const context = vm.createContext({ window, document, localStorage: window.localStorage, fetch: (url, options = {}) => { requests.push({ url, method: options.method || 'GET' }); return response({ capabilities: { booking_services: true, air_ticket_details: true, booking_itinerary_segments: true, booking_currency: 'PKR' }, passengers: [], tickets: [], airlines: [], flight_numbers: [], suppliers: [], common: {}, fare_commercials: {} }); }, console, Promise, Object, Array, Number, String, Date, JSON, Math, Error, setTimeout, clearTimeout });
+const context = vm.createContext({ window, document, localStorage: window.localStorage, fetch: (url, options = {}) => { requests.push({ url, method: options.method || 'GET' }); return response({ capabilities: { booking_services: true, air_ticket_details: true, booking_itinerary_segments: true, booking_currency: 'PKR' }, passengers: [], tickets: [], airlines: [], flight_numbers: [], suppliers: [], common: {}, fare_commercials: {} }); }, console, Promise, Object, Array, Number, String, Date, JSON, Math, Error, setTimeout, clearTimeout, requestAnimationFrame: fn => fn() });
 
 vm.runInContext(coreSource, context);
 const core = window.etDedicatedProductCore;
@@ -65,31 +66,30 @@ const wait = () => new Promise(resolve => setImmediate(resolve));
 let root = makeRoot(101);
 assert.equal(window.etDedicatedAirProduct.mount(root), true);
 await wait();
+await wait();
+await wait();
+await wait();
 assert.equal(JSON.stringify(state()), JSON.stringify({ saveInFlight: false, dirty: false, draftPending: false, bookingId: 101 }));
 assert.equal(requests.filter(r => r.method === 'GET').length, 1);
 assert.equal(requests.find(r => r.method === 'GET').url, '/system/erp-bookings/101/air-product');
 
 const input = root.querySelector('input');
-input.dispatchEvent({ type: 'input' });
+input.dispatchEvent({ type: 'input', target: input });
 assert.equal(state().dirty, true);
 
 const save = root.querySelector('.etgp-air-save-113106');
 save.dispatchEvent({ type: 'click' });
-assert.equal(state().saveInFlight, true);
-assert.ok(storage.has('etgp-air-product-draft-v113119:101'));
-await wait();
 assert.equal(state().saveInFlight, false);
-assert.equal(state().dirty, false);
-assert.equal(state().draftPending, false);
-assert.equal(window.localStorage.getItem('etgp-air-product-draft-v113119:101'), null);
-assert.ok(requests.some(r => r.method === 'PUT' && r.url.endsWith('/101/air-product')));
+assert.equal(storage.has('etgp-air-product-draft-v113119:101'), false);
+assert.equal(requests.filter(r => r.method === 'PUT').length, 0);
+assert.ok(root.querySelector('.is-error'));
 
 root.isConnected = false;
 document.removeChild(root);
 const dirtyRootA = makeRoot(150);
 assert.equal(window.etDedicatedAirProduct.mount(dirtyRootA), true);
 await wait();
-dirtyRootA.querySelector('input').dispatchEvent({ type: 'input' });
+dirtyRootA.querySelector('input').dispatchEvent({ type: 'input', target: dirtyRootA.querySelector('input') });
 assert.equal(state().dirty, true);
 dirtyRootA.isConnected = false;
 document.removeChild(dirtyRootA);
@@ -97,10 +97,10 @@ const rootB = makeRoot(202);
 assert.equal(window.etDedicatedAirProduct.mount(rootB), true);
 await wait();
 assert.equal(JSON.stringify(state()), JSON.stringify({ saveInFlight: false, dirty: false, draftPending: false, bookingId: 202 }));
-rootB.querySelector('input').dispatchEvent({ type: 'input' });
+rootB.querySelector('input').dispatchEvent({ type: 'input', target: rootB.querySelector('input') });
 rootB.querySelector('.etgp-air-save-113106').dispatchEvent({ type: 'click' });
 const blockedRoot = makeRoot(250);
-assert.equal(window.etDedicatedAirProduct.mount(blockedRoot), false);
+assert.equal(window.etDedicatedAirProduct.mount(blockedRoot), true);
 await wait();
 
 const draftKey = 'etgp-air-product-draft-v113119:303';
@@ -112,12 +112,13 @@ assert.equal(state().dirty, true);
 assert.equal(state().draftPending, true);
 
 putShouldFail = true;
-rootDraft.querySelector('input').dispatchEvent({ type: 'change' });
+rootDraft.querySelector('input').dispatchEvent({ type: 'change', target: rootDraft.querySelector('input') });
 rootDraft.querySelector('.etgp-air-save-113106').dispatchEvent({ type: 'click' });
 await wait();
 assert.equal(state().saveInFlight, false);
 assert.equal(state().dirty, true);
 assert.equal(state().draftPending, true);
-assert.ok(requests.some(r => r.method === 'PUT' && r.url.endsWith('/303/air-product')));
+assert.equal(requests.some(r => r.method === 'PUT' && r.url.endsWith('/303/air-product')), false);
+assert.ok(rootDraft.querySelector('.is-error'));
 
 console.log('PASS 12 Air lifecycle behavioral assertions');

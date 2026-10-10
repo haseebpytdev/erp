@@ -45,7 +45,7 @@ for (const [product, label] of [['air', 'View Flights'], ['hotel', 'View Hotels'
 check(!/url\('\/operations\/bookings\/'.*#(?:air|hotel|transport|visa)/.test(review), 'review product hash links are absent');
 check(/\$supplementOnly\s*\?\s*url\('\/operations\/bookings\/'\.\$bookingId\.'\/review'\)/.test(presenter), 'supplement-only cards retain safe review ownership');
 check(/url\('\/operations\/bookings\/'\.\$bookingId\.'\/products\/'\.\$key\)/.test(presenter), 'base product cards use dedicated workspaces');
-check(/corrective_build' => 'C78'/.test(release) && /asset_version' => 'ERP-11\.3\.378-C78'/.test(release), 'C78 release metadata is active');
+check(/corrective_build' => 'C(?:78|79)'/.test(release) && /asset_version' => 'ERP-11\.3\.378-C(?:78|79)'/.test(release), 'C78 release metadata lineage remains active');
 check(/structuralRerender=rerender/.test(air) && /refresh:function\(bookingId\)/.test(air), 'C77 state integrity hooks remain');
 
 console.log(`ERP-11.3.378 C78 Air empty-state/product navigation regression: PASS (${assertions} assertions)`);
