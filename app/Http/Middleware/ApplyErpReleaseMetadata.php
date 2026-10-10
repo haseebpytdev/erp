@@ -99,6 +99,9 @@ class ApplyErpReleaseMetadata
         $release = config('et_erp_release', []);
         $version = (string) ($release['version'] ?? 'v1.1.33.0-ERP11.3');
         $assetVersion = (string) ($release['asset_version'] ?? $version);
+        $releaseName = (string) ($release['release'] ?? 'ERP');
+        $correctiveBuild = (string) ($release['corrective_build'] ?? '');
+        $correctiveName = (string) ($release['corrective_name'] ?? '');
         $package = (string) ($release['package'] ?? 'ERP-11.3 Unified Travel ERP');
         $packageDetail = (string) ($release['package_detail'] ?? 'Native one-page Group Package flow + dynamic release health');
 
@@ -124,6 +127,16 @@ class ApplyErpReleaseMetadata
         // ERP shell. Normalize that response server-side before the canonical
         // sidebar composer processes the final sidebar.
         $html = $this->normalizeSystemHealthShell($request, $html);
+        $html = $this->normalizeCorrectiveBuildIdentity(
+            $request,
+            $html,
+            $version,
+            $assetVersion,
+            $package,
+            $releaseName,
+            $correctiveBuild,
+            $correctiveName
+        );
 
         try {
             $html = app(ServerSidebarComposer::class)->compose($html);
@@ -132,7 +145,7 @@ class ApplyErpReleaseMetadata
         }
 
         // ERP-11.3.378: compact only the native sidebar footer block.
-        $html = $this->compactSidebarReleaseBlock($html, $package, $version);
+        $html = $this->compactSidebarReleaseBlock($html, $package, $version, $releaseName, $correctiveBuild, $correctiveName);
 
         $html = $this->normalizeTravelReportHostTitle($request, $html);
         $html = $this->injectProfessionalUi($request, $html, $version, $assetVersion);
@@ -391,7 +404,59 @@ class ApplyErpReleaseMetadata
     }
 
     /** Compact the uniquely identified sidebar without changing System Health metadata. */
-    private function compactSidebarReleaseBlock(string $html, string $package, string $version): string
+    private function normalizeCorrectiveBuildIdentity(
+        Request $request,
+        string $html,
+        string $version,
+        string $assetVersion,
+        string $package,
+        string $releaseName,
+        string $correctiveBuild,
+        string $correctiveName
+    ): string {
+        $path = strtolower(trim($request->path(), '/'));
+        if (($path !== 'system/update' && $path !== 'system/health') || $correctiveBuild === '') {
+            return $html;
+        }
+
+        // The historical package description is retained in config for
+        // compatibility, but is not the current corrective-build identity.
+        if ($package !== '' && $releaseName !== '') {
+            $html = str_replace($package, $releaseName, $html);
+        }
+
+        $assetRevision = preg_match('/(C\d+)$/i', $assetVersion, $match) === 1
+            ? strtoupper($match[1])
+            : $assetVersion;
+        $marker = 'data-et-corrective-build="'.e($correctiveBuild).'"';
+        if (str_contains($html, $marker)) {
+            return $html;
+        }
+
+        $identity = '<div '.$marker.' data-et-corrective-name="'.e($correctiveName).'" data-et-asset-revision="'.e($assetRevision).'" class="et-corrective-build-identity">'
+            .'<div><strong>Build '.e($correctiveBuild).'</strong>'.($correctiveName !== '' ? ' · '.e($correctiveName) : '').'</div>'
+            .'<div>Asset '.e($assetRevision).'</div>'
+            .'</div>';
+        $escapedVersion = e($version);
+        $offset = $escapedVersion === '' ? false : stripos($html, $escapedVersion);
+        if ($offset !== false) {
+            $insertAt = $offset + strlen($escapedVersion);
+            return substr($html, 0, $insertAt).$identity.substr($html, $insertAt);
+        }
+
+        return str_contains($html, '</main>')
+            ? str_replace('</main>', $identity.'</main>', $html, 1)
+            : str_replace('</body>', $identity.'</body>', $html, 1);
+    }
+
+    private function compactSidebarReleaseBlock(
+        string $html,
+        string $package,
+        string $version,
+        string $releaseName,
+        string $correctiveBuild,
+        string $correctiveName
+    ): string
     {
         $pattern = '/<aside\b[^>]*class=("|\')[^"\']*\bsidebar\b[^"\']*\1[^>]*>.*?<\/aside>/is';
         $matches = [];
@@ -400,12 +465,26 @@ class ApplyErpReleaseMetadata
             return $html;
         }
         [$fragment, $offset] = $matches[0][0];
-        if ($package === '' || $version === '' ||
-            (! str_contains($fragment, $package) && ! str_contains($fragment, $version))) {
+        if (($package === '' && $releaseName === '') || $version === '' ||
+            (! str_contains($fragment, $package)
+                && ! str_contains($fragment, $releaseName)
+                && ! str_contains($fragment, $version))) {
             return $html;
         }
-        $updated = str_replace($package, 'Party Balances', $fragment);
-        $updated = str_replace($version, 'ERP-11.3.378', $updated);
+        // The historical "Party Balances" label is intentionally replaced
+        // by the configured release/build identity below.
+        $updated = str_replace($package, $releaseName, $fragment);
+        $updated = str_replace($version, $releaseName, $updated);
+        if ($correctiveBuild !== '' && ! str_contains($updated, 'data-et-sidebar-corrective-build=')) {
+            $assetLabel = e($correctiveName !== '' ? 'Build '.$correctiveBuild : $correctiveBuild);
+            $build = '<span data-et-sidebar-corrective-build="'.e($correctiveBuild).'">'.$assetLabel.'</span>';
+            $updated = preg_replace_callback(
+                '/(<[^>]*>)\s*(Live)\s*(<\/[^>]+>)/i',
+                static fn (array $match): string => $build.$match[1].$match[2].$match[3],
+                $updated,
+                1
+            ) ?? $updated;
+        }
         if ($updated === $fragment) {
             return $html;
         }
