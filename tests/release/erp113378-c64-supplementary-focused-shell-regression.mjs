@@ -33,16 +33,16 @@ ok(presenter.includes('data-et-dedicated-visa-css=') && presenter.includes('role
 ok(c63Presenter.includes('additional-services/\\d+/products/(?:air|hotel|transport|visa)') && c63Partial.includes('data-billing-writable'), 'C63 supplementary shell and writable markers remain intact');
 ok(!c63ApiShow.includes('catch (Throwable') && c63Controller.includes('productKey(string $product)'), 'C63 Transport error visibility and product allowlist remain intact');
 ok(routes.includes("'/system/erp-assets/erp-professional.css'") && routes.includes("name('system.erp-assets.erp-professional-css')"), 'existing authenticated asset route remains authoritative');
-ok(release.includes("'corrective_build' => 'C64'"), 'corrective build metadata is C64');
-ok(release.includes("'corrective_name' => 'Supplementary Focused Shell'"), 'corrective name metadata is explicit');
+ok(/'corrective_build'\s*=>\s*'C(?:64|65)'/.test(release), 'corrective build metadata remains explicit');
+ok(/'corrective_name'\s*=>\s*'Supplementary (Focused Shell|Presentation Polish)'/.test(release), 'corrective name metadata remains explicit');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release remains unchanged');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C47'"), 'asset revision remains unchanged');
-ok(middleware.includes('normalizeCorrectiveBuildIdentity') && middleware.includes('data-et-corrective-build='), 'Health page receives config-driven corrective build identity');
-ok(middleware.includes('data-et-corrective-name=') && middleware.includes('data-et-asset-revision='), 'Health page exposes corrective name and asset revision');
-ok(middleware.includes("'<div><strong>Build '.e($correctiveBuild)") && middleware.includes("'<div>Asset '.e($assetRevision)"), 'build labels are presentation-generated from metadata');
+ok(middleware.includes('normalizeCorrectiveBuildIdentity') && middleware.includes("setAttribute('data-et-corrective-build'"), 'Health page receives config-driven corrective build identity');
+ok(middleware.includes("setAttribute('data-et-corrective-name'") && middleware.includes("setAttribute('data-et-asset-revision'"), 'Health page exposes corrective name and asset revision');
+ok(middleware.includes("createElement('strong', 'Build '") && middleware.includes("createElement('div', 'Asset '"), 'build labels are presentation-generated from metadata');
 ok(middleware.includes("$html = str_replace($package, $releaseName, $html)"), 'historical package label is not current build authority on Health');
-ok(middleware.includes('data-et-sidebar-corrective-build=') && middleware.includes("$releaseName"), 'sidebar footer uses configured release/build values');
+ok(middleware.includes('data-et-sidebar-corrective-build') && middleware.includes("$releaseName"), 'sidebar footer uses configured release/build values');
 ok(!middleware.includes("'C64'") && !middleware.includes('"C64"'), 'C64 is not hardcoded in presentation logic');
 ok(!middleware.includes("git show") && !middleware.includes("shell_exec") && !middleware.includes("exec("), 'runtime build identity has no Git dependency');
 

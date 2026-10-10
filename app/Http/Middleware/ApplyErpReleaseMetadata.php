@@ -403,7 +403,12 @@ class ApplyErpReleaseMetadata
         return substr($html, 0, $offset).$updated.substr($html, $offset + strlen($fragment));
     }
 
-    /** Compact the uniquely identified sidebar without changing System Health metadata. */
+    /**
+     * Place corrective identity only inside the uniquely identified Health
+     * Application card.  The native Health page repeats the release/version
+     * elsewhere (sidebar, page chrome and other cards), so a first-occurrence
+     * insertion is not a safe authority.
+     */
     private function normalizeCorrectiveBuildIdentity(
         Request $request,
         string $html,
@@ -425,28 +430,97 @@ class ApplyErpReleaseMetadata
             $html = str_replace($package, $releaseName, $html);
         }
 
-        $assetRevision = preg_match('/(C\d+)$/i', $assetVersion, $match) === 1
-            ? strtoupper($match[1])
-            : $assetVersion;
-        $marker = 'data-et-corrective-build="'.e($correctiveBuild).'"';
-        if (str_contains($html, $marker)) {
+        if (! class_exists(\DOMDocument::class)) {
             return $html;
         }
 
-        $identity = '<div '.$marker.' data-et-corrective-name="'.e($correctiveName).'" data-et-asset-revision="'.e($assetRevision).'" class="et-corrective-build-identity">'
-            .'<div><strong>Build '.e($correctiveBuild).'</strong>'.($correctiveName !== '' ? ' · '.e($correctiveName) : '').'</div>'
-            .'<div>Asset '.e($assetRevision).'</div>'
-            .'</div>';
-        $escapedVersion = e($version);
-        $offset = $escapedVersion === '' ? false : stripos($html, $escapedVersion);
-        if ($offset !== false) {
-            $insertAt = $offset + strlen($escapedVersion);
-            return substr($html, 0, $insertAt).$identity.substr($html, $insertAt);
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if (! $loaded) {
+            return $html;
         }
 
-        return str_contains($html, '</main>')
-            ? str_replace('</main>', $identity.'</main>', $html, 1)
-            : str_replace('</body>', $identity.'</body>', $html, 1);
+        $xpath = new \DOMXPath($dom);
+        foreach ($xpath->query('//*[@data-et-corrective-build]') as $existing) {
+            if ($existing instanceof \DOMElement && $existing->parentNode) {
+                $existing->parentNode->removeChild($existing);
+            }
+        }
+
+        $applicationCards = [];
+        $headingNodes = $xpath->query('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6 or contains(concat(" ", normalize-space(@class), " "), " card-title ")]');
+        foreach ($headingNodes as $heading) {
+            if (! $heading instanceof \DOMElement) {
+                continue;
+            }
+            $headingText = strtoupper(trim(preg_replace('/\s+/', ' ', $heading->textContent)));
+            if ($headingText !== 'APPLICATION') {
+                continue;
+            }
+            $candidate = $heading;
+            for ($depth = 0; $depth < 8 && $candidate instanceof \DOMElement; $depth++) {
+                $classes = ' '.trim($candidate->getAttribute('class')).' ';
+                $isCard = str_contains($classes, ' card ')
+                    || str_contains($classes, ' et-card ')
+                    || str_contains($classes, ' health-card ')
+                    || in_array(strtolower($candidate->tagName), ['section', 'article'], true);
+                $hasVersion = stripos($candidate->textContent, $version) !== false;
+                if ($isCard && $hasVersion) {
+                    $applicationCards[spl_object_hash($candidate)] = $candidate;
+                    break;
+                }
+                $candidate = $candidate->parentNode instanceof \DOMElement ? $candidate->parentNode : null;
+            }
+        }
+
+        if (count($applicationCards) !== 1) {
+            return $html;
+        }
+        $applicationCard = array_values($applicationCards)[0];
+        $versionText = null;
+        foreach ($xpath->query('.//text()', $applicationCard) as $textNode) {
+            if (stripos((string) $textNode->nodeValue, $version) !== false) {
+                $versionText = $textNode;
+                break;
+            }
+        }
+        if (! $versionText instanceof \DOMText || ! $versionText->parentNode) {
+            return $html;
+        }
+
+        $assetRevision = preg_match('/(C\d+)$/i', $assetVersion, $match) === 1
+            ? strtoupper($match[1])
+            : $assetVersion;
+        $identity = $dom->createElement('div');
+        $identity->setAttribute('data-et-corrective-build', $correctiveBuild);
+        $identity->setAttribute('data-et-corrective-name', $correctiveName);
+        $identity->setAttribute('data-et-asset-revision', $assetRevision);
+        $identity->setAttribute('class', 'et-corrective-build-identity');
+        $identity->appendChild($dom->createElement('div', $releaseName));
+        $buildLine = $dom->createElement('div');
+        $buildLine->appendChild($dom->createElement('strong', 'Build '.$correctiveBuild));
+        if ($correctiveName !== '') {
+            $buildLine->appendChild($dom->createTextNode(' · '.$correctiveName));
+        }
+        $identity->appendChild($buildLine);
+        $identity->appendChild($dom->createElement('div', 'Asset '.$assetRevision));
+
+        $anchor = $versionText->parentNode;
+        if ($anchor->parentNode) {
+            if ($anchor->nextSibling) {
+                $anchor->parentNode->insertBefore($identity, $anchor->nextSibling);
+            } else {
+                $anchor->parentNode->appendChild($identity);
+            }
+        } else {
+            return $html;
+        }
+
+        $normalized = $dom->saveHTML();
+        return $normalized === false ? $html : $normalized;
     }
 
     private function compactSidebarReleaseBlock(

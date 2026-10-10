@@ -1,4 +1,5 @@
 @php($bookingReference = $booking['booking_reference'] ?? $booking['booking_no'] ?? ('Booking #'.$bookingId))
+@php($headerReadOnly = $headerReadOnly ?? (!empty($lock['locked'])))
 <header class="et-booking-workspace-header et-dedicated-product-header etgp-toolbar" data-et-booking-workspace-header="1" data-et-dedicated-product-header="1" data-etgp-booking-context="1">
   {{-- Native shell compatibility: etgp-toolbar / data-etgp-booking-context remain the dedicated context authority. --}}
   {{-- Booking identity/customer/status authorities: booking_reference, customer, $lock['status']. --}}
@@ -15,7 +16,7 @@
   </div>
   <div class="et-booking-header-right">
     <span class="et-status" data-et-booking-status="1">{{ $lock['status'] ?? 'Draft' }}</span>
-    @if(!empty($lock['locked']))<span class="et-status" data-et-status="draft">Read-only</span>@endif
+    @if($headerReadOnly)<span class="et-status" data-et-status="draft">Read-only</span>@endif
     @if(($headerAction ?? null)){!! $headerAction !!}@endif
   </div>
 </header>
