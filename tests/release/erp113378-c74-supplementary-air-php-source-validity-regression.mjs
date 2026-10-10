@@ -34,9 +34,9 @@ ok(materializer.includes('ticket_no') && materializer.includes('document_no'), '
 ok(materializer.includes('supplier_cost_snapshot'), 'native commercial parity remains');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'version remains');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release remains');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'") || release.includes("'asset_version' => 'ERP-11.3.378-C76'") || release.includes("'asset_version' => 'ERP-11.3.378-C77'"), 'asset version remains current');
-ok(release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'") || release.includes("'corrective_build' => 'C76'") || release.includes("'corrective_build' => 'C77'"), 'C74 metadata remains');
-ok(release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'") || release.includes("'corrective_name' => 'Supplementary Visa Client Runtime Isolation'") || release.includes("'corrective_name' => 'Air Runtime State Integrity'"), 'C74 name remains');
+ok(/'asset_version' => 'ERP-11\.3\.378-C(?:69|76|77|78)'/.test(release), 'asset version remains current');
+ok(/'corrective_build' => 'C(?:74|75|76|77|78)'/.test(release), 'C74 metadata remains');
+ok(release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'") || release.includes("'corrective_name' => 'Supplementary Visa Client Runtime Isolation'") || release.includes("'corrective_name' => 'Air Runtime State Integrity'") || release.includes("'corrective_name' => 'Air Empty-State & Read-Only Product Navigation'"), 'C74 name remains');
 ok(!read('public/erp-theme/js/products/air.js').includes('C74'), 'no public JS change');
 ok(!read('public/erp-theme/et-focused-shell.css').includes('C74'), 'no public CSS change');
 ok(!read('database/migrations/2026_09_30_140000_create_general_booking_billing_foundation.php').includes('C74'), 'no migration change');

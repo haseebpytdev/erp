@@ -21,6 +21,8 @@ var etgpAirMoneyText113106=function(value,currency){
 };
 
 var etgpAirInput113106=function(label,type,value,placeholder){
+  var neutralPlaceholders={'SV739':'Enter flight no.','LHE':'From','JED':'To','065-1234567890':'Enter ticket no.','Y':'Class','23 KG':'Baggage'};
+  if(Object.prototype.hasOwnProperty.call(neutralPlaceholders,String(placeholder||'')))placeholder=neutralPlaceholders[String(placeholder)];
   var unit=create('div','etgp-air-field-113106');
   var lab=create('label','form-label',label);
   var input=create('input','form-control');
@@ -295,7 +297,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
       airline=etgpAirInput113106('Airline','text',segment.airline||segment.airline_code||'','Airline Master unavailable');
     }
 
-    var flight=etgpAirInput113106('Flight No.','text',segment.flight_number||'','SV739');
+    var flight=etgpAirInput113106('Flight No.','text',segment.flight_number||'','Enter flight no.');
     if(airlines.length){
       var listId='etgp-air-flight-list-113107-'+bookingId+'-'+segmentCounter;
       var list=document.createElement('datalist');list.id=listId;
@@ -318,8 +320,8 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
       refreshFlightSuggestions();
     }
 
-    var from=etgpAirInput113106('From','text',segment.from||'','LHE');
-    var to=etgpAirInput113106('To','text',segment.to||'','JED');
+    var from=etgpAirInput113106('From','text',segment.from||'','From');
+    var to=etgpAirInput113106('To','text',segment.to||'','To');
     var departure=etgpAirInput113106('Departure','datetime-local',segment.departure_at||'','');
     var arrival=etgpAirInput113106('Arrival','datetime-local',segment.arrival_at||'','');
     [type.unit,airline.unit,flight.unit,from.unit,to.unit,departure.unit,arrival.unit].forEach(function(unit){row.appendChild(unit);});
@@ -377,7 +379,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 
   /* Passenger tickets */
   var ticketsBlock=create('section','etgp-air-block-113106');
-  var passengerTicketsHeading=etgpAirSubhead113106('Passenger Tickets','Enter the first ticket number and the following blank ticket numbers auto-increment. Staff can edit any generated number. Passenger status follows the PNR Ticket Status.');passengerTicketsHeading.classList.add('etgp-product-subsection-161');ticketsBlock.appendChild(passengerTicketsHeading);
+    var passengerTicketsHeading=etgpAirSubhead113106('Passenger Tickets','Booking passengers are shown for ticket entry. Blank rows are not saved as Air tickets. Enter the first ticket number and the following blank ticket numbers auto-increment. Staff can edit any generated number. Passenger status follows the PNR Ticket Status.');passengerTicketsHeading.classList.add('etgp-product-subsection-161');ticketsBlock.appendChild(passengerTicketsHeading);
   var ticketWrap=create('div','etgp-air-ticket-wrap-113106');
   var table=create('table','table etgp-air-ticket-table-113106 etgp-air-ticket-table-113123');
   var thead=create('thead','');
@@ -429,16 +431,16 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
     var fareType=String(passenger.fare_type||'ADULT').toUpperCase();
     if(fareType.indexOf('INF')!==-1)fareType='INFANT';else if(fareType.indexOf('CH')!==-1)fareType='CHILD';else fareType='ADULT';
     var fare=create('td','');fare.textContent=fareType;
-    var ticketTd=create('td','');var ticket=create('input','form-control');ticket.type='text';ticket.value=saved.ticket_number||'';ticket.placeholder='065-1234567890';ticketTd.appendChild(ticket);
-    var classTd=create('td','');var bookingClass=create('input','form-control');bookingClass.type='text';bookingClass.value=saved.booking_class||'';bookingClass.placeholder='Y';classTd.appendChild(bookingClass);
-    var baggageTd=create('td','');var baggage=create('input','form-control');baggage.type='text';baggage.value=saved.baggage||'';baggage.placeholder='23 KG';baggageTd.appendChild(baggage);
+    var ticketTd=create('td','');var ticket=create('input','form-control');ticket.type='text';ticket.value=saved.ticket_number||'';ticket.placeholder='Enter ticket no.';ticketTd.appendChild(ticket);
+    var classTd=create('td','');var bookingClass=create('input','form-control');bookingClass.type='text';bookingClass.value=saved.booking_class||'';bookingClass.placeholder='Class';classTd.appendChild(bookingClass);
+    var baggageTd=create('td','');var baggage=create('input','form-control');baggage.type='text';baggage.value=saved.baggage||'';baggage.placeholder='Baggage';baggageTd.appendChild(baggage);
     var statusTd=create('td','');var status=create('span','etgp-air-ticket-status-113107','');statusTd.appendChild(status);statusSpans.push(status);
     var saleCell=commercialCell113123(saved.customer_total_sale_value||0);
     var costCell=commercialCell113123(saved.supplier_cost_price||0);
     var customerNetCell=commercialCell113123(saved.customer_total||0);
     var vendorNetCell=commercialCell113123(saved.supplier_total||0);
     [name,fare,ticketTd,classTd,baggageTd,statusTd,saleCell.td,costCell.td,customerNetCell.td,vendorNetCell.td].forEach(function(td){tr.appendChild(td);});
-    tr._etgpAir={passengerId:Number(passenger.id),ticket:ticket,bookingClass:bookingClass,baggage:baggage};
+    tr._etgpAir={passengerId:Number(passenger.id),ticket:ticket,bookingClass:bookingClass,baggage:baggage,persisted:Number(saved.id||0)>0};
     tbody.appendChild(tr);
     ticketCommercialCells.push({fareType:fareType,sale:saleCell.span,cost:costCell.span,customerNet:customerNetCell.span,vendorNet:vendorNetCell.span});
     ticketInputs.push(ticket);
@@ -599,8 +601,10 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
 
     var tickets=Array.prototype.slice.call(tbody.querySelectorAll('[data-etgp-air-ticket-row-113106]')).map(function(row){
       var c=row._etgpAir;
-      return {booking_passenger_id:c.passengerId,ticket_number:plain(c.ticket.value),booking_class:plain(c.bookingClass.value),baggage:plain(c.baggage.value)};
-    });
+      var ticketNumber=plain(c.ticket.value),bookingClass=plain(c.bookingClass.value),baggage=plain(c.baggage.value);
+      if(!c.persisted&&!ticketNumber&&!bookingClass&&!baggage)return null;
+      return {booking_passenger_id:c.passengerId,ticket_number:ticketNumber,booking_class:bookingClass,baggage:baggage};
+    }).filter(function(ticket){return ticket!==null;});
 
     var farePayload=Object.keys(fareControls).map(function(fareType){
       var c=fareControls[fareType];
