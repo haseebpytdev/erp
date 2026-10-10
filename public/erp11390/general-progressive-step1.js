@@ -1147,7 +1147,8 @@ var etgpAirRequest113106=function(bookingId,method,payload){
   });
 };
 
-var etgpAirDraftKey113119=function(bookingId){return 'etgp-air-product-draft-v113119:'+String(bookingId||'');};
+var etgpDraftScopeKey113305=function(product,bookingId){var context=etBookingWorkspaceContext113305.getBillingContext();var batch=context==='SUPPLEMENTARY'?etBookingWorkspaceContext113305.getBillingBatchId():0;return String(bookingId||0)+'::'+context+'::'+String(batch)+'::'+String(product||'').toLowerCase();};
+var etgpAirDraftKey113119=function(bookingId){return 'etgp-air-product-draft-v113119:'+etgpDraftScopeKey113305('air',bookingId);};
 var etgpAirDraftRead113119=function(bookingId){
   try{
     var raw=localStorage.getItem(etgpAirDraftKey113119(bookingId));
@@ -1827,7 +1828,7 @@ var etgpHotelLoad113127=function(bookingId){
   return fetch(etgpProductEndpoint113305(bookingId,'hotel'),{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
     .then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error(etgpHotelError113127(data,'Hotel Data could not be loaded.'));return data;});});
 };
-var etgpHotelDraftKey113127=function(bookingId){return 'etgp-hotel-product-draft-v113132:'+String(bookingId||'');};
+var etgpHotelDraftKey113127=function(bookingId){return 'etgp-hotel-product-draft-v113132:'+etgpDraftScopeKey113305('hotel',bookingId);};
 var etgpHotelDraftRead113127=function(bookingId){try{var raw=localStorage.getItem(etgpHotelDraftKey113127(bookingId));return raw?JSON.parse(raw):null;}catch(e){return null;}};
 var etgpHotelDraftWrite113127=function(bookingId,payload){try{localStorage.setItem(etgpHotelDraftKey113127(bookingId),JSON.stringify({saved_at:Date.now(),payload:payload}));}catch(e){}};
 var etgpHotelDraftClear113127=function(bookingId){try{localStorage.removeItem(etgpHotelDraftKey113127(bookingId));}catch(e){}};
@@ -2006,7 +2007,7 @@ var etgpTransportLoad113139=function(bookingId){
   return fetch(etgpProductEndpoint113305(bookingId,'transport'),{method:'GET',credentials:'same-origin',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}})
     .then(function(response){return response.json().catch(function(){return {};}).then(function(data){if(!response.ok||!data||data.ok!==true)throw new Error(etgpTransportError113139(data,'Transport Data could not be loaded.'));return data;});});
 };
-var etgpTransportDraftKey113139=function(bookingId){return 'etgp-transport-product-draft-v113141:'+String(bookingId||'');};
+var etgpTransportDraftKey113139=function(bookingId){return 'etgp-transport-product-draft-v113141:'+etgpDraftScopeKey113305('transport',bookingId);};
 var etgpTransportDraftRead113139=function(bookingId){try{var raw=localStorage.getItem(etgpTransportDraftKey113139(bookingId));return raw?JSON.parse(raw):null;}catch(e){return null;}};
 var etgpTransportDraftWrite113139=function(bookingId,payload){try{localStorage.setItem(etgpTransportDraftKey113139(bookingId),JSON.stringify({saved_at:Date.now(),payload:payload}));}catch(e){}};
 var etgpTransportDraftClear113139=function(bookingId){try{localStorage.removeItem(etgpTransportDraftKey113139(bookingId));}catch(e){}};

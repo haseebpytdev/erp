@@ -29,7 +29,7 @@ ok(focus.includes('additionalObserver.disconnect();'), 'observer disconnects aft
 ok(!focus.includes('setTimeout(function(){etBookingFocusReconcileAdditionalServices'), 'no arbitrary delayed reconciliation is used');
 ok(progressive.includes("'etgp-toolbar-actions'"), 'progressive asset creates the final toolbar');
 ok(progressive.includes('toolbarActions.appendChild(unit)'), 'progressive action units remain canonical');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C47'"), 'C63 asset revision is authoritative after writable-state guard');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C68'"), 'current asset revision is authoritative');
 ok(presenter.includes('system.erp-assets.booking-focus'), 'booking-focus remains served by the existing presenter');
 ok(c59.includes('etBookingFocusReconcileAdditionalServices'), 'C59 route contract remains protected');
 ok(!focus.includes("/^\\/operations\\/bookings\\/\\d+\\/?$/i"), 'route scope is not narrowed to numeric IDs');

@@ -1,7 +1,8 @@
 (function () {
   'use strict';
   var key = 'visa', prefix = 'etgp-visa-product-draft-v113142:', instances = [];
-  function draftKey(id) { return prefix + String(id || 0); }
+  function draftScope(id) { var core = window.etDedicatedProductCore || {}; if (core.getDraftScopeKey) return core.getDraftScopeKey(key, id); var root = document.querySelector('[data-etgp-dedicated-product="1"]'); var dataset = root && root.dataset || {}; var context = String(dataset.billingContext || 'ORIGINAL').toUpperCase(); var batch = context === 'SUPPLEMENTARY' ? Number(dataset.billingBatchId || 0) || 0 : 0; return String(id || 0) + '::' + context + '::' + batch + '::' + key; }
+  function draftKey(id) { return prefix + draftScope(id); }
   function readDraft(id) { try { var raw = localStorage.getItem(draftKey(id)); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
   function writeDraft(id, data) { try { localStorage.setItem(draftKey(id), JSON.stringify(data || {})); } catch (e) {} }
   function clearDraft(id) { try { localStorage.removeItem(draftKey(id)); } catch (e) {} }

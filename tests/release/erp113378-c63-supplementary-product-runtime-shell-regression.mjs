@@ -43,6 +43,6 @@ ok(manager.includes("'writable' => strtolower((string) $batch->batch_type) === '
 ok(manager.includes('Only a supplementary Draft batch can be edited.') && manager.includes('Invoiced batches are read-only.') && manager.includes('Supplementary batch does not belong to this booking.'), 'server draft, invoice-lock and ownership guards remain authoritative');
 ok(presenter.includes('data-et-booking-billing-writable') && js.includes('supplementaryWorkspace?!supplementary'), 'non-writable supplementary batches remain locked');
 ok(js.includes("dataset.billingWritable||'0'"), 'supplementary plus batch ID alone is insufficient for runtime unlock');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C47'"), 'public asset version is bumped for the runtime JS guard');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C68'"), 'public asset version is current for the runtime JS guard');
 
 console.log('PASS ' + pass + ' ERP-11.3.378 C63 supplementary product runtime and shell assertions');

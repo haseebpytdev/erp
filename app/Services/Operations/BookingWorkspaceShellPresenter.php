@@ -172,8 +172,18 @@ final class BookingWorkspaceShellPresenter
             }) ?? $this->presentationLock($bookingId);
             $html = $this->addHtmlAttribute($html, 'data-et-booking-locked', $isSupplementaryProductPath ? ($supplementaryWritable ? '0' : '1') : ($initialBookingLock['locked'] ? '1' : '0'));
             $html = $this->addHtmlAttribute($html, 'data-et-booking-status', (string) ($initialBookingLock['status'] ?? 'DRAFT'));
-            $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', (string) ($initialBookingLock['reason'] ?? ''));
-            $html = $this->addHtmlAttribute($html, 'data-et-booking-billing-locked', ! empty($initialBookingLock['billing_locked']) ? '1' : '0');
+            $baseBillingLocked = ! empty($initialBookingLock['billing_locked']);
+            $baseLockReason = (string) ($initialBookingLock['reason'] ?? '');
+            $effectiveBillingLocked = $isSupplementaryProductPath ? ! $supplementaryWritable : $baseBillingLocked;
+            $effectiveLockReason = $isSupplementaryProductPath
+                ? ($supplementaryWritable ? '' : 'This supplementary batch is not writable.')
+                : $baseLockReason;
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-lock-reason', $effectiveLockReason);
+            $html = $this->addHtmlAttribute($html, 'data-et-booking-billing-locked', $effectiveBillingLocked ? '1' : '0');
+            if ($isSupplementaryProductPath) {
+                $html = $this->addHtmlAttribute($html, 'data-et-booking-base-billing-locked', $baseBillingLocked ? '1' : '0');
+                $html = $this->addHtmlAttribute($html, 'data-et-booking-base-lock-reason', $baseLockReason);
+            }
             if ($isSupplementaryProductPath) {
                 $html = $this->addHtmlAttribute($html, 'data-et-booking-billing-writable', $supplementaryWritable ? '1' : '0');
             }

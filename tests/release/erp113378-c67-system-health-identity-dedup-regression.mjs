@@ -8,15 +8,15 @@ const middleware = read('app/Http/Middleware/ApplyErpReleaseMetadata.php');
 const releaseSource = read('config/et_erp_release.php');
 const version = 'v1.1.33.378-ERP11.3.378';
 const release = 'ERP-11.3.378';
-const build = 'C67';
-const name = 'System Health Identity Dedup';
-const asset = 'C47';
+const build = 'C68';
+const name = 'Supplementary All-Product Billing Isolation';
+const asset = 'C68';
 
-ok(releaseSource.includes("'corrective_build' => 'C67'"), 'C67 build metadata is exact');
-ok(releaseSource.includes("'corrective_name' => 'System Health Identity Dedup'"), 'C67 name metadata is exact');
+ok(releaseSource.includes("'corrective_build' => 'C68'"), 'current build metadata is exact');
+ok(releaseSource.includes("'corrective_name' => 'Supplementary All-Product Billing Isolation'"), 'current name metadata is exact');
 ok(releaseSource.includes(`'version' => '${version}'`), 'application version remains unchanged');
 ok(releaseSource.includes(`'release' => '${release}'`), 'release remains unchanged');
-ok(releaseSource.includes(`'asset_version' => 'ERP-11.3.378-C47'`), 'asset revision remains C47');
+ok(releaseSource.includes(`'asset_version' => 'ERP-11.3.378-C68'`), 'asset revision is C68');
 ok(middleware.includes('metric-card') && middleware.includes('metric-label') && middleware.includes('metric-value'), 'C66 structural target remains');
 ok(middleware.includes("$note->appendChild($dom->createTextNode($releaseName))"), 'native metric-note remains release authority');
 ok(!middleware.includes("$identity->appendChild($dom->createElement('div', $releaseName))"), 'corrective identity no longer adds release');
@@ -54,7 +54,7 @@ ok(count(firstHealth, `· ${name}</div>`) === 1, 'Application corrective name co
 ok(count(firstHealth, `Asset ${asset}`) === 1, 'Application asset count is one');
 ok(count(firstHealth, `data-et-corrective-build="${build}"`) === 1, 'Application marker count is one');
 ok([`class="metric-label">Application`, version, `>${release}</div>`, `Build ${build}`, `· ${name}</div>`, `Asset ${asset}`, `data-et-corrective-build="${build}"`].every(token => count(firstHealth, token) === count(secondHealth, token)), 'Health identity is idempotent');
-const identityOutput = firstHealth.match(/data-et-corrective-build="C67"[\s\S]*?Asset C47<\/div>/)?.[0] ?? '';
+const identityOutput = firstHealth.match(/data-et-corrective-build="C68"[\s\S]*?Asset C68<\/div>/)?.[0] ?? '';
 ok(!identityOutput.includes(release), 'identity contains no duplicate release line');
 
 const firstSidebar = transformSidebar(liveSidebar);

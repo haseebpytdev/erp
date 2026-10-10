@@ -9,7 +9,10 @@
     return document.querySelector('[data-etgp-dedicated-product="1"]');
   };
   var context=function(){return window.etBookingWorkspaceContext||null;};
-  var keyFor=function(product,booking){return String(booking||0)+'::'+String(product||'').toLowerCase();};
+  var billingContext=function(){var c=context();if(c&&typeof c.getBillingContext==='function')return String(c.getBillingContext()||'ORIGINAL').toUpperCase();var r=root();return String(r&&r.dataset&&r.dataset.billingContext||'ORIGINAL').toUpperCase();};
+  var billingBatchId=function(){var c=context();if(c&&typeof c.getBillingBatchId==='function')return Number(c.getBillingBatchId()||0)||0;var r=root();return Number(r&&r.dataset&&r.dataset.billingBatchId||0)||0;};
+  var keyFor=function(product,booking){var contextName=billingContext(),batch=contextName==='SUPPLEMENTARY'?billingBatchId():0;return String(booking||0)+'::'+contextName+'::'+String(batch)+'::'+String(product||'').toLowerCase();};
+  var draftScopeKey=function(namespace,product,booking){return 'et-dedicated-draft:'+String(namespace||'general')+':'+keyFor(product,booking);};
   var directRootValue=function(name){var r=root();return r&&r.dataset?String(r.dataset[name]||''):'';};
   var create=function(tag,className,text){var el=document.createElement(tag||'div');if(className)el.className=className;if(text!==undefined)el.textContent=String(text);return el;};
   var core={
@@ -20,6 +23,10 @@
     getBookingId:function(){var direct=Number(directRootValue('bookingId')||0);if(direct>0)return direct;var c=context();return c&&typeof c.getBookingId==='function'?Number(c.getBookingId()||0)||0:0;},
     getBookingReference:function(){var direct=directRootValue('bookingReference');if(direct)return direct;var c=context();return c&&typeof c.getBookingReference==='function'?c.getBookingReference():'Booking';},
     getProductKey:function(){return directRootValue('etgpProductKey').toLowerCase();},
+    getBillingContext:billingContext,
+    getBillingBatchId:billingBatchId,
+    getProductScope:function(product,booking){return {booking_id:Number(booking||core.getBookingId())||0,billing_context:billingContext(),billing_batch_id:billingContext()==='SUPPLEMENTARY'?billingBatchId():0,product:String(product||core.getProductKey()).toLowerCase()};},
+    getDraftScopeKey:function(product,booking){return keyFor(product,booking);},
     getApiBase:function(){var c=context();return c&&typeof c.getApiBase==='function'?c.getApiBase():'/system/erp-bookings';},
     getCsrfToken:function(){var m=document.querySelector('meta[name="csrf-token"]');return m?String(m.content||''):'';},
     getLockState:function(){var locked=directRootValue('etgpBookingLocked');var status=directRootValue('etgpBookingStatus');if(locked||status)return {locked:locked==='1'||['PENDING APPROVAL','APPROVED','TRAVEL READY'].indexOf(status.toUpperCase())!==-1,status:status||'DRAFT',reason:directRootValue('etgpBookingLockReason')};var c=context();return c&&typeof c.getLockState==='function'?c.getLockState():{locked:false,status:'DRAFT',reason:''};},
@@ -42,9 +49,9 @@
     setProductPromise:function(product,booking,promise){promiseCache[keyFor(product,booking)]=promise;return promise;},
     getPassengerData:function(){return passengerSnapshot.slice();},
     setPassengerData:function(passengers){passengerSnapshot=Array.isArray(passengers)?passengers.slice():[];return passengerSnapshot;},
-    readDraft:function(namespace,booking,product){try{var raw=localStorage.getItem('et-dedicated-draft:'+namespace+':'+keyFor(product,booking));return raw?JSON.parse(raw):null;}catch(e){return null;}},
-    writeDraft:function(namespace,booking,product,data){try{localStorage.setItem('et-dedicated-draft:'+namespace+':'+keyFor(product,booking),JSON.stringify(data||{}));}catch(e){}return data;},
-    clearDraft:function(namespace,booking,product){try{localStorage.removeItem('et-dedicated-draft:'+namespace+':'+keyFor(product,booking));}catch(e){}},
+    readDraft:function(namespace,booking,product){try{var raw=localStorage.getItem(draftScopeKey(namespace,product,booking));return raw?JSON.parse(raw):null;}catch(e){return null;}},
+    writeDraft:function(namespace,booking,product,data){try{localStorage.setItem(draftScopeKey(namespace,product,booking),JSON.stringify(data||{}));}catch(e){}return data;},
+    clearDraft:function(namespace,booking,product){try{localStorage.removeItem(draftScopeKey(namespace,product,booking));}catch(e){}},
     refreshBookingState:function(){return core.requestText(window.location.href);},
     registerProduct:function(definition){if(!definition||!definition.key||typeof definition.mount!=='function')return false;registry[String(definition.key).toLowerCase()]=definition;return true;},
     getRegisteredProduct:function(key){return registry[String(key||'').toLowerCase()]||null;}

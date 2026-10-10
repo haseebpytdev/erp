@@ -12,11 +12,11 @@ const product = read('resources/views/operations/bookings/partials/product-works
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 const controller = read('app/Http/Controllers/Operations/GeneralBookingAdditionalServiceProductController.php');
 
-ok(/'corrective_build'\s*=>\s*'C(?:66|67)'/.test(release), 'current corrective metadata is explicit');
-ok(/'corrective_name'\s*=>\s*'(?:System Health Identity|System Health Identity Dedup)'/.test(release), 'current corrective name is explicit');
+ok(/'corrective_build'\s*=>\s*'C(?:66|67|68)'/.test(release), 'current corrective metadata is explicit');
+ok(/'corrective_name'\s*=>\s*'(?:System Health Identity|System Health Identity Dedup|Supplementary All-Product Billing Isolation)'/.test(release), 'current corrective name is explicit');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version is unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release is unchanged');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C47'"), 'asset revision remains C47');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C68'"), 'asset revision is C68');
 ok(middleware.includes('metric-card'), 'Application target uses metric-card');
 ok(middleware.includes('metric-label'), 'Application label authority uses metric-label');
 ok(middleware.includes('metric-value'), 'Application version authority uses metric-value');
