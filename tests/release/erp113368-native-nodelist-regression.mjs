@@ -27,7 +27,7 @@ class FakeElement {
 const document = { activeElement: null, readyState: 'complete', createElement: tag => new FakeElement(tag, document), querySelector: () => null };
 const response = { booking_id: 3686, passengers: [{ id: 11, name: 'Ayesha Khan', passport_number: 'AY123456' }], rates: [], visa_rows: [{ booking_passenger_id: 11, passenger_name: 'Ayesha Khan', passport_number: 'AY123456', sale_pkr: 42280, vendor_cost_pkr: 38000, margin_pkr: 4280, status: 'pending' }], summary: { customer_total: 42280, vendor_total: 38000, margin: 4280 } };
 let locked = false;
-const core = { getLockState: () => ({ locked }), applyReadOnly: root => false, getProductResponse: () => null, getProductPromise: () => null, setProductResponse() {} };
+const core = { getProductEndpoint: (product, booking) => '/system/erp-bookings/' + booking + '/' + product + '-product', getProductScope: (product, booking) => ({ booking_id: Number(booking), billing_context: 'ORIGINAL', billing_batch_id: 0, product }), getLockState: () => ({ locked }), applyReadOnly: root => false, getProductResponse: () => null, getProductPromise: () => null, setProductResponse() {} };
 const localStorage = { getItem: () => null, setItem() {}, removeItem() {} }; const window = { localStorage, etDedicatedProductCore: core, addEventListener() {} }; delete window.data;
 const context = { window, document, localStorage, console, Error, Math, JSON, Number, String, Object, Array, Set, Promise, fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve(response) }) };
 vm.runInNewContext(source, context);

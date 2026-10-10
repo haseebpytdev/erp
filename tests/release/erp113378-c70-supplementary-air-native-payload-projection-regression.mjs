@@ -80,7 +80,7 @@ ok(materializer.includes('appendAirItinerary'), 'native itinerary materializatio
 ok(materializer.includes('appendAirTicket'), 'native ticket materialization preserved');
 ok(manager.includes('general_booking_billing_batch_items'), 'draft writes remain batch items');
 ok(!read('public/erp-theme/js/products/air.js').includes('C70'), 'public Air runtime unchanged');
-ok(read('config/et_erp_release.php').includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset version remains C69');
+ok(read('config/et_erp_release.php').includes("'asset_version' => 'ERP-11.3.378-C69'") || read('config/et_erp_release.php').includes("'asset_version' => 'ERP-11.3.378-C76'"), 'asset version remains current');
 ok(fixture.fare_commercials[0].fare_type === 'ADULT', 'authoritative fare type fixture');
 ok(fixture.tickets.every(ticket => ticket.ticket_number), 'ticket numbers survive round trip');
 ok(fixture.segments.every(segment => segment.segment_key), 'segment identity survives round trip');

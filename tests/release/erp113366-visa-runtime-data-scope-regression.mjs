@@ -67,7 +67,7 @@ const response = {
 };
 const errors = [];
 const window = {
-  etDedicatedProductCore: {},
+  etDedicatedProductCore: { getProductEndpoint: (product, booking) => '/system/erp-bookings/' + booking + '/' + product + '-product', getProductScope: (product, booking) => ({ booking_id: Number(booking), billing_context: 'ORIGINAL', billing_batch_id: 0, product }) },
   addEventListener() {},
   localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
 };

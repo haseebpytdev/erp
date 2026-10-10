@@ -45,6 +45,8 @@ const response = {
   summary: { customer_total: 150000, vendor_total: 120000, margin: 30000 },
 };
 const dedicatedCore = {
+  getProductEndpoint: (product, booking) => '/system/erp-bookings/' + booking + '/' + product + '-product',
+  getProductScope: (product, booking) => ({ booking_id: Number(booking), billing_context: 'ORIGINAL', billing_batch_id: 0, product }),
   getLockState: () => ({ locked, status: locked ? 'approved' : 'draft', reason: locked ? 'approved' : '' }),
   applyReadOnly: root => { applyReadOnlyCalls++; if (locked) root.querySelectorAll('input,select,textarea,button,[role="button"]').forEach(element => { element.disabled = true; element.setAttribute('aria-disabled', 'true'); }); return locked; },
   getProductResponse: () => null, getProductPromise: () => null, setProductResponse() {},

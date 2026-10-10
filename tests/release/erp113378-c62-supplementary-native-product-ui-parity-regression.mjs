@@ -26,7 +26,7 @@ ok(js.includes("return '/system/erp-bookings/'+bookingId+'/'+product+'-product'+
 ok(js.includes('etgpProductEndpoint113305'), 'single context-aware request authority exists');
 ok(js.includes("'/system/erp-bookings/'+bookingId+'/additional-services/'+batch+'/'+product+'-product'"), 'supplementary API is batch scoped');
 ok(js.includes("product+'-product'+suffix"), 'all product endpoints use the same adapter');
-ok(visa.includes('etgpProductEndpoint113305') && visa.includes("'/system/erp-bookings/' + id + '/visa-product'"), 'Visa core preserves original fallback and supplementary adapter');
+ok(!visa.includes('etgpProductEndpoint113305') && !visa.includes("'/system/erp-bookings/' + id + '/visa-product'") && visa.includes('getProductEndpoint'), 'Visa core uses shared core endpoint authority without original fallback');
 ok(routes.includes("'/system/erp-bookings/{booking}/additional-services/{batch}/{product}-product'") && routes.includes("whereIn('product', ['air','hotel','transport','visa'])"), 'batch-scoped GET/PUT routes declared');
 ok(routes.includes('GeneralBookingAdditionalServiceProductController::class, \'apiShow\''), 'supplementary GET is controller-backed');
 ok(routes.includes('GeneralBookingAdditionalServiceProductController::class, \'apiStore\''), 'supplementary PUT is controller-backed');
@@ -53,7 +53,7 @@ ok(partial.includes('{{ $context->banner() }} · Draft'), 'draft context indicat
 ok(partial.includes('booking-workspace-header'), 'shared booking header remains one header');
 ok(!partial.includes('<form method="POST"'), 'no duplicate simplified form remains');
 ok(routes.includes("$name !== 'bookings.additional-services.products.edit'"), 'product edit receives focused workspace presentation');
-ok(/'asset_version' => 'ERP-11\.3\.378-C(?:68|69)'/.test(release), 'current public asset version is active');
+ok(/'asset_version' => 'ERP-11\.3\.378-C(?:68|69|76)'/.test(release), 'current public asset version is active');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version unchanged');
 ok(!partial.includes('booking_services') && !controller.includes('booking_services'), 'supplementary UI layer adds no native product writes');
 ok(manager.includes('general_booking_billing_batch_items'), 'supplementary persistence remains batch item authority');

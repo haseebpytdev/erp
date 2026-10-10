@@ -65,9 +65,9 @@ ok(materializer.includes('commercialAggregate'), 'service totals use frozen item
 ok(materializer.includes("'margin'=>round($sale-$cost,2)"), 'service margin reconciles');
 ok(controller.includes('legacy:'), 'legacy C70 snapshot compatibility');
 ok(controller.includes('segmentsForKeys'), 'legacy segment aliases retained');
-ok(release.includes("'corrective_build' => 'C71'") || release.includes("'corrective_build' => 'C72'") || release.includes("'corrective_build' => 'C73'") || release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'"), 'C71 build metadata');
-ok(release.includes("'corrective_name' => 'Supplementary Air Native Contract Closure'") || release.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'") || release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'") || release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'"), 'C71 name metadata');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset version unchanged');
+ok(release.includes("'corrective_build' => 'C71'") || release.includes("'corrective_build' => 'C72'") || release.includes("'corrective_build' => 'C73'") || release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'") || release.includes("'corrective_build' => 'C76'"), 'C71 build metadata');
+ok(release.includes("'corrective_name' => 'Supplementary Air Native Contract Closure'") || release.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'") || release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'") || release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'") || release.includes("'corrective_name' => 'Supplementary Visa Client Runtime Isolation'"), 'C71 name metadata');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'") || release.includes("'asset_version' => 'ERP-11.3.378-C76'"), 'asset version unchanged');
 ok(!read('public/erp-theme/js/products/air.js').includes('C71'), 'public Air JS unchanged');
 ok(assertions >= 48, 'C71 assertion threshold');
 console.log(`C71 supplementary Air native contract closure regression: PASS (${assertions} assertions)`);

@@ -42,6 +42,6 @@ ok(core.includes('clearDraft(id)') && core.includes('setProductResponse'), 'succ
 ok(core.includes("ui.feedback = { kind: 'error'"), 'save errors preserve draft and show feedback');
 ok(adapter.includes('beforeunload') && adapter.includes('popstate'), 'unsaved navigation guard remains');
 ok(!adapter.includes('general-progressive-step1') && !core.includes('general-progressive-step1'), 'dedicated Visa excludes GENERAL progressive runtime');
-ok(core.includes("request(id, 'PUT', body)"), 'save and load use centralized request authority');
+ok(core.includes("request(id, 'PUT', body") && core.includes("request(id, 'GET', null"), 'save and load use centralized request authority');
 
 console.log(`VISA_WORKSPACE_UI_REGRESSION=PASS (${pass} assertions)`);

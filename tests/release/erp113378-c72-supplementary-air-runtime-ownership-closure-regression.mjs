@@ -42,9 +42,9 @@ ok(materializer.includes("$segment['airline_name']??$segment['airline']??null"),
 ok(materializer.includes('ticket_no') && materializer.includes('document_no'), 'ticket aliases preserved');
 ok(materializer.includes('supplier_cost_snapshot'), 'frozen ticket commercial values preserved');
 ok(!materializer.includes('appendAirSegments'), 'dead helper absent');
-ok(release.includes("'corrective_build' => 'C72'") || release.includes("'corrective_build' => 'C73'") || release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'"), 'C72 metadata');
-ok(release.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'") || release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'") || release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'"), 'C72 name metadata');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset version unchanged');
+ok(release.includes("'corrective_build' => 'C72'") || release.includes("'corrective_build' => 'C73'") || release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'") || release.includes("'corrective_build' => 'C76'"), 'C72 metadata');
+ok(release.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'") || release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'") || release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'") || release.includes("'corrective_name' => 'Supplementary Visa Client Runtime Isolation'"), 'C72 name metadata');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'") || release.includes("'asset_version' => 'ERP-11.3.378-C76'"), 'asset version unchanged');
 ok(!read('public/erp-theme/js/products/air.js').includes('C72'), 'public Air JS unchanged');
 const collection = [{ source_key: 'gA:1' }, { source_key: 'gA:2' }];
 ok(new Set(collection.map(x => x.source_key)).size === 2, 'passenger identities survive reorder');

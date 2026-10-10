@@ -46,9 +46,9 @@ ok(manager.includes("'exchange_rate'=>$row['exchange_rate']"), 'prepared exchang
 ok(manager.includes("where('id', $row['existing_id'])"), 'prepared update retains exact row scope');
 ok(manager.includes("where('id', $row['id'])"), 'prepared delete retains exact row scope');
 ok(manager.includes("'recalculated_once'=>true"), 'collection reports one final recalculation');
-ok(release.includes("'corrective_build' => 'C73'") || release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'"), 'C73 metadata');
-ok(release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'") || release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'"), 'C73 name metadata');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset version unchanged');
+ok(release.includes("'corrective_build' => 'C73'") || release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'") || release.includes("'corrective_build' => 'C76'"), 'C73 metadata');
+ok(release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'") || release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'") || release.includes("'corrective_name' => 'Supplementary Visa Client Runtime Isolation'"), 'C73 name metadata');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'") || release.includes("'asset_version' => 'ERP-11.3.378-C76'"), 'asset version unchanged');
 ok(!read('public/erp-theme/js/products/air.js').includes('C73'), 'no public Air JS change');
 ok(!read('public/erp-theme/et-focused-shell.css').includes('C73'), 'no public CSS change');
 ok(failBeforeWrite(valid, row => { if (row.booking_passenger_id === 2) throw new Error('invalid passenger'); }), 'invalid passenger causes zero writes before failure');

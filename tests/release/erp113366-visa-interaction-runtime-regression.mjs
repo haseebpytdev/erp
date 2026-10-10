@@ -29,7 +29,7 @@ class FakeElement {
 }
 
 const document = { activeElement: null, readyState: 'complete', createElement: tag => new FakeElement(tag, document), querySelector: () => null };
-const window = { localStorage: { getItem: () => null, setItem() {}, removeItem() {} }, etDedicatedProductCore: {}, addEventListener() {} };
+const window = { localStorage: { getItem: () => null, setItem() {}, removeItem() {} }, etDedicatedProductCore: { getProductEndpoint: (product, booking) => '/system/erp-bookings/' + booking + '/' + product + '-product', getProductScope: (product, booking) => ({ booking_id: Number(booking), billing_context: 'ORIGINAL', billing_batch_id: 0, product }) }, addEventListener() {} };
 delete window.data;
 const errors = [];
 const response = {

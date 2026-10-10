@@ -8,20 +8,53 @@
   function clearDraft(id) { try { localStorage.removeItem(draftKey(id)); } catch (e) {} }
   function money(value) { var n = Number(String(value == null ? '0' : value).replace(/[^0-9.\-]/g, '')); return Number.isFinite(n) ? n : 0; }
   function validSale(value) { var raw = String(value == null ? '' : value).trim(); if (!raw || !/^(?:\d+\.?\d*|\.\d+)$/.test(raw)) return false; var n = Number(raw); return Number.isFinite(n) && n >= 0; }
-  function request(id, method, body) {
+  function productCore(cache) { return cache || window.etDedicatedProductCore || null; }
+  function activeScope(id, cache) {
+    var core = productCore(cache), scope = core && core.getProductScope ? core.getProductScope(key, id) : null;
+    if (scope) return scope;
+    var root = document.querySelector('[data-etgp-dedicated-product="1"]'), dataset = root && root.dataset || {}, context = String(dataset.billingContext || 'ORIGINAL').toUpperCase();
+    return { booking_id: Number(id || 0) || 0, billing_context: context, billing_batch_id: context === 'SUPPLEMENTARY' ? Number(dataset.billingBatchId || 0) || 0 : 0, product: key };
+  }
+  function supplementaryScope(data, id, cache) {
+    var scope = activeScope(id, cache);
+    if (scope.billing_context !== 'SUPPLEMENTARY') return true;
+    var received = data && data.supplementary_context;
+    return !!received && Number(received.batch_id || 0) === Number(scope.billing_batch_id || 0) && String(received.product || '').toLowerCase() === key && typeof received.writable === 'boolean';
+  }
+  function validateResponse(data, id, cache) {
+    if (!supplementaryScope(data, id, cache)) throw Error('Visa response scope is invalid for this workspace.');
+    return data;
+  }
+  function endpoint(id, cache) {
+    var core = productCore(cache);
+    if (!core || typeof core.getProductEndpoint !== 'function') throw Error('Visa endpoint authority is unavailable.');
+    var url = core.getProductEndpoint(key, id);
+    if (typeof url !== 'string' || !url) throw Error('Visa endpoint authority returned no URL.');
+    var scope = activeScope(id, core);
+    if (scope.billing_context === 'SUPPLEMENTARY') {
+      var expected = '/system/erp-bookings/' + id + '/additional-services/' + scope.billing_batch_id + '/visa-product';
+      if (Number(scope.billing_batch_id || 0) <= 0 || url !== expected) throw Error('Supplementary Visa endpoint scope is invalid.');
+    }
+    return url;
+  }
+  function request(id, method, body, cache) {
     var options = { method: method || 'GET', credentials: 'same-origin', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } };
     if (method && method !== 'GET') { options.headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(body || {}); }
-    var endpoint = window.etgpProductEndpoint113305 ? window.etgpProductEndpoint113305(id, 'visa') : '/system/erp-bookings/' + id + '/visa-product';
-    return fetch(endpoint, options).then(function (response) {
-      return response.json().catch(function () { return {}; }).then(function (data) { if (!response.ok || data.ok === false) throw Error(data.message || 'Visa request failed.'); return data; });
+    return fetch(endpoint(id, cache), options).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (data) { if (!response.ok || data.ok === false) throw Error(data.message || 'Visa request failed.'); return validateResponse(data, id, cache); });
     });
   }
   function load(id, cache) {
-    var cached = cache && cache.getProductResponse && cache.getProductResponse(key, id); if (cached) return Promise.resolve(cached);
-    var pending = cache && cache.getProductPromise && cache.getProductPromise(key, id); if (pending) return pending;
-    var promise = request(id, 'GET').then(function (data) { if (cache && cache.setProductResponse) cache.setProductResponse(key, id, data); return data; });
-    if (cache && cache.setProductPromise) cache.setProductPromise(key, id, promise);
-    return promise.catch(function (error) { if (cache && cache.setProductPromise) cache.setProductPromise(key, id, null); throw error; });
+    var cached = cache && cache.getProductResponse && cache.getProductResponse(key, id);
+    if (cached) { try { return Promise.resolve(validateResponse(cached, id, cache)); } catch (e) {} }
+    var fetchFresh = function () {
+      var promise = request(id, 'GET', null, cache).then(function (data) { if (cache && cache.setProductResponse) cache.setProductResponse(key, id, data); return data; });
+      if (cache && cache.setProductPromise) cache.setProductPromise(key, id, promise);
+      return promise.catch(function (error) { if (cache && cache.setProductPromise) cache.setProductPromise(key, id, null); throw error; });
+    };
+    var pending = cache && cache.getProductPromise && cache.getProductPromise(key, id);
+    if (pending) return pending.then(function (data) { return validateResponse(data, id, cache); }).catch(function () { if (cache && cache.setProductPromise) cache.setProductPromise(key, id, null); return fetchFresh(); });
+    return fetchFresh();
   }
   function payload(rows) { return { visas: (rows || []).map(function (row) { return { booking_passenger_id: Number(row.booking_passenger_id || 0), visa_rate_card_id: Number(row.visa_rate_card_id || 0), sale_pkr: money(row.sale_pkr), status: row.status || 'pending', application_reference: row.application_reference || '', visa_number: row.visa_number || '', issue_date: row.issue_date || null, expiry_date: row.expiry_date || null, notes: row.notes || '' }; }) }; }
   function text(value, fallback) { return String(value == null || value === '' ? (fallback || '—') : value); }
@@ -72,7 +105,7 @@
       var actions = element('div', 'etgp-visa-dialog-actions-366'), cancel = button('Cancel', 'etgp-visa-btn-ghost-366'); cancel.addEventListener('click', closeModal); var confirm = button('Add Visa', 'etgp-visa-btn-primary-366'); confirm.disabled = !ui.modal.passengerIds.size || !ui.modal.rateId || !validSale(ui.modal.salePkr); confirm.addEventListener('click', function () { if (isLocked() || !validSale(ui.modal.salePkr)) return; var rate = (data.rates || []).find(function (item) { return String(item.id) === String(ui.modal.rateId); }); if (!rate) return; ui.modal.passengerIds.forEach(function (passengerId) { var passenger = (data.passengers || []).find(function (item) { return String(item.id) === passengerId; }); if (!passenger || rows.some(function (row) { return Number(row.booking_passenger_id) === Number(passenger.id); })) return; rows.push({ booking_passenger_id: passenger.id, passenger_name: passenger.name, passport_number: passenger.passport_number, visa_rate_card_id: rate.id, country: rate.country, visa_type: rate.visa_type, provider_type: rate.provider_type, provider_name: rate.provider_name, saudi_company_name: rate.saudi_company_name, pakistani_iata_name: rate.pakistani_iata_name, vendor_name: rate.vendor_name, vendor_cost_pkr: rate.vendor_cost_pkr || 0, sale_pkr: Number(ui.modal.salePkr), margin_pkr: money(ui.modal.salePkr) - money(rate.vendor_cost_pkr), status: 'pending' }); }); markDirty(); ui.modal = null; ui.feedback = { kind: 'success', message: 'Visa rows added to the draft.' }; draw(); }); actions.appendChild(cancel); actions.appendChild(confirm); dialog.appendChild(actions); overlay.appendChild(dialog);
     }
     function details(row, parent) { var detail = element('div', 'etgp-visa-details-366'), grid = element('div', 'etgp-visa-details-grid-366'); [['Application Ref', 'application_reference'], ['Visa No.', 'visa_number'], ['Issue Date', 'issue_date'], ['Expiry Date', 'expiry_date'], ['Notes', 'notes']].forEach(function (field) { var input = addField(grid, field[0], row[field[1]], field[1] === 'notes' ? 'textarea' : 'input'); input.addEventListener('input', function () { if (isLocked()) return; row[field[1]] = input.value; markDirty(); }); }); detail.appendChild(grid); parent.appendChild(detail); }
-    function saveRows() { if (isLocked() || !state.dirty || !rowsValid() || state.saveInFlight) return; state.saveInFlight = true; draw(); var body = payload(rows); request(id, 'PUT', body).then(function (result) { responseData = Object.assign({}, responseData, result || {}); rows = Array.isArray(result.visa_rows) ? result.visa_rows : rows; clearDraft(id); state.dirty = false; state.draftPending = false; if (cache && cache.setProductResponse) cache.setProductResponse(key, id, responseData); ui.feedback = { kind: 'success', message: result.message || 'Visa Data saved.' }; }).catch(function (error) { ui.feedback = { kind: 'error', message: error.message || 'Visa Data could not be saved.' }; }).finally(function () { state.saveInFlight = false; draw(); }); }
+    function saveRows() { if (isLocked() || !state.dirty || !rowsValid() || state.saveInFlight) return; state.saveInFlight = true; draw(); var body = payload(rows); request(id, 'PUT', body, cache).then(function (result) { responseData = Object.assign({}, responseData, result || {}); rows = Array.isArray(result.visa_rows) ? result.visa_rows : rows; clearDraft(id); state.dirty = false; state.draftPending = false; if (cache && cache.setProductResponse) cache.setProductResponse(key, id, responseData); ui.feedback = { kind: 'success', message: result.message || 'Visa Data saved.' }; }).catch(function (error) { ui.feedback = { kind: 'error', message: error.message || 'Visa Data could not be saved.' }; }).finally(function () { state.saveInFlight = false; draw(); }); }
     function draw() {
       if (disposed) return; var focus = captureFocus(); host.innerHTML = ''; var box = element('section', 'etgp-visa-dedicated-366 etgp-visa-dedicated-365'), header = element('header', 'etgp-visa-header-366'), title = element('div'); title.appendChild(element('h2', null, 'Visa')); title.appendChild(element('p', null, 'Passenger visa processing and provider commercials')); header.appendChild(title); box.appendChild(header);
       var toolbar = element('div', 'etgp-visa-toolbar-366'), search = document.createElement('input'); search.type = 'search'; search.setAttribute('data-etgp-visa-search', 'main'); search.placeholder = 'Search passenger, passport, provider or reference'; search.value = ui.query; search.setAttribute('aria-label', 'Search Visa rows'); search.addEventListener('input', function () { ui.query = search.value; ui.page = 1; draw(); }); toolbar.appendChild(search);
