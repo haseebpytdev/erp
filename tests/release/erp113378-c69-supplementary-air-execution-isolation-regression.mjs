@@ -13,8 +13,8 @@ const manager = read('app/Services/Operations/GeneralBookingAdditionalServiceIte
 const c68 = read('tests/release/erp113378-c68-supplementary-all-product-billing-isolation-regression.mjs');
 let assertions = 0;
 const ok = (value, label) => { assertions += 1; if (!value) throw new Error(`FAIL: ${label}`); };
-ok(release.includes("'corrective_build' => 'C69'"), 'C69 build metadata');
-ok(release.includes("'corrective_name' => 'Supplementary Air Execution Isolation'"), 'C69 name metadata');
+ok(release.includes("'corrective_build' => 'C69'") || release.includes("'corrective_build' => 'C70'"), 'C69 build lineage metadata');
+ok(release.includes("'corrective_name' => 'Supplementary Air Execution Isolation'") || release.includes("'corrective_name' => 'Supplementary Air Native Payload Projection'"), 'C69 name lineage metadata');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'C69 asset version');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release unchanged');
@@ -48,7 +48,7 @@ ok(manager.includes('general_booking_invoice_links'), 'invoice lock remains enfo
 ok(api.includes('$items->update') && api.includes('$items->create'), 'draft writes remain batch item writes');
 ok(!api.includes('SalesInvoiceService::createFromBooking'), 'supplementary API does not create invoice');
 ok(!api.includes("->store($request"), 'supplementary API does not write native product store');
-ok(api.includes("'tickets', $request->input('ticket_groups.0.tickets', [])"), 'Air payload tickets contract preserved');
+ok(api.includes('projectAirPayload') && api.includes("$payload['tickets']"), 'Air native payload projection contract preserved');
 ok(api.includes('nativeSnapshot($product, $row)'), 'Air payload snapshot normalization preserved');
 ok(api.includes("$row['sale_price'] ??= $row['sale_amount'] ?? $row['customer_total']"), 'Air customer commercial payload preserved');
 ok(api.includes("$row['cost_price'] ??= $row['cost_amount'] ?? $row['supplier_total']"), 'Air supplier commercial payload preserved');

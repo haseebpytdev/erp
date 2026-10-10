@@ -101,6 +101,49 @@ final class GeneralBookingAdditionalServiceItemManager
         });
     }
 
+    /** Persist one server-projected Air passenger/group identity idempotently. */
+    public function upsertAirProjected(int $bookingId, int $batchId, array $input, string $sourceKey): array
+    {
+        return DB::transaction(function () use ($bookingId, $batchId, $input, $sourceKey): array {
+            $batch = $this->lockWritableBatch($bookingId, $batchId, 'air');
+            $existing = DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->where('source_key', $sourceKey)->lockForUpdate()->first();
+            $snapshot = $this->normalize($bookingId, 'air', $input + ['source_key' => $sourceKey]);
+            $this->validate($bookingId, 'air', $snapshot);
+            if ($this->duplicateAir($batchId, $snapshot, $existing ? (int) $existing->id : null)) {
+                throw new \InvalidArgumentException('This Air passenger/group line already exists in the Draft.');
+            }
+            $commercial = $this->commercial('air', $snapshot, $batch);
+            $snapshot['description'] = $commercial['description'];
+            $hash = $this->hash($snapshot, $commercial);
+            if ($existing) {
+                DB::table('general_booking_billing_batch_items')->where('id', $existing->id)->update([
+                    'booking_passenger_id' => $snapshot['booking_passenger_id'] ?? null,
+                    'description_snapshot' => $commercial['description'], 'quantity' => $commercial['quantity'],
+                    'unit_price' => $commercial['unit_price'], 'sale_amount' => $commercial['sale_amount'],
+                    'supplier_cost_snapshot' => $commercial['cost'], 'margin_snapshot' => $commercial['margin'],
+                    'product_snapshot' => json_encode($snapshot, JSON_UNESCAPED_SLASHES), 'source_hash' => $hash, 'updated_at' => now(),
+                ]);
+                $id = (int) $existing->id;
+            } else {
+                $lineNo = ((int) DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->max('line_no')) + 1;
+                $id = (int) DB::table('general_booking_billing_batch_items')->insertGetId([
+                    'batch_id'=>$batchId,'booking_id'=>$bookingId,'line_no'=>$lineNo,'product_type'=>'air','source_key'=>$sourceKey,
+                    'source_table'=>null,'source_id'=>null,'booking_service_id'=>null,'booking_passenger_id'=>$snapshot['booking_passenger_id']??null,
+                    'description_snapshot'=>$commercial['description'],'quantity'=>$commercial['quantity'],'unit_price'=>$commercial['unit_price'],
+                    'sale_amount'=>$commercial['sale_amount'],'supplier_cost_snapshot'=>$commercial['cost'],'margin_snapshot'=>$commercial['margin'],
+                    'currency_code'=>(string)$batch->currency_code,'exchange_rate'=>(float)$batch->exchange_rate,
+                    'revenue_mapping_key_snapshot'=>null,'product_snapshot'=>json_encode($snapshot,JSON_UNESCAPED_SLASHES),
+                    'source_hash'=>$hash,'created_at'=>now(),'updated_at'=>now(),
+                ]);
+            }
+            $this->recalculate($batchId, $batch);
+            return ['ok'=>true,'item_id'=>$id,'source_key'=>$sourceKey];
+        });
+    }
+
+    public function passengerSnapshotFor(int $bookingId, int $id): ?array
+    { return $this->passengerSnapshot($bookingId, $id); }
+
     public function delete(int $bookingId, int $batchId, int $itemId, string $product): array
     {
         return DB::transaction(function () use ($bookingId, $batchId, $itemId, $product): array {
@@ -187,7 +230,11 @@ final class GeneralBookingAdditionalServiceItemManager
 
     private function duplicateAir(int $batchId, array $snapshot, ?int $excludeId = null): bool
     {
-        $key = fn (array $v): string => (string) ((int) ($v['booking_passenger_id'] ?? 0)).'|'.strtolower(preg_replace('/\s+/', ' ', trim((string) ($v['from'] ?? '')))).'|'.strtolower(preg_replace('/\s+/', ' ', trim((string) ($v['to'] ?? '')))).'|'.str_replace(' ', 'T', (string) ($v['departure_at'] ?? ''));
+        $key = function (array $v): string {
+            $group = (string) ($v['native_air_group_key'] ?? $v['air_group_key'] ?? '');
+            if ($group === '') $group = strtolower(trim((string) ($v['from'] ?? ''))).'|'.strtolower(trim((string) ($v['to'] ?? ''))).'|'.str_replace(' ', 'T', (string) ($v['departure_at'] ?? ''));
+            return $group.'|'.(string) ((int) ($v['booking_passenger_id'] ?? 0));
+        };
         $wanted = $key($snapshot);
         return DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->where('product_type', 'air')->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))->get(['product_snapshot'])->contains(function ($row) use ($wanted, $key): bool { $saved = json_decode((string) $row->product_snapshot, true); return is_array($saved) && $key($saved) === $wanted; });
     }

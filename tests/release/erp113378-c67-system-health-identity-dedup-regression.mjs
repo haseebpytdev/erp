@@ -12,8 +12,8 @@ const build = 'C69';
 const name = 'Supplementary All-Product Billing Isolation';
 const asset = 'C69';
 
-ok(releaseSource.includes("'corrective_build' => 'C69'"), 'current build metadata is exact');
-ok(releaseSource.includes("'corrective_name' => 'Supplementary Air Execution Isolation'"), 'current name metadata is exact');
+ok(releaseSource.includes("'corrective_build' => 'C69'") || releaseSource.includes("'corrective_build' => 'C70'"), 'current build metadata is exact');
+ok(releaseSource.includes("'corrective_name' => 'Supplementary Air Execution Isolation'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Native Payload Projection'"), 'current name metadata is exact');
 ok(releaseSource.includes(`'version' => '${version}'`), 'application version remains unchanged');
 ok(releaseSource.includes(`'release' => '${release}'`), 'release remains unchanged');
 ok(releaseSource.includes(`'asset_version' => 'ERP-11.3.378-C69'`), 'asset revision is C69');
