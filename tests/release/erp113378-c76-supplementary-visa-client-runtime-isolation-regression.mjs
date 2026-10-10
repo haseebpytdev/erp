@@ -88,9 +88,9 @@ ok(!c75.includes('$this->stableSegmentKey($s),)'), 'C74 PHP syntax fix remains')
 ok(c72.includes('billingContext') && c72.includes('billingBatchId'), 'C72 global billing ownership remains');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release remains');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C76'"), 'asset version is C76');
-ok(release.includes("'corrective_build' => 'C76'"), 'C76 corrective build is exact');
-ok(release.includes("'corrective_name' => 'Supplementary Visa Client Runtime Isolation'"), 'C76 corrective name is exact');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C76'") || release.includes("'asset_version' => 'ERP-11.3.378-C77'"), 'asset version remains current');
+ok(release.includes("'corrective_build' => 'C76'") || release.includes("'corrective_build' => 'C77'"), 'C76 corrective build remains in lineage');
+ok(release.includes("'corrective_name' => 'Supplementary Visa Client Runtime Isolation'") || release.includes("'corrective_name' => 'Air Runtime State Integrity'"), 'C76 corrective name remains in lineage');
 ok(!read('public/erp-theme/et-focused-shell.css').includes('C76'), 'no public CSS change');
 ok(assertions >= 25, 'C76 assertion threshold');
 console.log(`C76 supplementary Visa client runtime isolation regression: PASS (${assertions} assertions)`);

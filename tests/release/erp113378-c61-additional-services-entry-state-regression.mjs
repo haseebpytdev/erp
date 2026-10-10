@@ -51,7 +51,7 @@ ok(baseScope.includes('supplementary'), 'BASE invoice scope excludes supplementa
 ok(invoiceService.includes('createFromBookingServices') && invoiceService.includes('createFromBooking'), 'native base/supplementary invoice methods remain distinct');
 ok(c56.includes('activeBaseInvoices'), 'C56 active BASE cardinality protection remains');
 ok(c52.includes('supplementary') && c52.includes('asset_version'), 'C52 supplementary and release contracts remain');
-ok(/'asset_version' => 'ERP-11\.3\.378-C(?:68|69|76)'/.test(release), 'asset version remains advanced for billing isolation');
+ok(/'asset_version' => 'ERP-11\.3\.378-C(?:68|69|76|77)'/.test(release), 'asset version remains advanced for billing isolation');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains unchanged');
 ok(controller.includes('indexState($booking') && controller.includes('$state[\'booking\']'), 'controllers use the state-owned canonical booking row');
 ok(manager.includes('BookingEditLockResolver $locks'), 'Additional Services eligibility uses existing lock resolver');
