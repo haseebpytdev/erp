@@ -35,8 +35,8 @@ ok(materializer.includes('supplier_cost_snapshot'), 'native commercial parity re
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'version remains');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release remains');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset remains C69');
-ok(release.includes("'corrective_build' => 'C74'"), 'C74 metadata remains');
-ok(release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'"), 'C74 name remains');
+ok(release.includes("'corrective_build' => 'C74'") || release.includes("'corrective_build' => 'C75'"), 'C74 metadata remains');
+ok(release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'") || release.includes("'corrective_name' => 'Supplementary Air Empty Read Projection Closure'"), 'C74 name remains');
 ok(!read('public/erp-theme/js/products/air.js').includes('C74'), 'no public JS change');
 ok(!read('public/erp-theme/et-focused-shell.css').includes('C74'), 'no public CSS change');
 ok(!read('database/migrations/2026_09_30_140000_create_general_booking_billing_foundation.php').includes('C74'), 'no migration change');

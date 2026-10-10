@@ -25,8 +25,8 @@ ok(product.includes('data-billing-writable="{{ $context->isSupplementary() ? ($s
 ok(!product.includes('$lock[\'locked\'] =') && !product.includes('$lock["locked"] ='), 'base lock object is not mutated');
 ok(middleware.includes('additional-services/[^/]+/products/(?:air|hotel|transport|visa)'), 'C64 focused supplementary path classifier remains present');
 ['air', 'hotel', 'transport', 'visa'].forEach(productKey => ok(middleware.includes('products/(?:air|hotel|transport|visa)'), `${productKey} supplementary role remains covered`));
-ok(/'corrective_build'\s*=>\s*'C(?:65|66|67|68|69|70|71|72|73|74)'/.test(release), 'corrective build metadata remains explicit');
-ok(/'corrective_name'\s*=>\s*'(?:Supplementary Presentation Polish|System Health Identity|System Health Identity Dedup|Supplementary All-Product Billing Isolation|Supplementary Air Execution Isolation|Supplementary Air Native Payload Projection|Supplementary Air Native Contract Closure|Supplementary Air Runtime Ownership Closure|Supplementary Air Collection Preflight Closure|Supplementary Air PHP Source Validity Closure)'/.test(release), 'corrective name metadata remains explicit');
+ok(/'corrective_build'\s*=>\s*'C(?:65|66|67|68|69|70|71|72|73|74|75)'/.test(release), 'corrective build metadata remains explicit');
+ok(/'corrective_name'\s*=>\s*'(?:Supplementary Presentation Polish|System Health Identity|System Health Identity Dedup|Supplementary All-Product Billing Isolation|Supplementary Air Execution Isolation|Supplementary Air Native Payload Projection|Supplementary Air Native Contract Closure|Supplementary Air Runtime Ownership Closure|Supplementary Air Collection Preflight Closure|Supplementary Air PHP Source Validity Closure|Supplementary Air Empty Read Projection Closure)'/.test(release), 'corrective name metadata remains explicit');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release remains unchanged');
 ok(/'asset_version' => 'ERP-11\.3\.378-C(?:68|69)'/.test(release), 'current asset revision is active');

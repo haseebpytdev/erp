@@ -156,7 +156,10 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         }
         $groups = array_values($groups); $segments = [];
         foreach ($groups as $group) foreach ($group['segments'] as $segment) { $fingerprint = json_encode($segment, JSON_UNESCAPED_SLASHES); if (! collect($segments)->contains(fn ($s): bool => json_encode($s, JSON_UNESCAPED_SLASHES) === $fingerprint)) $segments[] = $segment; }
-        return ['tickets'=>array_merge(...array_map(fn ($g) => $g['tickets'], $groups ?: [[]])), 'ticket_groups'=>$groups, 'segments'=>$segments, 'itinerary'=>$segments, 'common'=>$groups[0]['common'] ?? [], 'fare_commercials'=>$groups[0]['fare_commercials'] ?? []];
+        if ($groups === []) {
+            return ['tickets'=>[], 'ticket_groups'=>[], 'segments'=>[], 'itinerary'=>[], 'common'=>[], 'fare_commercials'=>[]];
+        }
+        return ['tickets'=>array_merge(...array_map(fn ($g) => $g['tickets'], $groups)), 'ticket_groups'=>$groups, 'segments'=>$segments, 'itinerary'=>$segments, 'common'=>$groups[0]['common'] ?? [], 'fare_commercials'=>$groups[0]['fare_commercials'] ?? []];
     }
 
     private function discountAmount(float $base, mixed $type, mixed $value): float
