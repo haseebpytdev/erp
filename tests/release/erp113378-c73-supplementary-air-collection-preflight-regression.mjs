@@ -46,8 +46,8 @@ ok(manager.includes("'exchange_rate'=>$row['exchange_rate']"), 'prepared exchang
 ok(manager.includes("where('id', $row['existing_id'])"), 'prepared update retains exact row scope');
 ok(manager.includes("where('id', $row['id'])"), 'prepared delete retains exact row scope');
 ok(manager.includes("'recalculated_once'=>true"), 'collection reports one final recalculation');
-ok(release.includes("'corrective_build' => 'C73'"), 'C73 metadata');
-ok(release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'"), 'C73 name metadata');
+ok(release.includes("'corrective_build' => 'C73'") || release.includes("'corrective_build' => 'C74'"), 'C73 metadata');
+ok(release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'") || release.includes("'corrective_name' => 'Supplementary Air PHP Source Validity Closure'"), 'C73 name metadata');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset version unchanged');
 ok(!read('public/erp-theme/js/products/air.js').includes('C73'), 'no public Air JS change');
 ok(!read('public/erp-theme/et-focused-shell.css').includes('C73'), 'no public CSS change');

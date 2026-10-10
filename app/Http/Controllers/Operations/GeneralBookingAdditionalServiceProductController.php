@@ -135,7 +135,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
                     'departure_at' => $ticket['departure_at'] ?? ($segments[0]['departure_at'] ?? null),
                     'arrival_at' => $ticket['arrival_at'] ?? ($segments[0]['arrival_at'] ?? null),
                     'segments' => $segments, 'itinerary' => $segments, 'common' => $common, 'group_common' => $common,
-                    'fare_commercials' => $fares, 'client_key' => 'supp-'.$groupKey, 'segment_keys' => array_values(array_map(fn (array $s): string => (string) ($s['client_key'] ?? $s['segment_key'] ?? $this->stableSegmentKey($s),), $segments)), 'native_air_group_key' => $groupKey,
+                    'fare_commercials' => $fares, 'client_key' => 'supp-'.$groupKey, 'segment_keys' => array_values(array_map(fn (array $s): string => (string) ($s['client_key'] ?? $s['segment_key'] ?? $this->stableSegmentKey($s)), $segments)), 'native_air_group_key' => $groupKey,
                     'native_sale_price' => $customerNet, 'native_cost_price' => $vendorBaseNet,
                     'sale_price' => round($customerNet, 2), 'cost_price' => round($vendorBaseNet + ($vendorOther / $paxCount), 2),
                 ]);
