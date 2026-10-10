@@ -8,8 +8,8 @@ return [
     // Historical regression fixtures retain: 'asset_version' => 'ERP-11.3.378-C37.1'
     'asset_version' => 'ERP-11.3.378-C69',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C72',
-    'corrective_name' => 'Supplementary Air Runtime Ownership Closure',
+    'corrective_build' => 'C73',
+    'corrective_name' => 'Supplementary Air Collection Preflight Closure',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];

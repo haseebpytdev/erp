@@ -147,32 +147,81 @@ final class GeneralBookingAdditionalServiceItemManager
     {
         return DB::transaction(function () use ($bookingId, $batchId, $projected): array {
             $batch = $this->lockWritableBatch($bookingId, $batchId, 'air');
-            $keys = [];
-            foreach ($projected as $row) {
-                $key = (string) ($row['source_key'] ?? '');
-                if ($key === '' || isset($keys[$key])) throw new \InvalidArgumentException('Air collection contains an ambiguous source identity.');
-                $keys[$key] = true;
-            }
-            // Validate every projected snapshot before the first item mutation.
-            // The outer transaction remains the sole collection boundary; the
-            // inner upsert runs its work directly when recalculation is false.
-            $prepared = [];
-            foreach ($projected as $row) {
-                $sourceKey = (string) $row['source_key'];
-                $snapshot = $this->normalize($bookingId, 'air', (array) $row['snapshot'] + ['source_key' => $sourceKey]);
-                $this->validate($bookingId, 'air', $snapshot);
-                $prepared[] = ['source_key' => $sourceKey, 'snapshot' => $snapshot];
-            }
-            foreach ($prepared as $row) $this->upsertAirProjected($bookingId, $batchId, $row['snapshot'], $row['source_key'], false);
-            $existing = DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->where('product_type', 'air')->whereNull('source_table')->whereNull('source_id')->whereNull('booking_service_id')->get(['id','source_key']);
-            foreach ($existing as $item) {
-                if (isset($keys[(string) $item->source_key])) continue;
-                if (str_starts_with((string) $item->source_key, 'supp-draft:')) throw new \InvalidArgumentException('Ambiguous legacy Air Draft identity cannot be removed safely.');
-                DB::table('general_booking_billing_batch_items')->where('id', $item->id)->delete();
-            }
+            $prepared = $this->prepareAirProjectedCollection($bookingId, $batchId, $batch, $projected);
+            $this->applyPreparedAirCollection($bookingId, $batchId, $prepared);
             $this->recalculate($batchId, $batch);
             return ['ok'=>true, 'item_count'=>count($projected), 'recalculated_once'=>true];
         });
+    }
+
+    /** Prepare the complete Air replacement plan without mutating any batch item. */
+    private function prepareAirProjectedCollection(int $bookingId, int $batchId, object $batch, array $projected): array
+    {
+        $existing = DB::table('general_booking_billing_batch_items')
+            ->where('batch_id', $batchId)->where('booking_id', $bookingId)->where('product_type', 'air')
+            ->whereNull('source_table')->whereNull('source_id')->whereNull('booking_service_id')
+            ->lockForUpdate()->get();
+        $bySource = []; foreach ($existing as $item) $bySource[(string) $item->source_key] = $item;
+        $sourceKeys = []; $identityKeys = []; $rows = []; $lineNo = (int) DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->max('line_no');
+
+        foreach ($projected as $row) {
+            $sourceKey = (string) ($row['source_key'] ?? '');
+            if ($sourceKey === '' || isset($sourceKeys[$sourceKey])) throw new \InvalidArgumentException('Air collection contains an ambiguous source identity.');
+            $sourceKeys[$sourceKey] = true;
+            $snapshot = $this->normalize($bookingId, 'air', (array) ($row['snapshot'] ?? []) + ['source_key' => $sourceKey]);
+            $this->validate($bookingId, 'air', $snapshot);
+            $identity = $this->airIdentityKey($snapshot);
+            if (isset($identityKeys[$identity])) throw new \InvalidArgumentException('Air collection contains a duplicate canonical identity.');
+            $identityKeys[$identity] = true;
+            foreach ($existing as $saved) {
+                if ((string) $saved->source_key === $sourceKey) continue;
+                $savedSnapshot = json_decode((string) $saved->product_snapshot, true);
+                if (is_array($savedSnapshot) && $this->airIdentityKey($savedSnapshot) === $identity) throw new \InvalidArgumentException('This Air passenger/group line already exists in the Draft.');
+            }
+            $commercial = $this->commercial('air', $snapshot, $batch);
+            $snapshot['description'] = $commercial['description'];
+            $existingRow = $bySource[$sourceKey] ?? null;
+            $rows[] = [
+                'source_key' => $sourceKey, 'existing_id' => $existingRow ? (int) $existingRow->id : null,
+                'snapshot' => $snapshot, 'commercial' => $commercial, 'description' => $commercial['description'],
+                'source_hash' => $this->hash($snapshot, $commercial), 'line_no' => $existingRow ? (int) $existingRow->line_no : ++$lineNo,
+                'currency_code' => (string) $batch->currency_code, 'exchange_rate' => (float) $batch->exchange_rate,
+            ];
+        }
+        $remove = [];
+        foreach ($existing as $item) {
+            if (isset($sourceKeys[(string) $item->source_key])) continue;
+            if (str_starts_with((string) $item->source_key, 'supp-draft:')) throw new \InvalidArgumentException('Ambiguous legacy Air Draft identity cannot be removed safely.');
+            $remove[] = ['id' => (int) $item->id, 'source_key' => (string) $item->source_key];
+        }
+        return ['rows' => $rows, 'remove' => $remove];
+    }
+
+    /** Apply only the already-prepared Air mutation plan. */
+    private function applyPreparedAirCollection(int $bookingId, int $batchId, array $prepared): void
+    {
+        foreach ($prepared['rows'] as $row) {
+            $snapshot = $row['snapshot']; $commercial = $row['commercial'];
+            $values = [
+                'booking_passenger_id' => $snapshot['booking_passenger_id'] ?? null,
+                'description_snapshot' => $row['description'], 'quantity' => $commercial['quantity'], 'unit_price' => $commercial['unit_price'],
+                'sale_amount' => $commercial['sale_amount'], 'supplier_cost_snapshot' => $commercial['cost'], 'margin_snapshot' => $commercial['margin'],
+                'product_snapshot' => json_encode($snapshot, JSON_UNESCAPED_SLASHES), 'source_hash' => $row['source_hash'], 'updated_at' => now(),
+            ];
+            if ($row['existing_id']) {
+                $updated = DB::table('general_booking_billing_batch_items')->where('id', $row['existing_id'])->where('batch_id', $batchId)->where('product_type', 'air')->whereNull('source_table')->whereNull('source_id')->whereNull('booking_service_id')->update($values);
+                if ($updated !== 1) throw new \RuntimeException('Air Draft item changed during collection synchronization.');
+            } else {
+                DB::table('general_booking_billing_batch_items')->insertGetId($values + [
+                    'batch_id'=>$batchId,'booking_id'=>$bookingId,'line_no'=>$row['line_no'],'product_type'=>'air','source_key'=>$row['source_key'],
+                    'source_table'=>null,'source_id'=>null,'booking_service_id'=>null,'currency_code'=>$row['currency_code'],'exchange_rate'=>$row['exchange_rate'],'revenue_mapping_key_snapshot'=>null,'created_at'=>now(),
+                ]);
+            }
+        }
+        foreach ($prepared['remove'] as $row) {
+            $deleted = DB::table('general_booking_billing_batch_items')->where('id', $row['id'])->where('batch_id', $batchId)->where('product_type', 'air')->whereNull('source_table')->whereNull('source_id')->whereNull('booking_service_id')->delete();
+            if ($deleted !== 1) throw new \RuntimeException('Air Draft removal target changed during collection synchronization.');
+        }
     }
 
     public function passengerSnapshotFor(int $bookingId, int $id): ?array
@@ -262,15 +311,16 @@ final class GeneralBookingAdditionalServiceItemManager
         DB::table('general_booking_billing_batches')->where('id', $batchId)->update(['customer_subtotal' => $subtotal, 'discount_total' => 0, 'customer_total' => $subtotal, 'supplier_cost_total' => $cost, 'agent_commission_total' => 0, 'salesperson_commission_total' => 0, 'margin_total' => round($subtotal - $cost, 2), 'source_snapshot_hash' => hash('sha256', json_encode(['items' => $hashes, 'currency' => $batch->currency_code, 'rate' => $batch->exchange_rate])), 'lock_version' => ((int) $batch->lock_version) + 1, 'updated_at' => now()]);
     }
 
+    private function airIdentityKey(array $snapshot): string
+    {
+        $group = (string) ($snapshot['native_air_group_key'] ?? $snapshot['air_group_key'] ?? '');
+        if ($group === '') $group = strtolower(trim((string) ($snapshot['from'] ?? ''))).'|'.strtolower(trim((string) ($snapshot['to'] ?? ''))).'|'.str_replace(' ', 'T', (string) ($snapshot['departure_at'] ?? ''));
+        return $group.'|'.(string) ((int) ($snapshot['booking_passenger_id'] ?? 0));
+    }
     private function duplicateAir(int $batchId, array $snapshot, ?int $excludeId = null): bool
     {
-        $key = function (array $v): string {
-            $group = (string) ($v['native_air_group_key'] ?? $v['air_group_key'] ?? '');
-            if ($group === '') $group = strtolower(trim((string) ($v['from'] ?? ''))).'|'.strtolower(trim((string) ($v['to'] ?? ''))).'|'.str_replace(' ', 'T', (string) ($v['departure_at'] ?? ''));
-            return $group.'|'.(string) ((int) ($v['booking_passenger_id'] ?? 0));
-        };
-        $wanted = $key($snapshot);
-        return DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->where('product_type', 'air')->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))->get(['product_snapshot'])->contains(function ($row) use ($wanted, $key): bool { $saved = json_decode((string) $row->product_snapshot, true); return is_array($saved) && $key($saved) === $wanted; });
+        $wanted = $this->airIdentityKey($snapshot);
+        return DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->where('product_type', 'air')->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))->get(['product_snapshot'])->contains(function ($row) use ($wanted): bool { $saved = json_decode((string) $row->product_snapshot, true); return is_array($saved) && $this->airIdentityKey($saved) === $wanted; });
     }
 
     private function hash(array $snapshot, array $commercial): string { ksort($snapshot); return hash('sha256', json_encode(['snapshot' => $this->sort($snapshot), 'commercial' => $commercial], JSON_UNESCAPED_SLASHES)); }

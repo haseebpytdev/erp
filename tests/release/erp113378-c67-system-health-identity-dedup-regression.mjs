@@ -12,8 +12,8 @@ const build = 'C69';
 const name = 'Supplementary All-Product Billing Isolation';
 const asset = 'C69';
 
-ok(releaseSource.includes("'corrective_build' => 'C69'") || releaseSource.includes("'corrective_build' => 'C70'") || releaseSource.includes("'corrective_build' => 'C71'") || releaseSource.includes("'corrective_build' => 'C72'"), 'current build metadata is exact');
-ok(releaseSource.includes("'corrective_name' => 'Supplementary Air Execution Isolation'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Native Payload Projection'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Native Contract Closure'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'"), 'current name metadata is exact');
+ok(releaseSource.includes("'corrective_build' => 'C69'") || releaseSource.includes("'corrective_build' => 'C70'") || releaseSource.includes("'corrective_build' => 'C71'") || releaseSource.includes("'corrective_build' => 'C72'") || releaseSource.includes("'corrective_build' => 'C73'"), 'current build metadata is exact');
+ok(releaseSource.includes("'corrective_name' => 'Supplementary Air Execution Isolation'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Native Payload Projection'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Native Contract Closure'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'") || releaseSource.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'"), 'current name metadata is exact');
 ok(releaseSource.includes(`'version' => '${version}'`), 'application version remains unchanged');
 ok(releaseSource.includes(`'release' => '${release}'`), 'release remains unchanged');
 ok(releaseSource.includes(`'asset_version' => 'ERP-11.3.378-C69'`), 'asset revision is C69');

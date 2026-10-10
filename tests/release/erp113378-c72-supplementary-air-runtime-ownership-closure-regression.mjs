@@ -14,7 +14,7 @@ const pass = (fn, label) => { try { fn(); ok(true, label); } catch { ok(false, l
 const fail = (fn, label) => { try { fn(); ok(false, label); } catch { ok(true, label); } };
 ok(manager.includes('$recalculate'), 'recalculate parameter is captured');
 ok(manager.includes('return $recalculate ? DB::transaction($work) : $work();'), 'standalone transaction wrapper is explicit');
-ok(manager.includes('upsertAirProjected') && manager.includes('false'), 'collection inner upsert suppresses recalc');
+ok(manager.includes('prepareAirProjectedCollection') && manager.includes('applyPreparedAirCollection'), 'collection uses explicit prepare/apply phases');
 ok(manager.includes('$this->recalculate($batchId, $batch);'), 'standalone and final recalculation authority exists');
 ok(manager.includes('syncAirProjectedCollection'), 'single collection authority exists');
 ok(controller.includes('validateAirGlobalOwnership'), 'global ownership validation is called');
@@ -31,7 +31,7 @@ pass(() => validate([{ segment_keys: ['s1', 's2', 's3'] }]), 'single group owns 
 ok(controller.includes('segment.client_key') || controller.includes("['client_key']"), 'client key is first class');
 ok(controller.includes('stableSegmentKey'), 'legacy key is deterministic');
 ok(controller.includes('count($owned) !== count($keys)'), 'global ownership cardinality checked');
-ok(manager.includes('$prepared = []') && manager.includes("$this->validate($bookingId, 'air', $snapshot)") && manager.includes("foreach ($prepared as $row)"), 'collection snapshots validate before mutation');
+ok(manager.includes('$rows = []') && manager.includes("$this->validate($bookingId, 'air', $snapshot)"), 'collection snapshots validate before mutation');
 ok(manager.includes('Ambiguous legacy Air Draft identity'), 'legacy ambiguous removal fails closed');
 ok(manager.includes('whereNull(\'source_table\')'), 'only unmaterialized Air rows are removable');
 ok(manager.includes("product_type', 'air'"), 'other products remain untouched');
@@ -42,8 +42,8 @@ ok(materializer.includes("$segment['airline_name']??$segment['airline']??null"),
 ok(materializer.includes('ticket_no') && materializer.includes('document_no'), 'ticket aliases preserved');
 ok(materializer.includes('supplier_cost_snapshot'), 'frozen ticket commercial values preserved');
 ok(!materializer.includes('appendAirSegments'), 'dead helper absent');
-ok(release.includes("'corrective_build' => 'C72'"), 'C72 metadata');
-ok(release.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'"), 'C72 name metadata');
+ok(release.includes("'corrective_build' => 'C72'") || release.includes("'corrective_build' => 'C73'"), 'C72 metadata');
+ok(release.includes("'corrective_name' => 'Supplementary Air Runtime Ownership Closure'") || release.includes("'corrective_name' => 'Supplementary Air Collection Preflight Closure'"), 'C72 name metadata');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'asset version unchanged');
 ok(!read('public/erp-theme/js/products/air.js').includes('C72'), 'public Air JS unchanged');
 const collection = [{ source_key: 'gA:1' }, { source_key: 'gA:2' }];
