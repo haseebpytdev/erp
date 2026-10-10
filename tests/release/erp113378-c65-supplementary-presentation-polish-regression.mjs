@@ -25,8 +25,8 @@ ok(product.includes('data-billing-writable="{{ $context->isSupplementary() ? ($s
 ok(!product.includes('$lock[\'locked\'] =') && !product.includes('$lock["locked"] ='), 'base lock object is not mutated');
 ok(middleware.includes('additional-services/[^/]+/products/(?:air|hotel|transport|visa)'), 'C64 focused supplementary path classifier remains present');
 ['air', 'hotel', 'transport', 'visa'].forEach(productKey => ok(middleware.includes('products/(?:air|hotel|transport|visa)'), `${productKey} supplementary role remains covered`));
-ok(/'corrective_build'\s*=>\s*'C(?:65|66)'/.test(release), 'corrective build metadata remains explicit');
-ok(/'corrective_name'\s*=>\s*'(?:Supplementary Presentation Polish|System Health Identity)'/.test(release), 'corrective name metadata remains explicit');
+ok(/'corrective_build'\s*=>\s*'C(?:65|66|67)'/.test(release), 'corrective build metadata remains explicit');
+ok(/'corrective_name'\s*=>\s*'(?:Supplementary Presentation Polish|System Health Identity|System Health Identity Dedup)'/.test(release), 'corrective name metadata remains explicit');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release remains unchanged');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C47'"), 'asset revision remains C47');
@@ -34,7 +34,7 @@ ok(middleware.includes('DOMDocument') && middleware.includes('applicationCards')
 ok(middleware.includes("metric-label") && middleware.includes("metric-value"), 'Health target requires native Application metric markup');
 ok(middleware.includes('data-et-corrective-build'), 'Application card receives corrective build marker');
 ok(middleware.includes('data-et-corrective-name') && middleware.includes('data-et-asset-revision'), 'Application card receives corrective name and asset markers');
-ok(middleware.includes('$releaseName') && middleware.includes("$identity->appendChild($dom->createElement('div', $releaseName))"), 'Application card displays configured release');
+ok(middleware.includes('$releaseName') && middleware.includes("$note->appendChild($dom->createTextNode($releaseName))"), 'Application card displays configured release');
 ok(middleware.includes("'data-et-sidebar-corrective-build='"), 'sidebar has a bounded corrective-build marker');
 ok(middleware.includes('data-et-sidebar-corrective-build') && middleware.includes('Build '), 'sidebar displays configured build identity');
 ok(middleware.includes('$releaseName'), 'sidebar release remains config-driven');

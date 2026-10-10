@@ -501,7 +501,6 @@ class ApplyErpReleaseMetadata
         $identity->setAttribute('data-et-corrective-name', $correctiveName);
         $identity->setAttribute('data-et-asset-revision', $assetRevision);
         $identity->setAttribute('class', 'et-corrective-build-identity');
-        $identity->appendChild($dom->createElement('div', $releaseName));
         $buildLine = $dom->createElement('div');
         $buildLine->appendChild($dom->createElement('strong', 'Build '.$correctiveBuild));
         if ($correctiveName !== '') {

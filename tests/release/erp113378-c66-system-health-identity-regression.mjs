@@ -12,8 +12,8 @@ const product = read('resources/views/operations/bookings/partials/product-works
 const presenter = read('app/Services/Operations/BookingWorkspaceShellPresenter.php');
 const controller = read('app/Http/Controllers/Operations/GeneralBookingAdditionalServiceProductController.php');
 
-ok(release.includes("'corrective_build' => 'C66'"), 'C66 metadata is exact');
-ok(release.includes("'corrective_name' => 'System Health Identity'"), 'C66 corrective name is exact');
+ok(/'corrective_build'\s*=>\s*'C(?:66|67)'/.test(release), 'current corrective metadata is explicit');
+ok(/'corrective_name'\s*=>\s*'(?:System Health Identity|System Health Identity Dedup)'/.test(release), 'current corrective name is explicit');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version is unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release is unchanged');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C47'"), 'asset revision remains C47');
@@ -22,7 +22,7 @@ ok(middleware.includes('metric-label'), 'Application label authority uses metric
 ok(middleware.includes('metric-value'), 'Application version authority uses metric-value');
 ok(!middleware.includes('$headingNodes') && !middleware.includes('card-title'), 'Health target no longer depends on heading/card-title authority');
 ok(middleware.includes('count($applicationCards) !== 1'), 'zero or multiple Application cards fail closed');
-ok(middleware.includes("createElement('div', $releaseName)"), 'Application identity contains configured release');
+ok(middleware.includes("metric-note") && middleware.includes("$note->appendChild($dom->createTextNode($releaseName))"), 'native metric-note contains configured release');
 ok(middleware.includes("createElement('strong', 'Build '"), 'Application identity contains configured build');
 ok(middleware.includes('$correctiveName'), 'Application identity contains configured corrective name');
 ok(middleware.includes("createElement('div', 'Asset '"), 'Application identity contains configured asset revision');
