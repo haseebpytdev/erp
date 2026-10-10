@@ -102,7 +102,7 @@ final class GeneralBookingAdditionalServiceItemManager
     }
 
     /** Persist one server-projected Air passenger/group identity idempotently. */
-    public function upsertAirProjected(int $bookingId, int $batchId, array $input, string $sourceKey): array
+    public function upsertAirProjected(int $bookingId, int $batchId, array $input, string $sourceKey, bool $recalculate = true): array
     {
         return DB::transaction(function () use ($bookingId, $batchId, $input, $sourceKey): array {
             $batch = $this->lockWritableBatch($bookingId, $batchId, 'air');
@@ -136,8 +136,31 @@ final class GeneralBookingAdditionalServiceItemManager
                     'source_hash'=>$hash,'created_at'=>now(),'updated_at'=>now(),
                 ]);
             }
-            $this->recalculate($batchId, $batch);
+            if ($recalculate) $this->recalculate($batchId, $batch);
             return ['ok'=>true,'item_id'=>$id,'source_key'=>$sourceKey];
+        });
+    }
+
+    /** Atomically replace only editable Air draft items; other products are untouched. */
+    public function syncAirProjectedCollection(int $bookingId, int $batchId, array $projected): array
+    {
+        return DB::transaction(function () use ($bookingId, $batchId, $projected): array {
+            $batch = $this->lockWritableBatch($bookingId, $batchId, 'air');
+            $keys = [];
+            foreach ($projected as $row) {
+                $key = (string) ($row['source_key'] ?? '');
+                if ($key === '' || isset($keys[$key])) throw new \InvalidArgumentException('Air collection contains an ambiguous source identity.');
+                $keys[$key] = true;
+            }
+            foreach ($projected as $row) $this->upsertAirProjected($bookingId, $batchId, (array) $row['snapshot'], (string) $row['source_key'], false);
+            $existing = DB::table('general_booking_billing_batch_items')->where('batch_id', $batchId)->where('product_type', 'air')->whereNull('source_table')->whereNull('source_id')->whereNull('booking_service_id')->get(['id','source_key']);
+            foreach ($existing as $item) {
+                if (isset($keys[(string) $item->source_key])) continue;
+                if (str_starts_with((string) $item->source_key, 'supp-draft:')) throw new \InvalidArgumentException('Ambiguous legacy Air Draft identity cannot be removed safely.');
+                DB::table('general_booking_billing_batch_items')->where('id', $item->id)->delete();
+            }
+            $this->recalculate($batchId, $batch);
+            return ['ok'=>true, 'item_count'=>count($projected), 'recalculated_once'=>true];
         });
     }
 

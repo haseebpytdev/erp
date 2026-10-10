@@ -13,8 +13,8 @@ const manager = read('app/Services/Operations/GeneralBookingAdditionalServiceIte
 const c68 = read('tests/release/erp113378-c68-supplementary-all-product-billing-isolation-regression.mjs');
 let assertions = 0;
 const ok = (value, label) => { assertions += 1; if (!value) throw new Error(`FAIL: ${label}`); };
-ok(release.includes("'corrective_build' => 'C69'") || release.includes("'corrective_build' => 'C70'"), 'C69 build lineage metadata');
-ok(release.includes("'corrective_name' => 'Supplementary Air Execution Isolation'") || release.includes("'corrective_name' => 'Supplementary Air Native Payload Projection'"), 'C69 name lineage metadata');
+ok(release.includes("'corrective_build' => 'C69'") || release.includes("'corrective_build' => 'C70'") || release.includes("'corrective_build' => 'C71'"), 'C69 build lineage metadata');
+ok(release.includes("'corrective_name' => 'Supplementary Air Execution Isolation'") || release.includes("'corrective_name' => 'Supplementary Air Native Payload Projection'") || release.includes("'corrective_name' => 'Supplementary Air Native Contract Closure'"), 'C69 name lineage metadata');
 ok(release.includes("'asset_version' => 'ERP-11.3.378-C69'"), 'C69 asset version');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version unchanged');
 ok(release.includes("'release' => 'ERP-11.3.378'"), 'release unchanged');

@@ -10,7 +10,7 @@ let assertions = 0;
 const ok = (value, label) => { assertions += 1; if (!value) throw new Error(`FAIL: ${label}`); };
 ok(controller.includes('projectAirPayload'), 'server Air projector exists');
 ok(controller.includes('airReadProjection'), 'server Air read projection exists');
-ok(controller.includes('upsertAirProjected'), 'Air uses stable upsert');
+ok(controller.includes('syncAirProjectedCollection'), 'Air uses atomic stable collection sync');
 ok(controller.includes('ticket_groups'), 'group payload accepted');
 ok(controller.includes('segment_keys'), 'group segment membership accepted');
 ok(controller.includes('fare_commercials'), 'fare payload accepted');

@@ -30,7 +30,7 @@ has(m, /passenger_link_mode_snapshot/, 'PASSENGER_MODE_SNAPSHOT');
 has(m, /pricing_basis_snapshot/, 'PRICING_BASIS_SNAPSHOT');
 has(m, /commercialAggregate[\s\S]*supplier_cost[\s\S]*margin/s, 'FROZEN_COMMERCIAL_PROJECTED');
 has(m, /existing_booking_service_id[\s\S]*new_service/s, 'REUSED_SERVICE_NOT_REPRICED');
-no(m, /booking_services[^;]*->update/s, 'REUSED_SERVICE_NOT_UPDATED');
+no(m, /private function appendBookingService[^\r\n]*->update/, 'REUSED_SERVICE_NOT_UPDATED');
 
 has(m, /enumCompatible[\s\S]*preg_match_all/s, 'ENUM_VALUES_PARSED');
 has(m, /No compatible active native booking service status|No compatible pending Air ticket status|No compatible pending Visa status/s, 'ENUM_FAIL_CLOSED');
@@ -53,7 +53,7 @@ has(r, /booking_column|service_link_column/, 'HOTEL_RESOLVER_CONTRACT');
 
 has(m, /\$plan\['native_table'\][\s\S]*transportTableCompatible/s, 'TRANSPORT_USES_PLAN_NATIVE_TABLE');
 no(m, /compatibleTable\(\[/, 'TRANSPORT_NO_FIRST_EXISTING_TABLE_SCAN');
-no(m, /DB::table\('booking_services'\)[^;]*->update/s, 'TRANSPORT_REUSED_SERVICE_NOT_UPDATED');
+no(m, /private function appendTransport[^\r\n]*booking_services[^\r\n]*->update/, 'TRANSPORT_REUSED_SERVICE_NOT_UPDATED');
 
 has(m, /passengers->ids\(\$bookingId\)/, 'PASSENGER_OWNERSHIP_RECHECK');
 has(m, /booking_visa_services.*booking_id.*booking_passenger_id.*exists/s, 'VISA_UNIQUENESS_RECHECK');

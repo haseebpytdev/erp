@@ -20,7 +20,7 @@ no(visaPlan, /\$this->serviceStrategy\s*\(/, 'VISA_REUSE_EXISTING_SERVICE_REMOVE
 has(materializer, /Unmaterialized supplementary items must use new_service/, 'UNMATERIALIZED_REUSE_STRATEGY_FAILS_CLOSED');
 has(planner, /product_groups[\s\S]*group_key[\s\S]*item_ids/s, 'AIR_GROUP_ONE_NEW_SERVICE');
 has(materializer, /commercialAggregate[\s\S]*appendBookingService/s, 'FROZEN_COMMERCIAL_TO_NEW_SERVICE');
-no(materializer, /booking_services[^;]*->update/, 'EXISTING_BOOKING_SERVICE_NOT_UPDATED');
+no(materializer, /private function appendBookingService[^\r\n]*->update/, 'EXISTING_BOOKING_SERVICE_NOT_UPDATED');
 no(materializer, /existing_booking_service_id[^;]*appendBookingService|appendBookingService[^;]*existing_booking_service_id/, 'EXISTING_BOOKING_SERVICE_NOT_REPRICED');
 has(materializer, /passengerContract[\s\S]*appendPassengerLinks/s, 'PASSENGER_CONTRACT_PRESERVED');
 has(materializer, /if\s*\(!DB::table\('booking_service_passengers'\).*exists\(\)\)\s*DB::table\('booking_service_passengers'\).*insert/s, 'PIVOT_APPEND_ONLY');

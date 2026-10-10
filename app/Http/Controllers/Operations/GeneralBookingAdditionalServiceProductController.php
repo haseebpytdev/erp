@@ -57,9 +57,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         abort_if(($state['batch_missing'] ?? false) || ($state['schema_ready'] ?? true) === false, 404);
         abort_unless(($state['writable'] ?? false) === true, 409, 'Only a writable supplementary Draft batch can be edited.');
         if ($product === 'air') {
-            foreach ($this->projectAirPayload($booking, $request->all(), $items) as $projected) {
-                $items->upsertAirProjected($booking, $batch, $projected['snapshot'], $projected['source_key']);
-            }
+            $items->syncAirProjectedCollection($booking, $batch, $this->projectAirPayload($booking, $request->all(), $items));
             return $this->apiShow($request, $booking, $batch, $product, $items);
         }
         $rows = match ($product) { 'hotel' => $request->input('stays', []), 'transport' => $request->input('transports', []), 'visa' => $request->input('visas', $request->input('visa_rows', [])) };
@@ -92,7 +90,7 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         foreach ($groups as $groupIndex => $group) {
             if (! is_array($group)) continue;
             $common = is_array($group['common'] ?? null) ? $group['common'] : [];
-            $segments = is_array($group['segments'] ?? null) ? $group['segments'] : $this->segmentsForKeys($payload['segments'] ?? [], $group['segment_keys'] ?? []);
+            $segments = $this->resolveAirSegments($payload['segments'] ?? [], $group['segment_keys'] ?? [], count($groups) > 1);
             $tickets = is_array($group['tickets'] ?? null) ? $group['tickets'] : [];
             $fares = is_array($group['fare_commercials'] ?? null) ? $group['fare_commercials'] : [];
             $groupKey = hash('sha256', json_encode([
@@ -115,7 +113,8 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
                 $fareType = strtoupper((string) ($passenger['fare_type'] ?? ''));
                 $fare = collect($fares)->first(fn ($f): bool => strtoupper((string) ($f['fare_type'] ?? '')) === $fareType);
                 if (! is_array($fare)) throw new \InvalidArgumentException('Air fare row is missing for the authoritative passenger type.');
-                $paxCount = max(1, (int) ($fare['pax_count'] ?? $counts[$fareType] ?? 1));
+                $paxCount = max(1, (int) ($counts[$fareType] ?? 0));
+                if ((int) ($fare['pax_count'] ?? $paxCount) !== $paxCount) throw new \InvalidArgumentException('Air fare passenger count does not match the active booking passengers.');
                 $basic = max(0, (float) ($fare['basic_rate'] ?? 0));
                 $customerMinus = $this->discountAmount($basic, $fare['customer_minus_type'] ?? null, $fare['customer_minus_value'] ?? 0);
                 $vendorMinus = $this->discountAmount($basic, $fare['vendor_minus_type'] ?? null, $fare['vendor_minus_value'] ?? 0);
@@ -126,16 +125,16 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
                     'booking_passenger_id' => $passengerId, 'passenger_snapshot' => $passenger,
                     'vendor_id' => (int) ($common['supplier_id'] ?? $common['vendor_id'] ?? $ticket['vendor_id'] ?? 0) ?: null,
                     'vendor_name' => $common['supplier_name'] ?? $common['vendor_name'] ?? null,
-                    'airline_id' => $this->firstValue($common, ['airline_id']) ?? ($ticket['airline_id'] ?? null),
-                    'airline_code' => $this->firstValue($common, ['airline_code']) ?? ($ticket['airline_code'] ?? null),
-                    'airline_name' => $this->firstValue($common, ['airline']) ?? ($ticket['airline_name'] ?? null),
+                    'airline_id' => $this->firstValue($segments[0] ?? [], ['airline_id']) ?? ($ticket['airline_id'] ?? null),
+                    'airline_code' => $this->firstValue($segments[0] ?? [], ['airline_code']) ?? ($ticket['airline_code'] ?? null),
+                    'airline_name' => $this->firstValue($segments[0] ?? [], ['airline','airline_name','name']) ?? ($ticket['airline_name'] ?? null),
                     'pnr' => $common['pnr'] ?? $ticket['pnr'] ?? null,
                     'airline_pnr' => $common['airline_pnr'] ?? null, 'ticket_status' => $common['ticket_status'] ?? null,
                     'from' => $ticket['from'] ?? ($segments[0]['from'] ?? null), 'to' => $ticket['to'] ?? ($segments[0]['to'] ?? null),
                     'departure_at' => $ticket['departure_at'] ?? ($segments[0]['departure_at'] ?? null),
                     'arrival_at' => $ticket['arrival_at'] ?? ($segments[0]['arrival_at'] ?? null),
                     'segments' => $segments, 'itinerary' => $segments, 'common' => $common, 'group_common' => $common,
-                    'fare_commercials' => $fares, 'ticket_groups' => [$group], 'native_air_group_key' => $groupKey,
+                    'fare_commercials' => $fares, 'client_key' => 'supp-'.$groupKey, 'segment_keys' => array_values(array_map(fn (array $s): string => (string) ($s['client_key'] ?? $s['segment_key'] ?? $this->stableSegmentKey($s),), $segments)), 'native_air_group_key' => $groupKey,
                     'native_sale_price' => $customerNet, 'native_cost_price' => $vendorBaseNet,
                     'sale_price' => round($customerNet, 2), 'cost_price' => round($vendorBaseNet + ($vendorOther / $paxCount), 2),
                 ]);
@@ -150,8 +149,9 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
         $groups = [];
         foreach ($snapshots as $snapshot) {
             $key = (string) ($snapshot['native_air_group_key'] ?? 'legacy:'.hash('sha256', json_encode($snapshot['segments'] ?? [$snapshot], JSON_UNESCAPED_SLASHES)));
-            $groups[$key] ??= ['common'=>$snapshot['common'] ?? $snapshot['group_common'] ?? [], 'segments'=>$snapshot['segments'] ?? $snapshot['itinerary'] ?? [], 'tickets'=>[], 'fare_commercials'=>$snapshot['fare_commercials'] ?? []];
+            $groups[$key] ??= ['service_id'=>null,'client_key'=>(string)($snapshot['client_key'] ?? 'supp-'.$key),'segment_keys'=>$snapshot['segment_keys'] ?? [], 'common'=>$snapshot['common'] ?? $snapshot['group_common'] ?? [], 'segments'=>$snapshot['segments'] ?? $snapshot['itinerary'] ?? [], 'tickets'=>[], 'fare_commercials'=>$snapshot['fare_commercials'] ?? []];
             $groups[$key]['tickets'][] = $snapshot;
+            if ($groups[$key]['segment_keys'] === []) $groups[$key]['segment_keys'] = array_values(array_map(fn (array $s): string => (string) ($s['client_key'] ?? $s['segment_key'] ?? $this->stableSegmentKey($s)), $groups[$key]['segments']));
         }
         $groups = array_values($groups); $segments = [];
         foreach ($groups as $group) foreach ($group['segments'] as $segment) { $fingerprint = json_encode($segment, JSON_UNESCAPED_SLASHES); if (! collect($segments)->contains(fn ($s): bool => json_encode($s, JSON_UNESCAPED_SLASHES) === $fingerprint)) $segments[] = $segment; }
@@ -160,7 +160,26 @@ final class GeneralBookingAdditionalServiceProductController extends Controller
 
     private function discountAmount(float $base, mixed $type, mixed $value): float
     { $value = max(0, (float) $value); return strtolower((string) $type) === 'percent' ? min($base, round($base * min(100, $value) / 100, 2)) : min($base, $value); }
-    private function segmentsForKeys(mixed $segments, mixed $keys): array { if (! is_array($segments)) return []; if (! is_array($keys) || $keys === []) return array_values($segments); $wanted = array_fill_keys(array_map('strval', $keys), true); return array_values(array_filter($segments, fn ($s, $i): bool => isset($wanted[(string) ($s['key'] ?? $s['segment_key'] ?? $i)]), ARRAY_FILTER_USE_BOTH)); }
+    private function segmentsForKeys(mixed $segments, mixed $keys): array { if (! is_array($segments)) return []; if (! is_array($keys) || $keys === []) return array_values($segments); $wanted = array_fill_keys(array_map('strval', $keys), true); return array_values(array_filter($segments, fn ($s, $i): bool => isset($wanted[(string) ($s['client_key'] ?? $s['segment_key'] ?? $s['key'] ?? $i)]), ARRAY_FILTER_USE_BOTH)); }
+    private function resolveAirSegments(mixed $segments, mixed $keys, bool $multiGroup): array
+    {
+        if (! is_array($segments)) throw new \InvalidArgumentException('Air segment universe is invalid.');
+        $normalized = [];
+        foreach (array_values($segments) as $index => $segment) {
+            if (! is_array($segment)) throw new \InvalidArgumentException('Air segment is invalid.');
+            $segment['client_key'] = (string) ($segment['client_key'] ?? $segment['segment_key'] ?? $this->stableSegmentKey($segment, $index));
+            $normalized[] = $segment;
+        }
+        if (! $multiGroup && (! is_array($keys) || $keys === [])) return $normalized;
+        if (! is_array($keys) || $keys === []) throw new \InvalidArgumentException('Air group segment ownership is required.');
+        $wanted = array_map('strval', $keys); $known = array_column($normalized, 'client_key');
+        if (count($wanted) !== count(array_unique($wanted)) || count(array_diff($wanted, $known)) > 0) throw new \InvalidArgumentException('Air group segment ownership is invalid.');
+        $owned = array_values(array_filter($normalized, fn (array $segment): bool => in_array((string) $segment['client_key'], $wanted, true)));
+        if (count($owned) !== count($wanted)) throw new \InvalidArgumentException('Air group segment ownership is incomplete.');
+        return $owned;
+    }
+    private function stableSegmentKey(array $segment, int $position = 0): string
+    { return 'supp-segment-'.hash('sha256', json_encode([$segment['from'] ?? null,$segment['to'] ?? null,$segment['departure_at'] ?? null,$segment['arrival_at'] ?? null,$segment['flight_number'] ?? null,$position], JSON_UNESCAPED_SLASHES)); }
     private function firstValue(array $row, array $keys): mixed { foreach ($keys as $key) if (isset($row[$key]) && $row[$key] !== '') return $row[$key]; return null; }
 
     public function apiTransportSelection(Request $request, int $booking, int $batch, GeneralBookingAdditionalServiceItemManager $items): JsonResponse
