@@ -424,12 +424,6 @@ class ApplyErpReleaseMetadata
             return $html;
         }
 
-        // The historical package description is retained in config for
-        // compatibility, but is not the current corrective-build identity.
-        if ($package !== '' && $releaseName !== '') {
-            $html = str_replace($package, $releaseName, $html);
-        }
-
         if (! class_exists(\DOMDocument::class)) {
             return $html;
         }
@@ -444,35 +438,29 @@ class ApplyErpReleaseMetadata
         }
 
         $xpath = new \DOMXPath($dom);
-        foreach ($xpath->query('//*[@data-et-corrective-build]') as $existing) {
-            if ($existing instanceof \DOMElement && $existing->parentNode) {
-                $existing->parentNode->removeChild($existing);
-            }
-        }
-
         $applicationCards = [];
-        $headingNodes = $xpath->query('//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6 or contains(concat(" ", normalize-space(@class), " "), " card-title ")]');
-        foreach ($headingNodes as $heading) {
-            if (! $heading instanceof \DOMElement) {
+        foreach ($xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " metric-card ")]') as $card) {
+            if (! $card instanceof \DOMElement) {
                 continue;
             }
-            $headingText = strtoupper(trim(preg_replace('/\s+/', ' ', $heading->textContent)));
-            if ($headingText !== 'APPLICATION') {
-                continue;
-            }
-            $candidate = $heading;
-            for ($depth = 0; $depth < 8 && $candidate instanceof \DOMElement; $depth++) {
-                $classes = ' '.trim($candidate->getAttribute('class')).' ';
-                $isCard = str_contains($classes, ' card ')
-                    || str_contains($classes, ' et-card ')
-                    || str_contains($classes, ' health-card ')
-                    || in_array(strtolower($candidate->tagName), ['section', 'article'], true);
-                $hasVersion = stripos($candidate->textContent, $version) !== false;
-                if ($isCard && $hasVersion) {
-                    $applicationCards[spl_object_hash($candidate)] = $candidate;
+            $labels = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " metric-label ")]', $card);
+            $values = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " metric-value ")]', $card);
+            $isApplication = false;
+            foreach ($labels as $label) {
+                if (strtoupper(trim(preg_replace('/\s+/', ' ', $label->textContent))) === 'APPLICATION') {
+                    $isApplication = true;
                     break;
                 }
-                $candidate = $candidate->parentNode instanceof \DOMElement ? $candidate->parentNode : null;
+            }
+            $hasVersion = false;
+            foreach ($values as $value) {
+                if (stripos((string) $value->textContent, $version) !== false) {
+                    $hasVersion = true;
+                    break;
+                }
+            }
+            if ($isApplication && $hasVersion) {
+                $applicationCards[spl_object_hash($card)] = $card;
             }
         }
 
@@ -480,15 +468,29 @@ class ApplyErpReleaseMetadata
             return $html;
         }
         $applicationCard = array_values($applicationCards)[0];
-        $versionText = null;
-        foreach ($xpath->query('.//text()', $applicationCard) as $textNode) {
-            if (stripos((string) $textNode->nodeValue, $version) !== false) {
-                $versionText = $textNode;
+        $versionNode = null;
+        foreach ($xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " metric-value ")]', $applicationCard) as $value) {
+            if (stripos((string) $value->textContent, $version) !== false) {
+                $versionNode = $value;
                 break;
             }
         }
-        if (! $versionText instanceof \DOMText || ! $versionText->parentNode) {
+        if (! $versionNode instanceof \DOMElement) {
             return $html;
+        }
+
+        foreach ($xpath->query('.//*[@data-et-corrective-build]', $applicationCard) as $existing) {
+            if ($existing instanceof \DOMElement && $existing->parentNode) {
+                $existing->parentNode->removeChild($existing);
+            }
+        }
+
+        foreach ($xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " metric-note ")]', $applicationCard) as $note) {
+            while ($note->firstChild) {
+                $note->removeChild($note->firstChild);
+            }
+            $note->appendChild($dom->createTextNode($releaseName));
+            break;
         }
 
         $assetRevision = preg_match('/(C\d+)$/i', $assetVersion, $match) === 1
@@ -508,12 +510,11 @@ class ApplyErpReleaseMetadata
         $identity->appendChild($buildLine);
         $identity->appendChild($dom->createElement('div', 'Asset '.$assetRevision));
 
-        $anchor = $versionText->parentNode;
-        if ($anchor->parentNode) {
-            if ($anchor->nextSibling) {
-                $anchor->parentNode->insertBefore($identity, $anchor->nextSibling);
+        if ($versionNode->parentNode) {
+            if ($versionNode->nextSibling) {
+                $versionNode->parentNode->insertBefore($identity, $versionNode->nextSibling);
             } else {
-                $anchor->parentNode->appendChild($identity);
+                $versionNode->parentNode->appendChild($identity);
             }
         } else {
             return $html;
@@ -539,27 +540,68 @@ class ApplyErpReleaseMetadata
             return $html;
         }
         [$fragment, $offset] = $matches[0][0];
-        if (($package === '' && $releaseName === '') || $version === '' ||
-            (! str_contains($fragment, $package)
-                && ! str_contains($fragment, $releaseName)
-                && ! str_contains($fragment, $version))) {
+        if ($releaseName === '' || $version === '') {
             return $html;
         }
+
         // The historical "Party Balances" label is intentionally replaced
         // by the configured release/build identity below.
-        $updated = str_replace($package, $releaseName, $fragment);
-        $updated = str_replace($version, $releaseName, $updated);
-        if ($correctiveBuild !== '' && ! str_contains($updated, 'data-et-sidebar-corrective-build=')) {
-            $assetLabel = e($correctiveName !== '' ? 'Build '.$correctiveBuild : $correctiveBuild);
-            $build = '<span data-et-sidebar-corrective-build="'.e($correctiveBuild).'">'.$assetLabel.'</span>';
-            $updated = preg_replace_callback(
-                '/(<[^>]*>)\s*(Live)\s*(<\/[^>]+>)/i',
-                static fn (array $match): string => $build.$match[1].$match[2].$match[3],
-                $updated,
-                1
-            ) ?? $updated;
+        // C65's former Live-anchor insertion is deliberately not required:
+        // native sidebar-foot markup may contain only .version elements.
+        if ($correctiveBuild !== '' && ! str_contains($fragment, 'data-et-sidebar-corrective-build=')) {
+            // Marker insertion is now structurally bounded to sidebar-foot.
         }
-        if ($updated === $fragment) {
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML('<?xml encoding="UTF-8"><div id="et-sidebar-scope">'.$fragment.'</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if (! $loaded) {
+            return $html;
+        }
+        $xpath = new \DOMXPath($dom);
+        $feet = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " sidebar-foot ")]');
+        if ($feet->length !== 1) {
+            return $html;
+        }
+        $foot = $feet->item(0);
+        foreach ($xpath->query('.//*[@data-et-sidebar-corrective-build]', $foot) as $existing) {
+            if ($existing instanceof \DOMElement && $existing->parentNode) {
+                $existing->parentNode->removeChild($existing);
+            }
+        }
+        $versions = [];
+        foreach ($xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " version ")]', $foot) as $versionNode) {
+            if ($versionNode instanceof \DOMElement) {
+                $versions[] = $versionNode;
+            }
+        }
+        if (count($versions) < 2) {
+            return $html;
+        }
+        while (count($versions) > 2) {
+            $extra = array_pop($versions);
+            $extra->parentNode?->removeChild($extra);
+        }
+        while ($versions[0]->firstChild) {
+            $versions[0]->removeChild($versions[0]->firstChild);
+        }
+        $versions[0]->appendChild($dom->createTextNode($releaseName));
+        while ($versions[1]->firstChild) {
+            $versions[1]->removeChild($versions[1]->firstChild);
+        }
+        $versions[1]->setAttribute('data-et-sidebar-corrective-build', $correctiveBuild);
+        $versions[1]->appendChild($dom->createTextNode('Build '.$correctiveBuild));
+
+        $scope = $dom->getElementById('et-sidebar-scope');
+        if (! $scope) {
+            return $html;
+        }
+        $updated = '';
+        foreach ($scope->childNodes as $child) {
+            $updated .= $dom->saveHTML($child);
+        }
+        if ($updated === '') {
             return $html;
         }
         return substr($html, 0, $offset).$updated.substr($html, $offset + strlen($fragment));
