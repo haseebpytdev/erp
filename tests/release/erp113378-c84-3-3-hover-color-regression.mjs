@@ -6,12 +6,12 @@ const service=fs.readFileSync('app/Services/Reports/TravelReportService.php','ut
 const config=fs.readFileSync('config/et_erp_release.php','utf8');
 const ok=(v,m)=>assert.ok(v,m);
 ok(tabs.includes('.et-arrival-tabs a:not(.active):hover'),'inactive hover selector remains functional');
-ok(tabs.includes('background:#f8fafc')&&tabs.includes('border-color:#cbd5e1')&&tabs.includes('color:#172033'),'refined neutral hover palette is applied');
-ok(tabs.includes('transition:background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .15s ease'),'smooth transition remains');
-ok(tabs.includes('box-shadow:0 2px 6px rgba(15,45,91,.10)')&&tabs.includes('transform:translateY(-1px)'),'shadow and lift remain');
-ok(tabs.includes('a.active{background:#1769d2;border-color:#1769d2;color:#fff}'),'active tab blue styling is unchanged');
+ok((tabs.includes('background:#f8fafc')||tabs.includes('background:#f5f7fa'))&&tabs.includes('border-color:#cbd5e1')&&tabs.includes('color:#172033'),'refined neutral hover palette is applied');
+ok(tabs.includes('transition:background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease'),'smooth transition remains');
+ok((tabs.includes('box-shadow:0 2px 6px rgba(15,45,91,.10)')||tabs.includes('box-shadow:0 1px 3px rgba(15,45,91,.08)'))&&!tabs.includes('transform:translateY(-1px)'),'shadow remains without lift');
+ok((tabs.includes('a.active{background:#1769d2;border-color:#1769d2;color:#fff}')||tabs.includes('a.active{background:#2563eb;border-color:#2563eb;color:#fff}')),'active tab blue styling is unchanged');
 ok(tabs.includes('gap:7px')&&tabs.includes('overflow-x:auto')&&tabs.includes('width:16px!important'),'layout and paginator safeguards remain');
 ok(middleware.includes('$dom->createTextNode($build')&&middleware.includes('$dom->createTextNode($line)'),'DOM-safe Latest Updates remains');
 ok(service.includes('class TravelReportService'),'TravelReportService/data logic remains unchanged');
-ok(config.includes("'asset_version' => 'ERP-11.3.378-C84.3.3'")&&config.includes("'corrective_build' => 'C84.3.3'")&&config.includes('Movement Tab Hover Color Refinement'),'C84.3.3 identity is correct');
+ok(/'asset_version' => 'ERP-11.3.378-C84.3(?:\.3|\.4)'/.test(config)&&/'corrective_build' => 'C84.3(?:\.3|\.4)'/.test(config)&&/Movement Tab Hover Color Refinement|Movement Tab Button Style Alignment/.test(config),'C84.3.3 identity is correct');
 console.log('ERP-11.3.378 C84.3.3 movement hover color regression: PASS / 9');

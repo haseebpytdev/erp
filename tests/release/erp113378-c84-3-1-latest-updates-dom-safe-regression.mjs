@@ -12,6 +12,6 @@ ok(middleware.includes("$dom->createTextNode($build.' · '.$title)")&&middleware
 ok(middleware.includes('Latest Updates')&&middleware.includes('data-et-latest-updates'),'Latest Updates remains present');
 ok(tabs.includes('a:not(.active):hover'),'C84.3 movement hover remains');
 ok(tabs.includes('et-arrival-card')&&tabs.includes('et-arrival-tabs')&&!tabs.includes('et-movement-tabs-card'),'Arrival authority remains unchanged');
-ok(/'asset_version' => 'ERP-11.3.378-C84.3(?:\.1|\.2|\.3)'/.test(config)&&/'corrective_build' => 'C84.3(?:\.1|\.2|\.3)'/.test(config)&&/Latest Updates DOM Runtime Hotfix|Visible Movement Tab Hover|Movement Tab Hover Color Refinement/.test(config),'C84.3 lineage release identity remains correct');
+ok(/'asset_version' => 'ERP-11.3.378-C84.3(?:\.1|\.2|\.3|\.4)'/.test(config)&&/'corrective_build' => 'C84.3(?:\.1|\.2|\.3|\.4)'/.test(config)&&/Latest Updates DOM Runtime Hotfix|Visible Movement Tab Hover|Movement Tab Hover Color Refinement|Movement Tab Button Style Alignment/.test(config),'C84.3 lineage release identity remains correct');
 ok(service.includes('class TravelReportService'),'TravelReportService is unchanged in scope');
 console.log('ERP-11.3.378 C84.3.1 Latest Updates DOM-safe regression: PASS / 8');

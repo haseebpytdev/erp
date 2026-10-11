@@ -1,0 +1,21 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const tabs=fs.readFileSync('resources/views/reports/travel/partials/movement-tabs.blade.php','utf8');
+const middleware=fs.readFileSync('app/Http/Middleware/ApplyErpReleaseMetadata.php','utf8');
+const service=fs.readFileSync('app/Services/Reports/TravelReportService.php','utf8');
+const config=fs.readFileSync('config/et_erp_release.php','utf8');
+const ok=(v,m)=>assert.ok(v,m);
+ok(tabs.includes('.et-arrival-tabs a:not(.active):hover'),'Arrival inactive hover selector remains authoritative');
+ok(tabs.includes('background:#ffffff')&&tabs.includes('border:1px solid #e2e8f0')&&tabs.includes('color:#172033'),'neutral base tab state is aligned');
+ok(tabs.includes('padding:7px 12px')&&tabs.includes('font-weight:700'),'button spacing and weight remain aligned');
+ok(tabs.includes('background:#f5f7fa')&&tabs.includes('border-color:#cbd5e1')&&tabs.includes('color:#172033'),'inactive hover uses neutral refinement palette');
+ok(tabs.includes('box-shadow:0 1px 3px rgba(15,45,91,.08)')&&tabs.includes('cursor:pointer'),'inactive hover retains subtle affordance');
+ok(!tabs.includes('transform:translateY(-1px)')&&!tabs.includes('transform .15s ease'),'hover has no lift and transition excludes transform');
+ok(tabs.includes('a.active{background:#2563eb;border-color:#2563eb;color:#fff}'),'active tab remains blue and protected');
+ok(tabs.includes('gap:7px')&&tabs.includes('overflow-x:auto')&&tabs.includes('flex-wrap:nowrap'),'tab gap and mobile overflow remain');
+ok(tabs.includes('width:16px!important')&&tabs.includes('height:16px!important'),'paginator SVG remains 16px');
+ok(middleware.includes('$dom->createTextNode($build')&&middleware.includes('$dom->createTextNode($line)'),'C84.3.1 DOM-safe Latest Updates remains');
+ok(service.includes('class TravelReportService'),'TravelReportService remains unchanged');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C84.3.4'")&&config.includes("'corrective_build' => 'C84.3.4'")&&config.includes('Movement Tab Button Style Alignment'),'C84.3.4 metadata is correct');
+console.log('ERP-11.3.378 C84.3.4 tab style alignment regression: PASS / 12');
