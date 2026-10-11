@@ -36,6 +36,7 @@ final class SupplierCostingDraftSynchronizer
                     ->whereIn('status', ['draft', 'pending_approval', 'approved', 'posted'])
                     ->lockForUpdate()->get();
                 $auto = $existing->filter(fn (object $row): bool => $this->isAutoManaged((int) $row->id));
+                $manualSourceDrafts = $existing->filter(fn (object $row): bool => (string) $row->status === 'draft' && ! $this->isAutoManaged((int) $row->id) && DB::table('supplier_costing_source_links')->where('supplier_costing_id', $row->id)->exists());
                 $legacy = $existing->filter(fn (object $row): bool => ! DB::table('supplier_costing_source_links')->where('supplier_costing_id', $row->id)->exists());
 
                 $created = 0; $updated = 0; $attention = 0; $skipped = 0; $refreshedSuppliers = [];
@@ -68,6 +69,7 @@ final class SupplierCostingDraftSynchronizer
                     if (isset($refreshedSuppliers[$supplierId])) continue;
                     $draft = $auto->first(fn (object $row): bool => (int) $row->supplier_id === $supplierId && (string) $row->status === 'draft');
                     if (! $draft) {
+                        if ($manualSourceDrafts->first(fn (object $row): bool => (int) $row->supplier_id === $supplierId)) { $skipped++; $attention++; continue; }
                         $active = $existing->first(fn (object $row): bool => (int) $row->supplier_id === $supplierId && in_array((string) $row->status, ['pending_approval', 'approved', 'posted'], true));
                         if ($active) { $skipped++; continue; }
                         $id = $this->createDraft($bookingId, $supplierId, $sources, $user);
@@ -121,7 +123,10 @@ final class SupplierCostingDraftSynchronizer
             $source = $current->get((string) $link->source_key);
             if (! $source) return 'Previously costed booking source '.$link->source_key.' is no longer present in authoritative booking data.';
             if ((int) ($source['supplier_id'] ?? 0) !== (int) $draft->supplier_id) return 'Authoritative booking vendor changed from Supplier '.$draft->supplier_id.' to Supplier '.((int) ($source['supplier_id'] ?? 0)).'.';
-            if (($source['status'] ?? '') === 'already_costed' && (int) ($source['costing_id'] ?? 0) !== (int) $draft->id) return 'Booking source '.$link->source_key.' is claimed by another active Supplier Costing.';
+            if (($source['status'] ?? '') !== 'available') {
+                if (($source['status'] ?? '') === 'already_costed' && (int) ($source['costing_id'] ?? 0) !== (int) $draft->id) return 'Booking source '.$link->source_key.' is claimed by another active Supplier Costing.';
+                return 'Authoritative booking source '.$link->source_key.' is not safely available for automatic refresh.';
+            }
             if ((int) ($source['supplier_id'] ?? 0) <= 0) return 'Authoritative booking vendor is missing for source '.$link->source_key.'.';
             if ((float) ($source['source_cost'] ?? 0) <= 0) return 'Authoritative booking cost is non-positive for source '.$link->source_key.'.';
         }

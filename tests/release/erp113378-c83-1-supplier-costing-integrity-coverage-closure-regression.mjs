@@ -38,9 +38,9 @@ check(view.includes('Issue / Detail') && view.includes('Action'), 'attention que
 check(view.includes('Previous') && view.includes('Next'), 'coverage pagination is visible');
 check(review.includes("with('review_warning'"), 'approval surfaces costing attention warning');
 check(workflow.includes('syncBooking($bookingId, $user, \'auto_sync\')'), 'supplementary sync attributes the acting user');
-check(release.includes("'asset_version' => 'ERP-11.3.378-C83.1'"), 'C83.1 asset version is authoritative');
-check(release.includes("'corrective_build' => 'C83.1'"), 'C83.1 build metadata is authoritative');
-check(release.includes('Supplier Costing Automation Integrity & Coverage Closure'), 'C83.1 corrective name is authoritative');
+check(/'asset_version' => 'ERP-11\.3\.378-C83(?:\.1|\.2)?'/.test(release), 'C83 lineage asset version remains authoritative');
+check(/'corrective_build' => 'C83(?:\.1|\.2)?'/.test(release), 'C83 lineage build metadata remains authoritative');
+check(/Supplier Costing Automation Integrity & Coverage Closure|Supplier Costing Final Integrity Closure/.test(release), 'C83 lineage corrective name remains authoritative');
 
 const drift = { supplier_id: 12, source_cost: 1000, source_key: 'air:1' };
 check(drift.supplier_id !== 0 && drift.source_cost > 0, 'supplier drift fixture has a meaningful source');

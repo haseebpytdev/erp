@@ -16,7 +16,7 @@ final class SupplierCostingCoverageResolver
     public function resolve(int $page = 1, string $search = ''): array
     {
         $page = max(1, $page); $search = trim($search);
-        [$ids, $total, $lastPage] = $this->candidatePage($page, $search);
+        [$ids, $total, $lastPage, $normalizedPage] = $this->candidatePage($page, $search);
         $queue = []; $ready = 0; $attention = 0;
         foreach ($ids as $bookingId) {
             $rows = $this->obligations->resolve($bookingId);
@@ -31,20 +31,20 @@ final class SupplierCostingCoverageResolver
             }
             foreach ($this->staleAutoDraftRows($bookingId, $reference) as $row) { $attention++; $queue[] = $row; }
         }
-        $from = $total ? (($page - 1) * self::PAGE_SIZE) + 1 : 0; $to = $total ? min($total, $page * self::PAGE_SIZE) : 0;
-        return ['bounded' => true, 'candidate_limit' => self::PAGE_SIZE, 'candidate_total' => $total, 'candidate_from' => $from, 'candidate_to' => $to, 'page_size' => self::PAGE_SIZE, 'coverage_page' => $page, 'coverage_last_page' => $lastPage, 'search' => $search, 'cards' => $this->lifecycleCards($ready, $attention), 'queue' => $queue, 'queue_total' => count($queue), 'queue_page' => $page, 'queue_last_page' => $lastPage, 'empty_message' => $queue === [] ? 'No ready or attention items exist in this coverage page.' : ''];
+        $from = $total ? (($normalizedPage - 1) * self::PAGE_SIZE) + 1 : 0; $to = $total ? min($total, $normalizedPage * self::PAGE_SIZE) : 0;
+        return ['bounded' => true, 'candidate_limit' => self::PAGE_SIZE, 'candidate_total' => $total, 'candidate_from' => $from, 'candidate_to' => $to, 'page_size' => self::PAGE_SIZE, 'coverage_page' => $normalizedPage, 'coverage_last_page' => $lastPage, 'search' => $search, 'cards' => $this->lifecycleCards($ready, $attention), 'queue' => $queue, 'queue_total' => count($queue), 'queue_page' => $normalizedPage, 'queue_last_page' => $lastPage, 'empty_message' => $queue === [] ? 'No ready or attention items exist in this coverage page.' : ''];
     }
 
-    /** @return array{0:list<int>,1:int,2:int} */
+    /** @return array{0:list<int>,1:int,2:int,3:int} */
     private function candidatePage(int $page, string $search): array
     {
-        if (! Schema::hasTable('bookings')) return [[], 0, 1];
+        if (! Schema::hasTable('bookings')) return [[], 0, 1, 1];
         $columns = Schema::getColumnListing('bookings'); $status = collect(['status', 'approval_status', 'workflow_status', 'booking_status'])->first(fn (string $field): bool => in_array($field, $columns, true)); $reference = collect(['booking_reference', 'booking_ref', 'booking_no', 'booking_number', 'reference'])->first(fn (string $field): bool => in_array($field, $columns, true));
         $base = DB::table('bookings');
         if ($status) $base->whereIn($status, ['approved', 'Approved', 'confirmed', 'Confirmed', 'travel ready', 'Travel Ready']);
         if ($search !== '' && $reference) $base->where($reference, 'like', '%'.mb_substr($search, 0, 120).'%');
-        $total = (clone $base)->count(); $lastPage = max(1, (int) ceil($total / self::PAGE_SIZE)); $page = min($page, $lastPage);
-        return [(clone $base)->orderByDesc('id')->forPage(($page - 1) * self::PAGE_SIZE, self::PAGE_SIZE)->pluck('id')->map(fn ($id): int => (int) $id)->all(), $total, $lastPage];
+        $total = (clone $base)->count(); $lastPage = max(1, (int) ceil($total / self::PAGE_SIZE)); $normalizedPage = min(max(1, $page), $lastPage);
+        return [(clone $base)->orderByDesc('id')->forPage($normalizedPage, self::PAGE_SIZE)->pluck('id')->map(fn ($id): int => (int) $id)->all(), $total, $lastPage, $normalizedPage];
     }
 
     private function readyRow(int $bookingId, string $reference, int $supplierId, array $sources): array
@@ -67,7 +67,7 @@ final class SupplierCostingCoverageResolver
             $auto = DB::table('supplier_costing_activities')->where('supplier_costing_id', $draft->id)->whereIn('action', ['auto_create', 'auto_sync', 'auto_review_required'])->exists(); if (! $auto) continue;
             $links = DB::table('supplier_costing_source_links')->where('supplier_costing_id', $draft->id)->get(); $current = collect($this->obligations->resolve($bookingId, (int) $draft->id))->keyBy('source_key'); $reason = null;
             foreach ($links as $link) { $source = $current->get((string) $link->source_key); if (! $source) { $reason = 'Previously costed booking source is no longer present in authoritative booking data.'; break; } if ((int) ($source['supplier_id'] ?? 0) !== (int) $draft->supplier_id) { $reason = 'Authoritative booking vendor changed after this Draft was created.'; break; } if (($source['status'] ?? '') === 'already_costed' && (int) ($source['costing_id'] ?? 0) !== (int) $draft->id) { $reason = 'Booking source is claimed by another active Supplier Costing.'; break; } if ((int) ($source['supplier_id'] ?? 0) <= 0 || (float) ($source['source_cost'] ?? 0) <= 0) { $reason = 'Authoritative supplier or cost is no longer valid.'; break; } }
-            $latest = DB::table('supplier_costing_activities')->where('supplier_costing_id', $draft->id)->where('action', 'auto_review_required')->orderByDesc('id')->first(); if ($reason === null && ! $latest) continue;
+            $latest = DB::table('supplier_costing_activities')->where('supplier_costing_id', $draft->id)->whereIn('action', ['auto_create', 'auto_sync', 'auto_review_required'])->orderByDesc('id')->first(); if ($reason === null && (($latest->action ?? null) !== 'auto_review_required')) continue;
             $result[] = ['state' => 'review_required', 'state_label' => 'Review Required', 'issue' => $reason ?: (string) $latest->notes, 'action' => 'Open Costing', 'action_url' => route('purchase.supplier-costing.show', ['costing' => (int) $draft->id]), 'booking_id' => $bookingId, 'booking_reference' => $reference, 'supplier_id' => (int) $draft->supplier_id, 'supplier_name' => (string) ($draft->supplier_name ?: '—'), 'products' => (string) ($draft->service_type ?: 'Multiple Products'), 'items' => $links->count(), 'total' => (float) $draft->total_cost, 'costing_id' => (int) $draft->id];
         }
         return $result;
