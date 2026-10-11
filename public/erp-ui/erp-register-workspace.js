@@ -159,6 +159,12 @@
   var reset = root.querySelector('[data-register-reset]');
   if (reset) {
     reset.addEventListener('click', function () {
+      if (serverMode) {
+        var cleanUrl = new URL(document.URL);
+        cleanUrl.search = '';
+        location.assign(cleanUrl.pathname);
+        return;
+      }
       [search, group, secondary, from, to, status].forEach(function (field) {
         if (field) field.value = '';
       });

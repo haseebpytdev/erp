@@ -1,5 +1,8 @@
 @php
     $serverMetadata = $serverMetadata ?? [];
+    $serverMode = (($serverMetadata['filter_mode'] ?? '') === 'server');
+    $serverFilters = (array) ($serverMetadata['filters'] ?? []);
+    $serverStatus = (string) ($serverFilters['status'] ?? '');
     $metricSpecs = [
         ['key' => 'total', 'label' => $config['total_label'], 'icon' => '▣', 'tone' => 'blue', 'value' => $counts['total']],
         ['key' => 'pending', 'label' => $config['pending_label'], 'icon' => '◷', 'tone' => 'amber', 'value' => $counts['pending']],
@@ -54,18 +57,18 @@
             <div class="et-booking-ref-quick">
                 <span>Quick Filters:</span>
                 @foreach($config['quick'] as $quick)
-                    <button type="button" data-quick="{{ $quick[0] }}" @class(['active' => $quick[0] === 'all'])>{{ $quick[1] }}</button>
+                    <button type="button" data-quick="{{ $quick[0] }}" @class(['active' => $serverMode ? (($serverStatus === '' && $quick[0] === 'all') || $serverStatus === $quick[0]) : $quick[0] === 'all'])>{{ $quick[1] }}</button>
                 @endforeach
             </div>
         </div>
 
         <div class="et-booking-ref-filter-grid">
-            <label>Search<input type="search" data-filter="search" placeholder="Search register"></label>
+            <label>Search<input type="search" data-filter="search" placeholder="Search register" @if($serverMode) value="{{ $serverFilters['q'] ?? '' }}" @endif></label>
             <label>{{ $config['field2_label'] }}
                 <select data-filter="group">
                     <option value="">{{ $config['field2_all'] }}</option>
                     @if(($serverMetadata['filter_mode'] ?? '') === 'server')
-                        @foreach(($serverMetadata['supplier_options'] ?? []) as $supplier)<option value="{{ $supplier['id'] }}">{{ $supplier['label'] }}</option>@endforeach
+                        @foreach(($serverMetadata['supplier_options'] ?? []) as $supplier)<option value="{{ $supplier['id'] }}" @selected((int) ($serverFilters['supplier_id'] ?? 0) === (int) $supplier['id'])>{{ $supplier['label'] }}</option>@endforeach
                     @else
                         @foreach($groups as $group)<option value="{{ mb_strtolower($group) }}">{{ $group }}</option>@endforeach
                     @endif
@@ -75,17 +78,17 @@
                 <select data-filter="secondary">
                     <option value="">{{ $config['field3_all'] }}</option>
                     @foreach(($serverMetadata['product_options'] ?? $secondaryOptions) as $secondary)
-                        <option value="{{ mb_strtolower($secondary) }}">{{ $secondary }}</option>
+                        <option value="{{ $serverMode ? $secondary : mb_strtolower($secondary) }}" @if($serverMode) @selected(($serverFilters['product'] ?? '') === $secondary) @endif>{{ $secondary }}</option>
                     @endforeach
                 </select>
             </label>
-            <label>{{ $config['key'] === 'bookings' ? 'Travel Date From' : 'Date From' }}<input type="date" data-filter="from"></label>
-            <label>{{ $config['key'] === 'bookings' ? 'Travel Date To' : 'Date To' }}<input type="date" data-filter="to"></label>
+            <label>{{ $config['key'] === 'bookings' ? 'Travel Date From' : 'Date From' }}<input type="date" data-filter="from" @if($serverMode) value="{{ $serverFilters['date_from'] ?? '' }}" @endif></label>
+            <label>{{ $config['key'] === 'bookings' ? 'Travel Date To' : 'Date To' }}<input type="date" data-filter="to" @if($serverMode) value="{{ $serverFilters['date_to'] ?? '' }}" @endif></label>
             <label>Status
                 <select data-filter="status">
                     <option value="">All Statuses</option>
                     @foreach($config['quick'] as $quick)
-                        @if($quick[0] !== 'all')<option value="{{ $quick[0] }}">{{ $quick[1] }}</option>@endif
+                        @if($quick[0] !== 'all')<option value="{{ $quick[0] }}" @if($serverMode) @selected($serverStatus === $quick[0]) @endif>{{ $quick[1] }}</option>@endif
                     @endforeach
                 </select>
             </label>
