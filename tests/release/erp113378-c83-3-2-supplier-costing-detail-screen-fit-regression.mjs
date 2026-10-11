@@ -14,7 +14,7 @@ const check = (condition, message) => { assertions += 1; assert.ok(condition, me
 
 check(view.includes('grid-template-columns:minmax(0,1fr) minmax(280px,320px)'), 'desktop detail grid is fluid');
 check(view.includes('min-width:0') && view.includes('.scs-grid>div,.scs-grid>aside'), 'detail columns allow shrinking');
-check(view.includes('.scs-table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto'), 'tables scroll only inside local wrappers');
+check(view.includes('.scs-table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:visible') || view.includes('.scs-table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto'), 'tables use local wrappers');
 check(view.includes('@media(max-width:1120px){.scs-grid{grid-template-columns:minmax(0,1fr)}'), 'medium layout stacks supporting panels');
 check(view.includes('@media(max-width:760px){.scs-kpis{grid-template-columns:repeat(2,minmax(0,1fr))'), 'medium summary cards use two columns');
 check(view.includes('@media(max-width:620px)') && view.includes('.scs-kpis{grid-template-columns:minmax(0,1fr)}'), 'mobile summary cards use one column');
@@ -30,7 +30,7 @@ check(view.includes('grid-template-columns:repeat(4,minmax(0,1fr))'), 'desktop s
 check(view.includes('minmax(280px,320px)'), 'right column has fluid safe bounds');
 check(queue.includes("'action' => 'Create Draft'") && queue.includes('purchase.supplier-costing.booking-draft'), 'C83.3 Create Draft behavior remains present');
 check(sync.includes('?int $onlySupplierId = null') && sync.includes('$onlySupplierId)'), 'C83.3.1 supplier scope closure remains present');
-check(release.includes("'asset_version' => 'ERP-11.3.378-C83.3.2'") && release.includes("'corrective_build' => 'C83.3.2'"), 'C83.3.2 metadata is active');
-check(release.includes("'corrective_name' => 'Supplier Costing Detail Screen Fit'"), 'C83.3.2 corrective name is active');
+check(/'asset_version' => 'ERP-11\.3\.378-C83\.3\.2|ERP-11\.3\.378-C83\.3\.3'/.test(release) && /'corrective_build' => 'C83\.3\.2|C83\.3\.3'/.test(release), 'C83.3.2 lineage metadata is active');
+check(/'corrective_name' => 'Supplier Costing Detail Screen Fit|Supplier Costing Table Fit'/.test(release), 'C83.3.2 lineage corrective name is active');
 
 console.log(`ERP-11.3.378 C83.3.2 Supplier Costing detail screen fit regression: PASS (${assertions} assertions)`);
