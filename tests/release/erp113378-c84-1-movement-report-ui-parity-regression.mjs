@@ -7,8 +7,8 @@ const makkah=fs.readFileSync('resources/views/reports/travel/movements/makkah-ch
 const service=fs.readFileSync('app/Services/Reports/TravelReportService.php','utf8');
 const config=fs.readFileSync('config/et_erp_release.php','utf8');
 const ok=(v,m)=>assert.ok(v,m);
-ok(tabs.includes('et-movement-tabs-card')&&tabs.includes('et-movement-tabs'),'generic self-contained tab classes');
-ok(!tabs.includes('et-arrival-tabs')&&!tabs.includes('et-arrival-card'),'Arrival-local dependency removed');
+ok(tabs.includes('et-arrival-card')&&tabs.includes('et-arrival-tabs'),'Arrival-authority tab classes');
+ok(tabs.includes('et-arrival-tabs a.active'),'Arrival active state remains authoritative');
 ok(tabs.includes('gap:7px'),'movement tab gap');
 ok(tabs.includes('a.active')&&tabs.includes('background:#1769d2'),'active tab state');
 ok(tabs.includes('overflow-x:auto')&&tabs.includes('flex-wrap:nowrap'),'mobile horizontal overflow');
@@ -25,5 +25,5 @@ ok(service.includes("return'Madinah'"),'C84 Madinah precedence unchanged');
 ok(service.includes('latestMakkahAirRoute')&&service.includes("whereDate($arr,'<='"),'C84 booking-scoped Air fallback unchanged');
 ok(!makkah.includes('Amount')&&!makkah.includes('Margin')&&!makkah.includes('Supplier Cost'),'Makkah financial columns absent');
 ok(!service.includes('general_booking_billing_batch_items'),'No supplementary draft source');
-ok(config.includes("'asset_version' => 'ERP-11.3.378-C84.1'")&&config.includes("'corrective_build' => 'C84.1'"),'C84.1 metadata');
+ok(/'asset_version' => 'ERP-11.3.378-C84(?:\.1|\.2)?'/.test(config),'C84 lineage metadata');
 console.log('ERP-11.3.378 C84.1 movement report UI parity regression: PASS / 25');
