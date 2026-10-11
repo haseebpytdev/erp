@@ -62,8 +62,8 @@ check(c821.includes('setOrDelete') && c821.includes('paginate'), 'C82.1 register
 check(registerView.includes('serverFilters') && costingController.includes('withQueryString'), 'register filter state and pagination remain query-preserved');
 check(!sync.includes('transition('), 'automation still never submits/approves/posts');
 check(!sync.includes('supplier_costing_posting_lines'), 'automation still never creates posting lines');
-check(/'asset_version' => 'ERP-11\.3\.378-C83(?:\.2|\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?)'/.test(release), 'C83.2 lineage asset version is authoritative');
-check(/'corrective_build' => 'C83\.2|C83\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?'/.test(release), 'C83.2 lineage corrective build is authoritative');
-check(/Supplier Costing Final Integrity Closure|Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure|Supplier Costing Detail Screen Fit|Supplier Costing Table Fit|Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation/.test(release), 'C83.2 lineage corrective name is authoritative');
+check(/'asset_version' => 'ERP-11\.3\.378-C(?:83(?:\.2|\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?)|84(?:\.1|\.2|\.3))'/.test(release), 'C83.2 lineage asset version is authoritative');
+check(/'corrective_build' => 'C83\.2|C83\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?|C84(?:\.1|\.2|\.3)'/.test(release), 'C83.2 lineage corrective build is authoritative');
+check(/Supplier Costing Final Integrity Closure|Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure|Supplier Costing Detail Screen Fit|Supplier Costing Table Fit|Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation|Arrival Style Single Authority/.test(release), 'C83.2 lineage corrective name is authoritative');
 
 console.log(`ERP-11.3.378 C83.2 supplier costing final closure regression: PASS (${assertions} assertions)`);

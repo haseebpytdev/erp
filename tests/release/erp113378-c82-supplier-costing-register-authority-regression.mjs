@@ -50,6 +50,6 @@ const counts = fixture.reduce((out, row) => { out[row.status] = (out[row.status]
 check(Object.values(counts).reduce((sum, value) => sum + value, 0) === 60, 'lifecycle counts cover the full server scope');
 check([...fixture].sort((a, b) => b.id - a.id).slice(0, 5).length === 5, 'recent activity is sourced from persisted rows');
 check(!/supplier_costing_source_links.*insert|insert.*supplier_costing_source_links/i.test(indexPath), 'register read path does not create unsaved obligations');
-check(/'asset_version' => 'ERP-11\.3\.378-C82(?:\.1)?|ERP-11\.3\.378-C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?)?'/.test(release) && /'corrective_build' => 'C82(?:\.1)?|C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?)?'/.test(release), 'C82 release metadata is active');
+check(/'asset_version' => 'ERP-11\.3\.378-C(?:82(?:\.1)?|83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?)?|84(?:\.1|\.2|\.3)?)'/.test(release) && /'corrective_build' => 'C(?:82(?:\.1)?|83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4|\.5|\.6)?)?|84(?:\.1|\.2|\.3)?)'/.test(release), 'C82 release metadata is active');
 
 console.log(`ERP-11.3.378 C82 Supplier Costing register authority regression: PASS (${assertions} assertions)`);

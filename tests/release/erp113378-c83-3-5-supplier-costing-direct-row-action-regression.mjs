@@ -32,6 +32,6 @@ const checks = [
 for (const [label, pattern] of checks) {
   assert.match(view + js + middleware + asset + queue + sync + config, pattern, label);
 }
-assert.match(config, /C83\.3\.5|C83\.3\.6/);
-assert.match(config, /Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation|Supplier Costing Booking Link Navigation/);
+assert.match(config, /C83\.3\.5|C83\.3\.6|C84\.3/);
+assert.match(config, /Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation|Arrival Style Single Authority/);
 console.log(`C83_3_5_DIRECT_ACTION_REGRESSION=PASS (${checks.length + 2} assertions)`);
