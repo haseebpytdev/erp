@@ -2,6 +2,7 @@
 
 namespace App\Services\Purchase;
 
+use App\Services\Operations\NativeProductServiceResolver;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,10 @@ final class BookingSupplierObligationResolver
 {
     private const ACTIVE_COSTING_STATUSES = ['draft', 'pending_approval', 'approved', 'posted'];
 
-    public function __construct(private readonly UnifiedGroupPackageDataSource $bookingData) {}
+    public function __construct(
+        private readonly UnifiedGroupPackageDataSource $bookingData,
+        private readonly NativeProductServiceResolver $products,
+    ) {}
 
     /** @return list<array<string,mixed>> */
     public function resolve(int $bookingId, ?int $excludeCostingId = null): array
@@ -99,7 +103,7 @@ final class BookingSupplierObligationResolver
         if (! Schema::hasTable('air_ticket_details')) return [];
         $columns = Schema::getColumnListing('air_ticket_details');
         if (! in_array('id', $columns, true) || ! in_array('booking_service_id', $columns, true) || ! in_array('net_supplier_cost', $columns, true)) return [];
-        $serviceIds = $this->serviceIds($services, 1);
+        $serviceIds = $this->serviceIds($services, $this->resolvedProductId('air'));
         if (! $serviceIds) return [];
         $query = DB::table('air_ticket_details')->whereIn('booking_service_id', $serviceIds);
         if (in_array('deleted_at', $columns, true)) $query->whereNull('deleted_at');
@@ -129,7 +133,7 @@ final class BookingSupplierObligationResolver
     private function hotel(int $bookingId, array $services, array $vendors): array
     {
         $result = [];
-        foreach ($this->serviceIds($services, 3) as $serviceId) {
+        foreach ($this->serviceIds($services, $this->resolvedProductId('hotel')) as $serviceId) {
             $snapshot = $this->snapshotRows($services[$serviceId] ?? [], 'hotel');
             if ($snapshot !== []) {
                 foreach ($snapshot as $index => $row) $result[] = $this->hotelRow($bookingId, $serviceId, 'booking_service_hotel_snapshot', $row, $index, $vendors);
@@ -166,7 +170,7 @@ final class BookingSupplierObligationResolver
     private function transport(int $bookingId, array $services, array $vendors): array
     {
         $result = [];
-        foreach ($this->serviceIds($services, 4) as $serviceId) {
+        foreach ($this->serviceIds($services, $this->resolvedProductId('transport')) as $serviceId) {
             $snapshot = $this->snapshotRows($services[$serviceId] ?? [], 'transport');
             if ($snapshot !== []) {
                 foreach ($snapshot as $index => $row) $result[] = $this->transportRow($bookingId, $serviceId, 'booking_service_transport_snapshot', $row, $index, $vendors);
@@ -269,6 +273,21 @@ final class BookingSupplierObligationResolver
         return array_values(array_map('intval', array_keys(array_filter($services, fn (array $row): bool =>
             (int) ($row['product_service_id'] ?? 0) === $productId && $this->active($row)
         ))));
+    }
+
+    private function resolvedProductId(string $product): int
+    {
+        try {
+            $match = match ($product) {
+                'air' => $this->products->findAir(),
+                'hotel' => $this->products->findHotel(),
+                'transport' => $this->products->findTransport(),
+                default => null,
+            };
+            return (int) ($match['id'] ?? 0);
+        } catch (Throwable) {
+            return 0;
+        }
     }
 
     private function active(array $row): bool

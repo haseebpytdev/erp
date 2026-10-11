@@ -37,7 +37,7 @@ for (const selector of [
 check(!presenter.includes('product=hotel&v=') && !presenter.includes('product=transport&v='), 'Hotel and Transport presentation are unchanged');
 check(!/products\/air\.js/.test(presenter), 'Air JavaScript is not injected by the C80 presenter change');
 check(/data-et-dedicated-product-air/.test(presenter) && /getProductEndpoint/.test(airJs), 'C79 Air runtime authority remains present');
-check(/asset_version' => 'ERP-11\.3\.378-C80'/.test(release) && /corrective_build' => 'C80'/.test(release), 'C80 release metadata is active');
-check(/corrective_name' => 'Dedicated Air CSS Asset Parity'/.test(release), 'C80 corrective name is active');
+check(/asset_version' => 'ERP-11\.3\.378-C(?:80|81)'/.test(release) && /corrective_build' => 'C(?:80|81)'/.test(release), 'C80 release metadata lineage remains active');
+check(/corrective_name' => 'Dedicated Air CSS Asset Parity'/.test(release) || /corrective_name' => 'Supplier Costing Native Product Identity'/.test(release), 'C80 corrective name remains in lineage');
 
 console.log(`ERP-11.3.378 C80 dedicated Air CSS asset parity regression: PASS (${assertions} assertions)`);
