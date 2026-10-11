@@ -204,17 +204,32 @@
         @php($coverage = $serverMetadata['coverage'])
         <section class="et-booking-ref-register-card" data-et-supplier-costing-coverage style="margin-top:18px">
             <div class="et-booking-ref-table-head"><div class="et-booking-ref-table-title"><span aria-hidden="true">◈</span><strong>Booking Cost Queue</strong></div><small>Read-only coverage projection</small></div>
+            <form method="get" action="{{ url()->current() }}" style="display:flex;gap:10px;align-items:end;padding:14px;border-bottom:1px solid #edf1f5">
+                @foreach(request()->except(['coverage_q','coverage_page']) as $key => $value)
+                    @if(is_scalar($value))<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endif
+                @endforeach
+                <label style="flex:1"><span style="display:block;font-size:12px;color:#6b7788;margin-bottom:4px">Find Booking</span><input type="search" name="coverage_q" value="{{ $coverage['search'] ?? '' }}" placeholder="Booking reference" style="width:100%"></label>
+                <button type="submit" class="et-btn primary">Search</button>
+                @if(($coverage['search'] ?? '') !== '')<a class="et-btn" href="{{ request()->fullUrlWithQuery(['coverage_q' => null, 'coverage_page' => 1]) }}">Clear</a>@endif
+            </form>
+            <div style="padding:12px 14px;color:#6b7788;font-size:13px">Coverage scan: eligible bookings {{ $coverage['candidate_from'] ?? 0 }}–{{ $coverage['candidate_to'] ?? 0 }} of {{ $coverage['candidate_total'] ?? 0 }} (page {{ $coverage['coverage_page'] ?? 1 }} of {{ $coverage['coverage_last_page'] ?? 1 }})</div>
             <div class="et-booking-ref-kpis" style="padding:14px">
                 @foreach(($coverage['cards'] ?? []) as $card)
-                    <article class="et-booking-ref-kpi et-booking-ref-kpi-blue"><div class="et-booking-ref-kpi-main"><div class="et-booking-ref-kpi-label">{{ $card['label'] }}</div><div class="et-booking-ref-kpi-line"><strong>{{ $card['count'] }}</strong></div></div></article>
+                    <article class="et-booking-ref-kpi et-booking-ref-kpi-blue"><div class="et-booking-ref-kpi-main"><div class="et-booking-ref-kpi-label">{{ $card['label'] }}</div><div class="et-booking-ref-kpi-line"><strong>{{ $card['count'] }}</strong></div><small>{{ $card['scope'] ?? 'Current coverage page' }}</small></div></article>
                 @endforeach
             </div>
             @if(($coverage['queue'] ?? []) !== [])
-                <div class="et-booking-ref-table-scroll"><table class="et-reg-table"><thead><tr><th>Booking</th><th>Supplier</th><th>Products</th><th>Items</th><th>Available Cost</th></tr></thead><tbody>
-                    @foreach($coverage['queue'] as $item)<tr><td>{{ $item['booking_reference'] }}</td><td>{{ $item['supplier_name'] }}</td><td>{{ $item['products'] }}</td><td>{{ $item['items'] }}</td><td>PKR {{ number_format((float) $item['total'], 2) }}</td></tr>@endforeach
+                <div class="et-booking-ref-table-scroll"><table class="et-reg-table"><thead><tr><th>Booking</th><th>Supplier</th><th>Products</th><th>State</th><th>Issue / Detail</th><th>Items</th><th>Amount</th><th>Action</th></tr></thead><tbody>
+                    @foreach($coverage['queue'] as $item)<tr><td>{{ $item['booking_reference'] }}</td><td>{{ $item['supplier_name'] }}</td><td>{{ $item['products'] }}</td><td>{{ $item['state_label'] }}</td><td>{{ $item['issue'] ?: 'Ready for supplier costing.' }}</td><td>{{ $item['items'] }}</td><td>PKR {{ number_format((float) $item['total'], 2) }}</td><td><a href="{{ $item['action_url'] }}">{{ $item['action'] }}</a></td></tr>@endforeach
                 </tbody></table></div>
             @else
                 <div style="padding:22px;color:#6b7788">{{ $coverage['empty_message'] ?? 'No booking supplier obligations are ready for costing.' }}</div>
+            @endif
+            @if(($coverage['coverage_last_page'] ?? 1) > 1)
+                <nav aria-label="Booking cost queue pages" style="display:flex;justify-content:space-between;padding:14px">
+                    @if(($coverage['coverage_page'] ?? 1) > 1)<a class="et-btn" href="{{ request()->fullUrlWithQuery(['coverage_page' => ($coverage['coverage_page'] - 1)]) }}">Previous</a>@else<span></span>@endif
+                    @if(($coverage['coverage_page'] ?? 1) < ($coverage['coverage_last_page'] ?? 1))<a class="et-btn" href="{{ request()->fullUrlWithQuery(['coverage_page' => ($coverage['coverage_page'] + 1)]) }}">Next</a>@endif
+                </nav>
             @endif
         </section>
     @endif

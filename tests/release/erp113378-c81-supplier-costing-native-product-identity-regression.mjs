@@ -44,7 +44,7 @@ check(!/createFromBooking|journal|payable/i.test(resolver), 'resolver contains n
 check(!/SupplierCostingService/.test(resolver) && service.includes('class SupplierCostingService'), 'posting service remains separate');
 check(form.includes('obligations') && form.includes('suppliers'), 'Supplier Costing form remains server-rendered and obligation-driven');
 check(!/CREATE TABLE|Schema::create|migration/i.test(resolver), 'resolver adds no schema or migration behavior');
-check(/'asset_version' => 'ERP-11\.3\.378-C(?:81|82(?:\.1)?|83)'/.test(release) && /'corrective_build' => 'C(?:81|82(?:\.1)?|83)'/.test(release), 'C81 lineage release metadata remains active');
-check(/'corrective_name' => '(?:Supplier Costing Native Product Identity|Supplier Costing Register Authority|Supplier Costing Register Filter State Closure|Automatic Supplier Costing Drafts & Coverage)'/.test(release), 'C81 lineage corrective name remains active');
+check(/'asset_version' => 'ERP-11\.3\.378-C(?:81|82(?:\.1)?|83(?:\.1)?)'/.test(release) && /'corrective_build' => 'C(?:81|82(?:\.1)?|83(?:\.1)?)'/.test(release), 'C81 lineage release metadata remains active');
+check(/'corrective_name' => '(?:Supplier Costing Native Product Identity|Supplier Costing Register Authority|Supplier Costing Register Filter State Closure|Automatic Supplier Costing Drafts & Coverage|Supplier Costing Automation Integrity & Coverage Closure)'/.test(release), 'C81 lineage corrective name remains active');
 
 console.log(`ERP-11.3.378 C81 supplier costing native Product/Service identity regression: PASS (${assertions} assertions)`);

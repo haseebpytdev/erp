@@ -38,7 +38,7 @@ check(workflow.includes("materialization_state'] ?? '') === 'materialized'") && 
 check(!workflow.match(/syncBooking\([^\n]*batch/), 'supplementary Draft transition does not cost before materialization');
 check(resolver.includes('NativeProductServiceResolver'), 'existing native Product/Service resolver remains authority');
 check(costing.includes('validateBookingSourceIntegrity'), 'existing costing integrity guard remains active');
-check(coverage.includes('limit(250)'), 'coverage candidate scan is bounded');
+check(coverage.includes('PAGE_SIZE') && coverage.includes('forPage'), 'coverage candidate scan is bounded');
 check(coverage.includes('coverage'), 'coverage resolver is a read-only projection');
 check(coverage.includes('Ready for Costing'), 'coverage exposes ready card');
 check(coverage.includes('Attention Required'), 'coverage exposes attention card');
@@ -47,9 +47,9 @@ check(controller.includes('SupplierCostingCoverageResolver'), 'supplier costing 
 check(controller.includes("coverage_page"), 'coverage paging does not reuse register page');
 check(view.includes('Booking Cost Queue'), 'register presents a separate booking cost queue');
 check(view.includes('Read-only coverage projection'), 'coverage is visibly read-only');
-check(release.includes("'asset_version' => 'ERP-11.3.378-C83'"), 'asset version is C83');
-check(release.includes("'corrective_build' => 'C83'"), 'corrective build is C83');
-check(release.includes('Automatic Supplier Costing Drafts & Coverage'), 'corrective name is C83');
+check(/'asset_version' => 'ERP-11\.3\.378-C83(?:\.1)?'/.test(release), 'asset version remains C83 lineage');
+check(/'corrective_build' => 'C83(?:\.1)?'/.test(release), 'corrective build remains C83 lineage');
+check(/Automatic Supplier Costing Drafts & Coverage|Supplier Costing Automation Integrity & Coverage Closure/.test(release), 'corrective name remains C83 lineage');
 
 const sixAir = Array.from({ length: 6 }, (_, i) => ({ product_type: 'Air Ticket', supplier_id: 37, source_cost: 160000, source_key: `air_ticket_details:${i + 1}` }));
 const groupBySupplier = rows => Object.values(rows.reduce((groups, row) => { (groups[row.supplier_id] ||= []).push(row); return groups; }, {}));

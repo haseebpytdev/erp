@@ -8,64 +8,79 @@ use Illuminate\Support\Facades\Schema;
 /** Read-only, bounded operational projection for Supplier Costing coverage. */
 final class SupplierCostingCoverageResolver
 {
+    private const PAGE_SIZE = 50;
+
     public function __construct(private readonly BookingSupplierObligationResolver $obligations) {}
 
     /** @return array<string,mixed> */
     public function resolve(int $page = 1, string $search = ''): array
     {
-        $page = max(1, $page); $perPage = 25; $queue = []; $ready = 0; $attention = 0;
-        $candidateIds = $this->candidateBookingIds();
-        foreach ($candidateIds as $bookingId) {
+        $page = max(1, $page); $search = trim($search);
+        [$ids, $total, $lastPage] = $this->candidatePage($page, $search);
+        $queue = []; $ready = 0; $attention = 0;
+        foreach ($ids as $bookingId) {
             $rows = $this->obligations->resolve($bookingId);
-            $available = array_values(array_filter($rows, fn (array $row): bool => ($row['status'] ?? '') === 'available'));
-            $issues = array_values(array_filter($rows, fn (array $row): bool => in_array((string) ($row['status'] ?? ''), ['vendor_required', 'cost_required', 'legacy_review', 'review_required'], true)));
-            if ($issues !== []) { $attention++; }
-            if ($available === []) continue;
+            $reference = $this->bookingReference($bookingId);
+            $available = array_values(array_filter($rows, fn (array $row): bool => ($row['status'] ?? '') === 'available' && (int) ($row['supplier_id'] ?? 0) > 0 && (float) ($row['source_cost'] ?? 0) > 0));
             $groups = [];
             foreach ($available as $row) $groups[(int) $row['supplier_id']][] = $row;
-            foreach ($groups as $supplierId => $sources) {
-                $reference = $this->bookingReference($bookingId);
-                if ($search !== '' && ! str_contains(strtolower($reference.' '.($sources[0]['supplier_name'] ?? '')), strtolower($search))) continue;
-                $ready++;
-                $queue[] = [
-                    'booking_id' => $bookingId, 'booking_reference' => $reference,
-                    'supplier_id' => $supplierId, 'supplier_name' => (string) ($sources[0]['supplier_name'] ?? 'Vendor #'.$supplierId),
-                    'products' => implode(', ', array_values(array_unique(array_map(fn (array $row): string => (string) $row['product_type'], $sources)))),
-                    'items' => count($sources), 'total' => round(array_sum(array_map(fn (array $row): float => (float) $row['source_cost'], $sources)), 2),
-                ];
+            foreach ($groups as $supplierId => $sources) { $ready++; $queue[] = $this->readyRow($bookingId, $reference, $supplierId, $sources); }
+            foreach ($rows as $row) {
+                if (! in_array((string) ($row['status'] ?? ''), ['vendor_required', 'cost_required', 'legacy_review', 'review_required'], true)) continue;
+                $attention++; $queue[] = $this->issueRow($bookingId, $reference, $row);
             }
+            foreach ($this->staleAutoDraftRows($bookingId, $reference) as $row) { $attention++; $queue[] = $row; }
         }
-        $cards = $this->lifecycleCards($ready, $attention);
-        $total = count($queue); $offset = ($page - 1) * $perPage;
-        return ['bounded' => true, 'candidate_limit' => 250, 'cards' => $cards, 'queue' => array_slice($queue, $offset, $perPage), 'queue_total' => $total, 'queue_page' => $page, 'queue_last_page' => max(1, (int) ceil($total / $perPage)), 'empty_message' => $total ? '' : 'No booking supplier obligations are ready for costing.'];
+        $from = $total ? (($page - 1) * self::PAGE_SIZE) + 1 : 0; $to = $total ? min($total, $page * self::PAGE_SIZE) : 0;
+        return ['bounded' => true, 'candidate_limit' => self::PAGE_SIZE, 'candidate_total' => $total, 'candidate_from' => $from, 'candidate_to' => $to, 'page_size' => self::PAGE_SIZE, 'coverage_page' => $page, 'coverage_last_page' => $lastPage, 'search' => $search, 'cards' => $this->lifecycleCards($ready, $attention), 'queue' => $queue, 'queue_total' => count($queue), 'queue_page' => $page, 'queue_last_page' => $lastPage, 'empty_message' => $queue === [] ? 'No ready or attention items exist in this coverage page.' : ''];
     }
 
-    /** @return list<int> */
-    private function candidateBookingIds(): array
+    /** @return array{0:list<int>,1:int,2:int} */
+    private function candidatePage(int $page, string $search): array
     {
-        if (! Schema::hasTable('bookings')) return [];
-        $columns = Schema::getColumnListing('bookings'); $status = collect(['status', 'approval_status', 'workflow_status', 'booking_status'])->first(fn (string $field): bool => in_array($field, $columns, true));
-        $query = DB::table('bookings')->orderByDesc('id')->limit(250);
-        if ($status) $query->whereIn($status, ['approved', 'Approved', 'confirmed', 'Confirmed', 'travel ready', 'Travel Ready']);
-        return $query->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        if (! Schema::hasTable('bookings')) return [[], 0, 1];
+        $columns = Schema::getColumnListing('bookings'); $status = collect(['status', 'approval_status', 'workflow_status', 'booking_status'])->first(fn (string $field): bool => in_array($field, $columns, true)); $reference = collect(['booking_reference', 'booking_ref', 'booking_no', 'booking_number', 'reference'])->first(fn (string $field): bool => in_array($field, $columns, true));
+        $base = DB::table('bookings');
+        if ($status) $base->whereIn($status, ['approved', 'Approved', 'confirmed', 'Confirmed', 'travel ready', 'Travel Ready']);
+        if ($search !== '' && $reference) $base->where($reference, 'like', '%'.mb_substr($search, 0, 120).'%');
+        $total = (clone $base)->count(); $lastPage = max(1, (int) ceil($total / self::PAGE_SIZE)); $page = min($page, $lastPage);
+        return [(clone $base)->orderByDesc('id')->forPage(($page - 1) * self::PAGE_SIZE, self::PAGE_SIZE)->pluck('id')->map(fn ($id): int => (int) $id)->all(), $total, $lastPage];
+    }
+
+    private function readyRow(int $bookingId, string $reference, int $supplierId, array $sources): array
+    {
+        return ['state' => 'ready', 'state_label' => 'Ready for Costing', 'issue' => '', 'action' => 'Open Booking', 'action_url' => route('bookings.review.show', ['booking' => $bookingId]), 'booking_id' => $bookingId, 'booking_reference' => $reference, 'supplier_id' => $supplierId, 'supplier_name' => (string) ($sources[0]['supplier_name'] ?? 'Vendor #'.$supplierId), 'products' => implode(', ', array_values(array_unique(array_map(fn (array $row): string => (string) $row['product_type'], $sources)))), 'items' => count($sources), 'total' => round(array_sum(array_map(fn (array $row): float => (float) $row['source_cost'], $sources)), 2)];
+    }
+
+    private function issueRow(int $bookingId, string $reference, array $row): array
+    {
+        $state = (string) ($row['status'] ?? 'review_required'); $labels = ['vendor_required' => 'Vendor Required', 'cost_required' => 'Cost Required', 'legacy_review' => 'Legacy Review', 'review_required' => 'Review Required']; $action = in_array($state, ['legacy_review', 'review_required'], true) && (int) ($row['costing_id'] ?? 0) > 0 ? 'Open Costing' : 'Open Booking';
+        return ['state' => $state, 'state_label' => $labels[$state] ?? 'Review Required', 'issue' => (string) ($row['status_label'] ?? 'Supplier Costing requires review.'), 'action' => $action, 'action_url' => $action === 'Open Costing' ? route('purchase.supplier-costing.show', ['costing' => (int) $row['costing_id']]) : route('bookings.review.show', ['booking' => $bookingId]), 'booking_id' => $bookingId, 'booking_reference' => $reference, 'supplier_id' => (int) ($row['supplier_id'] ?? 0), 'supplier_name' => (string) ($row['supplier_name'] ?? '—'), 'products' => (string) ($row['product_type'] ?? 'Other'), 'items' => 1, 'total' => round((float) ($row['source_cost'] ?? 0), 2), 'costing_id' => (int) ($row['costing_id'] ?? 0)];
+    }
+
+    /** @return list<array<string,mixed>> */
+    private function staleAutoDraftRows(int $bookingId, string $reference): array
+    {
+        if (! Schema::hasTable('supplier_costings') || ! Schema::hasTable('supplier_costing_source_links') || ! Schema::hasTable('supplier_costing_activities')) return [];
+        $result = [];
+        foreach (DB::table('supplier_costings')->where('booking_id', $bookingId)->where('status', 'draft')->get() as $draft) {
+            $auto = DB::table('supplier_costing_activities')->where('supplier_costing_id', $draft->id)->whereIn('action', ['auto_create', 'auto_sync', 'auto_review_required'])->exists(); if (! $auto) continue;
+            $links = DB::table('supplier_costing_source_links')->where('supplier_costing_id', $draft->id)->get(); $current = collect($this->obligations->resolve($bookingId, (int) $draft->id))->keyBy('source_key'); $reason = null;
+            foreach ($links as $link) { $source = $current->get((string) $link->source_key); if (! $source) { $reason = 'Previously costed booking source is no longer present in authoritative booking data.'; break; } if ((int) ($source['supplier_id'] ?? 0) !== (int) $draft->supplier_id) { $reason = 'Authoritative booking vendor changed after this Draft was created.'; break; } if (($source['status'] ?? '') === 'already_costed' && (int) ($source['costing_id'] ?? 0) !== (int) $draft->id) { $reason = 'Booking source is claimed by another active Supplier Costing.'; break; } if ((int) ($source['supplier_id'] ?? 0) <= 0 || (float) ($source['source_cost'] ?? 0) <= 0) { $reason = 'Authoritative supplier or cost is no longer valid.'; break; } }
+            $latest = DB::table('supplier_costing_activities')->where('supplier_costing_id', $draft->id)->where('action', 'auto_review_required')->orderByDesc('id')->first(); if ($reason === null && ! $latest) continue;
+            $result[] = ['state' => 'review_required', 'state_label' => 'Review Required', 'issue' => $reason ?: (string) $latest->notes, 'action' => 'Open Costing', 'action_url' => route('purchase.supplier-costing.show', ['costing' => (int) $draft->id]), 'booking_id' => $bookingId, 'booking_reference' => $reference, 'supplier_id' => (int) $draft->supplier_id, 'supplier_name' => (string) ($draft->supplier_name ?: '—'), 'products' => (string) ($draft->service_type ?: 'Multiple Products'), 'items' => $links->count(), 'total' => (float) $draft->total_cost, 'costing_id' => (int) $draft->id];
+        }
+        return $result;
     }
 
     private function bookingReference(int $id): string
     {
-        $columns = Schema::getColumnListing('bookings'); $field = collect(['booking_reference', 'booking_ref', 'booking_no', 'booking_number', 'reference'])->first(fn (string $name): bool => in_array($name, $columns, true));
-        return $field ? (string) (DB::table('bookings')->where('id', $id)->value($field) ?: 'Booking #'.$id) : 'Booking #'.$id;
+        $columns = Schema::getColumnListing('bookings'); $field = collect(['booking_reference', 'booking_ref', 'booking_no', 'booking_number', 'reference'])->first(fn (string $name): bool => in_array($name, $columns, true)); return $field ? (string) (DB::table('bookings')->where('id', $id)->value($field) ?: 'Booking #'.$id) : 'Booking #'.$id;
     }
 
     private function lifecycleCards(int $ready, int $attention): array
     {
         $counts = DB::table('supplier_costings')->select('status', DB::raw('COUNT(*) as aggregate'))->groupBy('status')->pluck('aggregate', 'status');
-        return [
-            ['key' => 'ready', 'label' => 'Ready for Costing', 'count' => $ready],
-            ['key' => 'draft', 'label' => 'Draft', 'count' => (int) ($counts['draft'] ?? 0)],
-            ['key' => 'pending_approval', 'label' => 'Pending Approval', 'count' => (int) ($counts['pending_approval'] ?? 0)],
-            ['key' => 'approved', 'label' => 'Approved', 'count' => (int) ($counts['approved'] ?? 0)],
-            ['key' => 'posted', 'label' => 'Posted', 'count' => (int) ($counts['posted'] ?? 0)],
-            ['key' => 'attention', 'label' => 'Attention Required', 'count' => $attention],
-        ];
+        return [['key' => 'ready', 'label' => 'Ready for Costing', 'count' => $ready, 'scope' => 'Current coverage page'], ['key' => 'draft', 'label' => 'Draft', 'count' => (int) ($counts['draft'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'pending_approval', 'label' => 'Pending Approval', 'count' => (int) ($counts['pending_approval'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'approved', 'label' => 'Approved', 'count' => (int) ($counts['approved'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'posted', 'label' => 'Posted', 'count' => (int) ($counts['posted'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'attention', 'label' => 'Attention Required', 'count' => $attention, 'scope' => 'Current coverage page']];
     }
 }

@@ -122,8 +122,12 @@ final class GeneralBookingReviewController extends Controller
             // Approval is authoritative only after the booking transaction has
             // committed. Costing projection is best-effort and never changes
             // the booking approval result.
-            $supplierCostingDrafts->syncBooking($booking, $request->user(), 'auto_create');
-            return back()->with('review_success', 'Booking approved. Commercial product editing is now locked.');
+            $costingResult = $supplierCostingDrafts->syncBooking($booking, $request->user(), 'auto_create');
+            $redirect = back()->with('review_success', 'Booking approved. Commercial product editing is now locked.');
+            if (($costingResult['ok'] ?? false) !== true || (int) ($costingResult['attention'] ?? 0) > 0) {
+                $redirect->with('review_warning', 'Supplier Costing requires review. Open Supplier Costing to review the booking cost queue.');
+            }
+            return $redirect;
         }
         if ($action === 'reopen') {
             abort_unless($authority->canReopen($request->user()), 403, 'Only an Administrator may reopen an approved booking.');

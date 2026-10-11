@@ -43,10 +43,16 @@ final class SupplierCostingDraftSynchronizer
                 // its own source claims do not hide the current obligations.
                 foreach ($auto as $draft) {
                     if ((string) $draft->status !== 'draft') continue;
-                    $fresh = array_values(array_filter($this->obligations->resolve($bookingId, (int) $draft->id), fn (array $row): bool => ($row['status'] ?? '') === 'available' && (int) ($row['supplier_id'] ?? 0) === (int) $draft->supplier_id && (float) ($row['source_cost'] ?? 0) > 0));
-                    if ($fresh !== []) {
-                        $this->refreshDraft($draft, $fresh); $updated++; $refreshedSuppliers[(int) $draft->supplier_id] = true;
+                    $current = collect($this->obligations->resolve($bookingId, (int) $draft->id))->keyBy('source_key');
+                    $links = DB::table('supplier_costing_source_links')->where('supplier_costing_id', $draft->id)->get();
+                    $review = $this->reconcileDraft($draft, $links, $current);
+                    if ($review !== null) {
+                        $this->markReview($draft, $review, $user);
+                        $attention++;
+                        continue;
                     }
+                    $fresh = $current->filter(fn (array $row): bool => ($row['status'] ?? '') === 'available' && (int) ($row['supplier_id'] ?? 0) === (int) $draft->supplier_id && (float) ($row['source_cost'] ?? 0) > 0)->values()->all();
+                    if ($fresh !== []) { $this->refreshDraft($draft, $fresh, $user); $updated++; $refreshedSuppliers[(int) $draft->supplier_id] = true; }
                 }
                 $rows = $this->obligations->resolve($bookingId);
                 $groups = [];
@@ -68,7 +74,7 @@ final class SupplierCostingDraftSynchronizer
                         $created++; $auto = $auto->push(DB::table('supplier_costings')->where('id', $id)->first());
                         continue;
                     }
-                    $this->refreshDraft($draft, $sources);
+                    $this->refreshDraft($draft, $sources, $user);
                     $updated++;
                 }
 
@@ -108,7 +114,29 @@ final class SupplierCostingDraftSynchronizer
         return (int) $id;
     }
 
-    private function refreshDraft(object $draft, array $sources): void
+    /** @param iterable<object> $links @param \Illuminate\Support\Collection<string,array<string,mixed>> $current */
+    private function reconcileDraft(object $draft, iterable $links, \Illuminate\Support\Collection $current): ?string
+    {
+        foreach ($links as $link) {
+            $source = $current->get((string) $link->source_key);
+            if (! $source) return 'Previously costed booking source '.$link->source_key.' is no longer present in authoritative booking data.';
+            if ((int) ($source['supplier_id'] ?? 0) !== (int) $draft->supplier_id) return 'Authoritative booking vendor changed from Supplier '.$draft->supplier_id.' to Supplier '.((int) ($source['supplier_id'] ?? 0)).'.';
+            if (($source['status'] ?? '') === 'already_costed' && (int) ($source['costing_id'] ?? 0) !== (int) $draft->id) return 'Booking source '.$link->source_key.' is claimed by another active Supplier Costing.';
+            if ((int) ($source['supplier_id'] ?? 0) <= 0) return 'Authoritative booking vendor is missing for source '.$link->source_key.'.';
+            if ((float) ($source['source_cost'] ?? 0) <= 0) return 'Authoritative booking cost is non-positive for source '.$link->source_key.'.';
+        }
+        return null;
+    }
+
+    private function markReview(object $draft, string $reason, mixed $user): void
+    {
+        if (! Schema::hasTable('supplier_costing_activities')) return;
+        $latest = DB::table('supplier_costing_activities')->where('supplier_costing_id', $draft->id)->orderByDesc('id')->first();
+        if ($latest && (string) $latest->action === 'auto_review_required' && (string) $latest->notes === $reason) return;
+        $this->costing->activity((int) $draft->id, 'auto_review_required', (string) $draft->status, (string) $draft->status, is_object($user) ? $user : null, $reason);
+    }
+
+    private function refreshDraft(object $draft, array $sources, mixed $user = null): void
     {
         $links = DB::table('supplier_costing_source_links')->where('supplier_costing_id', $draft->id)->get()->keyBy('source_key');
         $adjustments = [];
@@ -123,7 +151,7 @@ final class SupplierCostingDraftSynchronizer
         ]);
         $this->replaceLines((int) $draft->id, $sources, $adjustments);
         $this->costing->recalculate((int) $draft->id);
-        $this->costing->activity((int) $draft->id, 'auto_sync', 'draft', 'draft', null, 'Automatically refreshed from booking supplier obligations.');
+        $this->costing->activity((int) $draft->id, 'auto_sync', 'draft', 'draft', is_object($user) ? $user : null, 'Automatically refreshed from booking supplier obligations.');
     }
 
     private function replaceLines(int $costingId, array $sources, array $adjustments): void

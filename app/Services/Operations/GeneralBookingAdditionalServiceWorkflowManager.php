@@ -47,7 +47,7 @@ final class GeneralBookingAdditionalServiceWorkflowManager
             $result['materialization_state'] = $projection['materialization_state'] ?? 'blocked';
             $result['materialization'] = $projection;
             if (($projection['materialization_state'] ?? '') === 'materialized' || ($projection['materialization_state'] ?? '') === 'already_materialized') {
-                $result['supplier_costing'] = $this->supplierCostingDrafts->syncBooking($bookingId, null, 'auto_sync');
+                $result['supplier_costing'] = $this->supplierCostingDrafts->syncBooking($bookingId, $user, 'auto_sync');
             }
         }
         return $result;
