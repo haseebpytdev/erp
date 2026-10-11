@@ -28,5 +28,5 @@ ok(view.includes('makkah-checkin.export'), 'canonical CSV action');
 ok(!view.includes('Amount')&&!view.includes('Margin')&&!view.includes('Supplier Cost'), 'financial columns absent');
 ok(routes.includes('foreach (array_keys(\\App\\Services\\Reports\\TravelReportService::MOVEMENTS) as $movement)'), 'existing movement route family reused');
 ok(!service.includes('general_booking_billing_batch_items'), 'supplementary draft items not queried');
-ok(/'asset_version' => 'ERP-11.3.378-C84(?:\.1|\.2|\.3(?:\.1|\.2)?)?'/.test(config), 'C84 release metadata');
+ok(/'asset_version' => 'ERP-11.3.378-C84(?:\.1|\.2|\.3(?:\.1|\.2|\.3)?)?'/.test(config), 'C84 release metadata');
 console.log('ERP-11.3.378 C84 Makkah native movement regression: PASS / 25');

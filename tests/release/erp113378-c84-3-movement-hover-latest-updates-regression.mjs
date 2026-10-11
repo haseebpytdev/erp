@@ -8,7 +8,7 @@ const service=fs.readFileSync('app/Services/Reports/TravelReportService.php','ut
 const config=fs.readFileSync('config/et_erp_release.php','utf8');
 const ok=(v,m)=>assert.ok(v,m);
 ok(tabs.includes('et-arrival-card')&&tabs.includes('et-arrival-tabs'),'Arrival styling authority remains shared');
-ok(tabs.includes('a:not(.active):hover')&&(tabs.includes('#eef5ff')||tabs.includes('#dbeafe')),'inactive movement tabs have hover feedback');
+ok(tabs.includes('a:not(.active):hover')&&(tabs.includes('#eef5ff')||tabs.includes('#dbeafe')||tabs.includes('#f8fafc')),'inactive movement tabs have hover feedback');
 ok(tabs.includes('a.active')&&tabs.includes('#1769d2'),'active tab styling remains protected');
 ok(!tabs.includes('et-movement-tabs-card')&&!tabs.includes('et-movement-tabs{'),'no second movement visual family');
 ok(tabs.includes('gap:7px'),'seven pixel tab gap preserved');
@@ -18,7 +18,7 @@ ok(middleware.includes('Latest Updates')&&middleware.includes('C84.3')&&middlewa
 ok(middleware.includes('data-et-latest-updates="true"'),'Latest Updates is bounded and identifiable');
 const c843=middleware.indexOf("['C84.3'"); const c842=middleware.indexOf("['C84.2'"); const c84=middleware.indexOf("['C84',");
 ok(c843>=0&&c842>c843&&c84>c842,'Latest Updates order is newest first');
-ok(/'asset_version' => 'ERP-11.3.378-C84.3(?:\.1|\.2)?'/.test(config)&&/'corrective_build' => 'C84.3(?:\.1|\.2)?'/.test(config)&&/Movement Tab Hover & Latest Updates|Latest Updates DOM Runtime Hotfix|Visible Movement Tab Hover/.test(config),'C84 lineage metadata is authoritative');
+ok(/'asset_version' => 'ERP-11.3.378-C84.3(?:\.1|\.2|\.3)?'/.test(config)&&/'corrective_build' => 'C84.3(?:\.1|\.2|\.3)?'/.test(config)&&/Movement Tab Hover & Latest Updates|Latest Updates DOM Runtime Hotfix|Visible Movement Tab Hover|Movement Tab Hover Color Refinement/.test(config),'C84 lineage metadata is authoritative');
 for(const label of ['Check-in Date','Booking No.','Customer / Group','Coming From','Total Pax','Adult','Child','Infant','Makkah Hotel','Check-out Date','Nights'])ok(makkah.includes(`<th>${label}</th>`),`Makkah operational column ${label}`);
 ok(!makkah.includes('Amount')&&!makkah.includes('Margin')&&!makkah.includes('Supplier Cost'),'financial fields remain absent');
 ok(service.includes('$this->hotelReader->staysForBooking')&&service.includes('latestMakkahAirRoute'),'TravelReportService authority unchanged');

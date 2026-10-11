@@ -26,5 +26,5 @@ ok(service.includes("return'Madinah'"),'Madinah precedence unchanged');
 ok(service.includes('latestMakkahAirRoute')&&service.includes("whereDate($arr,'<='"),'Air fallback unchanged');
 ok(!makkah.includes('Amount')&&!makkah.includes('Margin')&&!makkah.includes('Supplier Cost'),'financial columns absent');
 ok(!service.includes('general_booking_billing_batch_items'),'no supplementary draft source');
-ok(/'asset_version' => 'ERP-11.3.378-C84(?:\.2|\.3(?:\.1|\.2)?)'/.test(config)&&/'corrective_build' => 'C84(?:\.2|\.3(?:\.1|\.2)?)'/.test(config)&&/Arrival UI Authority for Movement Reports|Movement Tab Hover & Latest Updates|Latest Updates DOM Runtime Hotfix|Visible Movement Tab Hover/.test(config),'C84 lineage metadata');
+ok(/'asset_version' => 'ERP-11.3.378-C84(?:\.2|\.3(?:\.1|\.2|\.3)?)'/.test(config)&&/'corrective_build' => 'C84(?:\.2|\.3(?:\.1|\.2|\.3)?)'/.test(config)&&/Arrival UI Authority for Movement Reports|Movement Tab Hover & Latest Updates|Latest Updates DOM Runtime Hotfix|Visible Movement Tab Hover|Movement Tab Hover Color Refinement/.test(config),'C84 lineage metadata');
 console.log('ERP-11.3.378 C84.2 Arrival UI authority regression: PASS / 23');
