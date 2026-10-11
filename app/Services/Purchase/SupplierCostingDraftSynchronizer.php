@@ -28,7 +28,7 @@ final class SupplierCostingDraftSynchronizer
         }
 
         try {
-            return DB::transaction(function () use ($bookingId, $user, $reason): array {
+            return DB::transaction(function () use ($bookingId, $user, $reason, $onlySupplierId): array {
                 $booking = DB::table('bookings')->where('id', $bookingId)->lockForUpdate()->first();
                 if (! $booking) return ['ok' => false, 'code' => 'booking_missing', 'created' => 0, 'updated' => 0, 'attention' => 0];
 

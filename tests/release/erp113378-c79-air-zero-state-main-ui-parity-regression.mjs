@@ -40,6 +40,6 @@ check(/Enter a PNR for every Ticket Group/.test(air), 'PNR validation remains en
 check(/multiDraftGeneration/.test(air) && /cancelAirMultiDraft113119/.test(air), 'C77 lifecycle timer protections remain');
 check(/getProductEndpoint\?core\.getProductEndpoint/.test(air), 'supplementary endpoint remains context-derived');
 check(/requestAnimationFrame\(function\(\)\{var lock=integration\.getLockState\(\)/.test(air), 'locked Air still receives server-derived read-only state');
-check(/corrective_build' => 'C(?:79|80|81|82(?:\.1)?|83(?:\.1|\.2|\.3)?)'/.test(release) && /asset_version' => 'ERP-11\.3\.378-C(?:79|80|81|82(?:\.1)?|83(?:\.1|\.2|\.3)?)'/.test(release), 'C79 release metadata lineage remains active');
+check(/corrective_build' => 'C(?:79|80|81|82(?:\.1)?|83(?:\.1|\.2|\.3(?:\.1)?)?)'/.test(release) && /asset_version' => 'ERP-11\.3\.378-C(?:79|80|81|82(?:\.1)?|83(?:\.1|\.2|\.3(?:\.1)?)?)'/.test(release), 'C79 release metadata lineage remains active');
 
 console.log(`ERP-11.3.378 C79 Air zero-state/main UI parity regression: PASS (${assertions} assertions)`);
