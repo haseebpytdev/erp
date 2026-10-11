@@ -49,8 +49,8 @@
             .et-supplier-costing-queue .et-reg-table th:nth-last-child(3),.et-supplier-costing-queue .et-reg-table td:nth-last-child(3){text-align:center}
             .et-supplier-costing-queue .et-reg-table th:nth-last-child(2),.et-supplier-costing-queue .et-reg-table td:nth-last-child(2){text-align:right;font-variant-numeric:tabular-nums}
             .et-supplier-costing-queue-state{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef3f8;font-size:11px;font-weight:800;white-space:nowrap}
-            .et-supplier-costing-row-action{display:inline-flex;align-items:center;justify-content:center;height:29px;padding:5px 9px;border-radius:6px;background:#0d6fe8;color:#fff;font-size:10px;font-weight:800;line-height:1;text-decoration:none;white-space:nowrap}
-            .et-supplier-costing-row-action:hover{background:#095fc9;color:#fff}
+            .et-supplier-costing-booking-link{color:#0d6fe8;font-weight:700;text-decoration:none;white-space:nowrap}
+            .et-supplier-costing-booking-link:hover{color:#095fc9;text-decoration:underline}
             @media(max-width:1180px){.et-supplier-costing-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
             @media(max-width:650px){.et-supplier-costing-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.et-supplier-costing-queue-tools{align-items:stretch;flex-direction:column}.et-supplier-costing-queue-tools label{flex:auto}}
             @media(max-width:360px){.et-supplier-costing-strip{grid-template-columns:1fr}}
@@ -146,7 +146,7 @@
                     <tr>
                         <th class="et-booking-select-cell"><input type="checkbox" data-register-select-all aria-label="Select all visible rows"></th>
                         @foreach($headers as $header)<th>{{ $header }}</th>@endforeach
-                        <th class="et-booking-action-head">Action</th>
+                        @if(!$isSupplierCosting)<th class="et-booking-action-head">Action</th>@endif
                     </tr>
                 </thead>
                 <tbody>
@@ -160,16 +160,16 @@
                             data-row-id="{{ $row['id'] }}">
                             <td class="et-booking-select-cell"><input type="checkbox" data-register-row-select aria-label="Select {{ $row['id'] }}"></td>
                             @foreach($headers as $cellIndex => $header)
-                                <td>{!! $row['cells'][$cellIndex]['html'] ?? '' !!}</td>
-                            @endforeach
-                            <td class="et-booking-action-cell">
-                                @if($isSupplierCosting)
-                                    @if($row['href'] !== '')
-                                        <a class="et-supplier-costing-row-action" href="{{ $row['href'] }}">Open Costing</a>
+                                <td>
+                                    @if($isSupplierCosting && mb_strtolower(trim($header)) === 'booking' && $row['href'] !== '')
+                                        <a class="et-supplier-costing-booking-link" href="{{ $row['href'] }}">{!! $row['cells'][$cellIndex]['html'] ?? '' !!}</a>
                                     @else
-                                        <span>No action available</span>
+                                        {!! $row['cells'][$cellIndex]['html'] ?? '' !!}
                                     @endif
-                                @else
+                                </td>
+                            @endforeach
+                            @if(!$isSupplierCosting)
+                                <td class="et-booking-action-cell">
                                     <div class="et-booking-row-menu">
                                         <button type="button" class="et-booking-row-menu-button" data-register-row-menu aria-label="Row actions">⋮</button>
                                         <div class="et-booking-row-menu-panel">
@@ -180,11 +180,11 @@
                                             @endif
                                         </div>
                                     </div>
-                                @endif
-                            </td>
+                                </td>
+                            @endif
                         </tr>
                     @empty
-                        <tr data-register-empty><td colspan="{{ count($headers) + 2 }}">No records found.</td></tr>
+                        <tr data-register-empty><td colspan="{{ count($headers) + ($isSupplierCosting ? 1 : 2) }}">No records found.</td></tr>
                     @endforelse
                 </tbody>
             </table>

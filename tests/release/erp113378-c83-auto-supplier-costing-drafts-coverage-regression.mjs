@@ -49,7 +49,7 @@ check(view.includes('Booking Cost Queue'), 'register presents a separate booking
 check(view.includes('Read-only coverage projection'), 'coverage is visibly read-only');
 check(/'asset_version' => 'ERP-11\.3\.378-C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4)?)?/.test(release), 'asset version remains C83 lineage');
 check(/'corrective_build' => 'C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4)?)?/.test(release), 'corrective build remains C83 lineage');
-check(/Automatic Supplier Costing Drafts & Coverage|Supplier Costing Automation Integrity & Coverage Closure|Supplier Costing Final Integrity Closure|Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure|Supplier Costing Detail Screen Fit|Supplier Costing Table Fit|Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action/.test(release), 'corrective name remains C83 lineage');
+check(/Automatic Supplier Costing Drafts & Coverage|Supplier Costing Automation Integrity & Coverage Closure|Supplier Costing Final Integrity Closure|Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure|Supplier Costing Detail Screen Fit|Supplier Costing Table Fit|Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation/.test(release), 'corrective name remains C83 lineage');
 
 const sixAir = Array.from({ length: 6 }, (_, i) => ({ product_type: 'Air Ticket', supplier_id: 37, source_cost: 160000, source_key: `air_ticket_details:${i + 1}` }));
 const groupBySupplier = rows => Object.values(rows.reduce((groups, row) => { (groups[row.supplier_id] ||= []).push(row); return groups; }, {}));

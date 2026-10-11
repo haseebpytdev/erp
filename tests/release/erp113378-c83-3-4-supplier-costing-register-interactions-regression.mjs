@@ -40,6 +40,6 @@ const checks = [
 for (const [label, pattern] of checks) {
   assert.match(middleware + js + view + presenter + assetController + synchronizer, pattern, label);
 }
-assert.match(config, /C83\.3\.4|C83\.3\.5/);
-assert.match(config, /Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action/);
+assert.match(config, /C83\.3\.4|C83\.3\.5|C83\.3\.6/);
+assert.match(config, /Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation/);
 console.log(`C83_3_4_REGISTER_INTERACTION_REGRESSION=PASS (${checks.length + 2} assertions)`);

@@ -14,11 +14,11 @@ const config = read('config/et_erp_release.php');
 
 const checks = [
   ['Supplier Costing conditional exists', /\$isSupplierCosting/],
-  ['Supplier Costing uses direct anchor navigation', /et-supplier-costing-row-action[\s\S]*href="\{\{ \$row\['href'\] \}\}"/],
+  ['Supplier Costing uses authoritative anchor navigation', /(?:et-supplier-costing-row-action|et-supplier-costing-booking-link)[\s\S]*href="\{\{ \$row\['href'\] \}\}"/],
   ['direct action uses existing row href', /\$row\['href'\]/],
-  ['direct action label is Open Costing', /et-supplier-costing-row-action[^>]*>Open Costing/],
+  ['Supplier Costing navigation remains authoritative', /(?:Open Costing|et-supplier-costing-booking-link)/],
   ['Supplier Costing branch excludes row menu marker', /@if\(\$isSupplierCosting\)[\s\S]*?@else[\s\S]*?data-register-row-menu/s],
-  ['Supplier Costing branch excludes popover panel', /@if\(\$isSupplierCosting\)[\s\S]*?et-supplier-costing-row-action[\s\S]*?@else[\s\S]*?et-booking-row-menu-panel/s],
+  ['Supplier Costing branch excludes popover panel', /@if\(\$isSupplierCosting\)[\s\S]*?(?:et-supplier-costing-row-action|et-supplier-costing-booking-link)[\s\S]*?@else[\s\S]*?et-booking-row-menu-panel/s],
   ['shared non-Supplier row menu remains', /data-register-row-menu/],
   ['shared popover JavaScript remains', /openRowPopover\(trigger\)[\s\S]*activeRowPopover/],
   ['C83.3.4 module mapping remains', /\$path === 'supplier-costing'\s*=>\s*'purchase'/],
@@ -32,6 +32,6 @@ const checks = [
 for (const [label, pattern] of checks) {
   assert.match(view + js + middleware + asset + queue + sync + config, pattern, label);
 }
-assert.match(config, /C83\.3\.5/);
-assert.match(config, /Supplier Costing Direct Row Action/);
+assert.match(config, /C83\.3\.5|C83\.3\.6/);
+assert.match(config, /Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation|Supplier Costing Booking Link Navigation/);
 console.log(`C83_3_5_DIRECT_ACTION_REGRESSION=PASS (${checks.length + 2} assertions)`);

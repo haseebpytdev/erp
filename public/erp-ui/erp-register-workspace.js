@@ -295,14 +295,15 @@
 
   var exportRows = function (targetRows) {
     if (!targetRows.length) return;
+    var isSupplierCosting = root.dataset.registerKey === 'supplier-costing';
     var headers = Array.prototype.slice.call(table.querySelectorAll('thead th'))
-      .slice(1, -1)
+      .slice(1, isSupplierCosting ? undefined : -1)
       .map(function (th) { return csvCell(th.textContent); });
     var lines = [headers.join(',')];
 
     targetRows.forEach(function (row) {
       var cells = Array.prototype.slice.call(row.cells)
-        .slice(1, -1)
+        .slice(1, isSupplierCosting ? undefined : -1)
         .map(function (cell) { return csvCell(cell.textContent); });
       lines.push(cells.join(','));
     });

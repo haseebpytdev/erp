@@ -30,7 +30,7 @@ check(view.includes('grid-template-columns:repeat(4,minmax(0,1fr))'), 'desktop s
 check(view.includes('minmax(280px,320px)'), 'right column has fluid safe bounds');
 check(queue.includes("'action' => 'Create Draft'") && queue.includes('purchase.supplier-costing.booking-draft'), 'C83.3 Create Draft behavior remains present');
 check(sync.includes('?int $onlySupplierId = null') && sync.includes('$onlySupplierId)'), 'C83.3.1 supplier scope closure remains present');
-check(/'asset_version' => 'ERP-11\.3\.378-C83\.3\.2|ERP-11\.3\.378-C83\.3\.3|ERP-11\.3\.378-C83\.3\.4|ERP-11\.3\.378-C83\.3\.5'/.test(release) && /'corrective_build' => 'C83\.3\.2|C83\.3\.3|C83\.3\.4|C83\.3\.5'/.test(release), 'C83.3.2 lineage metadata is active');
-check(/'corrective_name' => 'Supplier Costing Detail Screen Fit|Supplier Costing Table Fit|Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action'/.test(release), 'C83.3.2 lineage corrective name is active');
+check(/'asset_version' => 'ERP-11\.3\.378-C83\.3\.2|ERP-11\.3\.378-C83\.3\.3|ERP-11\.3\.378-C83\.3\.4|ERP-11\.3\.378-C83\.3\.5|ERP-11\.3\.378-C83\.3\.6'/.test(release) && /'corrective_build' => 'C83\.3\.2|C83\.3\.3|C83\.3\.4|C83\.3\.5|C83\.3\.6'/.test(release), 'C83.3.2 lineage metadata is active');
+check(/'corrective_name' => 'Supplier Costing Detail Screen Fit|Supplier Costing Table Fit|Supplier Costing Register Interaction Authority|Supplier Costing Direct Row Action|Supplier Costing Booking Link Navigation'/.test(release), 'C83.3.2 lineage corrective name is active');
 
 console.log(`ERP-11.3.378 C83.3.2 Supplier Costing detail screen fit regression: PASS (${assertions} assertions)`);
