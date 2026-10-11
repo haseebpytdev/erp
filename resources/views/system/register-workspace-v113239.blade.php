@@ -1,5 +1,7 @@
 @php
     $serverMetadata = $serverMetadata ?? [];
+    $isSupplierCosting = ($config['key'] ?? '') === 'supplier-costing';
+    $coverage = is_array($serverMetadata['coverage'] ?? null) ? $serverMetadata['coverage'] : [];
     $serverMode = (($serverMetadata['filter_mode'] ?? '') === 'server');
     $serverFilters = (array) ($serverMetadata['filters'] ?? []);
     $serverStatus = (string) ($serverFilters['status'] ?? '');
@@ -34,6 +36,29 @@
         @endif
     </section>
 
+    @if($isSupplierCosting)
+        <style>
+            .et-supplier-costing-strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:0 0 14px}
+            .et-supplier-costing-status-card{min-height:88px;padding:12px 14px;border:1px solid #dfe6ef;border-radius:10px;background:#fff;box-shadow:0 2px 8px rgba(31,51,73,.05)}
+            .et-supplier-costing-status-card strong{display:block;font-size:24px;line-height:1.05;color:#172b4d;font-variant-numeric:tabular-nums}
+            .et-supplier-costing-status-card span{display:block;margin-top:7px;color:#40536c;font-size:11px;font-weight:800}
+            .et-supplier-costing-queue-tools{display:flex;gap:10px;align-items:end;padding:10px 14px;border-bottom:1px solid #edf1f5}
+            .et-supplier-costing-queue-tools label{flex:1}
+            .et-supplier-costing-queue-tools input{width:100%;height:38px;padding:8px 10px;border:1px solid #d4dce6;border-radius:7px}
+            .et-supplier-costing-queue .et-reg-table th,.et-supplier-costing-queue .et-reg-table td{padding:8px 10px;font-size:12px}
+            .et-supplier-costing-queue .et-reg-table th:nth-last-child(3),.et-supplier-costing-queue .et-reg-table td:nth-last-child(3){text-align:center}
+            .et-supplier-costing-queue .et-reg-table th:nth-last-child(2),.et-supplier-costing-queue .et-reg-table td:nth-last-child(2){text-align:right;font-variant-numeric:tabular-nums}
+            .et-supplier-costing-queue-state{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef3f8;font-size:11px;font-weight:800;white-space:nowrap}
+            @media(max-width:1180px){.et-supplier-costing-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
+            @media(max-width:650px){.et-supplier-costing-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.et-supplier-costing-queue-tools{align-items:stretch;flex-direction:column}.et-supplier-costing-queue-tools label{flex:auto}}
+            @media(max-width:360px){.et-supplier-costing-strip{grid-template-columns:1fr}}
+        </style>
+        <section class="et-supplier-costing-strip" aria-label="Supplier Costing status summary">
+            @foreach(($coverage['cards'] ?? []) as $card)
+                <article class="et-supplier-costing-status-card"><strong>{{ $card['count'] }}</strong><span>{{ $card['label'] }}</span></article>
+            @endforeach
+        </section>
+    @else
     <section class="et-booking-ref-kpis" aria-label="Register summary">
         @foreach($metricSpecs as $metric)
             @php($caption = $metricCaptions[$metric['key']] ?? ['badge' => '0%', 'caption' => '', 'tone' => 'flat'])
@@ -50,6 +75,7 @@
             </article>
         @endforeach
     </section>
+    @endif
 
     <section class="et-booking-ref-filter-card" data-register-filter-card>
         <div class="et-booking-ref-filter-head">
@@ -164,7 +190,7 @@
         <div class="et-register-native-pagination" aria-label="Server result pages">{!! $nativePaginatorHtml !!}</div>
     @endif
 
-    <section class="et-booking-ref-insights">
+    @if(!$isSupplierCosting)<section class="et-booking-ref-insights">
         <article class="et-booking-ref-insight-card et-booking-ref-workflow">
             <div class="et-booking-ref-insight-head"><div><span aria-hidden="true">⇄</span><strong>Quick Workflow</strong></div><small>Current lifecycle</small></div>
             <div class="et-booking-ref-workflow-track">
@@ -198,13 +224,12 @@
                 @endforelse
             </div>
         </article>
-    </section>
+    </section>@endif
 
-    @if($config['key'] === 'supplier-costing' && is_array($serverMetadata['coverage'] ?? null))
-        @php($coverage = $serverMetadata['coverage'])
-        <section class="et-booking-ref-register-card" data-et-supplier-costing-coverage style="margin-top:18px">
-            <div class="et-booking-ref-table-head"><div class="et-booking-ref-table-title"><span aria-hidden="true">◈</span><strong>Booking Cost Queue</strong></div><small>Read-only coverage projection</small></div>
-            <form method="get" action="{{ url()->current() }}" style="display:flex;gap:10px;align-items:end;padding:14px;border-bottom:1px solid #edf1f5">
+    @if($isSupplierCosting && $coverage !== [])
+        <section class="et-booking-ref-register-card et-supplier-costing-queue" data-et-supplier-costing-coverage style="margin-top:18px">
+            <div class="et-booking-ref-table-head"><div class="et-booking-ref-table-title"><span aria-hidden="true">◈</span><strong>Booking Cost Queue</strong></div><small>Read-only coverage projection · operational supplier actions</small></div>
+            <form class="et-supplier-costing-queue-tools" method="get" action="{{ url()->current() }}">
                 @foreach(request()->except(['coverage_q','coverage_page']) as $key => $value)
                     @if(is_scalar($value))<input type="hidden" name="{{ $key }}" value="{{ $value }}">@endif
                 @endforeach
@@ -213,14 +238,9 @@
                 @if(($coverage['search'] ?? '') !== '')<a class="et-btn" href="{{ request()->fullUrlWithQuery(['coverage_q' => null, 'coverage_page' => 1]) }}">Clear</a>@endif
             </form>
             <div style="padding:12px 14px;color:#6b7788;font-size:13px">Coverage scan: eligible bookings {{ $coverage['candidate_from'] ?? 0 }}–{{ $coverage['candidate_to'] ?? 0 }} of {{ $coverage['candidate_total'] ?? 0 }} (page {{ $coverage['coverage_page'] ?? 1 }} of {{ $coverage['coverage_last_page'] ?? 1 }})</div>
-            <div class="et-booking-ref-kpis" style="padding:14px">
-                @foreach(($coverage['cards'] ?? []) as $card)
-                    <article class="et-booking-ref-kpi et-booking-ref-kpi-blue"><div class="et-booking-ref-kpi-main"><div class="et-booking-ref-kpi-label">{{ $card['label'] }}</div><div class="et-booking-ref-kpi-line"><strong>{{ $card['count'] }}</strong></div><small>{{ $card['scope'] ?? 'Current coverage page' }}</small></div></article>
-                @endforeach
-            </div>
             @if(($coverage['queue'] ?? []) !== [])
-                <div class="et-booking-ref-table-scroll"><table class="et-reg-table"><thead><tr><th>Booking</th><th>Supplier</th><th>Products</th><th>State</th><th>Issue / Detail</th><th>Items</th><th>Amount</th><th>Action</th></tr></thead><tbody>
-                    @foreach($coverage['queue'] as $item)<tr><td>{{ $item['booking_reference'] }}</td><td>{{ $item['supplier_name'] }}</td><td>{{ $item['products'] }}</td><td>{{ $item['state_label'] }}</td><td>{{ $item['issue'] ?: 'Ready for supplier costing.' }}</td><td>{{ $item['items'] }}</td><td>PKR {{ number_format((float) $item['total'], 2) }}</td><td><a href="{{ $item['action_url'] }}">{{ $item['action'] }}</a></td></tr>@endforeach
+            <div class="et-booking-ref-table-scroll"><table class="et-reg-table"><thead><tr><th>Booking</th><th>Supplier</th><th>Products</th><th>State</th><th>Issue / Detail</th><th>Items</th><th>Amount</th><th>Action</th></tr></thead><tbody>
+                    @foreach($coverage['queue'] as $item)<tr><td>{{ $item['booking_reference'] }}</td><td>{{ $item['supplier_name'] }}</td><td>{{ $item['products'] }}</td><td><span class="et-supplier-costing-queue-state">{{ $item['state_label'] }}</span></td><td>{{ $item['issue'] ?: 'Ready for supplier costing.' }}</td><td>{{ $item['items'] }}</td><td>PKR {{ number_format((float) $item['total'], 2) }}</td><td>@if($item['action'] === 'Create Draft')<form method="POST" action="{{ $item['action_url'] }}" style="display:inline">@csrf<button type="submit" class="et-btn primary">Create Draft</button></form>@else<a href="{{ $item['action_url'] }}">{{ $item['action'] }}</a>@endif</td></tr>@endforeach
                 </tbody></table></div>
             @else
                 <div style="padding:22px;color:#6b7788">{{ $coverage['empty_message'] ?? 'No booking supplier obligations are ready for costing.' }}</div>

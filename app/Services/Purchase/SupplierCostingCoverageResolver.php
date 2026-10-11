@@ -49,7 +49,7 @@ final class SupplierCostingCoverageResolver
 
     private function readyRow(int $bookingId, string $reference, int $supplierId, array $sources): array
     {
-        return ['state' => 'ready', 'state_label' => 'Ready for Costing', 'issue' => '', 'action' => 'Open Booking', 'action_url' => route('bookings.review.show', ['booking' => $bookingId]), 'booking_id' => $bookingId, 'booking_reference' => $reference, 'supplier_id' => $supplierId, 'supplier_name' => (string) ($sources[0]['supplier_name'] ?? 'Vendor #'.$supplierId), 'products' => implode(', ', array_values(array_unique(array_map(fn (array $row): string => (string) $row['product_type'], $sources)))), 'items' => count($sources), 'total' => round(array_sum(array_map(fn (array $row): float => (float) $row['source_cost'], $sources)), 2)];
+        return ['state' => 'ready', 'state_label' => 'Ready for Costing', 'issue' => '', 'action' => 'Create Draft', 'action_url' => route('purchase.supplier-costing.booking-draft', ['booking' => $bookingId, 'supplier' => $supplierId]), 'booking_id' => $bookingId, 'booking_reference' => $reference, 'supplier_id' => $supplierId, 'supplier_name' => (string) ($sources[0]['supplier_name'] ?? 'Vendor #'.$supplierId), 'products' => implode(', ', array_values(array_unique(array_map(fn (array $row): string => (string) $row['product_type'], $sources)))), 'items' => count($sources), 'total' => round(array_sum(array_map(fn (array $row): float => (float) $row['source_cost'], $sources)), 2)];
     }
 
     private function issueRow(int $bookingId, string $reference, array $row): array

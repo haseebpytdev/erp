@@ -21,7 +21,7 @@ final class SupplierCostingDraftSynchronizer
     ) {}
 
     /** @return array<string,mixed> */
-    public function syncBooking(int $bookingId, mixed $user = null, string $reason = 'auto_sync'): array
+    public function syncBooking(int $bookingId, mixed $user = null, string $reason = 'auto_sync', ?int $onlySupplierId = null): array
     {
         if ($bookingId <= 0 || ! Schema::hasTable('supplier_costings') || ! Schema::hasTable('supplier_costing_lines') || ! Schema::hasTable('supplier_costing_source_links')) {
             return ['ok' => false, 'code' => 'schema_not_ready', 'created' => 0, 'updated' => 0, 'attention' => 0];
@@ -35,8 +35,8 @@ final class SupplierCostingDraftSynchronizer
                 $existing = DB::table('supplier_costings')->where('booking_id', $bookingId)
                     ->whereIn('status', ['draft', 'pending_approval', 'approved', 'posted'])
                     ->lockForUpdate()->get();
-                $auto = $existing->filter(fn (object $row): bool => $this->isAutoManaged((int) $row->id));
-                $manualSourceDrafts = $existing->filter(fn (object $row): bool => (string) $row->status === 'draft' && ! $this->isAutoManaged((int) $row->id) && DB::table('supplier_costing_source_links')->where('supplier_costing_id', $row->id)->exists());
+                $auto = $existing->filter(fn (object $row): bool => $this->isAutoManaged((int) $row->id) && ($onlySupplierId === null || (int) $row->supplier_id === $onlySupplierId));
+                $manualSourceDrafts = $existing->filter(fn (object $row): bool => (string) $row->status === 'draft' && ! $this->isAutoManaged((int) $row->id) && ($onlySupplierId === null || (int) $row->supplier_id === $onlySupplierId) && DB::table('supplier_costing_source_links')->where('supplier_costing_id', $row->id)->exists());
                 $legacy = $existing->filter(fn (object $row): bool => ! DB::table('supplier_costing_source_links')->where('supplier_costing_id', $row->id)->exists());
 
                 $created = 0; $updated = 0; $attention = 0; $skipped = 0; $refreshedSuppliers = [];
@@ -58,7 +58,7 @@ final class SupplierCostingDraftSynchronizer
                 $rows = $this->obligations->resolve($bookingId);
                 $groups = [];
                 foreach ($rows as $row) {
-                    if (($row['status'] ?? '') === 'available' && (int) ($row['supplier_id'] ?? 0) > 0 && (float) ($row['source_cost'] ?? 0) > 0) {
+                    if (($row['status'] ?? '') === 'available' && (int) ($row['supplier_id'] ?? 0) > 0 && (float) ($row['source_cost'] ?? 0) > 0 && ($onlySupplierId === null || (int) $row['supplier_id'] === $onlySupplierId)) {
                         $groups[(int) $row['supplier_id']][] = $row;
                     } elseif (in_array((string) ($row['status'] ?? ''), ['vendor_required', 'cost_required', 'legacy_review', 'review_required'], true)) {
                         $attention++;

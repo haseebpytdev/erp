@@ -8,6 +8,7 @@ use App\Services\Purchase\BookingSupplierObligationResolver;
 use App\Services\Purchase\SupplierCostingDrilldownResolver;
 use App\Services\Purchase\SupplierCostingService;
 use App\Services\Purchase\SupplierCostingCoverageResolver;
+use App\Services\Purchase\SupplierCostingDraftSynchronizer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -97,6 +98,34 @@ class SupplierCostingController extends Controller
     public function create(Request $request)
     {
         return view('purchase.supplier-costing.form', $this->formData(null, $request));
+    }
+
+    public function createDraftFromBooking(Request $request, int $booking, int $supplier, SupplierCostingDraftSynchronizer $drafts)
+    {
+        abort_unless($supplier > 0, 422, 'A supplier is required.');
+        $rows = $this->obligations->resolve($booking);
+        $eligible = collect($rows)->contains(fn (array $row): bool =>
+            (int) ($row['supplier_id'] ?? 0) === $supplier
+            && ($row['status'] ?? '') === 'available'
+            && (float) ($row['source_cost'] ?? 0) > 0
+        );
+        $existing = $this->sourceLinkedDrafts($booking, $supplier);
+        abort_if($existing->count() > 1, 409, 'Multiple Supplier Costing Drafts exist for this booking and supplier; review is required.');
+        if (! $eligible && $existing->count() === 1) return redirect()->route('purchase.supplier-costing.show', $existing->first()->id);
+        abort_unless($eligible, 422, 'No eligible supplier obligations remain for this booking.');
+        $result = $drafts->syncBooking($booking, $request->user(), 'manual_create', $supplier);
+        abort_unless(($result['ok'] ?? false) === true, 422, (string) ($result['message'] ?? 'Supplier Costing Draft synchronization failed.'));
+        $draftsForTarget = $this->sourceLinkedDrafts($booking, $supplier);
+        abort_if($draftsForTarget->count() > 1, 409, 'Multiple Supplier Costing Drafts exist for this booking and supplier; review is required.');
+        abort_unless($draftsForTarget->count() === 1, 422, 'Supplier Costing Draft was not produced.');
+        return redirect()->route('purchase.supplier-costing.show', $draftsForTarget->first()->id);
+    }
+
+    private function sourceLinkedDrafts(int $booking, int $supplier)
+    {
+        if (! Schema::hasTable('supplier_costing_source_links')) return collect();
+        return DB::table('supplier_costings')->where('booking_id', $booking)->where('supplier_id', $supplier)->where('status', 'draft')
+            ->whereExists(fn ($query) => $query->selectRaw('1')->from('supplier_costing_source_links')->whereColumn('supplier_costing_source_links.supplier_costing_id', 'supplier_costings.id'))->orderByDesc('id')->get();
     }
 
     public function store(Request $request)

@@ -62,8 +62,8 @@ check(c821.includes('setOrDelete') && c821.includes('paginate'), 'C82.1 register
 check(registerView.includes('serverFilters') && costingController.includes('withQueryString'), 'register filter state and pagination remain query-preserved');
 check(!sync.includes('transition('), 'automation still never submits/approves/posts');
 check(!sync.includes('supplier_costing_posting_lines'), 'automation still never creates posting lines');
-check(release.includes("'asset_version' => 'ERP-11.3.378-C83.2'"), 'C83.2 asset version is authoritative');
-check(release.includes("'corrective_build' => 'C83.2'"), 'C83.2 corrective build is authoritative');
-check(release.includes('Supplier Costing Final Integrity Closure'), 'C83.2 corrective name is authoritative');
+check(/'asset_version' => 'ERP-11\.3\.378-C83(?:\.2|\.3)'/.test(release), 'C83.2 lineage asset version is authoritative');
+check(/'corrective_build' => 'C83\.2|C83\.3'/.test(release), 'C83.2 lineage corrective build is authoritative');
+check(/Supplier Costing Final Integrity Closure|Supplier Costing Compact Operations & Draft Actions/.test(release), 'C83.2 lineage corrective name is authoritative');
 
 console.log(`ERP-11.3.378 C83.2 supplier costing final closure regression: PASS (${assertions} assertions)`);

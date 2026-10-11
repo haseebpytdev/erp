@@ -482,6 +482,7 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
 
     Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->name('purchase.supplier-costing.index');
     Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->name('purchase.supplier-costing.create');
+    Route::post('/supplier-costing/booking/{booking}/supplier/{supplier}/draft', [SupplierCostingController::class, 'createDraftFromBooking'])->whereNumber('booking')->whereNumber('supplier')->middleware(EnforceErpRoleScopedAccess::class)->name('purchase.supplier-costing.booking-draft');
     Route::post('/supplier-costing', [SupplierCostingController::class, 'store'])->name('purchase.supplier-costing.store');
     Route::get('/supplier-costing/{costing}', [SupplierCostingController::class, 'show'])->whereNumber('costing')->name('purchase.supplier-costing.show');
     Route::get('/supplier-costing/{costing}/edit', [SupplierCostingController::class, 'edit'])->whereNumber('costing')->name('purchase.supplier-costing.edit');
