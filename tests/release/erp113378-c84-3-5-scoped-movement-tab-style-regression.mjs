@@ -1,0 +1,28 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const tabs=fs.readFileSync('resources/views/reports/travel/partials/movement-tabs.blade.php','utf8');
+const core=fs.readFileSync('public/erp-theme/et-core.css','utf8');
+const professional=fs.readFileSync('public/erp-ui/erp-professional.css','utf8');
+const middleware=fs.readFileSync('app/Http/Middleware/ApplyErpReleaseMetadata.php','utf8');
+const service=fs.readFileSync('app/Services/Reports/TravelReportService.php','utf8');
+const config=fs.readFileSync('config/et_erp_release.php','utf8');
+const ok=(v,m)=>assert.ok(v,m);
+ok(tabs.includes('<nav class="et-arrival-card et-arrival-tabs"'),'movement Blade uses the Arrival tab component');
+ok(tabs.includes('body.et-ui-professional .et-arrival-tabs a{'),'base selector is component-scoped and specific');
+ok(tabs.includes('body.et-ui-professional .et-arrival-tabs a:not(.active):hover{'),'inactive hover selector is component-scoped and specific');
+ok(tabs.includes('body.et-ui-professional .et-arrival-tabs a.active{'),'active selector is component-scoped');
+ok(tabs.includes('body.et-ui-professional .et-arrival-tabs a.active:hover{'),'active hover is explicitly protected');
+ok(tabs.includes('background:#ffffff')&&tabs.includes('border:1px solid #e2e8f0')&&tabs.includes('color:#172033'),'inactive normal state is neutral');
+ok(tabs.includes('background:#f5f7fa')&&tabs.includes('border-color:#cbd5e1')&&tabs.includes('color:#172033')&&tabs.includes('box-shadow:0 1px 3px rgba(15,45,91,.08)'),'inactive hover state is neutral');
+ok(!tabs.includes('background:#1769d2')&&!tabs.includes('background:#2563eb')&&!tabs.includes('background-color:#1769d2')&&!tabs.includes('background-color:#2563eb'),'movement tabs have no blue fill');
+ok(!tabs.includes('transform:')&&!tabs.includes('transform '),'movement hover does not move the button');
+ok(tabs.includes('body.et-ui-professional .et-arrival-tabs a.active{background:#ffffff;border-color:#2563eb;color:#2563eb;box-shadow:0 1px 3px rgba(37,99,235,.10)}'),'active state is white with blue border/text');
+ok(tabs.includes('body.et-ui-professional .et-arrival-tabs a.active:hover{background:#ffffff;border-color:#2563eb;color:#2563eb;box-shadow:0 1px 3px rgba(37,99,235,.10)}'),'active hover matches active state');
+ok(core.includes('body.et-ui-professional a:hover{color:var(--et-primary-hover);}')&&professional.includes('body.et-ui-professional a:hover{color:var(--et-primary-strong)}'),'global professional hover rules remain unchanged');
+ok(tabs.includes('gap:7px')&&tabs.includes('overflow-x:auto')&&tabs.includes('flex-wrap:nowrap')&&tabs.includes('-webkit-overflow-scrolling:touch'),'movement tab layout remains responsive');
+ok(tabs.includes('width:16px!important')&&tabs.includes('height:16px!important'),'paginator remains 16px');
+ok(middleware.includes('$dom->createTextNode($build')&&middleware.includes('$dom->createTextNode($line)'),'DOM-safe Latest Updates remains');
+ok(service.includes('class TravelReportService'),'travel report business/data authority remains');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C84.3.5'")&&config.includes("'corrective_build' => 'C84.3.5'")&&config.includes('Scoped Movement Tab Style Fix'),'C84.3.5 metadata is correct');
+console.log('ERP-11.3.378 C84.3.5 scoped movement tab style regression: PASS / 17');
