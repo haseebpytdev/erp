@@ -18,9 +18,10 @@ final class TravelReportsController extends Controller
         abort_unless(isset(TravelReportService::MOVEMENTS[$movement]),404);
         // Arrival uses the dedicated reports.travel.movements.arrival view;
         // Departure now uses the matching dedicated movement presentation.
-        if ($movement === 'arrival' || $movement === 'departure') {
+        if ($movement === 'arrival' || $movement === 'departure' || $movement === 'makkah-checkin') {
             $layoutMeta=$this->layoutResolver->resolve();
-            return view('reports.travel.movements.'.($movement==='arrival'?'arrival':'departure'),['layoutMeta'=>$layoutMeta,'title'=>$movement==='arrival'?'Arrival Report':'Departure Intimation','report'=>$movement,'definition'=>$this->reports->definition($movement),'rows'=>$this->reports->rows($movement,$request->query(),(int)$request->query('per_page',50)),'movements'=>TravelReportService::MOVEMENTS,'airportOptions'=>$this->reports->movementAirportOptions($movement)]);
+            $view=$movement==='arrival'?'arrival':($movement==='departure'?'departure':'makkah-checkin');
+            return view('reports.travel.movements.'.$view,['layoutMeta'=>$layoutMeta,'title'=>$movement==='arrival'?'Arrival Report':($movement==='departure'?'Departure Intimation':'Makkah Check-in'),'report'=>$movement,'definition'=>$this->reports->definition($movement),'rows'=>$this->reports->rows($movement,$request->query(),(int)$request->query('per_page',50)),'movements'=>TravelReportService::MOVEMENTS,'airportOptions'=>$this->reports->movementAirportOptions($movement)]);
         }
         return $this->view('report',TravelReportService::MOVEMENTS[$movement],$movement,$request,true);
     }

@@ -223,10 +223,50 @@ private function groupRow(object $b): array { $id=(int)($b->booking_id??$b->id??
     private function hotelTable(): ?string { /* Shared resolver supersedes the legacy candidate order: ['booking_hotel_stays','booking_hotels','hotel_stays','booking_hotel_details','booking_accommodations','hotel_booking_details']. */ return $this->hotelStore->table(); }
     private function transportTable(): ?string {foreach(['booking_transport_segments','booking_transports','transport_booking_details','booking_transport_details'] as $t)if(Schema::hasTable($t))return$t;return null;}
     private function countTable(string $t): int {return Schema::hasTable($t)?(int)DB::table($t)->count():0;}
-    private function makkahCheckinEvents(array $filters): Collection { $table='booking_group_package_hotels';if(!Schema::hasTable($table))return collect();$cols=Schema::getColumnListing($table);$date=collect(['check_in','checkin','check_in_date'])->first(fn($c)=>in_array($c,$cols,true));$city=collect(['city','city_name','destination'])->first(fn($c)=>in_array($c,$cols,true));if(!$date||!$city||!in_array('booking_id',$cols,true))return collect();$q=DB::table($table.' as event')->select('event.*')->whereNotNull('event.'.$date)->whereRaw('LOWER(COALESCE(event.'.$city.',\'\')) like ?',['%makkah%']);if(($filters['from']??'')!=='')$q->whereDate('event.'.$date,'>=',$filters['from']);if(($filters['to']??'')!=='')$q->whereDate('event.'.$date,'<=',$filters['to']);$this->applyBookingRelationFilters($q,$filters,$table,'event');if(($filters['hotel']??'')!==''){$name=collect(['hotel_name','hotel','property_name','name'])->first(fn($c)=>in_array($c,$cols,true));if($name)$q->where('event.'.$name,'like','%'.$filters['hotel'].'%');}return$q->get()->sortBy(fn($e)=>sprintf('%s|%08d|%08d',(string)($e->{$date}??''),(int)($e->sort_order??999999),(int)($e->id??0)))->values(); }
+    private function makkahCheckinEvents(array $filters): Collection {
+        $events = collect();
+        foreach ($this->nativeHotelStayEvents($filters) as $stay) $events->push($stay);
+        $table='booking_group_package_hotels';
+        if (Schema::hasTable($table)) {
+            $cols=Schema::getColumnListing($table);
+            $date=collect(['check_in','checkin','check_in_date'])->first(fn($c)=>in_array($c,$cols,true));
+            $city=collect(['city','city_name','destination'])->first(fn($c)=>in_array($c,$cols,true));
+            if ($date && $city && in_array('booking_id',$cols,true)) {
+                $q=DB::table($table.' as event')->select('event.*')->whereNotNull('event.'.$date)->whereRaw('LOWER(COALESCE(event.'.$city.',\'\')) like ?',['%makkah%']);
+                if(($filters['from']??'')!=='')$q->whereDate('event.'.$date,'>=',$filters['from']);
+                if(($filters['to']??'')!=='')$q->whereDate('event.'.$date,'<=',$filters['to']);
+                $this->applyBookingRelationFilters($q,$filters,$table,'event');
+                if(($filters['hotel']??'')!==''){$name=collect(['hotel_name','hotel','property_name','name'])->first(fn($c)=>in_array($c,$cols,true));if($name)$q->where('event.'.$name,'like','%'.$filters['hotel'].'%');}
+                foreach($q->get() as $stay)$events->push($stay);
+            }
+        }
+        return $events->filter(fn($e)=>trim((string)($e->booking_id??''))!=='')
+            ->sortBy(fn($e)=>sprintf('%s|%08d|%08d',(string)($e->check_in??$e->checkin??$e->check_in_date??''),(int)($e->sort_order??999999),(int)($e->id??0)))
+            ->values();
+    }
+
+    private function nativeHotelStayEvents(array $filters): Collection {
+        if (!Schema::hasTable('bookings')) return collect();
+        $q=DB::table('bookings')->select('id');
+        foreach(['status'=>['status','workflow_status','booking_status'],'branch'=>['branch_id'],'customer'=>['customer_id']] as $filter=>$aliases){if(($filters[$filter]??'')==='')continue;$column=collect($aliases)->first(fn($c)=>Schema::hasColumn('bookings',$c));if($column)$q->where('bookings.'.$column,$filters[$filter]);}
+        $events=collect();
+        foreach($q->pluck('id') as $bookingId){
+            foreach($this->hotelReader->staysForBooking((int)$bookingId) as $stay){
+                $city=strtolower(trim((string)($stay['city']??'')));
+                if(!str_contains($city,'makkah'))continue;
+                $date=(string)($stay['check_in']??'');
+                if($date===''||(($filters['from']??'')!==''&&substr($date,0,10)<$filters['from'])||(($filters['to']??'')!==''&&substr($date,0,10)>$filters['to']))continue;
+                if(($filters['hotel']??'')!==''&&!str_contains(strtolower((string)($stay['hotel_name']??'')),strtolower((string)$filters['hotel'])))continue;
+                $events->push((object)$stay);
+            }
+        }
+        return $events;
+    }
     private function makkahCheckinRow(object $stay): array {$id=(int)($stay->booking_id??0);$booking=$this->bookingRecord($id);$row=$this->blank('makkah-checkin');$p=$this->paxCounts($this->passengers->rows($id));$name=collect(['hotel_name','hotel','property_name','name'])->first(fn($c)=>isset($stay->{$c})&&$stay->{$c}!==null&&$stay->{$c}!=='');$row['check_in']=$this->first($stay,['check_in','checkin','check_in_date']);$row['booking_no']=$booking?$this->first($booking,['booking_reference','booking_ref','booking_no','booking_number']):(string)$id;$identity=$this->customerResolver->resolve($id);$row['customer']=trim((string)($identity['name']??''))?:($booking?$this->first($booking,['customer_name','customer','party_name']):'—');$row['total_pax']=array_sum($p);$row['adult']=$p['adult'];$row['child']=$p['child'];$row['infant']=$p['infant'];$row['makkah_hotel']=$name?(string)$stay->{$name}:'—';$row['check_out']=$this->first($stay,['check_out','checkout','check_out_date']);$row['nights']=$this->first($stay,['nights','number_of_nights']);$row['coming_from']=$this->makkahComingFrom($id,$row['check_in']);return$row;}
     private function makkahComingFrom(int $bookingId,string $checkIn): string {
         $day=substr($checkIn,0,10);
+        $native = collect($this->hotelReader->staysForBooking($bookingId))->filter(function(array $stay)use($day):bool{return str_contains(strtolower((string)($stay['city']??'')),'madinah')&&($stay['check_out']??'')!==''&&substr((string)$stay['check_out'],0,10)<=$day;})->sortByDesc(fn(array $stay)=>(string)($stay['check_out']??''))->first();
+        if($native)return'Madinah';
         if(Schema::hasTable('booking_group_package_hotels')){$cols=Schema::getColumnListing('booking_group_package_hotels');$city=in_array('city',$cols,true)?'city':(in_array('city_name',$cols,true)?'city_name':null);$out=in_array('check_out',$cols,true)?'check_out':(in_array('checkout',$cols,true)?'checkout':null);if($city&&$out){$m=DB::table('booking_group_package_hotels')->where('booking_id',$bookingId)->whereRaw('LOWER(COALESCE('.$city.',\'\')) like ?',['%madinah%'])->whereNotNull($out)->whereDate($out,'<=',$day)->orderByDesc($out)->first();if($m)return'Madinah';}}
         $route=$this->latestMakkahAirRoute('booking_group_package_flights',$bookingId,$day);
         if($route!=='—')return$route;
