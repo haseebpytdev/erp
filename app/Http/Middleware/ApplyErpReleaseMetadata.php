@@ -532,6 +532,7 @@ class ApplyErpReleaseMetadata
             return $html;
         }
 
+        try {
         $dom = new \DOMDocument('1.0', 'UTF-8');
         $previous = libxml_use_internal_errors(true);
         $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
@@ -548,7 +549,8 @@ class ApplyErpReleaseMetadata
         $section->setAttribute('data-et-health-section', 'latest-updates');
         $section->setAttribute('data-et-latest-updates', 'true');
         $section->setAttribute('class', 'et-health-latest-updates');
-        $heading = $dom->createElement('h2', 'Latest Updates');
+        $heading = $dom->createElement('h2');
+        $heading->appendChild($dom->createTextNode('Latest Updates'));
         $section->appendChild($heading);
         $entries = [
             ['C84.3', 'Movement Tab Hover & Latest Updates', [
@@ -569,15 +571,25 @@ class ApplyErpReleaseMetadata
         foreach ($entries as [$build, $title, $summary]) {
             $article = $dom->createElement('article');
             $article->setAttribute('class', 'et-health-latest-update');
-            $article->appendChild($dom->createElement('h3', $build.' · '.$title));
+            $articleHeading = $dom->createElement('h3');
+            $articleHeading->appendChild($dom->createTextNode($build.' · '.$title));
+            $article->appendChild($articleHeading);
             $list = $dom->createElement('ul');
-            foreach ($summary as $line) $list->appendChild($dom->createElement('li', $line));
+            foreach ($summary as $line) {
+                $item = $dom->createElement('li');
+                $item->appendChild($dom->createTextNode($line));
+                $list->appendChild($item);
+            }
             $article->appendChild($list);
             $section->appendChild($article);
         }
         $main->appendChild($section);
         $normalized = $dom->saveHTML();
         return $normalized === false ? $html : $normalized;
+        } catch (\Throwable) {
+            // Latest Updates is optional decoration; never fail a valid page.
+            return $html;
+        }
     }
 
     private function compactSidebarReleaseBlock(
