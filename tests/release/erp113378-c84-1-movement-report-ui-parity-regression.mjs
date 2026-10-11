@@ -25,5 +25,5 @@ ok(service.includes("return'Madinah'"),'C84 Madinah precedence unchanged');
 ok(service.includes('latestMakkahAirRoute')&&service.includes("whereDate($arr,'<='"),'C84 booking-scoped Air fallback unchanged');
 ok(!makkah.includes('Amount')&&!makkah.includes('Margin')&&!makkah.includes('Supplier Cost'),'Makkah financial columns absent');
 ok(!service.includes('general_booking_billing_batch_items'),'No supplementary draft source');
-ok(/'asset_version' => 'ERP-11.3.378-C84(?:\.1|\.2|\.3(?:\.1)?)?'/.test(config),'C84 lineage metadata');
+ok(/'asset_version' => 'ERP-11.3.378-C84(?:\.1|\.2|\.3(?:\.1|\.2)?)?'/.test(config),'C84 lineage metadata');
 console.log('ERP-11.3.378 C84.1 movement report UI parity regression: PASS / 25');

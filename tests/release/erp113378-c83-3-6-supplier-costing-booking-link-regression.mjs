@@ -38,5 +38,5 @@ for (const [label, pattern] of checks) {
   else assert.match(view + js + queue + sync + config, pattern, label);
 }
 assert.match(config, /C83\.3\.6|C84(?:\.1)?/);
-assert.match(config, /Supplier Costing Booking Link Navigation|Makkah Check-in Native Movement Report|Movement Report UI Parity|Arrival UI Authority for Movement Reports|Movement Tab Hover & Latest Updates|Latest Updates DOM Runtime Hotfix/);
+assert.match(config, /Supplier Costing Booking Link Navigation|Makkah Check-in Native Movement Report|Movement Report UI Parity|Arrival UI Authority for Movement Reports|Movement Tab Hover & Latest Updates|Latest Updates DOM Runtime Hotfix|Visible Movement Tab Hover/);
 console.log(`C83_3_6_BOOKING_LINK_REGRESSION=PASS (${checks.length + 2} assertions)`);
