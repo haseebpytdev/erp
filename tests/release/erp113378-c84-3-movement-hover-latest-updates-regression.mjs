@@ -1,0 +1,25 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const tabs=fs.readFileSync('resources/views/reports/travel/partials/movement-tabs.blade.php','utf8');
+const middleware=fs.readFileSync('app/Http/Middleware/ApplyErpReleaseMetadata.php','utf8');
+const makkah=fs.readFileSync('resources/views/reports/travel/movements/makkah-checkin.blade.php','utf8');
+const service=fs.readFileSync('app/Services/Reports/TravelReportService.php','utf8');
+const config=fs.readFileSync('config/et_erp_release.php','utf8');
+const ok=(v,m)=>assert.ok(v,m);
+ok(tabs.includes('et-arrival-card')&&tabs.includes('et-arrival-tabs'),'Arrival styling authority remains shared');
+ok(tabs.includes('a:not(.active):hover')&&tabs.includes('#eef5ff'),'inactive movement tabs have subtle hover feedback');
+ok(tabs.includes('a.active')&&tabs.includes('#1769d2'),'active tab styling remains protected');
+ok(!tabs.includes('et-movement-tabs-card')&&!tabs.includes('et-movement-tabs{'),'no second movement visual family');
+ok(tabs.includes('gap:7px'),'seven pixel tab gap preserved');
+ok(tabs.includes('overflow-x:auto')&&tabs.includes('flex-wrap:nowrap'),'mobile tab overflow preserved');
+ok(tabs.includes('width:16px!important')&&tabs.includes('height:16px!important'),'paginator SVG remains 16px');
+ok(middleware.includes('Latest Updates')&&middleware.includes('C84.3')&&middleware.includes('C84.2')&&middleware.includes('C84'),'System Health Latest Updates is server-rendered');
+ok(middleware.includes('data-et-latest-updates="true"'),'Latest Updates is bounded and identifiable');
+const c843=middleware.indexOf("['C84.3'"); const c842=middleware.indexOf("['C84.2'"); const c84=middleware.indexOf("['C84',");
+ok(c843>=0&&c842>c843&&c84>c842,'Latest Updates order is newest first');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C84.3'")&&config.includes("'corrective_build' => 'C84.3'")&&config.includes('Movement Tab Hover & Latest Updates'),'C84.3 metadata is authoritative');
+for(const label of ['Check-in Date','Booking No.','Customer / Group','Coming From','Total Pax','Adult','Child','Infant','Makkah Hotel','Check-out Date','Nights'])ok(makkah.includes(`<th>${label}</th>`),`Makkah operational column ${label}`);
+ok(!makkah.includes('Amount')&&!makkah.includes('Margin')&&!makkah.includes('Supplier Cost'),'financial fields remain absent');
+ok(service.includes('$this->hotelReader->staysForBooking')&&service.includes('latestMakkahAirRoute'),'TravelReportService authority unchanged');
+console.log('ERP-11.3.378 C84.3 Movement hover and Latest Updates regression: PASS / 13');

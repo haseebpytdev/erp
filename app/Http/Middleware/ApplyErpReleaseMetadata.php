@@ -137,6 +137,7 @@ class ApplyErpReleaseMetadata
             $correctiveBuild,
             $correctiveName
         );
+        $html = $this->injectSystemHealthLatestUpdates($request, $html);
 
         try {
             $html = app(ServerSidebarComposer::class)->compose($html);
@@ -519,6 +520,62 @@ class ApplyErpReleaseMetadata
             return $html;
         }
 
+        $normalized = $dom->saveHTML();
+        return $normalized === false ? $html : $normalized;
+    }
+
+    /** Add the immutable, read-only release history to the native Health canvas. */
+    private function injectSystemHealthLatestUpdates(Request $request, string $html): string
+    {
+        $path = strtolower(trim($request->path(), '/'));
+        if (($path !== 'system/update' && $path !== 'system/health') || ! class_exists(\DOMDocument::class)) {
+            return $html;
+        }
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if (! $loaded) return $html;
+
+        $xpath = new \DOMXPath($dom);
+        if ($xpath->query('//*[@data-et-latest-updates="true"]')->length > 0) return $html;
+        $main = $xpath->query('//main[contains(concat(" ", normalize-space(@class), " "), " main ")]')->item(0);
+        if (! $main instanceof \DOMElement) return $html;
+
+        $section = $dom->createElement('section');
+        $section->setAttribute('data-et-health-section', 'latest-updates');
+        $section->setAttribute('data-et-latest-updates', 'true');
+        $section->setAttribute('class', 'et-health-latest-updates');
+        $heading = $dom->createElement('h2', 'Latest Updates');
+        $section->appendChild($heading);
+        $entries = [
+            ['C84.3', 'Movement Tab Hover & Latest Updates', [
+                'Added consistent hover feedback to movement-report tabs.',
+                'Added Latest Updates visibility to System Health & Updates.',
+            ]],
+            ['C84.2', 'Arrival UI Authority for Movement Reports', [
+                'Movement reports reuse Arrival tab styling.',
+                'Retained normal paginator SVG sizing.',
+                'Removed alternate/duplicate movement-tab visual treatment.',
+            ]],
+            ['C84', 'Makkah Check-in Native Movement Report', [
+                'Added native Makkah Check-in movement reporting.',
+                'Supports native Hotel and Group Package operational authorities.',
+                'Dedicated 11-column operational report with no financial data.',
+            ]],
+        ];
+        foreach ($entries as [$build, $title, $summary]) {
+            $article = $dom->createElement('article');
+            $article->setAttribute('class', 'et-health-latest-update');
+            $article->appendChild($dom->createElement('h3', $build.' · '.$title));
+            $list = $dom->createElement('ul');
+            foreach ($summary as $line) $list->appendChild($dom->createElement('li', $line));
+            $article->appendChild($list);
+            $section->appendChild($article);
+        }
+        $main->appendChild($section);
         $normalized = $dom->saveHTML();
         return $normalized === false ? $html : $normalized;
     }
