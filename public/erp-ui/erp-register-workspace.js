@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var root = document.querySelector('[data-et-register-workspace="ERP-11.3.239"]');
+  var root = document.querySelector('[data-et-register-workspace="ERP-11.3.239"][data-register-key]');
   if (!root) return;
 
   var clean = function (value) {

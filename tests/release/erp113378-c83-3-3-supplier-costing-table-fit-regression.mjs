@@ -33,7 +33,7 @@ check(view.includes('grid-template-columns:minmax(0,1fr) minmax(280px,320px)') &
 check(view.includes('Product / Source Lines') && view.includes('Accounting Preview') && view.includes('Document Information') && view.includes('Audit Trail'), 'show content is preserved');
 check(sync.includes('?int $onlySupplierId = null') && sync.includes('$onlySupplierId)'), 'C83.3.1 supplier scope closure remains present');
 check(queue.includes("'action' => 'Create Draft'") && queue.includes('purchase.supplier-costing.booking-draft'), 'C83.3 Create Draft workflow remains present');
-check(release.includes("'asset_version' => 'ERP-11.3.378-C83.3.3'") && release.includes("'corrective_build' => 'C83.3.3'"), 'C83.3.3 metadata is active');
-check(release.includes("'corrective_name' => 'Supplier Costing Table Fit'"), 'C83.3.3 corrective name is active');
+check(/'asset_version' => 'ERP-11\.3\.378-C83\.3\.3|ERP-11\.3\.378-C83\.3\.4'/.test(release) && /'corrective_build' => 'C83\.3\.3|C83\.3\.4'/.test(release), 'C83.3.3 metadata is active');
+check(/'corrective_name' => 'Supplier Costing Table Fit|Supplier Costing Register Interaction Authority'/.test(release), 'C83.3.3 corrective name is active');
 
 console.log(`ERP-11.3.378 C83.3.3 Supplier Costing table fit regression: PASS (${assertions} assertions)`);

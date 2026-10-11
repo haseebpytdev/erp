@@ -677,6 +677,7 @@ class ApplyErpReleaseMetadata
     private function uiModule(string $path): string
     {
         return match (true) {
+            $path === 'supplier-costing' => 'purchase',
             $path === '', $path === 'dashboard', str_starts_with($path, 'dashboard/') => 'dashboard',
             str_starts_with($path, 'administration/') => 'administration',
             str_starts_with($path, 'organization/') => 'organization',

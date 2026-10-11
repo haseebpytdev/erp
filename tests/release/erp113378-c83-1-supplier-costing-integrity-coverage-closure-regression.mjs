@@ -38,9 +38,9 @@ check(view.includes('Issue / Detail') && view.includes('Action'), 'attention que
 check(view.includes('Previous') && view.includes('Next'), 'coverage pagination is visible');
 check(review.includes("with('review_warning'"), 'approval surfaces costing attention warning');
 check(workflow.includes('syncBooking($bookingId, $user, \'auto_sync\')'), 'supplementary sync attributes the acting user');
-check(/'asset_version' => 'ERP-11\.3\.378-C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3)?)?/.test(release), 'C83 lineage asset version remains authoritative');
-check(/'corrective_build' => 'C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3)?)?/.test(release), 'C83 lineage build metadata remains authoritative');
-check(/Supplier Costing Automation Integrity & Coverage Closure|Supplier Costing Final Integrity Closure|Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure|Supplier Costing Detail Screen Fit|Supplier Costing Table Fit/.test(release), 'C83 lineage corrective name remains authoritative');
+check(/'asset_version' => 'ERP-11\.3\.378-C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4)?)?/.test(release), 'C83 lineage asset version remains authoritative');
+check(/'corrective_build' => 'C83(?:\.1|\.2|\.3(?:\.1|\.2|\.3|\.4)?)?/.test(release), 'C83 lineage build metadata remains authoritative');
+check(/Supplier Costing Automation Integrity & Coverage Closure|Supplier Costing Final Integrity Closure|Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure|Supplier Costing Detail Screen Fit|Supplier Costing Table Fit|Supplier Costing Register Interaction Authority/.test(release), 'C83 lineage corrective name remains authoritative');
 
 const drift = { supplier_id: 12, source_cost: 1000, source_key: 'air:1' };
 check(drift.supplier_id !== 0 && drift.source_cost > 0, 'supplier drift fixture has a meaningful source');
