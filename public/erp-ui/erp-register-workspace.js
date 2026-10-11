@@ -16,6 +16,7 @@
   var currentPage = 1;
   var filtered = rows.slice();
   var activeQuick = 'all';
+  var serverMode = root.getAttribute('data-et-register-filter-mode') === 'server';
 
   var search = root.querySelector('[data-filter="search"]');
   var group = root.querySelector('[data-filter="group"]');
@@ -120,6 +121,23 @@
   };
 
   var applyFilters = function () {
+    if (serverMode) {
+      var url = new URL(document.URL);
+      var params = url.searchParams;
+      var setOrDelete = function (key, value) {
+        value = clean(value);
+        if (value) params.set(key, value); else params.delete(key);
+      };
+      setOrDelete('q', search && search.value);
+      setOrDelete('supplier_id', group && group.value);
+      setOrDelete('product', secondary && secondary.value);
+      setOrDelete('date_from', from && from.value);
+      setOrDelete('date_to', to && to.value);
+      setOrDelete('status', status && status.value);
+      params.delete('page');
+      location.assign(url.toString());
+      return;
+    }
     currentPage = 1;
     render();
   };
@@ -307,5 +325,5 @@
     });
   }
 
-  render();
+  if (!serverMode) render();
 })();

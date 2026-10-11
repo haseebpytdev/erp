@@ -1,4 +1,5 @@
 @php
+    $serverMetadata = $serverMetadata ?? [];
     $metricSpecs = [
         ['key' => 'total', 'label' => $config['total_label'], 'icon' => '▣', 'tone' => 'blue', 'value' => $counts['total']],
         ['key' => 'pending', 'label' => $config['pending_label'], 'icon' => '◷', 'tone' => 'amber', 'value' => $counts['pending']],
@@ -18,7 +19,7 @@
     if ($gradientStops === []) $gradientStops[] = '#dfe6ef 0% 100%';
 @endphp
 
-<div class="et-reg-shell et-register-server-shell" data-et-register-workspace="ERP-11.3.239" data-register-key="{{ $config['key'] }}">
+<div class="et-reg-shell et-register-server-shell" data-et-register-workspace="ERP-11.3.239" data-register-key="{{ $config['key'] }}" @if(($serverMetadata['filter_mode'] ?? '') === 'server') data-et-register-filter-mode="server" @endif>
     <section class="et-reg-header et-page-header et-register-server-header">
         <div class="et-reg-title-block">
             <small class="et-page-kicker et-commercial-reference-kicker">{{ $config['kicker'] }}</small>
@@ -63,15 +64,17 @@
             <label>{{ $config['field2_label'] }}
                 <select data-filter="group">
                     <option value="">{{ $config['field2_all'] }}</option>
-                    @foreach($groups as $group)
-                        <option value="{{ mb_strtolower($group) }}">{{ $group }}</option>
-                    @endforeach
+                    @if(($serverMetadata['filter_mode'] ?? '') === 'server')
+                        @foreach(($serverMetadata['supplier_options'] ?? []) as $supplier)<option value="{{ $supplier['id'] }}">{{ $supplier['label'] }}</option>@endforeach
+                    @else
+                        @foreach($groups as $group)<option value="{{ mb_strtolower($group) }}">{{ $group }}</option>@endforeach
+                    @endif
                 </select>
             </label>
             <label>{{ $config['field3_label'] }}
                 <select data-filter="secondary">
                     <option value="">{{ $config['field3_all'] }}</option>
-                    @foreach($secondaryOptions as $secondary)
+                    @foreach(($serverMetadata['product_options'] ?? $secondaryOptions) as $secondary)
                         <option value="{{ mb_strtolower($secondary) }}">{{ $secondary }}</option>
                     @endforeach
                 </select>
@@ -96,7 +99,7 @@
 
     <section class="et-booking-ref-register-card" data-register-table-card>
         <div class="et-booking-ref-table-head">
-            <div class="et-booking-ref-table-title"><span aria-hidden="true">▦</span><strong>{{ $config['table_title'] }} (<span data-register-count>{{ count($rows) }}</span>)</strong></div>
+            <div class="et-booking-ref-table-title"><span aria-hidden="true">▦</span><strong>{{ $config['table_title'] }} (<span data-register-count>{{ $serverMetadata['total'] ?? count($rows) }}</span>)</strong></div>
             <div class="et-booking-export" data-register-export>
                 <button type="button" class="et-booking-export-button" data-register-export-toggle>⇩ Export ▾</button>
                 <div class="et-booking-export-menu">
@@ -149,7 +152,7 @@
         </div>
 
         <div class="et-booking-ref-table-footer">
-            <div class="et-booking-ref-range" data-register-range>Showing {{ count($rows) ? 1 : 0 }}–{{ min(15, count($rows)) }} of {{ count($rows) }}</div>
+            <div class="et-booking-ref-range" data-register-range>Showing {{ $serverMetadata['from'] ?? (count($rows) ? 1 : 0) }}–{{ $serverMetadata['to'] ?? min(15, count($rows)) }} of {{ $serverMetadata['total'] ?? count($rows) }}</div>
             <div class="et-booking-ref-pagination" data-register-pagination></div>
         </div>
     </section>
@@ -168,8 +171,8 @@
             </div>
         </article>
 
-        <article class="et-booking-ref-insight-card">
-            <div class="et-booking-ref-insight-head"><div><span aria-hidden="true">◔</span><strong>{{ $config['breakdown_title'] }}</strong></div><small>{{ count($rows) }} records</small></div>
+                <article class="et-booking-ref-insight-card">
+                    <div class="et-booking-ref-insight-head"><div><span aria-hidden="true">◔</span><strong>{{ $config['breakdown_title'] }}</strong></div><small>{{ $serverMetadata['total'] ?? count($rows) }} records</small></div>
             <div class="et-booking-ref-type-body">
                 <div class="et-booking-ref-donut" style="background:conic-gradient({{ implode(',', $gradientStops) }})"><span></span></div>
                 <div class="et-booking-ref-type-legend">
@@ -185,7 +188,7 @@
         <article class="et-booking-ref-insight-card">
             <div class="et-booking-ref-insight-head"><div><span aria-hidden="true">◷</span><strong>Recent Activity</strong></div><small>Latest rows</small></div>
             <div class="et-booking-ref-activity-list">
-                @forelse(array_slice($rows, 0, 5) as $row)
+                @forelse(($serverMetadata['recent'] ?? array_slice($rows, 0, 5)) as $row)
                     <div class="et-booking-ref-activity-row"><i class="blue"></i><div><strong>{{ $row['id'] }}</strong><small>{{ $row['status_label'] }}</small></div><time>{{ $row['date_label'] }}</time></div>
                 @empty
                     <small>No recent activity.</small>

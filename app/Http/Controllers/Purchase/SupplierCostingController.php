@@ -7,6 +7,7 @@ use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Purchase\BookingSupplierObligationResolver;
 use App\Services\Purchase\SupplierCostingDrilldownResolver;
 use App\Services\Purchase\SupplierCostingService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -24,13 +25,70 @@ class SupplierCostingController extends Controller
 
     public function index(Request $request)
     {
+        $filters = [
+            'q' => trim((string) $request->input('q', '')),
+            'supplier_id' => max(0, (int) $request->input('supplier_id', 0)),
+            'product' => trim((string) $request->input('product', '')),
+            'date_from' => trim((string) $request->input('date_from', '')),
+            'date_to' => trim((string) $request->input('date_to', '')),
+            'status' => trim((string) $request->input('status', '')),
+        ];
+        $statuses = ['draft', 'pending_approval', 'approved', 'posted'];
         $query = DB::table('supplier_costings')->orderByDesc('id');
-        if ($request->filled('status')) $query->where('status', $request->string('status'));
-        if ($request->filled('q')) {
-            $term = '%'.$request->string('q').'%';
+        if (in_array($filters['status'], $statuses, true)) $query->where('status', $filters['status']);
+        elseif ($filters['status'] !== '') $query->whereRaw('1 = 0');
+        if ($filters['supplier_id'] > 0) $query->where('supplier_id', $filters['supplier_id']);
+        if ($filters['product'] !== '') $query->where('service_type', $filters['product']);
+        if ($filters['q'] !== '') {
+            $term = '%'.mb_substr($filters['q'], 0, 120).'%';
             $query->where(fn ($q) => $q->where('costing_no', 'like', $term)->orWhere('supplier_name', 'like', $term)->orWhere('supplier_invoice_no', 'like', $term)->orWhere('supplier_reference', 'like', $term));
         }
-        return view('purchase.supplier-costing.index', ['rows' => $query->paginate(25)->withQueryString(), 'layoutMeta' => $this->layout->resolve()]);
+        if ($date = $this->registerDate($filters['date_from'])) $query->whereDate('cost_date', '>=', $date);
+        elseif ($filters['date_from'] !== '') $query->whereRaw('1 = 0');
+        if ($date = $this->registerDate($filters['date_to'])) $query->whereDate('cost_date', '<=', $date);
+        elseif ($filters['date_to'] !== '') $query->whereRaw('1 = 0');
+
+        $filteredRows = (clone $query)->get();
+        $rows = $query->paginate(25)->withQueryString();
+        $supplierOptions = DB::table('supplier_costings')->whereNotNull('supplier_id')->where('supplier_name', '<>', '')
+            ->select('supplier_id', 'supplier_name')->distinct()->orderBy('supplier_name')->get()
+            ->map(fn ($row) => ['id' => (int) $row->supplier_id, 'label' => (string) $row->supplier_name])->values()->all();
+        $productOptions = DB::table('supplier_costings')->whereNotNull('service_type')->where('service_type', '<>', '')
+            ->distinct()->orderBy('service_type')->pluck('service_type')->map(fn ($value) => (string) $value)->values()->all();
+        $statusCounts = array_fill_keys($statuses, 0);
+        $productBreakdown = [];
+        foreach ($filteredRows as $row) {
+            if (array_key_exists((string) $row->status, $statusCounts)) $statusCounts[(string) $row->status]++;
+            $product = (string) ($row->service_type ?: 'Other');
+            $productBreakdown[$product] = ($productBreakdown[$product] ?? 0) + 1;
+        }
+        arsort($productBreakdown);
+        $bookingReferences = $this->bookingReferences($rows->getCollection()->pluck('booking_id')->filter()->map(fn ($id) => (int) $id)->all());
+        $registerMeta = [
+            'filter_mode' => 'server', 'total' => $rows->total(), 'from' => $rows->firstItem() ?: 0,
+            'to' => $rows->lastItem() ?: 0, 'current_page' => $rows->currentPage(), 'last_page' => $rows->lastPage(),
+            'counts' => ['pending' => $statusCounts['pending_approval'], 'approved' => $statusCounts['approved'], 'fourth' => $statusCounts['posted']],
+            'breakdown' => array_map(fn ($label, $count) => ['label' => $label, 'count' => $count], array_keys($productBreakdown), $productBreakdown),
+            'recent' => $filteredRows->take(5)->map(fn ($row) => ['id' => (string) $row->costing_no, 'status_label' => ucwords(str_replace('_', ' ', (string) $row->status)), 'date_label' => Carbon::parse($row->cost_date)->format('d/m/Y')])->values()->all(),
+            'supplier_options' => $supplierOptions, 'product_options' => $productOptions, 'filters' => $filters,
+            'booking_references' => $bookingReferences,
+        ];
+        return view('purchase.supplier-costing.index', ['rows' => $rows, 'layoutMeta' => $this->layout->resolve(), 'registerMeta' => $registerMeta, 'filterSuppliers' => $supplierOptions, 'filterProducts' => $productOptions]);
+    }
+
+    private function registerDate(string $value): ?string
+    {
+        if ($value === '') return null;
+        try { return Carbon::createFromFormat('Y-m-d', $value)->format('Y-m-d'); } catch (\Throwable) { return null; }
+    }
+
+    private function bookingReferences(array $ids): array
+    {
+        if ($ids === [] || ! Schema::hasTable('bookings')) return [];
+        $columns = Schema::getColumnListing('bookings');
+        $reference = collect(['booking_reference', 'booking_ref', 'booking_no', 'booking_number', 'reference_no', 'reference', 'code'])->first(fn ($name) => in_array($name, $columns, true));
+        if (! $reference) return [];
+        return DB::table('bookings')->whereIn('id', $ids)->pluck($reference, 'id')->map(fn ($value) => (string) $value)->all();
     }
 
     public function create(Request $request)

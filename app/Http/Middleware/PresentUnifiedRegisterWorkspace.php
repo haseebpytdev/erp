@@ -318,7 +318,7 @@ final class PresentUnifiedRegisterWorkspace
             'fourth' => $this->countStatus($rows, (string) $config['fourth_status']),
         ];
 
-        return [
+        $workspace = [
             'config' => $config,
             'headers' => array_values(array_map(
                 static fn (int $index): string => $headers[$index] ?? '',
@@ -333,6 +333,35 @@ final class PresentUnifiedRegisterWorkspace
             'createHref' => $createHref,
             'nativePaginatorHtml' => $this->nativePaginatorHtml($xpath),
         ];
+
+        if ($config['key'] === 'supplier-costing') {
+            $metadata = $this->structuredSupplierCostingMetadata($xpath);
+            if ($metadata !== null) {
+                $workspace['serverMetadata'] = $metadata;
+                $workspace['counts'] = [
+                    'total' => (int) ($metadata['total'] ?? count($rows)),
+                    'pending' => (int) ($metadata['counts']['pending'] ?? 0),
+                    'approved' => (int) ($metadata['counts']['approved'] ?? 0),
+                    'fourth' => (int) ($metadata['counts']['fourth'] ?? 0),
+                ];
+                $workspace['groups'] = array_values(array_map(static fn (array $item): string => (string) ($item['label'] ?? ''), (array) ($metadata['supplier_options'] ?? [])));
+                $workspace['secondaryOptions'] = array_values(array_map('strval', (array) ($metadata['product_options'] ?? [])));
+                $workspace['breakdown'] = (array) ($metadata['breakdown'] ?? []);
+                $workspace['metricCaptions'] = $this->metricCaptions($rows, $config, $workspace['counts']);
+            }
+        }
+
+        return $workspace;
+    }
+
+    private function structuredSupplierCostingMetadata(DOMXPath $xpath): ?array
+    {
+        $nodes = $xpath->query('//*[@data-et-supplier-costing-register-metadata]');
+        if (! $nodes || $nodes->length === 0) return null;
+        $json = trim((string) $nodes->item(0)->textContent);
+        if ($json === '') return null;
+        $metadata = json_decode($json, true);
+        return is_array($metadata) && (($metadata['filter_mode'] ?? '') === 'server') ? $metadata : null;
     }
 
     private function findRegisterTable(DOMXPath $xpath, array $config): ?DOMElement
