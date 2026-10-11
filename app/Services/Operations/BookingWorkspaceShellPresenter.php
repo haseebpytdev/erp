@@ -277,6 +277,16 @@ final class BookingWorkspaceShellPresenter
                 .'" data-et-dedicated-visa-css="'.$assetVersion.'">';
             $html = preg_replace('/<\/head>/i', $visaDedicatedStyle."\n</head>", $html, 1) ?? $html;
         }
+        if (preg_match('#^operations/bookings/\d+/(?:products/air|additional-services/\d+/products/air)$#', $path) === 1
+            && ! str_contains($html, 'data-et-dedicated-air-css="')
+            && stripos($html, '</head>') !== false
+        ) {
+            $airDedicatedStyle = '<link rel="stylesheet" href="'
+                .e(route('system.erp-assets.erp-professional-css'))
+                .'?module=operations&role=focused&dedicated=1&product=air&v='.$assetVersion
+                .'" data-et-dedicated-air-css="'.$assetVersion.'">';
+            $html = preg_replace('/<\/head>/i', $airDedicatedStyle."\n</head>", $html, 1) ?? $html;
+        }
         $script = '<script src="'
             .e(route('system.erp-assets.booking-focus'))
             .'?v='.$assetVersion.'" defer data-et-booking-focus-js="'.$assetVersion.'"></script>';
