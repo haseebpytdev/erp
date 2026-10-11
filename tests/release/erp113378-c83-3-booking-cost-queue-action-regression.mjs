@@ -52,9 +52,9 @@ check(view.includes('@else') && view.includes('et-booking-ref-kpis'), 'other reg
 check(view.includes('Quick Workflow') && view.includes('Costings by Product') === false, 'supplier costing product breakdown is removed from source');
 check(view.includes('Recent Activity'), 'recent activity remains available to other registers');
 check(view.includes('data-et-supplier-costing-coverage'), 'supplier costing queue remains explicitly scoped');
-check(/'asset_version' => 'ERP-11\.3\.378-C83\.3(?:\.1)?'/.test(release), 'C83.3 lineage asset version is authoritative');
-check(/'corrective_build' => 'C83\.3(?:\.1)?'/.test(release), 'C83.3 lineage corrective build is authoritative');
-check(/Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure/.test(release), 'C83.3 lineage corrective name is authoritative');
+check(/'asset_version' => 'ERP-11\.3\.378-C83\.3(?:\.1|\.2)?'/.test(release), 'C83.3 lineage asset version is authoritative');
+check(/'corrective_build' => 'C83\.3(?:\.1|\.2)?'/.test(release), 'C83.3 lineage corrective build is authoritative');
+check(/Supplier Costing Compact Operations & Draft Actions|Supplier Costing Target Scope Runtime Closure|Supplier Costing Detail Screen Fit/.test(release), 'C83.3 lineage corrective name is authoritative');
 check(/syncBooking\(int \$bookingId, mixed \$user = null, string \$reason = 'auto_sync', \?int \$onlySupplierId = null\)/.test(sync), 'onlySupplierId parameter remains present');
 check(/DB::transaction\(function \(\) use \(\$bookingId, \$user, \$reason, \$onlySupplierId\)/.test(sync), 'onlySupplierId is captured by the transaction closure');
 
