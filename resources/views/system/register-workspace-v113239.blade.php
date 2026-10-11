@@ -199,4 +199,23 @@
             </div>
         </article>
     </section>
+
+    @if($config['key'] === 'supplier-costing' && is_array($serverMetadata['coverage'] ?? null))
+        @php($coverage = $serverMetadata['coverage'])
+        <section class="et-booking-ref-register-card" data-et-supplier-costing-coverage style="margin-top:18px">
+            <div class="et-booking-ref-table-head"><div class="et-booking-ref-table-title"><span aria-hidden="true">◈</span><strong>Booking Cost Queue</strong></div><small>Read-only coverage projection</small></div>
+            <div class="et-booking-ref-kpis" style="padding:14px">
+                @foreach(($coverage['cards'] ?? []) as $card)
+                    <article class="et-booking-ref-kpi et-booking-ref-kpi-blue"><div class="et-booking-ref-kpi-main"><div class="et-booking-ref-kpi-label">{{ $card['label'] }}</div><div class="et-booking-ref-kpi-line"><strong>{{ $card['count'] }}</strong></div></div></article>
+                @endforeach
+            </div>
+            @if(($coverage['queue'] ?? []) !== [])
+                <div class="et-booking-ref-table-scroll"><table class="et-reg-table"><thead><tr><th>Booking</th><th>Supplier</th><th>Products</th><th>Items</th><th>Available Cost</th></tr></thead><tbody>
+                    @foreach($coverage['queue'] as $item)<tr><td>{{ $item['booking_reference'] }}</td><td>{{ $item['supplier_name'] }}</td><td>{{ $item['products'] }}</td><td>{{ $item['items'] }}</td><td>PKR {{ number_format((float) $item['total'], 2) }}</td></tr>@endforeach
+                </tbody></table></div>
+            @else
+                <div style="padding:22px;color:#6b7788">{{ $coverage['empty_message'] ?? 'No booking supplier obligations are ready for costing.' }}</div>
+            @endif
+        </section>
+    @endif
 </div>

@@ -13,6 +13,7 @@ use App\Services\Operations\NativeSalesInvoiceInspector;
 use App\Services\Operations\NativeSalesInvoiceCreateCapability;
 use App\Services\Operations\NativeBookingCustomerResolver;
 use App\Services\Sales\BaseSalesInvoiceConsistencyResolver;
+use App\Services\Purchase\SupplierCostingDraftSynchronizer;
 use App\Models\SalesInvoice;
 use App\Services\Organization\CompanyProfileSnapshotService;
 use Illuminate\Http\RedirectResponse;
@@ -78,7 +79,7 @@ final class GeneralBookingReviewController extends Controller
         ]);
     }
 
-    public function action(Request $request, int $booking, string $action, GroupUmrahEditAuthority $authority, BookingBillingEditLockResolver $billingLocks): mixed
+    public function action(Request $request, int $booking, string $action, GroupUmrahEditAuthority $authority, BookingBillingEditLockResolver $billingLocks, SupplierCostingDraftSynchronizer $supplierCostingDrafts): mixed
     {
         $row = $this->booking($booking); $columns = Schema::getColumnListing('bookings');
         if ($action === 'ready') {
@@ -118,6 +119,10 @@ final class GeneralBookingReviewController extends Controller
                 $this->setStatus($booking, $statusField, 'approved', $columns, $request);
                 $this->syncGeneralNativeConfirmation($booking, 'CONFIRMED', $statusField, $columns, $request);
             });
+            // Approval is authoritative only after the booking transaction has
+            // committed. Costing projection is best-effort and never changes
+            // the booking approval result.
+            $supplierCostingDrafts->syncBooking($booking, $request->user(), 'auto_create');
             return back()->with('review_success', 'Booking approved. Commercial product editing is now locked.');
         }
         if ($action === 'reopen') {

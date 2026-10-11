@@ -4,12 +4,13 @@ namespace App\Services\Operations;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Services\Purchase\SupplierCostingDraftSynchronizer;
 
 final class GeneralBookingAdditionalServiceWorkflowManager
 {
     private const MESSAGE = 'Additional Services requires the General Booking Billing database upgrade.';
 
-    public function __construct(private readonly BookingEditLockResolver $locks, private readonly GroupUmrahEditAuthority $authority, private readonly GeneralBookingAdditionalServiceSnapshotIntegrity $integrity, private readonly GeneralBookingAdditionalServiceMaterializer $materializer) {}
+    public function __construct(private readonly BookingEditLockResolver $locks, private readonly GroupUmrahEditAuthority $authority, private readonly GeneralBookingAdditionalServiceSnapshotIntegrity $integrity, private readonly GeneralBookingAdditionalServiceMaterializer $materializer, private readonly SupplierCostingDraftSynchronizer $supplierCostingDrafts) {}
 
     public function transition(int $bookingId, int $batchId, string $action, mixed $user, ?string $reason = null): array
     {
@@ -45,6 +46,9 @@ final class GeneralBookingAdditionalServiceWorkflowManager
             $projection = $this->materializer->materialize($bookingId, $batchId, $userId);
             $result['materialization_state'] = $projection['materialization_state'] ?? 'blocked';
             $result['materialization'] = $projection;
+            if (($projection['materialization_state'] ?? '') === 'materialized' || ($projection['materialization_state'] ?? '') === 'already_materialized') {
+                $result['supplier_costing'] = $this->supplierCostingDrafts->syncBooking($bookingId, null, 'auto_sync');
+            }
         }
         return $result;
     }

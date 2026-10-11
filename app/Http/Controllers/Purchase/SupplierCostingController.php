@@ -7,6 +7,7 @@ use App\Services\Operations\NativeErpLayoutResolver;
 use App\Services\Purchase\BookingSupplierObligationResolver;
 use App\Services\Purchase\SupplierCostingDrilldownResolver;
 use App\Services\Purchase\SupplierCostingService;
+use App\Services\Purchase\SupplierCostingCoverageResolver;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ class SupplierCostingController extends Controller
         private readonly BookingSupplierObligationResolver $obligations,
         private readonly SupplierCostingDrilldownResolver $drilldowns,
         private readonly NativeErpLayoutResolver $layout,
+        private readonly SupplierCostingCoverageResolver $coverage,
     ) {}
 
     public function index(Request $request)
@@ -72,6 +74,7 @@ class SupplierCostingController extends Controller
             'recent' => $filteredRows->take(5)->map(fn ($row) => ['id' => (string) $row->costing_no, 'status_label' => ucwords(str_replace('_', ' ', (string) $row->status)), 'date_label' => Carbon::parse($row->cost_date)->format('d/m/Y')])->values()->all(),
             'supplier_options' => $supplierOptions, 'product_options' => $productOptions, 'filters' => $filters,
             'booking_references' => $bookingReferences,
+            'coverage' => $this->coverage->resolve(max(1, (int) $request->input('coverage_page', 1)), trim((string) $request->input('coverage_q', ''))),
         ];
         return view('purchase.supplier-costing.index', ['rows' => $rows, 'layoutMeta' => $this->layout->resolve(), 'registerMeta' => $registerMeta, 'filterSuppliers' => $supplierOptions, 'filterProducts' => $productOptions]);
     }
