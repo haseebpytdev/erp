@@ -37,6 +37,6 @@ for (const [label, pattern] of checks) {
   if (typeof pattern === 'boolean') assert.equal(pattern, true, label);
   else assert.match(view + js + queue + sync + config, pattern, label);
 }
-assert.match(config, /C83\.3\.6|C84/);
-assert.match(config, /Supplier Costing Booking Link Navigation|Makkah Check-in Native Movement Report/);
+assert.match(config, /C83\.3\.6|C84(?:\.1)?/);
+assert.match(config, /Supplier Costing Booking Link Navigation|Makkah Check-in Native Movement Report|Movement Report UI Parity/);
 console.log(`C83_3_6_BOOKING_LINK_REGRESSION=PASS (${checks.length + 2} assertions)`);
