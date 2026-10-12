@@ -46,6 +46,10 @@ final class GeneralBookingHotelProductController extends Controller
             $serviceStays = $this->stayRows($booking, (int) $service['id'], $stayTable);
             $serviceRow = (array) ($service['row'] ?? []);
             $serviceStays = $this->overlayHotelServiceSnapshot($serviceStays, $this->hotelServiceSnapshotFromRow($serviceRow));
+            $serviceStays = array_map(static function (array $stay) use ($service): array {
+                if ((int) ($stay['booking_service_id'] ?? 0) <= 0) $stay['booking_service_id'] = (int) ($service['id'] ?? 0);
+                return $stay;
+            }, $serviceStays);
             $stays = array_merge($stays, $this->overlayHotelServiceVendorContext($serviceStays, $serviceRow));
         }
         usort($stays, static fn (array $a, array $b): int => ((int) ($a['booking_service_id'] ?? 0) <=> (int) ($b['booking_service_id'] ?? 0)) ?: ((int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0)));
@@ -177,6 +181,7 @@ final class GeneralBookingHotelProductController extends Controller
                 $stage = 'Hotel stay rows';
                 $serviceIds = [];
                 if ($perService) {
+                    $this->reconcileOmittedHotelServices($booking, $normalized, $stayTable);
                     foreach ($normalized as $stay) {
                         $service = ((int) ($stay['booking_service_id'] ?? 0) > 0 || (int) ($stay['id'] ?? 0) > 0)
                             ? $this->resolveSubmittedHotelService($booking, $stay, $bookingRow)
@@ -698,6 +703,11 @@ final class GeneralBookingHotelProductController extends Controller
         $serviceId = (int) ($stay['booking_service_id'] ?? 0);
         $detailId = (int) ($stay['id'] ?? 0);
         $hotelId = (int) (app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'] ?? 0);
+        if ($serviceId <= 0 && $detailId > 0) {
+            $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
+            $link = (string) ($resolved['service_link_column'] ?? 'booking_service_id');
+            $serviceId = $resolved && $link !== '' ? (int) DB::table((string) $resolved['table'])->where('id', $detailId)->value($link) : 0;
+        }
         if ($serviceId > 0 || $detailId > 0) {
             $service = (array) (DB::table('booking_services')->where('id', $serviceId)->where('booking_id', $booking)->where('product_service_id', $hotelId)->lockForUpdate()->first() ?? []);
             if (! $service || ! $this->isActiveHotelServiceRow($service)) throw ValidationException::withMessages(['hotel' => 'Hotel service identity does not belong to this booking.']);
@@ -711,6 +721,50 @@ final class GeneralBookingHotelProductController extends Controller
             return ['id' => $serviceId, 'row' => $service];
         }
         return $this->ensureHotelService($booking, $bookingRow);
+    }
+
+    /** Remove omitted active Hotel services only after checking protected downstream references. */
+    private function reconcileOmittedHotelServices(int $booking, array $submitted, string $table): void
+    {
+        $existing = $this->findHotelServices($booking);
+        $submittedIds = [];
+        foreach ($submitted as $stay) {
+            $serviceId = (int) ($stay['booking_service_id'] ?? 0);
+            if ($serviceId <= 0 && (int) ($stay['id'] ?? 0) > 0) {
+                $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
+                $link = (string) ($resolved['service_link_column'] ?? '');
+                if ($link !== '') $serviceId = (int) DB::table($table)->where('id', (int) $stay['id'])->value($link);
+            }
+            if ($serviceId > 0) $submittedIds[$serviceId] = true;
+        }
+        foreach ($existing as $service) {
+            $serviceId = (int) ($service['id'] ?? 0);
+            if ($serviceId <= 0 || isset($submittedIds[$serviceId])) continue;
+            $this->removeOmittedHotelService($booking, $serviceId, $table);
+        }
+    }
+
+    private function removeOmittedHotelService(int $booking, int $serviceId, string $table): void
+    {
+        $protected = [
+            'sales_invoice_lines', 'sales_invoice_items', 'supplier_costings',
+            'supplier_costing_lines', 'booking_service_postings', 'booking_service_journal_lines',
+        ];
+        foreach ($protected as $candidate) {
+            if (! Schema::hasTable($candidate)) continue;
+            $columns = $this->physicalColumnListing($candidate);
+            $link = $this->firstColumn($columns, ['booking_service_id', 'service_id']);
+            if ($link && DB::table($candidate)->where($link, $serviceId)->exists()) {
+                throw ValidationException::withMessages(['hotel' => 'This Hotel stay cannot be removed because it is already referenced by '.$candidate.'.']);
+            }
+        }
+        $columns = $this->physicalColumnListing($table);
+        $link = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve()['service_link_column'] ?? $this->resolveBookingServiceLinkColumn($table, $columns);
+        if ($link) DB::table($table)->where($link, $serviceId)->delete();
+        if (Schema::hasTable('booking_service_passengers') && Schema::hasColumn('booking_service_passengers', 'booking_service_id')) {
+            DB::table('booking_service_passengers')->where('booking_service_id', $serviceId)->delete();
+        }
+        DB::table('booking_services')->where('id', $serviceId)->where('booking_id', $booking)->delete();
     }
 
     /** @return array{id:int,row:array<string,mixed>} */
@@ -1258,7 +1312,10 @@ final class GeneralBookingHotelProductController extends Controller
         // compatibility snapshot. If a legacy native Hotel table cannot expose
         // one row cleanly, seed/append from the snapshot instead of dropping the
         // entire Hotel workspace after refresh.
-        while (count($stays) < count($snapshot)) {
+        // Native detail rows are authoritative whenever present.  The snapshot
+        // is only a compatibility fallback for a service with no readable
+        // native detail rows; never append legacy entries to live rows.
+        while (count($stays) === 0 && count($stays) < count($snapshot)) {
             $saved = $snapshot[count($stays)] ?? [];
             if (! is_array($saved)) break;
             $stays[] = [
