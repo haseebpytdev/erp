@@ -1,5 +1,5 @@
 <style>
-.et-travel-movement-table{width:100%;min-width:0;border-collapse:collapse;table-layout:auto;font-size:12px}
+.et-travel-screen-heading{display:block}.et-travel-print-heading{display:none}.et-travel-movement-table{width:100%;min-width:0;border-collapse:collapse;table-layout:auto;font-size:12px}
 .et-travel-report .et-arrival-tabs{display:flex;gap:7px;align-items:center;overflow-x:auto;flex-wrap:nowrap}.et-travel-report .et-arrival-tabs a{white-space:nowrap;padding:7px 10px;border:1px solid #d7e1ec;border-radius:6px;color:#315273;text-decoration:none;font-size:10px;font-weight:700}.et-travel-report .et-arrival-tabs a.active{background:#1769d2;border-color:#1769d2;color:#fff}
 .et-travel-movement-table th,.et-travel-movement-table td{padding:9px 10px;border-bottom:1px solid #e8eef5;text-align:left;vertical-align:middle}
 .et-travel-movement-table th{background:#f4f7fb;font-size:12px;white-space:nowrap}
@@ -34,6 +34,39 @@
 .et-makkah-report[data-et-makkah-checkin-report] .et-makkah-table th:nth-child(10),.et-makkah-report[data-et-makkah-checkin-report] .et-makkah-table td:nth-child(10),.et-travel-report[data-et-travel-report="madinah-checkin"] table th:nth-child(10),.et-travel-report[data-et-travel-report="madinah-checkin"] table td:nth-child(10){width:112px;white-space:nowrap}
 .et-makkah-report[data-et-makkah-checkin-report] .et-makkah-table th:nth-child(11),.et-makkah-report[data-et-makkah-checkin-report] .et-makkah-table td:nth-child(11),.et-travel-report[data-et-travel-report="madinah-checkin"] table th:nth-child(11),.et-travel-report[data-et-travel-report="madinah-checkin"] table td:nth-child(11){width:60px;white-space:nowrap;text-align:center}
 .et-arrival-table th:nth-child(1),.et-arrival-table td:nth-child(1),.et-arrival-table th:nth-child(2),.et-arrival-table td:nth-child(2){width:112px;white-space:nowrap}.et-arrival-table th:nth-child(2),.et-arrival-table td:nth-child(2){width:72px}.et-arrival-table th:nth-child(3),.et-arrival-table td:nth-child(3){width:125px;white-space:nowrap}.et-arrival-table th:nth-child(4),.et-arrival-table td:nth-child(4){width:clamp(160px,18vw,220px);white-space:normal}.et-arrival-table th:nth-child(n+5):nth-child(-n+8),.et-arrival-table td:nth-child(n+5):nth-child(-n+8){width:60px;white-space:nowrap;text-align:center}
+.et-arrival-table th:nth-child(4),.et-arrival-table td:nth-child(4){width:clamp(220px,26vw,340px);white-space:normal}
 @media print{ @page{size:A4 landscape;margin:10mm}.et-arrival-scroll,.et-makkah-scroll,.et-travel-report[data-et-travel-report="madinah-checkin"] .scroll,.et-travel-report[data-et-travel-report="madinah-checkout"] .scroll{overflow:visible}.et-arrival-table,.et-makkah-table,.et-travel-report[data-et-travel-report="madinah-checkin"] table,.et-travel-report[data-et-travel-report="madinah-checkout"] table{min-width:0!important;font-size:10px}.et-arrival-table th,.et-arrival-table td,.et-makkah-table th,.et-makkah-table td,.et-travel-report[data-et-travel-report="madinah-checkin"] th,.et-travel-report[data-et-travel-report="madinah-checkin"] td,.et-travel-report[data-et-travel-report="madinah-checkout"] th,.et-travel-report[data-et-travel-report="madinah-checkout"] td{padding:6px 7px;font-size:10px}}
 @media(max-width:760px){.et-arrival-table,.et-makkah-table,.et-travel-report[data-et-travel-report="madinah-checkin"] table,.et-travel-report[data-et-travel-report="madinah-checkout"] table{min-width:900px}}
+@media print{
+ @page{size:A4 landscape;margin:10mm}
+ html,body{margin:0!important;padding:0!important;background:#fff!important}
+ body:has([data-et-travel-print-document]) .app-shell,
+ body:has([data-et-travel-print-document]) .app-shell>main.main,
+ body:has([data-et-travel-print-document]) .content-wrapper,
+ body:has([data-et-travel-print-document]) .page-wrapper,
+ body:has([data-et-travel-print-document]) .main-content{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important;background:#fff!important}
+ body:has([data-et-travel-print-document]) .app-shell>.sidebar,
+ body:has([data-et-travel-print-document]) .navbar,
+ body:has([data-et-travel-print-document]) .app-header,
+ body:has([data-et-travel-print-document]) .topbar,
+ body:has([data-et-travel-print-document]) .et-arrival-tabs,
+ body:has([data-et-travel-print-document]) .et-report-filter-card,
+ body:has([data-et-travel-print-document]) .print-hide,
+ body:has([data-et-travel-print-document]) form,
+ body:has([data-et-travel-print-document]) .et-movement-pagination,
+ body:has([data-et-travel-print-document]) nav[aria-label*="Pagination"],
+ body:has([data-et-travel-print-document]) .pagination{display:none!important}
+ body:has([data-et-travel-print-document]) .et-travel-print-document{display:block!important;visibility:visible!important;width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important;position:relative!important;left:auto!important;top:auto!important;box-sizing:border-box!important}
+ body:has([data-et-travel-print-document]) .et-travel-screen-heading{display:none!important}
+ body:has([data-et-travel-print-document]) .et-travel-print-heading{display:block!important}
+ body:has([data-et-travel-print-document]) .et-travel-print-document .card,
+ body:has([data-et-travel-print-document]) .et-travel-print-document .et-arrival-card,
+ body:has([data-et-travel-print-document]) .et-travel-print-document .et-makkah-card{box-shadow:none!important;break-inside:avoid}
+ body:has([data-et-travel-print-document]) .et-travel-print-document .et-arrival-scroll,
+ body:has([data-et-travel-print-document]) .et-travel-print-document .et-makkah-scroll,
+ body:has([data-et-travel-print-document]) .et-travel-print-document .scroll{overflow:visible!important}
+ body:has([data-et-travel-print-document]) .et-travel-print-document table{width:100%!important;max-width:none!important;min-width:0!important}
+ body:has([data-et-travel-print-document]) .et-travel-print-document thead{display:table-header-group}
+ body:has([data-et-travel-print-document]) .et-travel-print-document tr{break-inside:avoid;page-break-inside:avoid}
+}
 </style>
