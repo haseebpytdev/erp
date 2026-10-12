@@ -1,0 +1,36 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const read = (p) => fs.readFileSync(p, 'utf8');
+const shared = read('resources/views/reports/travel/partials/movement-table-styles.blade.php');
+const report = read('resources/views/reports/travel/report.blade.php');
+const arrival = read('resources/views/reports/travel/movements/arrival.blade.php');
+const departure = read('resources/views/reports/travel/movements/departure.blade.php');
+const makkahIn = read('resources/views/reports/travel/movements/makkah-checkin.blade.php');
+const makkahOut = read('resources/views/reports/travel/movements/makkah-checkout.blade.php');
+const service = read('app/Services/Reports/TravelReportService.php');
+const controller = read('app/Http/Controllers/Reports/TravelReportsController.php');
+const config = read('config/et_erp_release.php');
+const ok = (v, m) => assert.ok(v, m);
+
+ok(shared.includes('et-arrival-table') && shared.includes('et-makkah-table') && shared.includes('madinah-checkin') && shared.includes('madinah-checkout'), 'all movement reports use one shared style authority');
+ok(shared.includes('width:112px') && shared.includes('white-space:nowrap'), 'date columns use compact non-wrapping widths');
+ok(shared.includes('width:125px'), 'booking and Coming From columns use compact widths');
+ok(shared.includes('width:60px') && shared.includes('nth-child(n+5):nth-child(-n+8)'), 'numeric pax and Nights columns remain narrow');
+ok(shared.includes('clamp(160px,18vw,220px)') && shared.includes('width:180px'), 'Customer / Group and Hotel columns remain flexible');
+ok(shared.includes('overflow-x:auto') && shared.includes('min-width:900px'), 'horizontal overflow remains available on smaller screens');
+ok(shared.includes('@page{size:A4 landscape') && shared.includes('overflow:visible'), 'print uses landscape layout without a scrollbar');
+ok(!shared.includes('text-overflow:ellipsis') && !shared.includes('display:none'), 'important operational columns are not clipped or hidden');
+ok(report.includes("movement-table-styles") && report.includes('data-movement-report'), 'shared generic movement table receives scoped styling');
+ok(arrival.includes("movement-table-styles") && departure.includes("movement-table-styles") && makkahIn.includes("movement-table-styles") && makkahOut.includes("movement-table-styles"), 'dedicated movement views include the same shared style');
+ok(service.includes("'madinah-checkin'=>'Madinah Check-in'") && service.includes("if($key==='madinah-checkin')return $this->madinahCheckinEvents($filters)"), 'Madinah Check-in movement route is backed by a dedicated event path');
+ok(report.includes('Travel Reports / Movement Reports / Madinah') && report.includes('Madinah Check-in Results') && report.includes('Operational hotel check-in movement reporting. No financial data.'), 'Madinah Check-in page identity is correct');
+ok(service.includes("$madinahCheckin=['check_in','check_out','booking_no','customer','coming_from','total_pax','adult','child','infant','madinah_hotel','nights']"), 'Madinah has exactly eleven approved columns');
+ok((service.includes('madinah|madina|medina') || (service.includes('madinah') && service.includes('madina') && service.includes('medina'))) && service.includes('%makkah%'), 'Madinah aliases are accepted and Makkah is excluded');
+ok(service.includes('hotelReader->staysForBooking') && service.includes('booking_group_package_hotels') && !service.includes('general_booking_billing_batch_items'), 'operational Hotel sources exclude supplementary drafts');
+ok(service.includes('madinahComingFrom') && service.includes('latestMakkahAirRoute'), 'Coming From uses booking-scoped chronology and Air fallback');
+ok(controller.includes('exportMovement') && controller.includes("$columns=$service->definition($movement)['columns']"), 'Madinah CSV follows the same definition order');
+ok(report.includes("$movementKey===$report ? 'active' : ''") && shared.includes('@page{size:A4 landscape'), 'active tab and report-only landscape print are preserved');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C86'") && config.includes("'corrective_build' => 'C86'") && config.includes("'corrective_name' => 'Madinah Check-in Movement Report'"), 'C86 release identity is present');
+
+console.log('ERP-11.3.378 C86 movement table width/spacing regression: PASS / 20');
