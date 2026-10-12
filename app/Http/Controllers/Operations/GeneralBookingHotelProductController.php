@@ -39,15 +39,16 @@ final class GeneralBookingHotelProductController extends Controller
     public function show(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
-        $service = $this->findHotelService($booking);
+        $services = $this->findHotelServices($booking);
         $stayTable = $this->resolveHotelStayTable();
-        $stays = $stayTable ? $this->stayRows($booking, (int) ($service['id'] ?? 0), $stayTable) : [];
-        $serviceRow = (array) ($service['row'] ?? []);
-        $stays = $this->overlayHotelServiceSnapshot(
-            $stays,
-            $this->hotelServiceSnapshotFromRow($serviceRow)
-        );
-        $stays = $this->overlayHotelServiceVendorContext($stays, $serviceRow);
+        $stays = [];
+        if ($stayTable) foreach ($services as $service) {
+            $serviceStays = $this->stayRows($booking, (int) $service['id'], $stayTable);
+            $serviceRow = (array) ($service['row'] ?? []);
+            $serviceStays = $this->overlayHotelServiceSnapshot($serviceStays, $this->hotelServiceSnapshotFromRow($serviceRow));
+            $stays = array_merge($stays, $this->overlayHotelServiceVendorContext($serviceStays, $serviceRow));
+        }
+        usort($stays, static fn (array $a, array $b): int => ((int) ($a['booking_service_id'] ?? 0) <=> (int) ($b['booking_service_id'] ?? 0)) ?: ((int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0)));
 
         return response()->json([
             'ok' => true,
@@ -89,6 +90,8 @@ final class GeneralBookingHotelProductController extends Controller
             'stays.*.check_out' => ['required', 'date'],
             'stays.*.sale_rate' => ['required', 'numeric', 'min:0'],
             'stays.*.cost_rate' => ['required', 'numeric', 'min:0'],
+            'stays.*.id' => ['nullable', 'integer', 'min:1'],
+            'stays.*.booking_service_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $stayTable = $this->resolveHotelStayTable();
@@ -111,7 +114,9 @@ final class GeneralBookingHotelProductController extends Controller
         try {
             $result = DB::transaction(function () use ($booking, $bookingRow, $data, $stayTable, &$stage): array {
                 $stage = 'Hotel service';
-                $service = $this->ensureHotelService($booking, $bookingRow);
+                $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
+                $perService = ($resolved['ownership_mode'] ?? null) === 'service_link' && (bool) ($resolved['one_row_per_service'] ?? false);
+                $service = $perService ? null : $this->ensureHotelService($booking, $bookingRow);
 
                 $stage = 'City / Hotel Master';
                 $normalized = [];
@@ -164,32 +169,46 @@ final class GeneralBookingHotelProductController extends Controller
                         'customer_total' => $customerTotal,
                         'vendor_total' => $vendorTotal,
                         'margin' => round($customerTotal - $vendorTotal, 2),
+                        'id' => (int) ($raw['id'] ?? 0),
+                        'booking_service_id' => (int) ($raw['booking_service_id'] ?? 0),
                     ];
                 }
 
                 $stage = 'Hotel stay rows';
-                $this->syncStayRows(
-                    $booking,
-                    (int) $service['id'],
-                    $bookingRow,
-                    $stayTable,
-                    $normalized
-                );
+                $serviceIds = [];
+                if ($perService) {
+                    foreach ($normalized as $stay) {
+                        $service = ((int) ($stay['booking_service_id'] ?? 0) > 0 || (int) ($stay['id'] ?? 0) > 0)
+                            ? $this->resolveSubmittedHotelService($booking, $stay, $bookingRow)
+                            : $this->ensureHotelService($booking, $bookingRow, false);
+                        $serviceIds[] = (int) $service['id'];
+                        $this->syncStayRows($booking, (int) $service['id'], $bookingRow, $stayTable, [$stay]);
+                        $this->syncServiceTotals((int) $service['id'], $this->summary([$stay]));
+                        $this->syncHotelServiceVendorContext((int) $service['id'], [$stay]);
+                        $this->syncHotelServiceSnapshot((int) $service['id'], [$stay]);
+                    }
+                } else {
+                    $serviceIds[] = (int) $service['id'];
+                    $this->syncStayRows($booking, (int) $service['id'], $bookingRow, $stayTable, $normalized);
+                    $summary = $this->summary($normalized);
+                    $this->syncServiceTotals((int) $service['id'], $summary);
+                    $this->syncHotelServiceVendorContext((int) $service['id'], $normalized);
+                    $this->syncHotelServiceSnapshot((int) $service['id'], $normalized);
+                }
 
-                $stage = 'Hotel service totals';
-                $summary = $this->summary($normalized);
-                $this->syncServiceTotals((int) $service['id'], $summary);
-                $this->syncHotelServiceVendorContext((int) $service['id'], $normalized);
-                $this->syncHotelServiceSnapshot((int) $service['id'], $normalized);
-
-                $fresh = $this->stayRows($booking, (int) $service['id'], $stayTable);
-                $persistedServiceRow = (array) (DB::table('booking_services')->where('id', (int) $service['id'])->first() ?? (object) []);
-                $fresh = $this->overlayHotelServiceSnapshot($fresh, $this->hotelServiceSnapshotFromRow($persistedServiceRow));
+                $fresh = [];
+                foreach (array_values(array_unique($serviceIds)) as $serviceId) {
+                    $serviceStays = $this->stayRows($booking, $serviceId, $stayTable);
+                    $persistedServiceRow = (array) (DB::table('booking_services')->where('id', $serviceId)->first() ?? (object) []);
+                    $serviceStays = $this->overlayHotelServiceSnapshot($serviceStays, $this->hotelServiceSnapshotFromRow($persistedServiceRow));
+                    $fresh = array_merge($fresh, $this->overlayHotelServiceVendorContext($serviceStays, $persistedServiceRow));
+                }
+                usort($fresh, static fn (array $a, array $b): int => ((int) ($a['booking_service_id'] ?? 0) <=> (int) ($b['booking_service_id'] ?? 0)) ?: ((int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0)));
                 $this->assertPersistedHotelCommercials($normalized, $fresh);
-                $this->passengerLinks->syncHotelBookingWide($booking, (int) $service['id']);
+                foreach (array_values(array_unique($serviceIds)) as $serviceId) $this->passengerLinks->syncHotelBookingWide($booking, $serviceId);
 
                 return [
-                    'service' => $service,
+                    'service' => $serviceIds,
                     'stays' => $fresh,
                     'summary' => $this->summary($fresh),
                 ];
@@ -649,10 +668,55 @@ final class GeneralBookingHotelProductController extends Controller
         return null;
     }
 
-    /** @return array{id:int,row:array<string,mixed>} */
-    private function ensureHotelService(int $booking, object $bookingRow): array
+    /** @return list<array{id:int,row:array<string,mixed>}> */
+    private function findHotelServices(int $booking): array
     {
-        $existing = $this->findHotelService($booking);
+        if (! Schema::hasTable('booking_services')) return [];
+        $hotelId = (int) (app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'] ?? 0);
+        if ($hotelId <= 0) return [];
+        $rows = [];
+        foreach (DB::table('booking_services')->where('booking_id', $booking)->orderBy('id')->get() as $rowObject) {
+            $row = (array) $rowObject;
+            if ((int) ($row['product_service_id'] ?? 0) !== $hotelId) continue;
+            if (! $this->isActiveHotelServiceRow($row)) continue;
+            $rows[] = ['id' => (int) ($row['id'] ?? 0), 'row' => $row];
+        }
+        return $rows;
+    }
+
+    private function isActiveHotelServiceRow(array $row): bool
+    {
+        if (! empty($row['deleted_at'])) return false;
+        if (array_key_exists('is_active', $row) && ! (bool) $row['is_active']) return false;
+        if (array_key_exists('active', $row) && ! (bool) $row['active']) return false;
+        return ! in_array(strtolower(trim((string) ($row['status'] ?? ''))), ['inactive', 'deleted', 'removed', 'cancelled', 'canceled'], true);
+    }
+
+    /** @param array<string,mixed> $stay @return array{id:int,row:array<string,mixed>} */
+    private function resolveSubmittedHotelService(int $booking, array $stay, object $bookingRow): array
+    {
+        $serviceId = (int) ($stay['booking_service_id'] ?? 0);
+        $detailId = (int) ($stay['id'] ?? 0);
+        $hotelId = (int) (app(\App\Services\Operations\NativeProductServiceResolver::class)->hotel()['id'] ?? 0);
+        if ($serviceId > 0 || $detailId > 0) {
+            $service = (array) (DB::table('booking_services')->where('id', $serviceId)->where('booking_id', $booking)->where('product_service_id', $hotelId)->lockForUpdate()->first() ?? []);
+            if (! $service || ! $this->isActiveHotelServiceRow($service)) throw ValidationException::withMessages(['hotel' => 'Hotel service identity does not belong to this booking.']);
+            if ($detailId > 0) {
+                $table = $this->resolveHotelStayTable();
+                $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
+                $link = (string) ($resolved['service_link_column'] ?? 'booking_service_id');
+                $detail = $table ? DB::table($table)->where('id', $detailId)->where($link, $serviceId)->first() : null;
+                if (! $detail) throw ValidationException::withMessages(['hotel' => 'Hotel detail identity does not match its booking service.']);
+            }
+            return ['id' => $serviceId, 'row' => $service];
+        }
+        return $this->ensureHotelService($booking, $bookingRow);
+    }
+
+    /** @return array{id:int,row:array<string,mixed>} */
+    private function ensureHotelService(int $booking, object $bookingRow, bool $reuseExisting = true): array
+    {
+        $existing = $reuseExisting ? $this->findHotelService($booking) : null;
         if ($existing) return $existing;
 
         $master = $this->resolveHotelProductService();
@@ -792,10 +856,10 @@ final class GeneralBookingHotelProductController extends Controller
                 if ($costRate <= 0 && $vendorTotal > 0 && $nights > 0) $costRate = round($vendorTotal / $nights, 2);
 
                 $cityId = (int) ($this->valueFrom($row, $columns, ['city_id', 'travel_city_id']) ?? 0);
-                $cityName = $this->preferredCityLabel($this->stringFrom($row, $columns, ['city', 'city_name', 'location']));
+                $cityName = $this->preferredCityLabel($this->stringFrom($row, $columns, ['city', 'city_name', 'location', 'hotel_city_snapshot']));
                 if ($cityName === '' && $cityId > 0) $cityName = $this->cityNameById($cityId);
                 $hotelId = (int) ($this->valueFrom($row, $columns, ['hotel_id']) ?? 0);
-                $hotelName = $this->stringFrom($row, $columns, ['hotel_name', 'name', 'property_name']);
+                $hotelName = $this->stringFrom($row, $columns, ['hotel_name', 'hotel_name_snapshot', 'name', 'property_name']);
                 if ($hotelName === '' && $hotelId > 0) $hotelName = $this->hotelNameById($hotelId);
                 $vendorMeta = $this->vendorMetaFromRow($row, $columns);
                 $vendorId = $this->firstPositiveInt($row, ['vendor_id', 'supplier_id', 'service_provider_id']);
@@ -805,6 +869,7 @@ final class GeneralBookingHotelProductController extends Controller
 
                 return [
                     'id' => (int) ($row['id'] ?? 0),
+                    'booking_service_id' => $serviceId,
                     'vendor_id' => $vendorId,
                     'vendor_name' => $vendorName,
                     'city_id' => $cityId,
@@ -841,10 +906,13 @@ final class GeneralBookingHotelProductController extends Controller
         $prototype = $prototypeQuery->orderByDesc($this->firstColumn($columns, ['id', 'sort_order']) ?: 'id')->first();
         if (! $prototype) $prototype = DB::table($table)->orderByDesc($this->firstColumn($columns, ['id', 'sort_order']) ?: 'id')->first();
 
-        $delete = DB::table($table);
-        if (($resolved['ownership_mode'] ?? 'direct_booking') === 'service_link') $delete->where($serviceCol, $serviceId);
-        else $delete->where('booking_id', $booking);
-        $delete->delete();
+        $preserveIdentity = count($stays) === 1 && (int) ($stays[0]['id'] ?? 0) > 0;
+        if (! $preserveIdentity) {
+            $delete = DB::table($table);
+            if (($resolved['ownership_mode'] ?? 'direct_booking') === 'service_link') $delete->where($serviceCol, $serviceId);
+            else $delete->where('booking_id', $booking);
+            $delete->delete();
+        }
 
         $bookingData = (array) $bookingRow;
         foreach ($stays as $index => $stay) {
@@ -859,20 +927,22 @@ final class GeneralBookingHotelProductController extends Controller
             $this->writeVendorMeta($row, $columns, (int) $stay['vendor_id'], (string) $stay['vendor_name']);
             $this->writeHotelStayMeta($row, $table, $columns, $stay);
             $this->put($row, $columns, ['city_id', 'travel_city_id'], $stay['city_id']);
-            $this->put($row, $columns, ['city', 'city_name', 'location'], $stay['city']);
+            $this->put($row, $columns, ['city', 'city_name', 'location', 'hotel_city_snapshot'], $stay['city']);
             $this->put($row, $columns, ['hotel_id'], $stay['hotel_id']);
-            $this->put($row, $columns, ['hotel_name', 'name', 'property_name'], $stay['hotel_name']);
+            $this->put($row, $columns, ['hotel_name', 'name', 'property_name', 'hotel_name_snapshot'], $stay['hotel_name']);
             $this->put($row, $columns, ['confirmation_no', 'confirmation_number', 'brn', 'brn_number', 'booking_reference', 'voucher_no', 'reference_no'], $stay['confirmation_no'] ?: null);
             $this->put($row, $columns, ['room_type', 'room_category', 'room_name'], $stay['room_type']);
             $this->putBoardValues($row, $table, $columns, (string) $stay['board']);
+            $this->put($row, $columns, ['meal_plan'], $stay['board']);
             $this->put($row, $columns, ['check_in', 'check_in_date', 'checkin_date'], $stay['check_in']);
             $this->put($row, $columns, ['check_out', 'check_out_date', 'checkout_date'], $stay['check_out']);
             $this->put($row, $columns, ['nights', 'total_nights', 'night_count'], $stay['nights']);
             $this->put($row, $columns, ['rooms', 'room_count', 'number_of_rooms', 'quantity', 'qty'], 1);
-            $this->putAll($row, $columns, ['sale_rate', 'selling_rate', 'customer_rate', 'sale_price', 'selling_price', 'customer_price', 'sale', 'sell_price', 'room_sale_rate', 'nightly_sale_rate', 'selling_price_per_night', 'customer_price_per_night'], $stay['sale_rate']);
-            $this->putAll($row, $columns, ['cost_rate', 'supplier_rate', 'vendor_rate', 'cost_price', 'supplier_cost', 'vendor_cost', 'cost', 'purchase_price', 'room_cost_rate', 'nightly_cost_rate', 'cost_price_per_night', 'supplier_price_per_night', 'vendor_price_per_night'], $stay['cost_rate']);
-            $this->putAll($row, $columns, ['selling_total', 'customer_total', 'sale_total', 'total_sale', 'customer_amount', 'sale_amount', 'selling_amount', 'gross_sale'], $stay['customer_total']);
-            $this->putAll($row, $columns, ['net_supplier_cost', 'supplier_total', 'vendor_total', 'cost_total', 'total_cost', 'vendor_amount', 'cost_amount', 'supplier_amount', 'gross_cost'], $stay['vendor_total']);
+            $this->putAll($row, $columns, ['sale_rate', 'selling_rate', 'customer_rate', 'sale_price', 'selling_price', 'customer_price', 'sale', 'sell_price', 'room_sale_rate', 'nightly_sale_rate', 'selling_price_per_night', 'customer_price_per_night', 'customer_base_rate'], $stay['sale_rate']);
+            $this->putAll($row, $columns, ['cost_rate', 'supplier_rate', 'vendor_rate', 'cost_price', 'supplier_cost', 'vendor_cost', 'cost', 'purchase_price', 'room_cost_rate', 'nightly_cost_rate', 'cost_price_per_night', 'supplier_price_per_night', 'vendor_price_per_night', 'supplier_base_rate'], $stay['cost_rate']);
+            $this->putAll($row, $columns, ['selling_total', 'customer_total', 'sale_total', 'total_sale', 'customer_amount', 'sale_amount', 'selling_amount', 'gross_sale', 'customer_base_total', 'customer_sell_total'], $stay['customer_total']);
+            $this->putAll($row, $columns, ['net_supplier_cost', 'supplier_total', 'vendor_total', 'cost_total', 'total_cost', 'vendor_amount', 'cost_amount', 'supplier_amount', 'gross_cost', 'supplier_base_total'], $stay['vendor_total']);
+            $this->put($row, $columns, ['supplier_vendor_party_id'], $stay['vendor_id']);
             $this->putHotelCommercialSemantics($row, $table, $columns, $stay);
             $this->putAll($row, $columns, ['margin', 'gross_margin', 'net_margin', 'profit'], $stay['margin']);
             $this->put($row, $columns, ['sort_order', 'sequence', 'sequence_no'], ($index + 1) * 10);
@@ -910,7 +980,12 @@ final class GeneralBookingHotelProductController extends Controller
             ];
             $row = $this->fillRequiredByPrototype($table, $row, $prototype ? (array) $prototype : [], $known);
             $this->assertRequiredContract($table, $row, 'Hotel stay rows');
-            DB::table($table)->insert($row);
+            if ((int) ($stay['id'] ?? 0) > 0) {
+                $updated = DB::table($table)->where('id', (int) $stay['id'])->when($serviceCol, fn ($q) => $q->where($serviceCol, $serviceId))->update($row);
+                if ($updated < 1) throw ValidationException::withMessages(['hotel' => 'Hotel detail identity could not be updated safely.']);
+            } else {
+                DB::table($table)->insert($row);
+            }
         }
     }
 

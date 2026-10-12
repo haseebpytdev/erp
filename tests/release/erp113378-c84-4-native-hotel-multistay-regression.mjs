@@ -1,0 +1,27 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const controller=fs.readFileSync('app/Http/Controllers/Operations/GeneralBookingHotelProductController.php','utf8');
+const sync=fs.readFileSync('app/Services/Operations/HotelTransportBookingServiceCommercialSynchronizer.php','utf8');
+const resolver=fs.readFileSync('app/Services/Operations/GeneralBookingHotelNativeStoreResolver.php','utf8');
+const reader=fs.readFileSync('app/Services/Operations/GeneralBookingHotelOperationalReader.php','utf8');
+const js=fs.readFileSync('public/erp11390/general-progressive-step1.js','utf8');
+const travel=fs.readFileSync('app/Services/Reports/TravelReportService.php','utf8');
+const config=fs.readFileSync('config/et_erp_release.php','utf8');
+const ok=(v,m)=>assert.ok(v,m);
+ok(resolver.includes("'service_link_column'=>$link")&&resolver.includes("'one_row_per_service'=>$this->uniqueServiceLink($table,$link)"),'Hotel resolver detects service-link uniqueness');
+ok(controller.includes("$perService = ($resolved['ownership_mode'] ?? null) === 'service_link'")&&controller.includes("$this->ensureHotelService($booking, $bookingRow, false)"),'each one-row-per-service stay gets its own service');
+ok(controller.includes("'booking_service_id' => (int) ($raw['booking_service_id'] ?? 0)")&&controller.includes("'id' => (int) ($raw['id'] ?? 0)"),'submitted native identities round-trip');
+ok(controller.includes('resolveSubmittedHotelService')&&controller.includes('where(\'booking_id\', $booking)->where(\'product_service_id\', $hotelId)'),'foreign service/detail identities fail closed');
+ok(controller.includes("['hotel_name', 'hotel_name_snapshot'")&&controller.includes("['city', 'city_name', 'location', 'hotel_city_snapshot']"),'native Hotel snapshots are mapped');
+ok(controller.includes('supplier_vendor_party_id')&&controller.includes('customer_base_rate')&&controller.includes('customer_sell_total')&&controller.includes('supplier_base_rate'),'production Hotel commercial/vendor fields are mapped');
+ok(controller.includes("'booking_service_id' => $serviceId")&&controller.includes('findHotelServices($booking)'),'Hotel read returns all service identities');
+ok(controller.includes("where('id', (int) $stay['id'])")&&controller.includes('update($row)'),'existing Hotel details update in place');
+ok(sync.includes('foreach ($matches as $match)')&&sync.includes('$isHotel'),'invoice reconciliation supports multiple Hotel services only');
+ok(sync.includes("$isHotel ? $reconciled : ($reconciled[0] ?? null)"),'Transport reconciliation remains single-service');
+ok(reader.includes('whereIn($link, $serviceIds->all())'),'operational reader loads all Hotel services');
+ok(js.includes('stay.id')&&js.includes('stay.booking_service_id')&&js.includes('id:c.id||null')&&js.includes('booking_service_id:c.booking_service_id||null'),'browser preserves native Hotel identities');
+ok(travel.includes('GeneralBookingHotelOperationalReader')&&!travel.includes('general_booking_billing_batch_items'),'TravelReportService authority remains unchanged');
+ok(config.includes("'asset_version' => 'ERP-11.3.378-C84.4'")&&config.includes("'corrective_build' => 'C84.4'")&&config.includes('Native Hotel Multi-Stay Persistence Fix'),'C84.4 metadata is correct');
+ok(!/Schema::table|Schema::create|DB::statement|DB::unprepared/.test(controller+sync),'no schema or SQL mutation was added');
+console.log('ERP-11.3.378 C84.4 native Hotel multi-stay regression: PASS / 16');

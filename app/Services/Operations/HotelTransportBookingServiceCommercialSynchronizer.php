@@ -71,18 +71,18 @@ final class HotelTransportBookingServiceCommercialSynchronizer
                 static fn (array $row): bool => (int) ($row['product_service_id'] ?? 0) === $productId
             ));
             if (! $matches) continue;
-            if (count($matches) !== 1) {
+            $isHotel = $definition['key'] === 'hotel';
+            if (! $isHotel && count($matches) !== 1) {
                 $this->fail('invoice', $definition['label'].' commercial reconciliation found multiple active native booking services.');
             }
-
-            $rows = $this->persistedProductRows($matches[0], $definition['key']);
-            if (! $rows) {
-                $this->fail('invoice', $definition['label'].' commercial reconciliation could not resolve its persisted product rows safely.');
+            $reconciled = [];
+            foreach ($matches as $match) {
+                $rows = $this->persistedProductRows($match, $definition['key']);
+                if (! $rows) $this->fail('invoice', $definition['label'].' commercial reconciliation could not resolve its persisted product rows safely.');
+                $total = $isHotel ? $this->hotelTotal($rows) : $this->transportTotal($rows);
+                $reconciled[] = $this->writeNativeCommercial($match, $total, $definition['label']);
             }
-            $total = $definition['key'] === 'hotel'
-                ? $this->hotelTotal($rows)
-                : $this->transportTotal($rows);
-            $result[$definition['key']] = $this->writeNativeCommercial($matches[0], $total, $definition['label']);
+            $result[$definition['key']] = $isHotel ? $reconciled : ($reconciled[0] ?? null);
         }
 
         return $result;
@@ -181,10 +181,11 @@ final class HotelTransportBookingServiceCommercialSynchronizer
         foreach ($candidates as $table) {
             if (! Schema::hasTable($table)) continue;
             $columns = Schema::getColumnListing($table);
-            if (! in_array('booking_id', $columns, true)) continue;
-            $query = DB::table($table)->where('booking_id', $bookingId);
+            $query = DB::table($table);
+            if (in_array('booking_id', $columns, true)) $query->where('booking_id', $bookingId);
             $serviceColumn = $this->bookingServiceLinkColumn($table, $columns);
             if ($serviceColumn !== null) $query->where($serviceColumn, $serviceId);
+            elseif (! in_array('booking_id', $columns, true)) continue;
             if (in_array('deleted_at', $columns, true)) $query->whereNull('deleted_at');
             $rows = $query->get()->map(static fn (object $row): array => (array) $row)->all();
             if (! $rows) continue;

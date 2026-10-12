@@ -1917,6 +1917,7 @@ var etgpHotelRender113127=function(host,data,bookingId){
   };
   var addRow=function(stay){
     stay=stay||{};var row=create('div','etgp-hotel-grid-113127 etgp-hotel-row-113127');var idx=rows.length+1;
+    row.setAttribute('data-hotel-detail-id',String(Number(stay.id||0)||''));row.setAttribute('data-hotel-booking-service-id',String(Number(stay.booking_service_id||0)||''));
     var chip=create('div','etgp-hotel-chip-113127','Hotel '+idx);row.appendChild(chip);
     var city=makeInput(stay.city||'','text','Makkah');city.setAttribute('list',cityList.id);row.appendChild(city);
     var vendor=makeSelect([{id:'',name:'Select'}].concat(suppliers),stay.vendor_id||'');if(stay.vendor_name){var chosen=vendor.options[vendor.selectedIndex],chosenName=chosen?plain(chosen.textContent||'').toLowerCase():'';var expectedName=plain(stay.vendor_name).toLowerCase();if(!vendor.value||chosenName!==expectedName){var match=vendorOption(0,stay.vendor_name);if(match)vendor.value=String(match.id);}}row.appendChild(vendor);
@@ -1932,7 +1933,7 @@ var etgpHotelRender113127=function(host,data,bookingId){
     var answer=create('div','etgp-hotel-answer-113127');row.appendChild(answer);
     var remove=create('button','etgp-hotel-remove-113127','×');remove.type='button';remove.title='Remove Hotel Stay';row.appendChild(remove);
     body.appendChild(row);
-    var controls={row:row,city:city,vendor:vendor,hotel:hotel,hotelList:hotelList,confirmation:confirmation,room:room,board:board,checkIn:checkIn,checkOut:checkOut,nights:nights,sale:sale,cost:cost,answer:answer};rows.push(controls);refreshHotelList(controls);
+    var controls={row:row,id:Number(stay.id||0)||0,booking_service_id:Number(stay.booking_service_id||0)||0,city:city,vendor:vendor,hotel:hotel,hotelList:hotelList,confirmation:confirmation,room:room,board:board,checkIn:checkIn,checkOut:checkOut,nights:nights,sale:sale,cost:cost,answer:answer};rows.push(controls);refreshHotelList(controls);
     city.addEventListener('input',function(){refreshHotelList(controls);});
     city.addEventListener('change',function(){refreshHotelList(controls);var h=findHotel(city.value,hotel.value);if(h&&norm(h.city)!==norm(city.value))hotel.value='';});
     hotel.addEventListener('change',function(){var h=findHotel(city.value,hotel.value);if(h&&h.city&&!city.value){city.value=h.city;refreshHotelList(controls);}});
@@ -1947,7 +1948,7 @@ var etgpHotelRender113127=function(host,data,bookingId){
   (Array.isArray(data.stays)&&data.stays.length?data.stays:[{}]).forEach(addRow);
   add.addEventListener('click',function(){addRow({});rows[rows.length-1].city.focus();});
   var payload=function(){
-    return {stays:rows.map(function(c){var cityMatch=findCity(c.city.value),hotelMatch=findHotel(c.city.value,c.hotel.value),vendorMatch=suppliers.find(function(v){return String(v.id)===String(c.vendor.value);});return {vendor_id:Number(c.vendor.value||0)||null,vendor_name:vendorMatch?String(vendorMatch.name||''):'',city_id:cityMatch?Number(cityMatch.id||0)||null:null,city:plain(c.city.value),hotel_id:hotelMatch?Number(hotelMatch.id||0)||null:null,hotel_name:plain(c.hotel.value),confirmation_no:plain(c.confirmation.value),room_type:plain(c.room.value),board:String(c.board.value||'RO').toUpperCase(),check_in:c.checkIn.value||null,check_out:c.checkOut.value||null,sale_rate:etgpHotelMoney113127(c.sale.value),cost_rate:etgpHotelMoney113127(c.cost.value)};}).filter(function(row){return row.city||row.hotel_name||row.check_in||row.check_out||row.sale_rate||row.cost_rate;})};
+    return {stays:rows.map(function(c){var cityMatch=findCity(c.city.value),hotelMatch=findHotel(c.city.value,c.hotel.value),vendorMatch=suppliers.find(function(v){return String(v.id)===String(c.vendor.value);});return {id:c.id||null,booking_service_id:c.booking_service_id||null,vendor_id:Number(c.vendor.value||0)||null,vendor_name:vendorMatch?String(vendorMatch.name||''):'',city_id:cityMatch?Number(cityMatch.id||0)||null:null,city:plain(c.city.value),hotel_id:hotelMatch?Number(hotelMatch.id||0)||null:null,hotel_name:plain(c.hotel.value),confirmation_no:plain(c.confirmation.value),room_type:plain(c.room.value),board:String(c.board.value||'RO').toUpperCase(),check_in:c.checkIn.value||null,check_out:c.checkOut.value||null,sale_rate:etgpHotelMoney113127(c.sale.value),cost_rate:etgpHotelMoney113127(c.cost.value)};}).filter(function(row){return row.city||row.hotel_name||row.check_in||row.check_out||row.sale_rate||row.cost_rate;})};
   };
   host._etgpHotelPayload113127=payload;
   host._etgpHotelDirty113138=!!data._draftRestored;
