@@ -13,10 +13,11 @@ return [
     // Historical C85 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C85', 'corrective_build' => 'C85', 'corrective_name' => 'Makkah Check-out Movement Report'
     // Historical C85.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C85.1', 'corrective_build' => 'C85.1', 'corrective_name' => 'Hotel Stay Set Reconciliation'
     // Historical C86.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C86.1', 'corrective_build' => 'C86.1', 'corrective_name' => 'Travel Report Presentation Fix'
-    'asset_version' => 'ERP-11.3.378-C86.2',
+    // Historical C86.2 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C86.2', 'corrective_build' => 'C86.2', 'corrective_name' => 'Travel Report Blade Recovery'
+    'asset_version' => 'ERP-11.3.378-C86.3',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C86.2',
-    'corrective_name' => 'Travel Report Blade Recovery',
+    'corrective_build' => 'C86.3',
+    'corrective_name' => 'Movement Report UI Unification',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];
