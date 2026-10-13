@@ -186,17 +186,7 @@ final class GeneralBookingVoucherPreviewController extends Controller
             ->filter()->take(2)->map(static fn (string $word): string => strtoupper(substr($word, 0, 1)))->implode('');
         if ($companyInitials === '') $companyInitials = 'CO';
 
-        $visaRelationships = [];
-        foreach ($visaRows as $visaRow) {
-            $visaRow = (array) $visaRow;
-            $saudi = trim((string) ($visaRow['saudi_company_name'] ?? ''));
-            $iata = trim((string) ($visaRow['pakistani_iata_name'] ?? ''));
-            if ($saudi === '' && $iata === '') continue;
-            $visaRelationships[strtolower($saudi).'|'.strtolower($iata)] = [
-                'saudi_company_name' => $saudi,
-                'pakistani_iata_name' => $iata,
-            ];
-        }
+        $visaRelationships = $this->voucherVisaRelationships($visaRows);
         $resolvedVoucherFooter = $footerResolver->resolve($visaRows, (string) ($companyProfile['footer'] ?? ''));
         $publicToken = $this->publicVoucherToken($booking, $bookingData);
         /* Do not use a named route here. Installed hosts can already contain
@@ -247,6 +237,87 @@ final class GeneralBookingVoucherPreviewController extends Controller
             'accommodationOnly' => $accommodationOnly,
             'publicMode' => (bool) $request->attributes->get('public_voucher', false),
         ]);
+    }
+
+    /**
+     * Build the voucher's relationship summary from booking snapshots while
+     * preferring the current names for the stable Travel Voucher Partner IDs.
+     * The source-name key remains snapshot-based so relationship cardinality,
+     * order and deduplication do not change when a master is renamed.
+     *
+     * @param list<array<string,mixed>|object> $visaRows
+     * @return array<string,array{saudi_company_name:string,pakistani_iata_name:string}>
+     */
+    private function voucherVisaRelationships(array $visaRows): array
+    {
+        $partnerIds = [];
+        foreach ($visaRows as $rawRow) {
+            $row = (array) $rawRow;
+            foreach (['saudi_company' => 'saudi_company_id', 'pakistani_iata' => 'pakistani_iata_id'] as $prefix => $legacyField) {
+                $table = strtolower(trim((string) ($row[$prefix.'_master_table'] ?? '')));
+                $masterId = (int) ($row[$prefix.'_master_id'] ?? 0);
+                if ($table === 'travel_voucher_partners' && $masterId > 0) {
+                    $partnerIds[$masterId] = true;
+                } elseif ($table === '' && (int) ($row[$legacyField] ?? 0) > 0) {
+                    // Legacy rows predate the explicit table/id contract; the
+                    // established Visa master stores these IDs in this table.
+                    $partnerIds[(int) $row[$legacyField]] = true;
+                }
+            }
+        }
+
+        $currentNames = [];
+        if ($partnerIds !== [] && Schema::hasTable('travel_voucher_partners')) {
+            try {
+                $currentNames = DB::table('travel_voucher_partners')
+                    ->whereIn('id', array_keys($partnerIds))
+                    ->pluck('name', 'id')
+                    ->map(static fn ($name): string => trim((string) $name))
+                    ->filter(static fn (string $name): bool => $name !== '')
+                    ->all();
+            } catch (Throwable) {
+                $currentNames = [];
+            }
+        }
+
+        $relationships = [];
+        foreach ($visaRows as $rawRow) {
+            $row = (array) $rawRow;
+            $snapshotSaudi = trim((string) ($row['saudi_company_name'] ?? ''));
+            $snapshotIata = trim((string) ($row['pakistani_iata_name'] ?? ''));
+            if ($snapshotSaudi === '' && $snapshotIata === '') continue;
+
+            $saudi = $this->voucherCurrentPartnerName($row, 'saudi_company', 'saudi_company_id', $snapshotSaudi, $currentNames);
+            $iata = $this->voucherCurrentPartnerName($row, 'pakistani_iata', 'pakistani_iata_id', $snapshotIata, $currentNames);
+
+            // Keep the pre-existing source key to preserve relationship
+            // cardinality/order even when a master display name changes.
+            $key = strtolower($snapshotSaudi).'|'.strtolower($snapshotIata);
+            $relationships[$key] = [
+                'saudi_company_name' => $saudi,
+                'pakistani_iata_name' => $iata,
+            ];
+        }
+
+        return $relationships;
+    }
+
+    /** @param array<string,mixed> $row @param array<int,string> $currentNames */
+    private function voucherCurrentPartnerName(
+        array $row,
+        string $prefix,
+        string $legacyField,
+        string $fallback,
+        array $currentNames,
+    ): string {
+        $table = strtolower(trim((string) ($row[$prefix.'_master_table'] ?? '')));
+        $masterId = (int) ($row[$prefix.'_master_id'] ?? 0);
+        $id = $table === 'travel_voucher_partners' && $masterId > 0
+            ? $masterId
+            : ($table === '' ? (int) ($row[$legacyField] ?? 0) : 0);
+        return $id > 0 && isset($currentNames[$id]) && $currentNames[$id] !== ''
+            ? $currentNames[$id]
+            : $fallback;
     }
 
     public function publicShow(

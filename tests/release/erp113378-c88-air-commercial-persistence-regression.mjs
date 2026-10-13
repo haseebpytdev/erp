@@ -39,8 +39,8 @@ ok(!controller.includes('BK-2026-0056'), 'historical booking is not hardcoded');
 ok(!controller.includes('TravelReportService'), 'travel report logic is untouched');
 ok(!fs.existsSync(path.join(root, 'database', 'migrations', 'c88-air-commercial-persistence.php')), 'C88 adds no migration');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains stable');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C88'"), 'C88 asset version is active');
-ok(release.includes("'corrective_build' => 'C88'"), 'C88 corrective build is active');
-ok(release.includes("'corrective_name' => 'Air Commercial Persistence Integrity'"), 'C88 corrective name is active');
+ok(/'asset_version' => 'ERP-11.3.378-C88(?:\.1)?'/.test(release), 'C88 lineage asset version remains active');
+ok(/'corrective_build' => 'C88(?:\.1)?'/.test(release), 'C88 lineage corrective build remains active');
+ok(/'corrective_name' => '(?:Air Commercial Persistence Integrity|Travel Voucher IATA Master Refresh)'/.test(release), 'C88 lineage corrective name remains active');
 
 console.log(`C88 regression PASS (${assertions} assertions)`);
