@@ -172,7 +172,16 @@ final class GeneralBookingAirProductController extends Controller
                 'common.supplier_id' => 'Select Vendor / Supplier before saving Air commercial data.',
             ]);
         }
-        $fareCommercials = $this->normalizeFareCommercials((array) ($data['fare_commercials'] ?? []), $passengers);
+        $fareCommercials = array_key_exists('fare_commercials', $data)
+            ? $this->normalizeFareCommercials((array) ($data['fare_commercials'] ?? []), $passengers)
+            : $this->fareCommercialsSnapshot(
+                $this->ticketRows((int) (($this->findAirService($booking)['id'] ?? 0)), $passengers)
+            );
+        $ticketPayloads = $this->commercialPassengerPayloads(
+            (array) ($data['tickets'] ?? []),
+            $passengers,
+            $fareCommercials,
+        );
         $supplierId = (int) ($common['supplier_id'] ?? 0);
         $hasVendorCost = collect($fareCommercials)->contains(
             static fn (array $row): bool => (float) ($row['cost_price'] ?? 0) > 0
@@ -203,6 +212,7 @@ final class GeneralBookingAirProductController extends Controller
                 $data,
                 $common,
                 $fareCommercials,
+                $ticketPayloads,
                 &$nativeStage,
             ): array {
                 $nativeStage = 'Air service';
@@ -224,7 +234,6 @@ final class GeneralBookingAirProductController extends Controller
                 // assertion referenced an undefined variable, which caused the
                 // transaction to roll back after a successful native write and
                 // surfaced as the generic native-store failure.
-                $ticketPayloads = (array) ($data['tickets'] ?? []);
                 $this->syncTickets(
                     (int) $service['id'],
                     $booking,
@@ -236,6 +245,7 @@ final class GeneralBookingAirProductController extends Controller
                 );
 
                 $freshTickets = $this->ticketRows((int) $service['id'], $passengers);
+                $this->assertCommercialReadback($fareCommercials, $freshTickets);
                 $submittedPassengerIds = array_values(array_filter(array_map(
                     static fn (array $ticket): int => (int) ($ticket['booking_passenger_id'] ?? 0),
                     $ticketPayloads
@@ -691,10 +701,12 @@ final class GeneralBookingAirProductController extends Controller
                         $seenPassengers[$pid] = true;
                     }
                     $fare = $this->normalizeFareCommercials((array) ($group['fare_commercials'] ?? []), $passengers);
+                    $ticketPayloads = $this->commercialPassengerPayloads($ticketPayloads, $passengers, $fare);
                     $this->syncAirServiceContext($serviceId, $common);
                     $stage = 'Passenger Tickets / PNR Commercials';
                     $this->syncTickets($serviceId, $booking, $bookingRow, $passengers, $ticketPayloads, $common, $fare);
                     $fresh = $this->ticketRows($serviceId, $passengers);
+                    $this->assertCommercialReadback($fare, $fresh);
                     if ($fresh !== []) {
                         $this->passengerLinks->syncAirFromNative($booking, $serviceId);
                     }
@@ -1341,6 +1353,84 @@ final class GeneralBookingAirProductController extends Controller
         }
     }
 
+    /**
+     * Commercial input is persisted on native passenger rows, even when no
+     * ticket number has been issued yet.  Complete the submitted payload from
+     * the active booking passenger authority; never invent ticket numbers.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function commercialPassengerPayloads(array $payloads, array $passengers, array $fareCommercials): array
+    {
+        $meaningful = false;
+        foreach ($fareCommercials as $commercial) {
+            foreach (['sale_price', 'cost_price', 'basic_rate', 'vendor_minus_value', 'customer_minus_value', 'vendor_other_cost'] as $field) {
+                if ($this->money($commercial[$field] ?? 0) > 0) {
+                    $meaningful = true;
+                    break 2;
+                }
+            }
+        }
+        if (! $meaningful) return array_values($payloads);
+
+        $result = array_values($payloads);
+        $seen = [];
+        foreach ($result as $payload) {
+            $id = (int) ($payload['booking_passenger_id'] ?? 0);
+            if ($id > 0) $seen[$id] = true;
+        }
+        foreach ($passengers as $passenger) {
+            $id = (int) ($passenger['id'] ?? 0);
+            if ($id > 0 && ! isset($seen[$id])) {
+                $result[] = [
+                    'booking_passenger_id' => $id,
+                    'ticket_number' => '',
+                    'booking_class' => '',
+                    'baggage' => '',
+                ];
+                $seen[$id] = true;
+            }
+        }
+        if ($meaningful && $passengers !== [] && $result === []) {
+            throw ValidationException::withMessages([
+                'air' => 'Air commercial values could not be linked to the booking passengers. Please reload and save again.',
+            ]);
+        }
+        return $result;
+    }
+
+    private function assertCommercialReadback(array $fareCommercials, array $freshTickets): void
+    {
+        $expectedCustomer = 0.0;
+        $expectedSupplier = 0.0;
+        $meaningful = false;
+        foreach ($fareCommercials as $commercial) {
+            $paxCount = max(1, (int) ($commercial['pax_count'] ?? 1));
+            $expectedCustomer += array_key_exists('customer_row_total', $commercial)
+                ? $this->money($commercial['customer_row_total'])
+                : round($this->money($commercial['customer_total'] ?? 0) * $paxCount, 2);
+            $expectedSupplier += array_key_exists('vendor_row_total', $commercial)
+                ? $this->money($commercial['vendor_row_total'])
+                : round($this->money($commercial['supplier_total'] ?? ($commercial['vendor_net'] ?? 0)) * $paxCount, 2);
+            foreach (['sale_price', 'cost_price', 'basic_rate', 'vendor_minus_value', 'customer_minus_value', 'vendor_other_cost'] as $field) {
+                if ($this->money($commercial[$field] ?? 0) > 0) $meaningful = true;
+            }
+        }
+        if (! $meaningful) return;
+        if ($freshTickets === []) {
+            throw ValidationException::withMessages([
+                'air' => 'Air commercial values could not be linked to the booking passengers. Please reload and save again.',
+            ]);
+        }
+        $actualCustomer = round(array_sum(array_map(static fn (array $row): float => (float) ($row['customer_total'] ?? 0), $freshTickets)), 2);
+        $actualSupplier = round(array_sum(array_map(static fn (array $row): float => (float) ($row['supplier_total'] ?? 0), $freshTickets)), 2);
+        if (abs(round($expectedCustomer, 2) - $actualCustomer) > 0.01 || abs(round($expectedSupplier, 2) - $actualSupplier) > 0.01) {
+            throw ValidationException::withMessages([
+                'air' => 'Air commercial values could not be verified after saving. Please reload and save again.',
+            ]);
+        }
+    }
+
     /** @return array<string,mixed> */
     private function commonSnapshot(array $tickets, array $serviceRow = []): array
     {
@@ -1513,6 +1603,7 @@ final class GeneralBookingAirProductController extends Controller
                 'vendor_other_cost' => $vendorOtherCost,
                 'customer_net' => $customerNet,
                 'vendor_net' => $vendorNet,
+                'pax_count' => count($matching),
                 'margin' => $margin,
                 // Legacy aliases keep downstream/native integrations stable.
                 'customer_total_sale_value' => $salePrice,

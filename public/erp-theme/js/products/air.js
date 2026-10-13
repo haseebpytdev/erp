@@ -605,11 +605,29 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
       if(!c.persisted&&!ticketNumber&&!bookingClass&&!baggage)return null;
       return {booking_passenger_id:c.passengerId,ticket_number:ticketNumber,booking_class:bookingClass,baggage:baggage};
     }).filter(function(ticket){return ticket!==null;});
+    var ticketRows=Array.prototype.slice.call(tbody.querySelectorAll('[data-etgp-air-ticket-row-113106]'));
 
     var farePayload=Object.keys(fareControls).map(function(fareType){
       var c=fareControls[fareType];
       return {fare_type:fareType,pax_count:c.count,sale_price:etgpAirMoney113106(c.sale.value),cost_price:etgpAirMoney113106(c.cost.value),basic_rate:etgpAirMoney113106(c.basic.value),vendor_minus_type:c.vendorMinusType.value,vendor_minus_value:etgpAirMoney113106(c.vendorMinus.value),customer_minus_type:c.customerMinusType.value,customer_minus_value:etgpAirMoney113106(c.customerMinus.value),vendor_other_cost:etgpAirMoney113106(c.other.value)};
     });
+    var meaningfulCommercial=farePayload.some(function(row){
+      return ['sale_price','cost_price','basic_rate','vendor_minus_value','customer_minus_value','vendor_other_cost'].some(function(field){return Number(row[field]||0)>0;});
+    });
+    // Commercial authority is passenger-level.  Keep a blank ticket number
+    // legal, but never send an empty passenger payload when commercial values
+    // are being saved.  The row's authoritative booking passenger ID is the
+    // only identity used; no synthetic ticket number is generated.
+    if(meaningfulCommercial){
+      var submittedByPassenger={};tickets.forEach(function(ticket){submittedByPassenger[String(ticket.booking_passenger_id)]=true;});
+      ticketRows.forEach(function(row){
+        var c=row._etgpAir,passengerId=Number(c.passengerId||0);
+        if(passengerId>0&&!submittedByPassenger[String(passengerId)]){
+          tickets.push({booking_passenger_id:passengerId,ticket_number:'',booking_class:'',baggage:''});
+          submittedByPassenger[String(passengerId)]=true;
+        }
+      });
+    }
     var supplierData=supplierPayload();
     var payload={
       common:{pnr:plain(commonPnr.input.value),airline_pnr:plain(airlinePnr.input.value),booking_source:plain(bookingSource.input.value),ticket_status:ticketStatus.select.value,issue_date:issueDate.input.value||null,supplier_id:supplierData.supplier_id,supplier_name:supplierData.supplier_name},

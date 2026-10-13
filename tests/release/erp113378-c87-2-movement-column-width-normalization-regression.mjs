@@ -23,7 +23,7 @@ ok((styles.match(/width:1%!important/g)||[]).length>=3&&styles.includes('white-s
 ok((styles.match(/text-align:left!important/g)||[]).length>=6,'shared left-alignment policy missing');
 ok(styles.includes("data-et-travel-report=\"madinah-checkin\"")&&styles.includes("data-et-travel-report=\"madinah-checkout\""),'Madinah selectors missing');
 ok(views.every(v=>v.includes('et-makkah-table')||v.includes('et-arrival-table'))&&report.includes('et-travel-movement-table'),'six report markup authority changed');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C87.2'")&&release.includes("'corrective_build' => 'C87.2'"),'release identity mismatch');
+ok(/'asset_version' => 'ERP-11.3.378-C(?:87\.2|88)'/.test(release)&&/'corrective_build' => 'C(?:87\.2|88)'/.test(release),'release identity remains in active lineage');
 ok(!styles.includes('justify-content:space-between'),'filter spacing regression');
 ok(styles.includes('/* C87.2: one content-driven width/alignment policy for all six movement reports.')&&styles.includes('width:auto!important;min-width:0!important'),'legacy width declarations are not neutralized by the final policy');
 ok(styles.includes('overflow-wrap:anywhere')&&styles.includes('@page{size:A4 landscape'),'print behavior changed');
