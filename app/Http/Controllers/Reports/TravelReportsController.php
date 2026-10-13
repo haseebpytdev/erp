@@ -18,10 +18,10 @@ final class TravelReportsController extends Controller
         abort_unless(isset(TravelReportService::MOVEMENTS[$movement]),404);
         // Arrival uses the dedicated reports.travel.movements.arrival view;
         // Departure now uses the matching dedicated movement presentation.
-        if ($movement === 'arrival' || $movement === 'departure' || $movement === 'makkah-checkin' || $movement === 'makkah-checkout') {
+        if ($movement === 'arrival' || $movement === 'departure' || $movement === 'makkah-checkin' || $movement === 'makkah-checkout' || $movement === 'madinah-checkout') {
             $layoutMeta=$this->layoutResolver->resolve();
-            $view=$movement==='arrival'?'arrival':($movement==='departure'?'departure':($movement==='makkah-checkin'?'makkah-checkin':'makkah-checkout'));
-            $title=$movement==='arrival'?'Arrival Report':($movement==='departure'?'Departure Intimation':($movement==='makkah-checkin'?'Makkah Check-in':'Makkah Check-out'));
+            $view=$movement==='arrival'?'arrival':($movement==='departure'?'departure':($movement==='makkah-checkin'?'makkah-checkin':($movement==='makkah-checkout'?'makkah-checkout':'madinah-checkout')));
+            $title=$movement==='arrival'?'Arrival Report':($movement==='departure'?'Departure Intimation':($movement==='makkah-checkin'?'Makkah Check-in':($movement==='makkah-checkout'?'Makkah Check-out':'Madinah Check-out')));
             return view('reports.travel.movements.'.$view,['layoutMeta'=>$layoutMeta,'title'=>$title,'report'=>$movement,'definition'=>$this->reports->definition($movement),'rows'=>$this->reports->rows($movement,$request->query(),(int)$request->query('per_page',50)),'movements'=>TravelReportService::MOVEMENTS,'airportOptions'=>$this->reports->movementAirportOptions($movement)]);
         }
         return $this->view('report',TravelReportService::MOVEMENTS[$movement],$movement,$request,true);
