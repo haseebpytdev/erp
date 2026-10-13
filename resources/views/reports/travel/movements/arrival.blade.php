@@ -23,9 +23,6 @@
      'filters' => [
          ['key' => 'from', 'label' => 'From Date', 'type' => 'date'],
          ['key' => 'to', 'label' => 'To Date', 'type' => 'date'],
-         ['key' => 'status', 'label' => 'Status', 'type' => 'text'],
-         ['key' => 'branch', 'label' => 'Branch ID', 'type' => 'text'],
-         ['key' => 'customer', 'label' => 'Customer ID', 'type' => 'text'],
          ['key' => 'destination', 'label' => 'Arrival Airport', 'type' => 'select', 'empty_label' => 'All Airports', 'options' => $airportOptions ?? []],
      ],
      'modifier' => 'et-report-filter-one-line',
@@ -36,6 +33,7 @@
          ['label' => 'Export CSV', 'type' => 'link', 'class' => 'secondary', 'href' => route('travel-reports.group-umrah.arrival.export', request()->query())],
      ],
  ])
+ {{-- Historical filter parameter compatibility: Status, Branch ID and Customer ID remain accepted by the service but are intentionally not rendered. --}}
  <div class="et-travel-print-document" data-et-travel-print-document="1"><div class="et-arrival-card et-travel-print-heading"><div class="et-arrival-sub">Travel Reports / Movement Reports / Arrival</div><div class="et-arrival-title">Arrival Report</div><div class="et-arrival-sub">Operational inbound arrival movement reporting. No financial data.</div></div><div class="et-arrival-card"><strong>Arrival Results</strong> <span class="et-arrival-sub">{{ method_exists($rows,'total')?$rows->total():0 }} records</span></div>
  <div class="et-arrival-card"><div class="et-arrival-scroll"><table class="et-arrival-table"><colgroup><col class="et-arrival-date-col"><col class="et-arrival-time-col"><col><col><col class="et-arrival-booking-col"><col class="et-arrival-customer-col"><col><col><col><col><col><col><col><col><col><col><col><col><col></colgroup><thead><tr><th>Arrival Date</th><th>Arrival Time</th><th>Flight</th><th>Sector</th><th>Booking No.</th><th>Customer / Group</th><th>Total Pax</th><th>Adult</th><th>Child</th><th>Infant</th><th>Makkah Hotel</th><th>Transport</th><th>Saudi Company</th><th>Pakistani IATA</th><th>Status</th><th>Branch</th><th>Agent / Salesperson</th><th>View</th></tr></thead><tbody>@forelse($rows as $row)<tr><td>{{ $row['arrival_date']??'—' }}</td><td>{{ $row['arrival_time']??'—' }}</td><td>{{ $row['flight']??'—' }}</td><td>{{ $row['sector']??'—' }}</td><td>{{ $row['booking_no']??'—' }}</td><td>{{ $row['customer']??'—' }}</td><td>{{ $row['total_pax']??'—' }}</td><td>{{ $row['adult']??'—' }}</td><td>{{ $row['child']??'—' }}</td><td>{{ $row['infant']??'—' }}</td><td>{{ $row['makkah_hotel']??'—' }}</td><td>{{ $row['transport']??'—' }}</td><td>{{ $row['saudi_company']??'—' }}</td><td>{{ $row['pakistani_iata']??'—' }}</td><td><span class="et-arrival-badge">{{ $row['status']??'—' }}</span></td><td>{{ $row['branch']??'—' }}</td><td>{{ $row['agent_salesperson']??'—' }}</td><td>@if(($row['action']??'—')!=='—')<a href="{{ $row['action'] }}">View</a>@else—@endif</td></tr>@empty<tr><td colspan="18">No arrival records match the selected filters.</td></tr>@endforelse</tbody></table></div></div></div>@if(is_object($rows) && method_exists($rows,'links'))<div class="et-movement-pagination">{{ $rows->links() }}</div>@endif
 </div>
