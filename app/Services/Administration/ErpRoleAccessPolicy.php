@@ -192,6 +192,35 @@ class ErpRoleAccessPolicy
         }
         $combined = $path.' '.$routeName;
 
+        /* C89.1: keep critical system and reporting families inside the
+         * canonical resolver instead of allowing them to fall through as
+         * unknown routes. */
+        if (preg_match('#^/system/erp-diagnostics(?:/|$)#', $path) === 1) {
+            return 'system_diagnostics';
+        }
+
+        if (preg_match('#^/system/erp-repair(?:/|$)#', $path) === 1) {
+            return 'system_repairs';
+        }
+
+        if (
+            preg_match('#^/system/(?:post-reset-financial-cleanup|production-data-reset)(?:/|$)#', $path) === 1
+        ) {
+            return 'system_destructive';
+        }
+
+        if (preg_match('#^/system/visa-masters(?:/|$)#', $path) === 1) {
+            return 'travel_masters';
+        }
+
+        if (preg_match('#^/reports/group-umrah-profitability(?:/|$)#', $path) === 1) {
+            return 'travel_reports';
+        }
+
+        if (preg_match('#^/operations/group-package-bookings(?:/|$)#', $path) === 1) {
+            return 'bookings';
+        }
+
         /* Booking Product workspaces are Booking Operations, not Master Data.
          * Resolve this explicit ownership before the broader /products master
          * patterns are considered. */
@@ -259,6 +288,36 @@ class ErpRoleAccessPolicy
          * because those words appear in unrelated accounting permissions.
          */
         return [
+            'system_diagnostics' => [
+                'labels' => ['System Diagnostics'],
+                'hrefs' => ['/system/erp-diagnostics'],
+                'paths' => ['/system/erp-diagnostics'],
+                'capability_phrases' => [
+                    'system.health',
+                    'system health',
+                ],
+            ],
+
+            'system_repairs' => [
+                'labels' => ['System Repairs', 'System Maintenance'],
+                'hrefs' => ['/system/erp-repair'],
+                'paths' => ['/system/erp-repair'],
+                'capability_phrases' => [
+                    'system.update',
+                    'system update',
+                ],
+            ],
+
+            'system_destructive' => [
+                'labels' => ['Production Data Reset', 'Post-Reset Financial Cleanup'],
+                'hrefs' => ['/system/production-data-reset', '/system/post-reset-financial-cleanup'],
+                'paths' => ['/system/production-data-reset', '/system/post-reset-financial-cleanup'],
+                'capability_phrases' => [
+                    'system.update',
+                    'system update',
+                ],
+            ],
+
             'sales_invoices' => [
                 'labels' => ['Sales Invoices', 'Sales Invoice'],
                 'hrefs' => ['/sales/invoices'],
