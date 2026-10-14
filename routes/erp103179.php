@@ -75,6 +75,7 @@ use App\Http\Middleware\GuardApprovedGeneralBookingCommercials;
 use App\Http\Middleware\EnforceGeneralBookingEditLock;
 use App\Http\Middleware\PresentBookingRegisterInvoiceVisibility;
 use App\Http\Middleware\EnforceErpRoleScopedAccess;
+use App\Http\Middleware\EnforceErpBranchAccess;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Routing\Events\RouteMatched;
@@ -673,6 +674,29 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
 
     $route->middleware(PresentAccountingReportsWorkspace::class);
 });
+
+/* C89.2.1: add the branch dimension beside capability authorization for
+ * every authenticated booking-family and travel-movement route, including
+ * native host routes registered before this overlay. Public voucher tokens
+ * are intentionally excluded. */
+foreach (Route::getRoutes()->getRoutes() as $branchRoute) {
+    $uri = strtolower(trim((string) $branchRoute->uri(), '/'));
+    $name = strtolower((string) $branchRoute->getName());
+    $bookingFamily = str_starts_with($uri, 'operations/bookings')
+        || str_starts_with($uri, 'system/erp-bookings')
+        || str_starts_with($uri, 'operations/group-package-bookings')
+        || str_starts_with($uri, 'passengers')
+        || str_starts_with($name, 'bookings.')
+        || str_starts_with($name, 'operations.bookings.');
+    $movementFamily = preg_match(
+        '#^travel-reports/group-umrah/(arrival|makkah-checkin|makkah-checkout|madinah-checkin|madinah-checkout|departure)(?:/|$)#',
+        $uri
+    ) === 1;
+    $travelReportFamily = str_starts_with($uri, 'travel-reports/') || str_starts_with($name, 'travel-reports.');
+    if (($bookingFamily || $movementFamily || $travelReportFamily) && $uri !== 'voucher/{token}') {
+        $branchRoute->middleware(EnforceErpBranchAccess::class);
+    }
+}
 
 // Attach the .370 print presentation to the existing native route only.
 Event::listen(RouteMatched::class, function (RouteMatched $event): void {
