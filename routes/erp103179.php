@@ -40,6 +40,7 @@ use App\Http\Controllers\Sales\AirTicketInvoiceDraftSyncController;
 use App\Http\Controllers\Sales\StableBookingSalesInvoiceController;
 use App\Http\Middleware\PresentAirTicketSalesInvoice;
 use App\Http\Middleware\EnsureAirTicketCommercialIntegrityBeforeNativeWorkflow;
+use App\Http\Middleware\EnforceCommercialBranchAuthority;
 use App\Http\Middleware\PresentSalesInvoiceFocusedWorkspace;
 use App\Http\Middleware\PresentSalesInvoicePrintV2;
 use App\Http\Controllers\System\ProductionDataResetController;
@@ -481,14 +482,14 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
     Route::post('/accounting/customer-advance-returns/{id}/workflow/{action}', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnWorkflow'])->whereNumber('id')->where('action','submit|approve|post')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.workflow');
     Route::post('/accounting/customer-advance-returns/{id}/reverse', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnReverse'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.reverse');
 
-    Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->name('purchase.supplier-costing.index');
-    Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->name('purchase.supplier-costing.create');
-    Route::post('/supplier-costing/booking/{booking}/supplier/{supplier}/draft', [SupplierCostingController::class, 'createDraftFromBooking'])->whereNumber('booking')->whereNumber('supplier')->middleware(EnforceErpRoleScopedAccess::class)->name('purchase.supplier-costing.booking-draft');
-    Route::post('/supplier-costing', [SupplierCostingController::class, 'store'])->name('purchase.supplier-costing.store');
-    Route::get('/supplier-costing/{costing}', [SupplierCostingController::class, 'show'])->whereNumber('costing')->name('purchase.supplier-costing.show');
-    Route::get('/supplier-costing/{costing}/edit', [SupplierCostingController::class, 'edit'])->whereNumber('costing')->name('purchase.supplier-costing.edit');
-    Route::put('/supplier-costing/{costing}', [SupplierCostingController::class, 'update'])->whereNumber('costing')->name('purchase.supplier-costing.update');
-    Route::post('/supplier-costing/{costing}/workflow/{action}', [SupplierCostingController::class, 'workflow'])->whereNumber('costing')->where('action','submit|approve|post')->name('purchase.supplier-costing.workflow');
+    Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.index');
+    Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.create');
+    Route::post('/supplier-costing/booking/{booking}/supplier/{supplier}/draft', [SupplierCostingController::class, 'createDraftFromBooking'])->whereNumber('booking')->whereNumber('supplier')->middleware([EnforceErpRoleScopedAccess::class, EnforceCommercialBranchAuthority::class])->name('purchase.supplier-costing.booking-draft');
+    Route::post('/supplier-costing', [SupplierCostingController::class, 'store'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.store');
+    Route::get('/supplier-costing/{costing}', [SupplierCostingController::class, 'show'])->whereNumber('costing')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.show');
+    Route::get('/supplier-costing/{costing}/edit', [SupplierCostingController::class, 'edit'])->whereNumber('costing')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.edit');
+    Route::put('/supplier-costing/{costing}', [SupplierCostingController::class, 'update'])->whereNumber('costing')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.update');
+    Route::post('/supplier-costing/{costing}/workflow/{action}', [SupplierCostingController::class, 'workflow'])->whereNumber('costing')->where('action','submit|approve|post')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.workflow');
 
 
     Route::get(
@@ -673,6 +674,16 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     }
 
     $route->middleware(PresentAccountingReportsWorkspace::class);
+});
+
+// C89.2.2A: protect host-native invoice direct objects without replacing the
+// native controller or its lifecycle semantics.
+Event::listen(RouteMatched::class, function (RouteMatched $event): void {
+    $route = $event->route;
+    $name = strtolower((string) $route->getName());
+    $uri = strtolower(trim((string) $route->uri(), '/'));
+    if (!str_starts_with($name, 'sales.invoices.') && !str_starts_with($uri, 'sales/invoices/')) return;
+    $route->middleware(EnforceCommercialBranchAuthority::class);
 });
 
 /* C89.2.1: add the branch dimension beside capability authorization for

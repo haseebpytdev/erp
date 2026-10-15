@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Purchase;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\NativeErpLayoutResolver;
+use App\Services\Administration\ErpCommercialBranchAuthority;
 use App\Services\Purchase\BookingSupplierObligationResolver;
 use App\Services\Purchase\SupplierCostingDrilldownResolver;
 use App\Services\Purchase\SupplierCostingService;
@@ -24,6 +25,7 @@ class SupplierCostingController extends Controller
         private readonly SupplierCostingDrilldownResolver $drilldowns,
         private readonly NativeErpLayoutResolver $layout,
         private readonly SupplierCostingCoverageResolver $coverage,
+        private readonly ErpCommercialBranchAuthority $commercialBranches,
     ) {}
 
     public function index(Request $request)
@@ -38,6 +40,7 @@ class SupplierCostingController extends Controller
         ];
         $statuses = ['draft', 'pending_approval', 'approved', 'posted'];
         $query = DB::table('supplier_costings')->orderByDesc('id');
+        $this->commercialBranches->scopeSupplierCostings($query, $request->user());
         if (in_array($filters['status'], $statuses, true)) $query->where('status', $filters['status']);
         elseif ($filters['status'] !== '') $query->whereRaw('1 = 0');
         if ($filters['supplier_id'] > 0) $query->where('supplier_id', $filters['supplier_id']);
@@ -53,10 +56,14 @@ class SupplierCostingController extends Controller
 
         $filteredRows = (clone $query)->get();
         $rows = $query->paginate(25)->withQueryString();
-        $supplierOptions = DB::table('supplier_costings')->whereNotNull('supplier_id')->where('supplier_name', '<>', '')
+        $supplierQuery = DB::table('supplier_costings')->whereNotNull('supplier_id')->where('supplier_name', '<>', '');
+        $this->commercialBranches->scopeSupplierCostings($supplierQuery, $request->user());
+        $supplierOptions = $supplierQuery
             ->select('supplier_id', 'supplier_name')->distinct()->orderBy('supplier_name')->get()
             ->map(fn ($row) => ['id' => (int) $row->supplier_id, 'label' => (string) $row->supplier_name])->values()->all();
-        $productOptions = DB::table('supplier_costings')->whereNotNull('service_type')->where('service_type', '<>', '')
+        $productQuery = DB::table('supplier_costings')->whereNotNull('service_type')->where('service_type', '<>', '');
+        $this->commercialBranches->scopeSupplierCostings($productQuery, $request->user());
+        $productOptions = $productQuery
             ->distinct()->orderBy('service_type')->pluck('service_type')->map(fn ($value) => (string) $value)->values()->all();
         $statusCounts = array_fill_keys($statuses, 0);
         $productBreakdown = [];
@@ -102,6 +109,7 @@ class SupplierCostingController extends Controller
 
     public function createDraftFromBooking(Request $request, int $booking, int $supplier, SupplierCostingDraftSynchronizer $drafts)
     {
+        $this->commercialBranches->assertBooking($request->user(), $booking);
         abort_unless($supplier > 0, 422, 'A supplier is required.');
         $rows = $this->obligations->resolve($booking);
         $eligible = collect($rows)->contains(fn (array $row): bool =>
@@ -134,6 +142,7 @@ class SupplierCostingController extends Controller
             throw ValidationException::withMessages(['booking_id' => 'Supplier Costing source traceability is unavailable. Run the current database migrations before creating a booking-driven costing.']);
         }
         $header = $this->validateHeader($request, true);
+        $this->commercialBranches->assertBooking($request->user(), (int) $header['booking_id']);
         $submittedLines = $this->validateBookingLines($request);
         $id = DB::transaction(function () use ($header, $submittedLines, $request): int {
             DB::table('bookings')->where('id', (int) $header['booking_id'])->lockForUpdate()->first();
@@ -153,7 +162,7 @@ class SupplierCostingController extends Controller
 
     public function show(int $costing)
     {
-        $row = $this->find($costing);
+        $row = $this->commercialBranches->assertSupplierCosting(request()->user(), $costing);
         $lines = DB::table('supplier_costing_lines')->where('supplier_costing_id', $costing)->orderBy('line_no')->get();
         $postings = DB::table('supplier_costing_posting_lines')->where('supplier_costing_id', $costing)->orderBy('id')->get();
         $previewError = null;
@@ -185,14 +194,14 @@ class SupplierCostingController extends Controller
 
     public function edit(Request $request, int $costing)
     {
-        $row = $this->find($costing);
+        $row = $this->commercialBranches->assertSupplierCosting($request->user(), $costing);
         abort_unless($row->status === 'draft', 409, 'Only Draft supplier costing can be edited.');
         return view('purchase.supplier-costing.form', $this->formData($row, $request));
     }
 
     public function update(Request $request, int $costing)
     {
-        $row = $this->find($costing);
+        $row = $this->commercialBranches->assertSupplierCosting($request->user(), $costing);
         abort_unless($row->status === 'draft', 409, 'Only Draft supplier costing can be edited.');
         if (! $this->hasSourceLinks($costing)) return $this->updateLegacy($request, $row);
 
@@ -211,6 +220,7 @@ class SupplierCostingController extends Controller
 
     public function workflow(Request $request, int $costing, string $action)
     {
+        $this->commercialBranches->assertSupplierCosting($request->user(), $costing);
         abort_unless(in_array($action, ['submit', 'approve', 'post'], true), 404);
         try { $this->service->transition($costing, $action, $request->user()); }
         catch (RuntimeException $e) { return back()->withErrors(['workflow' => $e->getMessage()]); }

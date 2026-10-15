@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
 use App\Services\Sales\SafeSalesInvoiceDraftUpdateRecovery;
+use App\Services\Administration\ErpCommercialBranchAuthority;
 use App\Services\Sales\AirTicketInvoiceCommercialSyncService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\RedirectResponse;
@@ -24,10 +25,13 @@ class SalesInvoiceDraftUpdateBridgeController extends Controller
     public function __construct(
         private readonly SafeSalesInvoiceDraftUpdateRecovery $recovery,
         private readonly AirTicketInvoiceCommercialSyncService $airTicketSync,
+        private readonly ErpCommercialBranchAuthority $commercialBranches,
     ) {}
 
     public function update(Request $request, mixed $invoice): RedirectResponse
     {
+        $invoiceId = is_object($invoice) && method_exists($invoice, 'getKey') ? (int) $invoice->getKey() : (int) $invoice;
+        $this->commercialBranches->assertInvoice($request->user(), $invoiceId);
         $nativeFormRequest = $this->nativeUpdateFormRequestClass();
 
         if ($nativeFormRequest !== null) {

@@ -2,6 +2,7 @@
 
 namespace App\Services\Purchase;
 
+use App\Services\Administration\ErpCommercialBranchAuthority;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -10,13 +11,13 @@ final class SupplierCostingCoverageResolver
 {
     private const PAGE_SIZE = 50;
 
-    public function __construct(private readonly BookingSupplierObligationResolver $obligations) {}
+    public function __construct(private readonly BookingSupplierObligationResolver $obligations, private readonly ErpCommercialBranchAuthority $commercialBranches) {}
 
     /** @return array<string,mixed> */
     public function resolve(int $page = 1, string $search = ''): array
     {
         $page = max(1, $page); $search = trim($search);
-        [$ids, $total, $lastPage, $normalizedPage] = $this->candidatePage($page, $search);
+        [$ids, $total, $lastPage, $normalizedPage] = $this->candidatePage($page, $search, request()->user());
         $queue = []; $ready = 0; $attention = 0;
         foreach ($ids as $bookingId) {
             $rows = $this->obligations->resolve($bookingId);
@@ -36,11 +37,14 @@ final class SupplierCostingCoverageResolver
     }
 
     /** @return array{0:list<int>,1:int,2:int,3:int} */
-    private function candidatePage(int $page, string $search): array
+    private function candidatePage(int $page, string $search, mixed $user): array
     {
         if (! Schema::hasTable('bookings')) return [[], 0, 1, 1];
         $columns = Schema::getColumnListing('bookings'); $status = collect(['status', 'approval_status', 'workflow_status', 'booking_status'])->first(fn (string $field): bool => in_array($field, $columns, true)); $reference = collect(['booking_reference', 'booking_ref', 'booking_no', 'booking_number', 'reference'])->first(fn (string $field): bool => in_array($field, $columns, true));
         $base = DB::table('bookings');
+        $allowed = app(\App\Services\Administration\ErpBranchAccessAuthority::class)->allowedBranchIds($user);
+        if ($allowed === []) $base->whereRaw('1 = 0');
+        elseif ($allowed !== null) $base->whereIn('branch_id', $allowed)->whereNotNull('company_id');
         if ($status) $base->whereIn($status, ['approved', 'Approved', 'confirmed', 'Confirmed', 'travel ready', 'Travel Ready']);
         if ($search !== '' && $reference) $base->where($reference, 'like', '%'.mb_substr($search, 0, 120).'%');
         $total = (clone $base)->count(); $lastPage = max(1, (int) ceil($total / self::PAGE_SIZE)); $normalizedPage = min(max(1, $page), $lastPage);
@@ -80,7 +84,9 @@ final class SupplierCostingCoverageResolver
 
     private function lifecycleCards(int $ready, int $attention): array
     {
-        $counts = DB::table('supplier_costings')->select('status', DB::raw('COUNT(*) as aggregate'))->groupBy('status')->pluck('aggregate', 'status');
+        $countQuery = DB::table('supplier_costings');
+        $this->commercialBranches->scopeSupplierCostings($countQuery, request()->user());
+        $counts = $countQuery->select('status', DB::raw('COUNT(*) as aggregate'))->groupBy('status')->pluck('aggregate', 'status');
         return [['key' => 'ready', 'label' => 'Ready for Costing', 'count' => $ready, 'scope' => 'Current coverage page'], ['key' => 'draft', 'label' => 'Draft', 'count' => (int) ($counts['draft'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'pending_approval', 'label' => 'Pending Approval', 'count' => (int) ($counts['pending_approval'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'approved', 'label' => 'Approved', 'count' => (int) ($counts['approved'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'posted', 'label' => 'Posted', 'count' => (int) ($counts['posted'] ?? 0), 'scope' => 'Supplier Costing documents'], ['key' => 'attention', 'label' => 'Attention Required', 'count' => $attention, 'scope' => 'Current coverage page']];
     }
 }

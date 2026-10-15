@@ -2,6 +2,7 @@
 
 namespace App\Services\Accounting;
 
+use App\Services\Administration\ErpBranchAccessAuthority;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ final class ManagementAccountingReportService
     public function __construct(
         private readonly ChartOfAccountsWorkspaceService $chart,
         private readonly UnifiedGroupPackageDataSource $bookingData,
+        private readonly ErpBranchAccessAuthority $branchAuthority,
     ) {}
 
     public function filters(Request $request, string $mode): array
@@ -33,8 +35,8 @@ final class ManagementAccountingReportService
         if ($from > $to) [$from, $to] = [$to, $from];
 
         $branches = $this->branches();
-        $branchId = (int) $request->query('branch_id', 0);
-        if ($branchId > 0 && ! collect($branches)->contains(fn (array $branch): bool => (int) $branch['id'] === $branchId)) $branchId = 0;
+        $branchId = $this->branchAuthority->branchFilter($request->user(), $request->query('branch_id'));
+        if ($branchId !== null && ! collect($branches)->contains(fn (array $branch): bool => (int) $branch['id'] === $branchId)) abort(403, 'The requested branch is unavailable.');
 
         return [
             'mode' => $mode, 'as_of' => $asOf, 'from' => $from, 'to' => $to,

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
 use App\Services\Operations\NativeSalesInvoiceInspector;
+use App\Services\Administration\ErpCommercialBranchAuthority;
 use App\Services\Operations\BookingInvoiceEligibilityResolver;
 use App\Services\Operations\BookingCommercialCompletenessResolver;
 use App\Services\Operations\NativeSalesInvoiceCreateCapability;
@@ -42,6 +43,7 @@ final class StableBookingSalesInvoiceController extends Controller
         private readonly BookingInvoiceEligibilityResolver $eligibility,
         private readonly BookingCommercialCompletenessResolver $commercialCompleteness,
         private readonly NativeSalesInvoiceCreateCapability $createCapability,
+        private readonly ErpCommercialBranchAuthority $commercialBranches,
     ) {}
 
     public function __invoke(Request $request, int $booking): RedirectResponse
@@ -49,6 +51,8 @@ final class StableBookingSalesInvoiceController extends Controller
         if ($booking <= 0) {
             abort(404);
         }
+
+        $this->commercialBranches->assertBooking($request->user(), $booking);
 
         $existing = $this->find($booking);
 
