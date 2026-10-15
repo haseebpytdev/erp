@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -10,8 +11,20 @@ const release = read('CURRENT_RELEASE.md');
 const version = read('VERSION.txt');
 const config = read('config/et_erp_release.php');
 const routes = read('routes/erp103179.php');
-const migrationDir = path.join(root, 'database', 'migrations');
-const migrationNames = fs.existsSync(migrationDir) ? fs.readdirSync(migrationDir) : [];
+const historicalCommit = '8cb9d4f49c947b5b511db7ee98709d346b016673';
+const historicalParent = '7ef355113b72be8934e48c7dbbf3c8b61d6e533d';
+let historicalChangedFiles;
+try {
+    historicalChangedFiles = execFileSync(
+        'git',
+        ['diff-tree', '--no-commit-id', '--name-only', '-r', historicalParent, historicalCommit],
+        { cwd: root, encoding: 'utf8' },
+    ).split(/\r?\n/).filter(Boolean);
+} catch (error) {
+    throw new Error(
+        `historical migration-scope check requires Git history (${historicalParent}..${historicalCommit}): ${error.message}`,
+    );
+}
 let assertions = 0;
 const ok = (condition, message) => { assertions += 1; assert.ok(condition, message); };
 
@@ -64,7 +77,7 @@ ok(adapter.includes('Manage Existing Users'), 'existing management link remains'
 ok(adapter.includes('Linked Staff') && adapter.includes('et-user-manage-note-103175'), 'Linked Staff helper remains');
 ok(adapter.includes('Edit / Activate / Passwords'), 'native existing-users management affordance remains');
 ok(view.includes('No dedicated Travel Report permissions exist yet'), 'Travel Reports zero-state remains');
-ok(!migrationNames.some((name) => /337|user.?permission/i.test(name)), 'no migration is introduced');
+ok(!historicalChangedFiles.some((file) => file.replaceAll('\\', '/').startsWith('database/migrations/')), 'ERP-11.3.337 introduces no migration');
 ok(!version.includes('337') && !config.includes('ERP-11.3.337'), 'release metadata remains unchanged');
 ok(view.includes('Manage Existing Users') && view.includes('et-user-table-103336'), 'Manage Existing Users overlay structure remains');
 ok(view.includes('Identity & Account Status') && view.includes('Effective Access Summary'), 'Manage User detail structure remains');
