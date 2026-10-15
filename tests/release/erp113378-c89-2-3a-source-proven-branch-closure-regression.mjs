@@ -27,9 +27,14 @@ ok(cash.includes('assertAllocationTargetParity'), 'cash voucher target parity is
 ok(cash.includes('assertSourceTargetParity'), 'advance adjustment parity is service enforced');
 ok(cash.includes('assertBranchTargetParity'), 'return parent parity is service enforced');
 ok(cash.includes('Allocation ownership could not be resolved safely'), 'ownership resolution fails closed');
+ok(cash.includes("parent['company_id'] !== (int) $target['company_id']"), 'same-company allocation is required');
+ok(cash.includes("parent['branch_id'] !== (int) $target['branch_id']"), 'same-branch allocation is required');
+ok(cash.includes("if (! $parent || ! $target"), 'unresolved allocation target is denied');
 ok(cashController.includes('assertAllocationTargetParity'), 'cash controller validates before mutation');
 const allocationMethod = cashController.slice(cashController.indexOf('private function replaceAllocations'));
 ok(allocationMethod.indexOf('assertAllocationTargetParity') < allocationMethod.lastIndexOf("cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->delete()"), 'cash parity occurs before allocation deletion');
+ok(allocationMethod.includes('foreach ($allocations as $index => $allocation)'), 'complete allocation set is validated');
+ok(allocationMethod.includes('DB::table(\'cash_voucher_allocations\')->insert($rows)'), 'replacement insert occurs only after validation');
 ok(adjustment.includes('assertSourceTargetParity'), 'adjustment controller validates source and target parity');
 ok(returns.includes('assertBranchTargetParity'), 'customer return validates every allocation source');
 ok(users.includes('validateBranchAssignments'), 'user branch assignment company validation exists');
