@@ -58,6 +58,7 @@ use App\Http\Controllers\System\CashVoucherNativeJournalRepairController;
 use App\Http\Controllers\Administration\ErpUserManagementController;
 use App\Http\Controllers\Purchase\SupplierCostingController;
 use App\Http\Controllers\Accounting\CashVoucherController;
+use App\Http\Controllers\Accounting\CashVoucherLegacyBranchReconciliationController;
 use App\Http\Controllers\Accounting\AdvanceAdjustmentController;
 use App\Http\Controllers\Accounting\ChartOfAccountsWorkspaceController;
 use App\Http\Controllers\Accounting\ManagementAccountingReportController;
@@ -522,6 +523,17 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         '/system/erp-diagnostics/sales-invoice-workflow-compare',
         [SalesInvoiceWorkflowCompareController::class, 'index']
     )->name('system.erp-diagnostics.sales-invoice-workflow-compare');
+
+    Route::get(
+        '/system/erp-diagnostics/cash-voucher-legacy-reconciliation',
+        [CashVoucherLegacyBranchReconciliationController::class, 'index']
+    )->middleware(EnforceErpRoleScopedAccess::class)
+        ->name('accounting.cash-vouchers.legacy-reconciliation');
+    Route::get(
+        '/system/erp-diagnostics/cash-voucher-legacy-reconciliation/export',
+        [CashVoucherLegacyBranchReconciliationController::class, 'export']
+    )->middleware(EnforceErpRoleScopedAccess::class)
+        ->name('accounting.cash-vouchers.legacy-reconciliation.export');
 
     Route::get(
         '/system/erp-repair/cash-voucher-native-journals',
