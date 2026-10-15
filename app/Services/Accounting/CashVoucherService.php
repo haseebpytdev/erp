@@ -804,6 +804,84 @@ class CashVoucherService
         throw new RuntimeException('The selected accounting document is not available for allocation. It may be Draft, reversed, cancelled, or missing.');
     }
 
+    /**
+     * Enforce persisted company/branch parity before an allocation is written.
+     * Target ownership is resolved from the authoritative document, never from
+     * request data or the current user's primary branch.
+     */
+    public function assertAllocationTargetParity(object $voucher, string $targetType, int $targetId): void
+    {
+        $parent = ['company_id' => (int) ($voucher->company_id ?? 0), 'branch_id' => (int) ($voucher->branch_id ?? 0)];
+        $target = $this->allocationTargetOwnership($targetType, $targetId);
+        $this->assertOwnershipParity($parent, $target);
+    }
+
+    public function assertSourceTargetParity(string $sourceType, int $sourceId, string $targetType, int $targetId): void
+    {
+        $source = $this->allocationTargetOwnership($sourceType, $sourceId);
+        $target = $this->allocationTargetOwnership($targetType, $targetId);
+        $this->assertOwnershipParity($source, $target);
+    }
+
+    public function assertBranchTargetParity(int $branchId, ?int $companyId, string $targetType, int $targetId): void
+    {
+        $parentCompany = $companyId ?: $this->companyForBranch($branchId);
+        $this->assertOwnershipParity(['company_id' => (int) $parentCompany, 'branch_id' => $branchId], $this->allocationTargetOwnership($targetType, $targetId));
+    }
+
+    private function assertOwnershipParity(?array $parent, ?array $target): void
+    {
+        if (! $parent || ! $target || (int) ($parent['branch_id'] ?? 0) < 1 || (int) ($parent['company_id'] ?? 0) < 1 || (int) ($target['branch_id'] ?? 0) < 1 || (int) ($target['company_id'] ?? 0) < 1) {
+            throw new RuntimeException('Allocation ownership could not be resolved safely.');
+        }
+        if ((int) $parent['company_id'] !== (int) $target['company_id']) throw new RuntimeException('Allocation company does not match the parent document.');
+        if ((int) $parent['branch_id'] !== (int) $target['branch_id']) throw new RuntimeException('Allocation branch does not match the parent document.');
+    }
+
+    private function allocationTargetOwnership(string $targetType, int $targetId): ?array
+    {
+        if ($targetId < 1) return null;
+        if ($targetType === 'cash_voucher') return $this->directOwnership('cash_vouchers', 'id', $targetId);
+        if (in_array($targetType, ['party_opening_balance','party_opening_payable','party_opening_customer_payable'], true)) return $this->directOwnership('party_opening_balances', 'id', $targetId);
+        if ($targetType === 'supplier_costing') {
+            if (! Schema::hasTable('supplier_costings')) return null;
+            $columns = Schema::getColumnListing('supplier_costings');
+            $row = DB::table('supplier_costings')->where('id', $targetId)->first();
+            if (! $row) return null;
+            $bookingColumn = $this->first($columns, ['booking_id', 'travel_booking_id', 'source_booking_id']);
+            return $this->ownershipFromRowOrBooking($row, $bookingColumn);
+        }
+        if ($targetType === 'sales_invoice') {
+            $schema = $this->salesInvoiceSchema();
+            if (! $schema) return null;
+            $row = DB::table($schema['table'])->where($schema['id'], $targetId)->first();
+            if (! $row) return null;
+            return $this->ownershipFromRowOrBooking($row, $schema['booking'] ?? null);
+        }
+        return null;
+    }
+
+    private function directOwnership(string $table, string $idColumn, int $id): ?array
+    {
+        if (! Schema::hasTable($table)) return null;
+        $columns = Schema::getColumnListing($table);
+        $branch = $this->first($columns, ['branch_id','office_id']);
+        $company = $this->first($columns, ['company_id']);
+        if (! $branch || ! $company) return null;
+        $row = DB::table($table)->where($idColumn, $id)->first();
+        if (! $row) return null;
+        return $this->ownershipFromRowOrBooking($row, null);
+    }
+
+    private function ownershipFromRowOrBooking(object $row, ?string $bookingColumn): ?array
+    {
+        $branch = (int) (($row->branch_id ?? $row->office_id ?? 0));
+        $company = (int) ($row->company_id ?? 0);
+        if ($branch > 0 && $company > 0) return ['branch_id' => $branch, 'company_id' => $company];
+        $bookingId = $bookingColumn ? (int) ($row->{$bookingColumn} ?? 0) : 0;
+        return $bookingId > 0 ? $this->bookingOwnership($bookingId) : null;
+    }
+
     public function targetOutstanding(string $targetType, int $targetId, ?float $knownTotal = null): float
     {
         $total = $knownTotal;

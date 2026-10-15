@@ -36,11 +36,12 @@ final class ManagementAccountingReportService
 
         $branches = $this->branches();
         $branchId = $this->branchAuthority->branchFilter($request->user(), $request->query('branch_id'));
+        $branchIds = $branchId !== null ? [$branchId] : $this->branchAuthority->allowedBranchIds($request->user());
         if ($branchId !== null && ! collect($branches)->contains(fn (array $branch): bool => (int) $branch['id'] === $branchId)) abort(403, 'The requested branch is unavailable.');
 
         return [
             'mode' => $mode, 'as_of' => $asOf, 'from' => $from, 'to' => $to,
-            'branch_id' => $branchId ?: null, 'branches' => $branches,
+            'branch_id' => $branchId ?: null, 'branch_ids' => $branchIds, 'branches' => $branches,
             'branch_supported' => $this->branchSupported(),
         ];
     }
@@ -53,7 +54,7 @@ final class ManagementAccountingReportService
         $fiscal = $this->fiscalYear($asOf);
         $periods = $this->managementPeriods($asOf, $fiscal['start']);
         $earliest = collect($periods)->min('from');
-        $dated = $this->datedMovements($earliest, $asOf, $filters['branch_id']);
+        $dated = $this->datedMovements($earliest, $asOf, $filters['branch_ids']);
         $comparisons = [];
         foreach ($periods as $key => $period) {
             $comparisons[$key] = $this->profitLossFromRows($accountMap, $dated->filter(fn (object $row): bool => $row->journal_date >= $period['from'] && $row->journal_date <= $period['to']));
@@ -62,7 +63,7 @@ final class ManagementAccountingReportService
             $comparisons[$key]['to'] = $period['to'];
         }
 
-        $closing = $this->closingMovements($asOf, $filters['branch_id']);
+        $closing = $this->closingMovements($asOf, $filters['branch_ids']);
         $position = $this->financialPosition($accounts, $closing);
         $cashRows = $this->cashPosition($accounts, $closing, $dated, $asOf);
         $todayRows = $dated->filter(fn (object $row): bool => $row->journal_date === $asOf);
@@ -77,8 +78,8 @@ final class ManagementAccountingReportService
             'cash_inflow_today' => round((float) $cashToday->sum('debit'), 2),
             'cash_outflow_today' => round((float) $cashToday->sum('credit'), 2),
             'products' => $this->productProfitability($accountMap, $todayRows),
-            'top_customers' => $this->partyBalances('customer', $this->controlAccountIds($accounts, 'CUSTOMER_AR', '1130'), $asOf, $filters['branch_id']),
-            'top_vendors' => $this->partyBalances('vendor', $this->controlAccountIds($accounts, 'VENDOR_AP', '2110'), $asOf, $filters['branch_id']),
+            'top_customers' => $this->partyBalances('customer', $this->controlAccountIds($accounts, 'CUSTOMER_AR', '1130'), $asOf, $filters['branch_ids']),
+            'top_vendors' => $this->partyBalances('vendor', $this->controlAccountIds($accounts, 'VENDOR_AP', '2110'), $asOf, $filters['branch_ids']),
             'trial_balance' => $this->trialBalanceStatus($closing),
             'fiscal_year' => $fiscal,
             'posting_date_authority' => 'journal_entries.journal_date',
@@ -92,7 +93,7 @@ final class ManagementAccountingReportService
         $days = Carbon::parse($filters['from'])->diffInDays(Carbon::parse($filters['to'])) + 1;
         $previousTo = Carbon::parse($filters['from'])->subDay();
         $previousFrom = $previousTo->copy()->subDays($days - 1);
-        $rows = $this->datedMovements($previousFrom->toDateString(), $filters['to'], $filters['branch_id']);
+        $rows = $this->datedMovements($previousFrom->toDateString(), $filters['to'], $filters['branch_ids']);
         $current = $this->profitLossFromRows($accounts, $rows->filter(fn (object $row): bool => $row->journal_date >= $filters['from']));
         $previous = $this->profitLossFromRows($accounts, $rows->filter(fn (object $row): bool => $row->journal_date <= $previousTo->toDateString()));
         $current['previous_from'] = $previousFrom->toDateString();
@@ -105,9 +106,9 @@ final class ManagementAccountingReportService
     {
         $accounts = $this->accounts();
         $accountMap = collect($accounts)->keyBy('id');
-        $closing = $this->closingMovements($filters['as_of'], $filters['branch_id']);
+        $closing = $this->closingMovements($filters['as_of'], $filters['branch_ids']);
         $fiscal = $this->fiscalYear($filters['as_of']);
-        $yearRows = $this->datedMovements($fiscal['start'], $filters['as_of'], $filters['branch_id']);
+        $yearRows = $this->datedMovements($fiscal['start'], $filters['as_of'], $filters['branch_ids']);
         $earnings = $this->profitLossFromRows($accountMap, $yearRows)['net_profit'];
         $sections = ['current_assets' => [], 'non_current_assets' => [], 'current_liabilities' => [], 'non_current_liabilities' => [], 'equity' => []];
         $movementMap = $closing->keyBy('account_id');
@@ -181,10 +182,10 @@ final class ManagementAccountingReportService
         return Schema::hasTable('journal_entries') && Schema::hasColumn('journal_entries', 'branch_id');
     }
 
-    private function datedMovements(string $from, string $to, ?int $branchId): Collection
+    private function datedMovements(string $from, string $to, ?array $branchIds): Collection
     {
         [$debit, $credit] = $this->amountColumns();
-        $query = $this->postedLines($branchId)->whereDate('je.journal_date', '>=', $from)->whereDate('je.journal_date', '<=', $to);
+        $query = $this->postedLines($branchIds)->whereDate('je.journal_date', '>=', $from)->whereDate('je.journal_date', '<=', $to);
         return $query->groupBy('jl.account_id')->groupByRaw('DATE(je.journal_date)')->orderByRaw('DATE(je.journal_date)')->get([
             'jl.account_id', DB::raw('DATE(je.journal_date) as journal_date'),
             DB::raw('COALESCE(SUM(jl.'.$debit.'),0) as debit'),
@@ -192,19 +193,22 @@ final class ManagementAccountingReportService
         ]);
     }
 
-    private function closingMovements(string $asOf, ?int $branchId): Collection
+    private function closingMovements(string $asOf, ?array $branchIds): Collection
     {
         [$debit, $credit] = $this->amountColumns();
-        return $this->postedLines($branchId)->whereDate('je.journal_date', '<=', $asOf)->groupBy('jl.account_id')->get([
+        return $this->postedLines($branchIds)->whereDate('je.journal_date', '<=', $asOf)->groupBy('jl.account_id')->get([
             'jl.account_id', DB::raw('COALESCE(SUM(jl.'.$debit.'),0) as debit'), DB::raw('COALESCE(SUM(jl.'.$credit.'),0) as credit'),
         ]);
     }
 
-    private function postedLines(?int $branchId)
+    private function postedLines(?array $branchIds)
     {
         if (! Schema::hasTable('journal_entries') || ! Schema::hasTable('journal_lines')) throw new RuntimeException('Native posted journal tables are unavailable.');
         $query = DB::table('journal_lines as jl')->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')->where('je.status', 'posted');
-        if ($branchId && $this->branchSupported()) $query->where('je.branch_id', $branchId);
+        if (is_array($branchIds) && $this->branchSupported()) {
+            if ($branchIds === []) return $query->whereRaw('1 = 0');
+            $query->whereIn('je.branch_id', $branchIds);
+        }
         return $query;
     }
 
@@ -308,12 +312,12 @@ final class ManagementAccountingReportService
         return ['name' => $name, 'revenue' => round($revenue, 2), 'direct_cost' => round($cost, 2), 'gross_profit' => $profit, 'margin_percent' => abs($revenue) > 0.005 ? round($profit / $revenue * 100, 2) : null];
     }
 
-    private function partyBalances(string $type, array $accountIds, string $asOf, ?int $branchId): array
+    private function partyBalances(string $type, array $accountIds, string $asOf, ?array $branchIds): array
     {
         if ($accountIds === [] || ! Schema::hasColumns('journal_lines', ['party_type', 'party_id'])) return [];
         [$debit, $credit] = $this->amountColumns();
         $nativeType = $type === 'vendor' ? 'vendor' : 'customer';
-        $rows = $this->postedLines($branchId)->whereDate('je.journal_date', '<=', $asOf)->whereIn('jl.account_id', $accountIds)->where('jl.party_type', $nativeType)->whereNotNull('jl.party_id')->groupBy('jl.party_id')->get([
+        $rows = $this->postedLines($branchIds)->whereDate('je.journal_date', '<=', $asOf)->whereIn('jl.account_id', $accountIds)->where('jl.party_type', $nativeType)->whereNotNull('jl.party_id')->groupBy('jl.party_id')->get([
             'jl.party_id', DB::raw('COALESCE(SUM(jl.'.$debit.'),0) as debit'), DB::raw('COALESCE(SUM(jl.'.$credit.'),0) as credit'),
         ]);
         $names = $this->partyMap($type);

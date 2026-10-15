@@ -3,6 +3,7 @@
 namespace App\Services\Accounting;
 
 use App\Services\Operations\UnifiedGroupPackageDataSource;
+use App\Services\Administration\ErpBranchAccessAuthority;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ final class PartyStatementService
         private readonly UnifiedGroupPackageDataSource $bookingData,
         private readonly PartyStatementEnrichmentResolver $enrichment,
         private readonly PartyStatementSourceLinkResolver $sourceLinks,
+        private readonly ErpBranchAccessAuthority $branchAuthority,
     ) {}
 
     public function filters(Request $request): array
@@ -31,7 +33,8 @@ final class PartyStatementService
             ? $this->date($rawFrom)
             : ($partyId > 0 ? $this->earliestPartyMovement($type, $partyId, $to) : $this->financialYearStart($to));
         if ($from > $to) [$from, $to] = [$to, $from];
-        return compact('type', 'from', 'to', 'parties', 'partyId');
+        $branchIds = $this->branchAuthority->allowedBranchIds($request->user());
+        return compact('type', 'from', 'to', 'parties', 'partyId', 'branchIds');
     }
 
     public function statement(array $filters): array
@@ -143,9 +146,13 @@ final class PartyStatementService
         $select[] = $ref ? 'je.'.$ref.' as reference' : DB::raw("'' as reference");
         $select[] = $type ? 'je.'.$type.' as source_type' : DB::raw("'' as source_type");
         $select[] = $sourceId ? 'je.'.$sourceId.' as source_id' : DB::raw('NULL as source_id');
-        $rows = DB::table('journal_lines as jl')->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')
-            ->where('je.status', 'posted')->where('jl.party_type', $filters['type'])->where('jl.party_id', $filters['partyId'])
-            ->whereIn('jl.account_id', array_keys($scope))->orderBy('je.journal_date')->orderBy('je.id')->get($select);
+        $query = DB::table('journal_lines as jl')->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')
+            ->where('je.status', 'posted')->where('jl.party_type', $filters['type'])->where('jl.party_id', $filters['partyId']);
+        if (is_array($filters['branchIds'] ?? null)) {
+            if ($filters['branchIds'] === []) return [];
+            $query->whereIn('je.branch_id', $filters['branchIds']);
+        }
+        $rows = $query->whereIn('jl.account_id', array_keys($scope))->orderBy('je.journal_date')->orderBy('je.id')->get($select);
         $grouped = [];
         foreach ($rows as $row) {
             $key = (string) $row->journal_id;

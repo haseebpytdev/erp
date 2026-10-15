@@ -741,19 +741,20 @@ class CashVoucherController extends Controller
 
     private function replaceAllocations(int $voucherId, array $allocations, ?string $targetType, string $currencyCode): void
     {
-        DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->delete();
         if ($targetType === null || $allocations === []) {
+            DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->delete();
             return;
         }
+        $voucher = DB::table('cash_vouchers')->where('id', $voucherId)->first();
+        if (! $voucher?->party_id) abort(422, 'A canonical voucher party is required before allocating documents.');
+        $definition = $this->service->voucherDefinition((string) $voucher->voucher_type);
         $rows = [];
         $now = now();
         foreach ($allocations as $index => $allocation) {
-            $voucher = DB::table('cash_vouchers')->where('id', $voucherId)->first();
-            if (! $voucher?->party_id) abort(422, 'A canonical voucher party is required before allocating documents.');
-            $definition = $this->service->voucherDefinition((string) $voucher->voucher_type);
             $actualTargetType = (string) ($allocation['target_type'] ?? $targetType);
             $allowed = $voucher->voucher_type === 'receipt' ? ['sales_invoice','party_opening_balance'] : ($voucher->voucher_type === 'payment' ? ['supplier_costing','party_opening_payable'] : ($voucher->voucher_type === 'customer_reimbursement' ? ['party_opening_customer_payable'] : []));
             if ($allowed !== [] && ! in_array($actualTargetType, $allowed, true)) abort(422, 'Allocation target type is not allowed for this voucher.');
+            $this->service->assertAllocationTargetParity($voucher, $actualTargetType, (int) $allocation['target_id']);
             $document = $this->service->documentSnapshot($actualTargetType, (int) $allocation['target_id'], (int) $voucher->party_id, $definition['party_type']);
             if (! $document['party_id'] || (int) $voucher->party_id !== (int) $document['party_id']) {
                 abort(422, 'Selected document party does not match the voucher party.');
@@ -781,6 +782,7 @@ class CashVoucherController extends Controller
                 'updated_at' => $now,
             ];
         }
+        DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->delete();
         DB::table('cash_voucher_allocations')->insert($rows);
     }
 

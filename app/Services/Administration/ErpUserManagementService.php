@@ -355,6 +355,7 @@ class ErpUserManagementService
 
         $currentArray = (array) $current;
         $updates = [];
+        $this->validateBranchAssignments($currentArray, (int) ($input['primary_branch_id'] ?? 0), array_map('intval', (array) ($input['branch_ids'] ?? [])));
 
         $username = trim((string) ($input['username'] ?? ''));
         $email = trim((string) ($input['login_email'] ?? ''));
@@ -785,6 +786,26 @@ class ErpUserManagementService
                 $row['updated_at'] = now();
             }
             DB::table($link['table'])->insert($row);
+        }
+    }
+
+    private function validateBranchAssignments(array $user, int $primaryBranchId, array $branchIds): void
+    {
+        $companyId = (int) ($user['company_id'] ?? 0);
+        if ($companyId <= 0 || ! $this->schema()['branches_table']) return;
+        $schema = $this->schema();
+        $columns = Schema::getColumnListing($schema['branches_table']);
+        if (! in_array('company_id', $columns, true)) return;
+        $ids = array_values(array_unique(array_filter(array_merge($branchIds, [$primaryBranchId]), fn ($id) => $id > 0)));
+        if ($ids === []) return;
+        $valid = DB::table($schema['branches_table'])
+            ->whereIn($schema['branch_id_column'], $ids)
+            ->where('company_id', $companyId)
+            ->pluck($schema['branch_id_column'])
+            ->map(fn ($value): int => (int) $value)
+            ->all();
+        if (count($valid) !== count($ids)) {
+            throw new RuntimeException('Branch assignments must belong to the target user company.');
         }
     }
 

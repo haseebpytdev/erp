@@ -2,6 +2,7 @@
 
 namespace App\Services\Accounting;
 
+use App\Services\Administration\ErpBranchAccessAuthority;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -9,7 +10,8 @@ use RuntimeException;
 /** Controlled opening-balance authority for four approved balance domains. */
 final class PartyBalanceLifecycleService
 {
-    public function __construct(private readonly AccountingPartyRoleResolver $roles, private readonly ChartOfAccountsWorkspaceService $chart, private readonly CashVoucherNativeJournalBridge $native) {}
+    public function __construct(private readonly AccountingPartyRoleResolver $roles, private readonly ChartOfAccountsWorkspaceService $chart, private readonly CashVoucherNativeJournalBridge $native, private readonly ErpBranchAccessAuthority $branches) {}
+    public function scopeQuery($query, mixed $user): void { $allowed=$this->branches->allowedBranchIds($user); if($allowed===null)return; if($allowed===[]){$query->whereRaw('1 = 0');return;} $query->whereIn('branch_id',$allowed); }
 
     public function parties(string $type): array { return $this->roles->options($type === 'vendor' ? 'supplier' : 'customer'); }
     public function assertBranchForUser(int $branchId, mixed $user): void { $this->assertBranch($branchId); if ($this->native->authorizedBranchId($user, $branchId) !== $branchId) throw new RuntimeException('The selected branch is outside your authorized branch scope.'); }
