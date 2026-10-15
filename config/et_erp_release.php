@@ -23,10 +23,12 @@ return [
     // Historical C88 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C88', 'corrective_build' => 'C88', 'corrective_name' => 'Air Commercial Persistence Integrity'
     // Historical C88.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C88.1', 'corrective_build' => 'C88.1', 'corrective_name' => 'Travel Voucher IATA Master Refresh'
     // Historical C89.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.1', 'corrective_build' => 'C89.1', 'corrective_name' => 'RBAC Security Foundation'
-    'asset_version' => 'ERP-11.3.378-C89.2.2A',
+    // Historical C89.2.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.2.1', 'corrective_build' => 'C89.2.1', 'corrective_name' => 'Branch Authority — Bookings & Travel Reports'
+    // Historical C89.2.2A assertions retain prior alias: C89.2.2A
+    'asset_version' => 'ERP-11.3.378-C89.2.2B1',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C89.2.2A',
-    'corrective_name' => 'Commercial Branch Authority',
+    'corrective_build' => 'C89.2.2B1',
+    'corrective_name' => 'Cash Voucher Branch Ownership',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];

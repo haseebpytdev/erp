@@ -3,6 +3,7 @@
 namespace App\Services\Accounting;
 
 use App\Services\Administration\ErpPermissionMatrixService;
+use App\Services\Administration\ErpBranchAccessAuthority;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -15,7 +16,104 @@ class CashVoucherService
         private readonly CashVoucherNativeJournalBridge $nativeJournal,
         private readonly AccountingPartyRoleResolver $partyRoles,
         private readonly PartyAdvanceBalanceService $partyAdvanceBalances,
+        private readonly ErpBranchAccessAuthority $branches,
     ) {
+    }
+
+    /** Canonical persisted ownership for every newly-created voucher. */
+    public function resolveVoucherOwnership(mixed $user, ?int $bookingId, mixed $branch = null, mixed $company = null): array
+    {
+        $requestedBranch = $branch === null || trim((string) $branch) === '' ? null : (int) $branch;
+        $requestedCompany = $company === null || trim((string) $company) === '' ? null : (int) $company;
+        $booking = $bookingId ? $this->bookingOwnership($bookingId) : null;
+        if ($booking) {
+            $branchId = (int) $booking['branch_id'];
+            $companyId = (int) $booking['company_id'];
+            if (($requestedBranch && $requestedBranch !== $branchId) || ($requestedCompany && $requestedCompany !== $companyId)) {
+                throw new RuntimeException('Voucher ownership must match the selected booking.');
+            }
+        } else {
+            $branchId = $requestedBranch ?: $this->branches->primaryBranchId($user);
+            if (! $branchId) {
+                $allowed = $this->branches->allowedBranchIds($user);
+                if (is_array($allowed) && count($allowed) === 1) $branchId = (int) $allowed[0];
+            }
+            if (! $branchId) throw new RuntimeException('A branch is required for standalone cash vouchers.');
+            $companyId = $requestedCompany ?: $this->companyForBranch($branchId);
+            if (! $companyId) throw new RuntimeException('The selected branch has no company authority.');
+        }
+        $this->branches->assertMayAccessBranch($user, $branchId);
+        $actualCompany = $this->companyForBranch($branchId);
+        if ($actualCompany && $actualCompany !== $companyId) throw new RuntimeException('Branch and company ownership do not match.');
+        return ['company_id' => $companyId, 'branch_id' => $branchId];
+    }
+
+    public function assertVoucherAccess(object $voucher, mixed $user, string $action = 'view'): void
+    {
+        $branch = (int) ($voucher->branch_id ?? 0);
+        $company = (int) ($voucher->company_id ?? 0);
+        if ($branch < 1 || $company < 1) {
+            if (! $this->permissions->isSuperAdmin($user)) throw new RuntimeException('Legacy cash vouchers without branch ownership are not available to normal users.');
+            if ($action !== 'view') throw new RuntimeException('Legacy cash vouchers are read-only until ownership is backfilled.');
+            return;
+        }
+        $actualCompany = $this->companyForBranch($branch);
+        if ($actualCompany && $actualCompany !== $company) throw new RuntimeException('Cash voucher ownership is inconsistent.');
+        $this->branches->assertMayAccessBranch($user, $branch);
+    }
+
+    public function branchOptions(mixed $user): array
+    {
+        $allowed = $this->branches->allowedBranchIds($user);
+        foreach (['branches','branch_master','branch_masters','offices','office_master','office_masters'] as $table) {
+            if (! Schema::hasTable($table)) continue;
+            $columns = Schema::getColumnListing($table);
+            $id = collect(['id','branch_id','office_id'])->first(fn ($c) => in_array($c, $columns, true));
+            if (! $id) continue;
+            $name = collect(['name','branch_name','title','code'])->first(fn ($c) => in_array($c, $columns, true));
+            $query = DB::table($table)->select([$id.' as id', $name ? $name.' as name' : $id.' as name'])->orderBy($id);
+            if (is_array($allowed)) $query->whereIn($id, $allowed);
+            return $query->get()->map(fn ($r) => ['id' => (int) $r->id, 'name' => (string) $r->name])->all();
+        }
+        return [];
+    }
+
+    public function scopeVoucherQuery($query, mixed $user): void
+    {
+        $allowed = $this->branches->allowedBranchIds($user);
+        if ($allowed === null) return;
+        if ($allowed === []) { $query->whereRaw('1 = 0'); return; }
+        $query->whereNotNull('company_id')->whereNotNull('branch_id')->whereIn('branch_id', $allowed);
+    }
+
+    private function bookingOwnership(int $bookingId): ?array
+    {
+        foreach (['bookings','travel_bookings','booking_group_package_unified','general_bookings'] as $table) {
+            if (! Schema::hasTable($table)) continue;
+            $columns = Schema::getColumnListing($table);
+            $branch = collect(['branch_id','office_id'])->first(fn ($c) => in_array($c, $columns, true));
+            $company = in_array('company_id', $columns, true) ? 'company_id' : null;
+            if (! $branch || ! $company) continue;
+            $row = DB::table($table)->where('id', $bookingId)->first();
+            if (! $row) continue;
+            if ((int) ($row->{$branch} ?? 0) < 1 || (int) ($row->{$company} ?? 0) < 1) throw new RuntimeException('Selected booking has incomplete branch ownership.');
+            return ['branch_id' => (int) $row->{$branch}, 'company_id' => (int) $row->{$company}];
+        }
+        throw new RuntimeException('Selected booking could not be resolved for branch ownership.');
+    }
+
+    private function companyForBranch(int $branchId): ?int
+    {
+        foreach (['branches','branch_master','branch_masters','offices','office_master','office_masters'] as $table) {
+            if (! Schema::hasTable($table)) continue;
+            $columns = Schema::getColumnListing($table);
+            $id = collect(['id','branch_id','office_id'])->first(fn ($c) => in_array($c, $columns, true));
+            if ($id && in_array('company_id', $columns, true)) {
+                $value = (int) (DB::table($table)->where($id, $branchId)->value('company_id') ?? 0);
+                if ($value > 0) return $value;
+            }
+        }
+        return null;
     }
 
     public function nextNumber(string $type): string

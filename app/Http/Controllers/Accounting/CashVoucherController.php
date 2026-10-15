@@ -38,6 +38,7 @@ class CashVoucherController extends Controller
             ->whereIn('voucher_type', $allowedTypes)
             ->orderByDesc('voucher_date')
             ->orderByDesc('id');
+        $this->service->scopeVoucherQuery($query, $request->user());
 
         if ($request->filled('mode')) {
             $mode = strtolower(trim((string) $request->string('mode')));
@@ -110,10 +111,12 @@ class CashVoucherController extends Controller
             });
         }
 
-        $summary = DB::table('cash_vouchers')
+        $summaryQuery = DB::table('cash_vouchers')
             ->whereIn('voucher_type', $allowedTypes)
             ->where('status', '!=', 'reversed')
-            ->selectRaw("
+            ;
+        $this->service->scopeVoucherQuery($summaryQuery, $request->user());
+        $summary = $summaryQuery->selectRaw("
                 COALESCE(SUM(CASE WHEN voucher_type = 'receipt' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS receipts,
                 COALESCE(SUM(CASE WHEN voucher_type IN ('payment','customer_reimbursement') THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS payments,
                 COALESCE(SUM(CASE WHEN voucher_type = 'expense' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS expenses,
@@ -124,8 +127,7 @@ class CashVoucherController extends Controller
                 COALESCE(SUM(allocated_amount * COALESCE(exchange_rate, 1)), 0) AS allocated,
                 COALESCE(SUM(unallocated_amount * COALESCE(exchange_rate, 1)), 0) AS unallocated,
                 COALESCE(SUM(amount * COALESCE(exchange_rate, 1)), 0) AS total_value
-            ")
-            ->first();
+            ")->first();
 
         $adjustmentPartyTypes = array_values(array_unique(array_map(
             fn (string $type): string => $this->service->voucherDefinition($type)['party_type'],
@@ -218,8 +220,18 @@ class CashVoucherController extends Controller
             ? []
             : $this->validateAllocations($request, $definition['target_type'], $type);
         $proof = $this->storeProof($request);
+        try {
+            $ownership = $this->service->resolveVoucherOwnership(
+                $request->user(),
+                ! empty($data['booking_id']) ? (int) $data['booking_id'] : null,
+                $data['branch_id'] ?? null,
+                $data['company_id'] ?? null
+            );
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['branch_id' => $e->getMessage()]);
+        }
 
-        $id = DB::transaction(function () use ($request, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof): int {
+        $id = DB::transaction(function () use ($request, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof, $ownership): int {
             $now = now();
             $hasNoParty = in_array($data['voucher_type'], ['expense', 'contra'], true);
             $partyId = $hasNoParty
@@ -236,6 +248,8 @@ class CashVoucherController extends Controller
                     ? null
                     : $this->service->resolvePartyName($definition['party_type'], $partyId, $data['party_name'] ?? null),
                 'booking_id' => $data['voucher_type'] === 'contra' ? null : ($data['booking_id'] ?? null),
+                'company_id' => $ownership['company_id'],
+                'branch_id' => $ownership['branch_id'],
                 'voucher_date' => $data['voucher_date'],
                 'value_date' => $data['value_date'] ?? null,
                 'currency_code' => strtoupper((string) $data['currency_code']),
@@ -296,6 +310,7 @@ class CashVoucherController extends Controller
     public function show(Request $request, int $voucher)
     {
         $row = $this->find($voucher);
+        try { $this->service->assertVoucherAccess($row, $request->user(), 'view'); } catch (RuntimeException $e) { abort(404, $e->getMessage()); }
         abort_unless($this->service->canUseType($request->user(), (string) $row->voucher_type, 'view'), 403);
 
         $expenseLines = DB::table('cash_voucher_expense_lines')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get();
@@ -333,6 +348,7 @@ class CashVoucherController extends Controller
     public function edit(Request $request, int $voucher)
     {
         $row = $this->find($voucher);
+        try { $this->service->assertVoucherAccess($row, $request->user(), 'update'); } catch (RuntimeException $e) { abort(404, $e->getMessage()); }
         abort_unless($row->status === 'draft', 409, 'Only Draft cash vouchers can be edited.');
         abort_unless($this->service->canUseType($request->user(), (string) $row->voucher_type, 'update'), 403);
 
@@ -351,6 +367,7 @@ class CashVoucherController extends Controller
     public function update(Request $request, int $voucher)
     {
         $row = $this->find($voucher);
+        try { $this->service->assertVoucherAccess($row, $request->user(), 'update'); } catch (RuntimeException $e) { abort(404, $e->getMessage()); }
         abort_unless($row->status === 'draft', 409, 'Only Draft cash vouchers can be edited.');
         abort_unless($this->service->canUseType($request->user(), (string) $row->voucher_type, 'update'), 403);
         $data = $this->validateHeader($request, (string) $row->voucher_type);
@@ -365,8 +382,11 @@ class CashVoucherController extends Controller
             ? []
             : $this->validateAllocations($request, $definition['target_type'], (string) $row->voucher_type);
         $proof = $this->storeProof($request);
+        try {
+            $ownership = $this->service->resolveVoucherOwnership($request->user(), ! empty($data['booking_id']) ? (int) $data['booking_id'] : null, $data['branch_id'] ?? $row->branch_id ?? null, $data['company_id'] ?? $row->company_id ?? null);
+        } catch (RuntimeException $e) { throw ValidationException::withMessages(['branch_id' => $e->getMessage()]); }
 
-        DB::transaction(function () use ($request, $voucher, $row, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof): void {
+        DB::transaction(function () use ($request, $voucher, $row, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof, $ownership): void {
             $hasNoParty = in_array((string) $row->voucher_type, ['expense', 'contra'], true);
             $partyId = $hasNoParty
                 ? null
@@ -378,6 +398,8 @@ class CashVoucherController extends Controller
                     ? null
                     : $this->service->resolvePartyName($definition['party_type'], $partyId, $data['party_name'] ?? null),
                 'booking_id' => (string) $row->voucher_type === 'contra' ? null : ($data['booking_id'] ?? null),
+                'company_id' => $ownership['company_id'],
+                'branch_id' => $ownership['branch_id'],
                 'voucher_date' => $data['voucher_date'],
                 'value_date' => $data['value_date'] ?? null,
                 'currency_code' => strtoupper((string) $data['currency_code']),
@@ -436,6 +458,7 @@ class CashVoucherController extends Controller
     public function workflow(Request $request, int $voucher, string $action)
     {
         abort_unless(in_array($action, ['submit', 'approve', 'post'], true), 404);
+        try { $this->service->assertVoucherAccess($this->find($voucher), $request->user(), $action); } catch (RuntimeException $e) { abort(404, $e->getMessage()); }
         try {
             $this->service->transition($voucher, $action, $request->user());
         } catch (\Throwable $e) {
@@ -446,6 +469,7 @@ class CashVoucherController extends Controller
 
     public function reverse(Request $request, int $voucher)
     {
+        try { $this->service->assertVoucherAccess($this->find($voucher), $request->user(), 'reverse'); } catch (RuntimeException $e) { abort(404, $e->getMessage()); }
         $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
         try {
             $this->service->reverseVoucher($voucher, $request->user(), (string) $data['reason']);
@@ -458,6 +482,7 @@ class CashVoucherController extends Controller
     public function printVoucher(Request $request, int $voucher)
     {
         $row = $this->find($voucher);
+        try { $this->service->assertVoucherAccess($row, $request->user(), 'view'); } catch (RuntimeException $e) { abort(404, $e->getMessage()); }
         abort_unless(
             $this->service->canUseType($request->user(), (string) $row->voucher_type, 'view'),
             403
@@ -503,6 +528,7 @@ class CashVoucherController extends Controller
     public function proof(Request $request, int $voucher)
     {
         $row = $this->find($voucher);
+        try { $this->service->assertVoucherAccess($row, $request->user(), 'view'); } catch (RuntimeException $e) { abort(404, $e->getMessage()); }
         abort_unless($this->service->canUseType($request->user(), (string) $row->voucher_type, 'view'), 403);
         abort_unless($row->payment_proof_path && Storage::disk('local')->exists($row->payment_proof_path), 404);
         return Storage::disk('local')->download($row->payment_proof_path, $row->payment_proof_original_name ?: 'payment-proof');
@@ -541,6 +567,7 @@ class CashVoucherController extends Controller
                 : $this->service->partyOptions($definition['party_type']),
             'bookings' => $bookings,
             'cashBankAccounts' => $this->service->cashBankAccounts(),
+            'branchOptions' => $this->service->branchOptions(request()->user()),
             'paymentMethods' => $type === 'contra'
                 ? $this->service->transferMethods()
                 : $this->service->paymentMethods(),
@@ -560,6 +587,8 @@ class CashVoucherController extends Controller
             'party_id' => ['nullable', 'integer', 'min:1'],
             'party_name' => ['nullable', 'string', 'max:255'],
             'booking_id' => ['nullable', 'integer', 'min:1'],
+            'company_id' => ['nullable', 'integer', 'min:1'],
+            'branch_id' => ['nullable', 'integer', 'min:1'],
             'voucher_date' => ['required', 'date'],
             'value_date' => ['nullable', 'date'],
             'currency_code' => ['required', 'string', 'max:10'],

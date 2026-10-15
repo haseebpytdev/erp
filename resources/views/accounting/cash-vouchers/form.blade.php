@@ -70,6 +70,18 @@
     @csrf
     @if($row)@method('PUT')@endif
     <input type="hidden" name="voucher_type" value="{{ $type }}">
+    @if(!empty($branchOptions))
+      <div class="cvf27-field" style="max-width:360px;margin-bottom:12px">
+        <label>Branch *</label>
+        <select name="branch_id" required>
+          <option value="">Select branch</option>
+          @foreach($branchOptions as $branch)
+            <option value="{{ $branch['id'] }}" @selected((string)old('branch_id',$row->branch_id ?? '')===(string)$branch['id'])>{{ $branch['name'] }}</option>
+          @endforeach
+        </select>
+      </div>
+    @endif
+    @if($row && !empty($row->company_id))<input type="hidden" name="company_id" value="{{ $row->company_id }}">@endif
 
     <section class="cvf27-card">
       <div class="cvf27-card-head">

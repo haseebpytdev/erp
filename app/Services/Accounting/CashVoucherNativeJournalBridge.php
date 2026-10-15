@@ -512,6 +512,15 @@ final class CashVoucherNativeJournalBridge
 
     private function resolveContext(object $voucher, mixed $user): array
     {
+        if (! empty($voucher->branch_id) || ! empty($voucher->company_id)) {
+            if (empty($voucher->branch_id) || empty($voucher->company_id)) {
+                throw new RuntimeException('Native journal posting stopped: persisted voucher ownership is incomplete.');
+            }
+            $resolvedCompany = $this->companyFromBranch((int) $voucher->branch_id);
+            if ($resolvedCompany && (int) $resolvedCompany !== (int) $voucher->company_id) {
+                throw new RuntimeException('Native journal posting stopped: persisted voucher branch/company ownership is inconsistent.');
+            }
+        }
         $booking = null;
         if (! empty($voucher->booking_id) && Schema::hasTable('bookings')) {
             try {
