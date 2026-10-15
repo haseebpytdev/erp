@@ -1,0 +1,48 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const read = p => fs.readFileSync(p, 'utf8').replaceAll('\r\n', '\n');
+const matrix = read('app/Services/Administration/ErpPermissionMatrixService.php');
+const service = read('app/Services/Administration/ErpUserPermissionOverrideService.php');
+const migrationPath = 'database/migrations/2026_10_16_120000_create_user_permission_overrides_table.php';
+const migration = read(migrationPath);
+const release = read('config/et_erp_release.php');
+const routes = read('routes/erp103179.php');
+let total = 0; let pass = 0;
+const ok = (name, value) => { total++; if (value) pass++; else console.log(`FAIL ${name}`); };
+
+ok('migration exists', fs.existsSync(migrationPath));
+ok('single current-state table', migration.includes("Schema::create('user_permission_overrides'"));
+ok('effect supports ALLOW and DENY', service.includes("['ALLOW', 'DENY']") && migration.includes("$table->string('effect'"));
+ok('one current row per user permission', migration.includes("['user_id', 'permission_id']"));
+ok('no active or deleted columns', !/active|deleted_at/.test(migration));
+ok('no migration backfill', !/DB::table|insert\(|update\(|delete\(/.test(migration));
+ok('permission FK intentionally absent', !migration.includes("on('permissions')") && !migration.includes("on('permission_masters')"));
+ok('user and actor FKs', migration.includes('user_permission_overrides_user_fk') && migration.includes('created_by_fk') && migration.includes('updated_by_fk'));
+ok('central override application', matrix.includes('applyPermissionOverrides') && matrix.includes('effectivePermissions'));
+ok('deny removes inherited allow', matrix.includes("if ($effect === 'DENY')") && matrix.includes('unset($byId[$permissionId])'));
+ok('allow adds catalog permission', matrix.includes("$effect === 'ALLOW'") && matrix.includes('allPermissions()'));
+ok('legacy direct pivot remains read-only', !service.includes('syncPermissions(') && !service.includes('permission_user'));
+ok('table absent preserves legacy', matrix.includes("! Schema::hasTable('user_permission_overrides')"));
+ok('query failure fails closed', matrix.includes('return $this->isSuperAdmin($user) ? $inherited : [];'));
+ok('diagnostic read model', matrix.includes('permissionOverrideDetails') && matrix.includes('inherited_allowed') && matrix.includes('explicit_deny'));
+ok('focused override service', service.includes('class ErpUserPermissionOverrideService'));
+ok('atomic override and audit', service.includes('DB::transaction') && service.includes('writeAudit'));
+ok('row lock prevents lost updates', service.includes('lockForUpdate'));
+ok('audit events', service.includes("'permission_override.removed'") && service.includes("'permission_override.changed'") && service.includes("'permission_override.'"));
+ok('audit reuses audit_logs', service.includes("Schema::hasTable('audit_logs')") && service.includes("DB::table('audit_logs')"));
+ok('self escalation denied', service.includes('Users cannot edit their own permission overrides'));
+ok('super admin target denied', service.includes('Super Admin permission overrides are not editable'));
+ok('cross company denied', service.includes('Cross-company permission overrides are not permitted'));
+ok('unheld delegation denied', service.includes('Managers may not grant permissions they do not possess'));
+ok('unknown permission denied', service.includes('Unknown permission override target'));
+ok('inherit removes row', service.includes('query->delete()') && service.includes('permission_override.removed'));
+ok('no staff access routes', !routes.includes('user_permission_overrides') && !routes.includes('permission-overrides'));
+ok('metadata C89.3', release.includes("'asset_version' => 'ERP-11.3.378-C89.3'") && release.includes("'corrective_build' => 'C89.3'"));
+ok('no role model changes', !service.includes('syncRoles(') && !migration.includes('roles'));
+ok('no branch authority changes', !service.includes('ErpBranchAccessAuthority'));
+
+console.log(`C89_3_ASSERTIONS=${total}`);
+console.log(`C89_3_PASS=${pass}`);
+console.log(`C89_3_FAIL=${total - pass}`);
+process.exitCode = pass === total ? 0 : 1;

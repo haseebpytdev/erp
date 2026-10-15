@@ -150,6 +150,19 @@ class ErpPermissionMatrixService
             return [];
         }
 
+        $inherited = $this->inheritedPermissions($user);
+
+        try {
+            return $this->applyPermissionOverrides($user, $inherited);
+        } catch (Throwable) {
+            /* A deployed table/query failure must not silently grant access. */
+            return $this->isSuperAdmin($user) ? $inherited : [];
+        }
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    private function inheritedPermissions(mixed $user): array
+    {
         /* Prefer the native authorization package if the User model exposes it. */
         try {
             if (method_exists($user, 'getAllPermissions')) {
@@ -244,6 +257,86 @@ class ErpPermissionMatrixService
             $all,
             static fn (array $permission): bool => in_array((int) $permission['id'], $allowedIds, true)
         ));
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    private function applyPermissionOverrides(mixed $user, array $inherited): array
+    {
+        if (! Schema::hasTable('user_permission_overrides')) {
+            return $inherited;
+        }
+
+        $userId = $this->userId($user);
+        if ($userId <= 0) {
+            return $inherited;
+        }
+
+        $rows = DB::table('user_permission_overrides')
+            ->where('user_id', $userId)
+            ->get(['permission_id', 'effect']);
+
+        $byId = [];
+        foreach ($inherited as $permission) {
+            $byId[(int) ($permission['id'] ?? 0)] = $permission;
+        }
+
+        foreach ($rows as $row) {
+            $permissionId = (int) ($row->permission_id ?? 0);
+            $effect = strtoupper(trim((string) ($row->effect ?? '')));
+            if ($permissionId <= 0) {
+                continue;
+            }
+            if ($effect === 'DENY') {
+                unset($byId[$permissionId]);
+            } elseif ($effect === 'ALLOW') {
+                if (! isset($byId[$permissionId])) {
+                    foreach ($this->allPermissions() as $permission) {
+                        if ((int) ($permission['id'] ?? 0) === $permissionId) {
+                            $byId[$permissionId] = $permission;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return array_values($byId);
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    public function permissionOverrideDetails(mixed $user): array
+    {
+        if (! $user || ! Schema::hasTable('user_permission_overrides')) {
+            return [];
+        }
+
+        $userId = $this->userId($user);
+        if ($userId <= 0) {
+            return [];
+        }
+
+        $inherited = [];
+        foreach ($this->inheritedPermissions($user) as $permission) {
+            $inherited[(int) ($permission['id'] ?? 0)] = $permission;
+        }
+
+        $overrides = DB::table('user_permission_overrides')
+            ->where('user_id', $userId)
+            ->get(['permission_id', 'effect', 'reason']);
+        $details = [];
+        foreach ($this->allPermissions() as $permission) {
+            $id = (int) ($permission['id'] ?? 0);
+            $override = $overrides->firstWhere('permission_id', $id);
+            $effect = $override ? strtoupper((string) $override->effect) : null;
+            $details[] = $permission + [
+                'inherited_allowed' => isset($inherited[$id]),
+                'explicit_allow' => $effect === 'ALLOW',
+                'explicit_deny' => $effect === 'DENY',
+                'effective_allowed' => in_array($id, array_map('intval', array_keys($this->applyPermissionOverrides($user, array_values($inherited)))), true),
+                'override_reason' => $override?->reason,
+            ];
+        }
+        return $details;
     }
 
     public function isSuperAdmin(mixed $user): bool
