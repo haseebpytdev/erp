@@ -48,3 +48,32 @@
         .mobile-accounts-page input[type=file] { max-width: 100%; }
     }
 </style>
+<script>
+    (() => {
+        const normalize = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        const resolveBackToErp = () => {
+            const target = document.querySelector('[data-mobile-back-to-erp]');
+            if (!target) return;
+            const candidates = Array.from(document.querySelectorAll(
+                'aside a, nav a, [class*="sidebar"] a, [class*="side-nav"] a, [class*="navbar-vertical"] a'
+            ));
+            const dashboard = candidates.find(anchor =>
+                normalize(anchor.textContent) === 'dashboard'
+                && anchor.href
+                && !anchor.href.endsWith('#')
+            );
+            if (!dashboard) {
+                target.removeAttribute('href');
+                target.setAttribute('aria-disabled', 'true');
+                return;
+            }
+            target.href = dashboard.href;
+            target.dataset.mobileBackToErpResolved = 'true';
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', resolveBackToErp, { once: true });
+        } else {
+            resolveBackToErp();
+        }
+    })();
+</script>

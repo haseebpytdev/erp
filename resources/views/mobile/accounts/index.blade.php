@@ -3,7 +3,7 @@
 @section($layoutMeta['content_section'] ?? 'content')
 @include('mobile.accounts._responsive')
 <main class="mobile-accounts-page">
-    <div class="mobile-brand"><span>Easy Ticket ERP</span><a href="{{ url('/dashboard') }}">← Back to ERP</a></div>
+    <div class="mobile-brand"><span>Easy Ticket ERP</span><a href="#" data-mobile-back-to-erp>← Back to ERP</a></div>
     <h1 class="mobile-title">Accounts Quick Posting</h1>
     <p class="mobile-sub">Post payments, receive money and manage advances quickly.</p>
     <div class="mobile-grid">
