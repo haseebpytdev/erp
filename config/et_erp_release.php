@@ -41,10 +41,11 @@ return [
     // Historical C89.2.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.2.1', 'corrective_build' => 'C89.2.1', 'corrective_name' => 'Branch Authority — Bookings & Travel Reports'
     // Historical C89.4.6.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.4.6.1', 'corrective_build' => 'C89.4.6.1', 'corrective_name' => 'Administration Hub Fail-Safe Completion'
     // Historical C89.4.6.2 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.4.6.2', 'corrective_build' => 'C89.4.6.2', 'corrective_name' => 'Administration Hub Production Markup Compatibility'
-    'asset_version' => 'ERP-11.3.378-C89.4.6.3',
+    // Historical C89.4.6.3 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.4.6.3', 'corrective_build' => 'C89.4.6.3', 'corrective_name' => 'Native Administration View Authority'
+    'asset_version' => 'ERP-11.3.378-C89.4.6.4',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C89.4.6.3',
-    'corrective_name' => 'Native Administration View Authority',
+    'corrective_build' => 'C89.4.6.4',
+    'corrective_name' => 'Administration Native Page Correction',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];
