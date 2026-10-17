@@ -306,7 +306,7 @@ class ErpPermissionMatrixService
     /** @return array<int,array<string,mixed>> */
     public function permissionOverrideDetails(mixed $user): array
     {
-        if (! $user || ! Schema::hasTable('user_permission_overrides')) {
+        if (! $user) {
             return [];
         }
 
@@ -318,6 +318,23 @@ class ErpPermissionMatrixService
         $inherited = [];
         foreach ($this->inheritedPermissions($user) as $permission) {
             $inherited[(int) ($permission['id'] ?? 0)] = $permission;
+        }
+
+        /* The override table stores exceptions only. Its absence must not
+         * hide the native catalog or the inherited role/direct grants. */
+        if (! Schema::hasTable('user_permission_overrides')) {
+            return array_map(static function (array $permission) use ($inherited): array {
+                $id = (int) ($permission['id'] ?? 0);
+                $allowed = isset($inherited[$id]);
+
+                return $permission + [
+                    'inherited_allowed' => $allowed,
+                    'explicit_allow' => false,
+                    'explicit_deny' => false,
+                    'effective_allowed' => $allowed,
+                    'override_reason' => null,
+                ];
+            }, $this->allPermissions());
         }
 
         $overrides = DB::table('user_permission_overrides')
