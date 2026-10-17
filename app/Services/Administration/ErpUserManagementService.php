@@ -500,7 +500,7 @@ class ErpUserManagementService
         $userColumns = $schema['user_columns'];
         $companyColumn = collect(['company_id', 'company', 'organization_id'])
             ->first(fn (string $column): bool => in_array($column, $userColumns, true));
-        $companyId = $companyColumn ? ($currentArray[$companyColumn] ?? null) : null;
+        $companyId = $this->resolveTargetCompanyId($id, $currentArray, $companyColumn);
         $branchTable = $schema['branches_table'];
         if ($branchTable && $schema['branch_id_column']) {
             $ids = array_values(array_unique(array_filter(array_merge($branches, [$primary]), fn (int $value): bool => $value > 0)));
@@ -605,6 +605,47 @@ class ErpUserManagementService
         }
 
         return null;
+    }
+
+    /**
+     * Resolve the target user's company from the established ownership model.
+     * Direct user company columns remain supported for legacy schemas, while
+     * linked ERP users resolve through users.staff_id -> staff.company_id.
+     * Request data and submitted branches are never used as company evidence.
+     */
+    private function resolveTargetCompanyId(int $userId, array $user, ?string $companyColumn): ?int
+    {
+        if ($companyColumn) {
+            $direct = (int) ($user[$companyColumn] ?? 0);
+            if ($direct > 0) {
+                return $direct;
+            }
+        }
+
+        $schema = $this->schema();
+        $staffTable = $schema['staff_table'];
+        $staffIdColumn = $schema['staff_id_column'];
+        if (! $staffTable || ! $staffIdColumn) {
+            return null;
+        }
+
+        $staffId = $this->linkedStaffId($userId, $user);
+        if (! $staffId) {
+            return null;
+        }
+
+        $staffColumns = $schema['staff_columns'];
+        $staffCompanyColumn = collect(['company_id', 'company', 'organization_id'])
+            ->first(fn (string $column): bool => in_array($column, $staffColumns, true));
+        if (! $staffCompanyColumn) {
+            return null;
+        }
+
+        $companyId = (int) DB::table($staffTable)
+            ->where($staffIdColumn, $staffId)
+            ->value($staffCompanyColumn);
+
+        return $companyId > 0 ? $companyId : null;
     }
 
     private function assignedRoleIds(int $userId): array
