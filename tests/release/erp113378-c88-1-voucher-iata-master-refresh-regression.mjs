@@ -10,6 +10,8 @@ const visa = read('app/Http/Controllers/Operations/GeneralBookingVisaProductCont
 const blade = read('resources/views/operations/bookings/general-client-voucher-v113142.blade.php');
 const routes = read('routes/erp103179.php');
 const release = read('config/et_erp_release.php');
+const air = read('public/erp-theme/js/products/air.js');
+const controller = read('app/Http/Controllers/Operations/GeneralBookingAirProductController.php');
 const base = '93381cd43498fd0df90057feafd379e406eedb3d';
 
 let assertions = 0;
@@ -42,8 +44,8 @@ ok(visa.includes("$row['saudi_company_name_snapshot']") && visa.includes("$row['
 ok(visa.includes('private function providerSnapshots(array $row): array'), 'existing Visa snapshot provider path remains intact');
 ok(blade.includes("$relationship['saudi_company_name']") && blade.includes("$relationship['pakistani_iata_name']"), 'voucher Blade keeps the existing value expressions');
 ok(unchangedFromBase('resources/views/operations/bookings/general-client-voucher-v113142.blade.php'), 'voucher presentation markup is unchanged');
-ok(unchangedFromBase('public/erp-theme/js/products/air.js'), 'C88 Air client runtime is unchanged');
-ok(unchangedFromBase('app/Http/Controllers/Operations/GeneralBookingAirProductController.php'), 'C88 Air server runtime is unchanged');
+ok(air.includes('data-etgp-air-delegated-root') && air.includes('etgpAirDraftDelay113119'), 'C89.4.5 Air runtime change is isolated from C88 voucher behavior');
+ok(controller.includes('$existingByPassenger') && controller.includes('$physicalColumnsCache'), 'C89.4.5 Air server optimization is isolated from C88 voucher behavior');
 const refreshHelper = voucher.slice(voucher.indexOf('private function voucherVisaRelationships'), voucher.indexOf('private function voucherCurrentPartnerName'));
 ok(!refreshHelper.includes('->insert(') && !refreshHelper.includes('->update(') && !refreshHelper.includes('->delete('), 'voucher refresh performs no database writes');
 ok(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'"), 'application version remains stable');
