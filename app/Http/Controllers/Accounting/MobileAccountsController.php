@@ -30,7 +30,7 @@ final class MobileAccountsController
         ];
 
         $recent = DB::table('cash_vouchers')
-            ->select(['voucher_no', 'voucher_type', 'party_name', 'amount', 'status', 'voucher_date'])
+            ->select(['id', 'voucher_no', 'voucher_type', 'party_name', 'amount', 'status', 'voucher_date'])
             ->orderByDesc('id');
         $this->cash->scopeVoucherQuery($recent, $user);
 
@@ -72,7 +72,7 @@ final class MobileAccountsController
         };
         abort_unless($this->cash->canUseType($request->user(), $voucherType, 'create'), 403);
         $request->merge(['voucher_type' => $voucherType]);
-        return app(CashVoucherController::class)->store($request);
+        return $this->mobileRedirect(app(CashVoucherController::class)->store($request), 'voucher');
     }
 
     public function advanceChoice(Request $request)
@@ -101,7 +101,7 @@ final class MobileAccountsController
 
     public function storeAdjustment(Request $request)
     {
-        return app(AdvanceAdjustmentController::class)->store($request);
+        return $this->mobileRedirect(app(AdvanceAdjustmentController::class)->store($request), 'adjustment');
     }
 
     public function customerReturn(Request $request)
@@ -112,6 +112,101 @@ final class MobileAccountsController
 
     public function storeCustomerReturn(Request $request)
     {
-        return app(PartyBalanceLifecycleController::class)->customerAdvanceReturnStore($request);
+        return $this->mobileRedirect(app(PartyBalanceLifecycleController::class)->customerAdvanceReturnStore($request), 'return');
+    }
+
+    public function voucherShow(Request $request, int $voucher)
+    {
+        $row = DB::table('cash_vouchers')->where('id', $voucher)->first();
+        abort_unless($row, 404);
+        try { $this->cash->assertVoucherAccess($row, $request->user(), 'view'); } catch (\Throwable $e) { abort(404); }
+        abort_unless($this->cash->canUseType($request->user(), (string) $row->voucher_type, 'view'), 403);
+        return view('mobile.accounts.show', $this->showData('voucher', $row, $voucher, [
+            'allocations' => DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucher)->orderBy('line_no')->get(),
+            'activities' => DB::table('cash_voucher_activities')->where('cash_voucher_id', $voucher)->orderByDesc('id')->get(),
+            'canSubmit' => $this->cash->canUseType($request->user(), (string) $row->voucher_type, 'update'),
+            'canApprove' => $this->cash->canUseType($request->user(), (string) $row->voucher_type, 'approve'),
+            'canPost' => $this->cash->canUseType($request->user(), (string) $row->voucher_type, 'post'),
+            'canReverse' => $this->cash->canUseType($request->user(), (string) $row->voucher_type, 'reverse'),
+        ]));
+    }
+
+    public function voucherWorkflow(Request $request, int $voucher, string $action)
+    {
+        abort_unless(in_array($action, ['submit', 'approve', 'post'], true), 404);
+        try { $this->cash->assertVoucherAccess(DB::table('cash_vouchers')->where('id', $voucher)->firstOrFail(), $request->user(), $action); $this->cash->transition($voucher, $action, $request->user()); return redirect()->route('mobile.accounts.vouchers.show', $voucher)->with('success', 'Voucher workflow updated.'); }
+        catch (\Throwable $e) { return redirect()->route('mobile.accounts.vouchers.show', $voucher)->withErrors(['workflow' => $e->getMessage()]); }
+    }
+
+    public function voucherReverse(Request $request, int $voucher)
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+        try { $this->cash->assertVoucherAccess(DB::table('cash_vouchers')->where('id', $voucher)->firstOrFail(), $request->user(), 'reverse'); $this->cash->reverseVoucher($voucher, $request->user(), (string) $data['reason']); return redirect()->route('mobile.accounts.vouchers.show', $voucher)->with('success', 'Voucher reversed.'); }
+        catch (\Throwable $e) { return redirect()->route('mobile.accounts.vouchers.show', $voucher)->withErrors(['workflow' => $e->getMessage()]); }
+    }
+
+    public function adjustmentShow(Request $request, int $adjustment)
+    {
+        $row = DB::table('advance_adjustments')->where('id', $adjustment)->first(); abort_unless($row, 404);
+        $this->assertScopedBranch($request, (int) ($row->branch_id ?? 0));
+        abort_unless($this->cash->canUseType($request->user(), (string) ($row->party_type === 'supplier' ? 'supplier_advance' : 'customer_advance'), 'view'), 403);
+        $domain = (string) ($row->party_type === 'supplier' ? 'supplier_advance' : 'customer_advance');
+        return view('mobile.accounts.show', $this->showData('adjustment', $row, $adjustment, ['activities' => DB::table('advance_adjustment_activities')->where('advance_adjustment_id', $adjustment)->orderByDesc('id')->get(), 'canSubmit' => $this->cash->canUseType($request->user(), $domain, 'update'), 'canApprove' => $this->cash->canUseType($request->user(), $domain, 'approve'), 'canPost' => $this->cash->canUseType($request->user(), $domain, 'post'), 'canReverse' => $this->cash->canUseType($request->user(), $domain, 'reverse')]));
+    }
+
+    public function adjustmentWorkflow(Request $request, int $adjustment, string $action)
+    {
+        abort_unless(in_array($action, ['submit', 'approve', 'post'], true), 404);
+        try { $this->cash->transitionAdjustment($adjustment, $action, $request->user()); return redirect()->route('mobile.accounts.adjustments.show', $adjustment)->with('success', 'Advance adjustment workflow updated.'); }
+        catch (\Throwable $e) { return redirect()->route('mobile.accounts.adjustments.show', $adjustment)->withErrors(['workflow' => $e->getMessage()]); }
+    }
+
+    public function adjustmentReverse(Request $request, int $adjustment)
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+        try { $this->cash->reverseAdjustment($adjustment, $request->user(), (string) $data['reason']); return redirect()->route('mobile.accounts.adjustments.show', $adjustment)->with('success', 'Advance adjustment reversed.'); }
+        catch (\Throwable $e) { return redirect()->route('mobile.accounts.adjustments.show', $adjustment)->withErrors(['workflow' => $e->getMessage()]); }
+    }
+
+    public function customerReturnShow(Request $request, int $id)
+    {
+        $row = DB::table('customer_advance_returns')->where('id', $id)->first(); abort_unless($row, 404);
+        $this->assertScopedBranch($request, (int) ($row->branch_id ?? 0));
+        abort_unless($this->cash->canUseType($request->user(), 'customer_advance_return', 'view'), 403);
+        return view('mobile.accounts.show', $this->showData('return', $row, $id, ['allocations' => DB::table('customer_advance_return_allocations')->where('customer_advance_return_id', $id)->get(), 'canSubmit' => $this->cash->canUseType($request->user(), 'customer_advance_return', 'update'), 'canApprove' => $this->cash->canUseType($request->user(), 'customer_advance_return', 'approve'), 'canPost' => $this->cash->canUseType($request->user(), 'customer_advance_return', 'post'), 'canReverse' => $this->cash->canUseType($request->user(), 'customer_advance_return', 'reverse')]));
+    }
+
+    public function customerReturnWorkflow(Request $request, int $id, string $action)
+    {
+        abort_unless(in_array($action, ['submit', 'approve', 'post'], true), 404);
+        try { app(\App\Services\Accounting\PartyAdvanceReturnService::class)->transition($id, $action, $request->user()); return redirect()->route('mobile.accounts.customer-returns.show', $id)->with('success', 'Customer advance return workflow updated.'); }
+        catch (\Throwable $e) { return redirect()->route('mobile.accounts.customer-returns.show', $id)->withErrors(['workflow' => $e->getMessage()]); }
+    }
+
+    public function customerReturnReverse(Request $request, int $id)
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+        try { app(\App\Services\Accounting\PartyAdvanceReturnService::class)->reverse($id, (string) $data['reason'], $request->user()); return redirect()->route('mobile.accounts.customer-returns.show', $id)->with('success', 'Customer advance return reversed.'); }
+        catch (\Throwable $e) { return redirect()->route('mobile.accounts.customer-returns.show', $id)->withErrors(['workflow' => $e->getMessage()]); }
+    }
+
+    private function mobileRedirect(mixed $response, string $kind): mixed
+    {
+        if (! method_exists($response, 'getTargetUrl')) return $response;
+        $url = $response->getTargetUrl();
+        $patterns = ['voucher' => ['/cash-vouchers/(\d+)/?(?:\?.*)?$/', 'vouchers.show'], 'adjustment' => ['/advance-adjustments/(\d+)/?(?:\?.*)?$/', 'adjustments.show'], 'return' => ['/customer-advance-returns/(\d+)/?(?:\?.*)?$/', 'customer-returns.show']];
+        if (! preg_match($patterns[$kind][0], $url, $m)) return $response;
+        return redirect()->route('mobile.accounts.'.$patterns[$kind][1], (int) $m[1]);
+    }
+
+    private function showData(string $kind, object $row, int $id, array $extra = []): array
+    {
+        return array_merge(['layoutMeta' => $this->layout->resolve(), 'kind' => $kind, 'row' => $row, 'id' => $id], $extra);
+    }
+
+    private function assertScopedBranch(Request $request, int $branch): void
+    {
+        abort_if($branch < 1, 404);
+        app(\App\Services\Administration\ErpBranchAccessAuthority::class)->assertMayAccessBranch($request->user(), $branch);
     }
 }

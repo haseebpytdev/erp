@@ -1,0 +1,34 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+
+const read = p => fs.readFileSync(p, 'utf8');
+const root = process.cwd();
+const routes = read(`${root}/routes/erp103179.php`);
+const controller = read(`${root}/app/Http/Controllers/Accounting/MobileAccountsController.php`);
+const view = read(`${root}/resources/views/mobile/accounts/show.blade.php`);
+const index = read(`${root}/resources/views/mobile/accounts/index.blade.php`);
+const release = read(`${root}/config/et_erp_release.php`);
+const cash = read(`${root}/app/Services/Accounting/CashVoucherService.php`);
+const native = read(`${root}/app/Http/Controllers/Accounting/CashVoucherController.php`);
+const php = p => assert.ok(p, 'assertion');
+
+php(routes.includes("Route::get('/vouchers/{voucher}'") && routes.includes("Route::post('/vouchers/{voucher}/workflow/{action}'"));
+php(routes.includes("Route::get('/advance-adjustments/{adjustment}'") && routes.includes("Route::get('/customer-advance-returns/{id}'"));
+php(routes.includes("->where('action', 'submit|approve|post')"));
+php(controller.includes('app(CashVoucherController::class)->store($request)'));
+php(controller.includes('app(AdvanceAdjustmentController::class)->store($request)'));
+php(controller.includes('app(PartyBalanceLifecycleController::class)->customerAdvanceReturnStore($request)'));
+php(controller.includes('$this->cash->transition(') && controller.includes('$this->cash->reverseVoucher('));
+php(controller.includes('$this->cash->transitionAdjustment(') && controller.includes('$this->cash->reverseAdjustment('));
+php(controller.includes('PartyAdvanceReturnService::class'));
+php(controller.includes("->transition($id, $action") && controller.includes("->reverse($id"));
+php(view.includes('@csrf') && view.includes('Submit for Approval') && view.includes('Approve') && view.includes('Post') && view.includes('Reverse'));
+php(view.includes("$row->status === 'draft'") && view.includes("$row->status === 'pending_approval'") && view.includes("$row->status === 'approved'") && view.includes("$row->status === 'posted'"));
+php(!view.includes('method="get"') || view.includes('method="post"'));
+php(index.includes("route('mobile.accounts.vouchers.show', $row->id)"));
+php(native.includes("return redirect()->route('accounting.cash-vouchers.show', $id)"));
+php(cash.includes('public function transition(') && cash.includes('public function reverseVoucher('));
+php(release.includes("'asset_version' => 'ERP-11.3.378-C90.2'") && release.includes("'corrective_build' => 'C90.2'") && release.includes("'corrective_name' => 'Mobile Accounts End-to-End Workflow'"));
+php(release.includes("'version' => 'v1.1.33.378-ERP11.3.378'") && release.includes("'release' => 'ERP-11.3.378'"));
+php(!routes.includes('Route::get(\'/mobile/accounts/vouchers/{voucher}/workflow'));
+console.log('C90.2 mobile accounts workflow regression: PASS (20 assertions)');

@@ -514,6 +514,15 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         Route::post('/advance-adjustment', [MobileAccountsController::class, 'storeAdjustment'])->name('adjustment.store');
         Route::get('/customer-advance-return', [MobileAccountsController::class, 'customerReturn'])->name('customer-return');
         Route::post('/customer-advance-return', [MobileAccountsController::class, 'storeCustomerReturn'])->name('customer-return.store');
+        Route::get('/vouchers/{voucher}', [MobileAccountsController::class, 'voucherShow'])->whereNumber('voucher')->name('vouchers.show');
+        Route::post('/vouchers/{voucher}/workflow/{action}', [MobileAccountsController::class, 'voucherWorkflow'])->whereNumber('voucher')->where('action', 'submit|approve|post')->name('vouchers.workflow');
+        Route::post('/vouchers/{voucher}/reverse', [MobileAccountsController::class, 'voucherReverse'])->whereNumber('voucher')->name('vouchers.reverse');
+        Route::get('/advance-adjustments/{adjustment}', [MobileAccountsController::class, 'adjustmentShow'])->whereNumber('adjustment')->name('adjustments.show');
+        Route::post('/advance-adjustments/{adjustment}/workflow/{action}', [MobileAccountsController::class, 'adjustmentWorkflow'])->whereNumber('adjustment')->where('action', 'submit|approve|post')->name('adjustments.workflow');
+        Route::post('/advance-adjustments/{adjustment}/reverse', [MobileAccountsController::class, 'adjustmentReverse'])->whereNumber('adjustment')->name('adjustments.reverse');
+        Route::get('/customer-advance-returns/{id}', [MobileAccountsController::class, 'customerReturnShow'])->whereNumber('id')->name('customer-returns.show');
+        Route::post('/customer-advance-returns/{id}/workflow/{action}', [MobileAccountsController::class, 'customerReturnWorkflow'])->whereNumber('id')->where('action', 'submit|approve|post')->name('customer-returns.workflow');
+        Route::post('/customer-advance-returns/{id}/reverse', [MobileAccountsController::class, 'customerReturnReverse'])->whereNumber('id')->name('customer-returns.reverse');
     });
 
     Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.index');
