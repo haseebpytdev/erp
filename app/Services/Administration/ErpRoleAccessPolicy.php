@@ -45,7 +45,24 @@ class ErpRoleAccessPolicy
             return true;
         }
 
+        /* C89.5.1B.0B deliberately distinguishes the two ownership markers
+         * from unmarked native/external routes. Support assets stay
+         * authenticated-only; marked business routes must be classified and
+         * may never use the historical unknown-route pass-through. */
+        $businessMarked = $this->routeHasMarker($request, 'C89ManagedBusinessRoute');
+        $supportMarked = $this->routeHasMarker($request, 'C89AuthenticatedSupportAssetRoute');
+        if ($supportMarked && ! $businessMarked) {
+            return true;
+        }
+
         $module = $this->moduleForRequest($request);
+        if ($businessMarked && $module === null) {
+            return false;
+        }
+
+        if ($module === 'additional_services') {
+            return $this->additionalServicesAllowed($request, $user);
+        }
         /* Booking-side invoice creation is an operational bridge, not invoice management. */
         if (
             $module === 'sales_invoices'
@@ -67,7 +84,7 @@ class ErpRoleAccessPolicy
         }
 
         /* Read-only lookup endpoints remain available to permitted operations. */
-        if (
+        if (! $businessMarked &&
             strtoupper($request->method()) === 'GET'
             && ($request->expectsJson() || $request->ajax() || str_contains((string) $request->header('accept'), 'application/json'))
             && $this->anyOperationalAccess($user)
@@ -111,6 +128,50 @@ class ErpRoleAccessPolicy
             $definition['capability_phrases'] ?? [],
             $actionTerms
         );
+    }
+
+    private function routeHasMarker(Request $request, string $marker): bool
+    {
+        try {
+            foreach ((array) ($request->route()?->gatherMiddleware() ?? []) as $middleware) {
+                $middleware = (string) $middleware;
+                if ($middleware === $marker || str_ends_with($middleware, '\\'.$marker)) {
+                    return true;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        return false;
+    }
+
+    private function additionalServicesAllowed(Request $request, mixed $user): bool
+    {
+        $path = strtolower('/'.trim($request->path(), '/').'/');
+        $routeName = strtolower((string) ($request->route()?->getName() ?? ''));
+        $method = strtoupper($request->method());
+
+        if (str_contains($routeName, '.invoice') || str_contains($path, '/sales-invoice/')) {
+            return $this->permissions->hasExactPermission($user, ['booking_services.manage'])
+                && $this->permissions->hasExactPermission($user, ['sales_invoices.create']);
+        }
+
+        foreach (['submit', 'approve', 'reject'] as $action) {
+            if (str_contains($routeName, '.workflow') && str_contains($path, '/'.$action.'/')) {
+                $permission = match ($action) {
+                    'approve' => 'bookings.confirm',
+                    'reject' => 'bookings.cancel',
+                    default => 'bookings.submit',
+                };
+                return $this->permissions->hasExactPermission($user, [$permission]);
+            }
+        }
+
+        if ($method === 'GET' || $method === 'HEAD') {
+            return $this->permissions->hasExactPermission($user, ['bookings.view']);
+        }
+
+        return $this->permissions->hasExactPermission($user, ['booking_services.manage']);
     }
 
     /** @return array<int,string> */
@@ -191,6 +252,13 @@ class ErpRoleAccessPolicy
         } catch (\Throwable) {
         }
         $combined = $path.' '.$routeName;
+
+        if (
+            str_contains($routeName, 'bookings.additional-services.')
+            || preg_match('#^/(?:operations/bookings|system/erp-bookings)/[0-9]+/additional-services(?:/|$)#', $path) === 1
+        ) {
+            return 'additional_services';
+        }
 
         /* C89.1: keep critical system and reporting families inside the
          * canonical resolver instead of allowing them to fall through as
@@ -288,6 +356,12 @@ class ErpRoleAccessPolicy
          * because those words appear in unrelated accounting permissions.
          */
         return [
+            'additional_services' => [
+                'labels' => ['Additional Services'],
+                'hrefs' => ['/additional-services'],
+                'paths' => ['bookings.additional-services.'],
+                'capability_phrases' => ['bookings.view'],
+            ],
             'system_diagnostics' => [
                 'labels' => ['System Diagnostics'],
                 'hrefs' => ['/system/erp-diagnostics'],

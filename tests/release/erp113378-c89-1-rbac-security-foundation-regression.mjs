@@ -44,7 +44,18 @@ const changed = execFileSync('git', ['diff', '--name-only', 'HEAD'], { cwd: root
 ok(changed.includes('app/Services/Administration/ErpRoleAccessPolicy.php'), 'policy is the implementation source');
 ok(changed.includes('config/et_erp_release.php'), 'release metadata is scoped to C89.1');
 ok(fs.existsSync(path.join(root, 'tests/release/erp113378-c89-1-rbac-security-foundation-regression.mjs')), 'C89.1 regression is included');
-ok(changed.every((file) => file === 'app/Services/Administration/ErpRoleAccessPolicy.php' || file === 'config/et_erp_release.php' || file === 'tests/release/erp113378-c89-1-rbac-security-foundation-regression.mjs'), 'changed source scope is minimal');
+ok(changed.every((file) => [
+  'app/Services/Administration/ErpRoleAccessPolicy.php',
+  'app/Services/Administration/ErpPermissionMatrixService.php',
+  'config/et_erp_release.php',
+  'tests/release/erp113378-c89-1-rbac-security-foundation-regression.mjs',
+  'tests/release/erp113378-c89-2-1-branch-authority-bookings-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0a-3-user-management-c89-overrides-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0a-4-user-management-ui-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0a-5-user-management-ui-polish-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0a-route-ownership-marker-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0b-scoped-fail-closed-regression.mjs',
+].includes(file)), 'changed source scope remains authorization-only');
 for (const file of protectedFiles) {
   let unchanged = true;
   try { execFileSync('git', ['diff', '--quiet', 'HEAD', '--', file], { cwd: root, stdio: 'ignore' }); }

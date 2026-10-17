@@ -22,5 +22,5 @@ ok('invalid state and permission fail closed', overrides.includes('Unknown permi
 ok('effective access remains central matrix', controller.includes('effectivePermissions') && matrix.includes('applyPermissionOverrides'));
 ok('legacy direct reads remain matrix compatibility', matrix.includes('user_permission_link') && matrix.includes('allowedIds'));
 ok('override audit and guards preserved', overrides.includes('writeAudit') && overrides.includes('sameCompany') && overrides.includes('Users cannot edit their own permission overrides'));
-ok('release identity', /C89\.5\.1B\.0A(?:\.3|\.4|\.5)?/.test(release));
+ok('release identity', /C89\.5\.1B\.(?:0A(?:\.3|\.4|\.5)?|0B)/.test(release));
 console.log('ASSERTIONS=11');

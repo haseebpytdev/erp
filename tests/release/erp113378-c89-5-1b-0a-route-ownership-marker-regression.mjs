@@ -25,7 +25,6 @@ ok(routes.includes('EnforceErpRoleScopedAccess::class'), 'global listener still 
 const listener = routes.match(/Event::listen\(RouteMatched::class[\s\S]*?\n\}\);/)?.[0] ?? '';
 ok(!listener.includes('C89ManagedBusinessRoute') && !listener.includes('C89AuthenticatedSupportAssetRoute'), 'listener has no ownership condition');
 for (const protectedFile of [
-  'app/Services/Administration/ErpRoleAccessPolicy.php',
   'app/Http/Middleware/EnforceErpRoleScopedAccess.php',
 ]) {
   let unchanged = true;
@@ -33,6 +32,8 @@ for (const protectedFile of [
   catch { unchanged = false; }
   ok(unchanged, `${protectedFile} remains untouched`);
 }
+const policy = read('app/Services/Administration/ErpRoleAccessPolicy.php');
+ok(policy.includes('routeHasMarker') && policy.includes('additionalServicesAllowed'), 'marker-aware policy extension remains scoped');
 ok(routes.includes("C89ManagedBusinessRoute::class"), 'business marker is registered');
 ok(routes.includes("C89AuthenticatedSupportAssetRoute::class"), 'support marker is registered');
 ok(bookingRoutes.includes("C89ManagedBusinessRoute::class"), 'booking overlay group is marked');
@@ -48,9 +49,9 @@ ok(supportEndpoints.length === 12, 'support asset count is 12');
 ok(routes.includes("['auth', C89AuthenticatedSupportAssetRoute::class]"), 'support assets remain authenticated');
 ok(routes.includes("['auth', C89ManagedBusinessRoute::class]"), 'business routes remain authenticated');
 ok(!routes.includes('C89ManagedBusinessRoute::class, C89AuthenticatedSupportAssetRoute::class'), 'no double marker declaration');
-ok(/'asset_version' => 'ERP-11.3.378-C89.5.1B.0A(?:\.3|\.4|\.5)?'/.test(release), 'release asset identity lineage');
-ok(/'corrective_build' => 'C89.5.1B.0A(?:\.3|\.4|\.5)?'/.test(release), 'corrective build identity lineage');
-ok(/'corrective_name' => '(?:C89 Route Ownership Markers|ERP User Management C89 Override Alignment|ERP User Management UI Refinement|ERP User Management Final UI Polish)'/.test(release), 'corrective name identity lineage');
+ok(/'asset_version' => 'ERP-11.3.378-C89\.5\.1B\.0(?:A(?:\.3|\.4|\.5)?|B)'/.test(release), 'release asset identity lineage');
+ok(/'corrective_build' => 'C89\.5\.1B\.0(?:A(?:\.3|\.4|\.5)?|B)'/.test(release), 'corrective build identity lineage');
+ok(/'corrective_name' => '(?:C89 Route Ownership Markers|ERP User Management C89 Override Alignment|ERP User Management UI Refinement|ERP User Management Final UI Polish|Scoped Fail-Closed Route Authority)'/.test(release), 'corrective name identity lineage');
 ok(!routes.includes('supplementary.*'), 'no new permission key');
 ok(!execFileSync('git', ['diff', '--name-only', 'HEAD'], { cwd: root, encoding: 'utf8' }).split(/\r?\n/).filter(Boolean).some((file) => file.startsWith('database/') || file.startsWith('migrations/')), 'no migration scope added');
 

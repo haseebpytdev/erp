@@ -421,6 +421,55 @@ class ErpPermissionMatrixService
         return false;
     }
 
+    /**
+     * Resolve one of the existing catalog permissions without allowing a
+     * broad action word (for example "manage") to substitute for it.
+     *
+     * C89.5.1B.0B uses this only for the newly classified Additional Services
+     * workflow actions. The effective permission set and C89.3 override
+     * precedence remain the sole source of truth.
+     */
+    public function hasExactPermission(mixed $user, array $keys): bool
+    {
+        if ($this->isSuperAdmin($user)) {
+            return true;
+        }
+
+        $aliases = [
+            'bookings.view' => ['bookings.view', 'view bookings', 'list bookings', 'read bookings'],
+            'booking_services.manage' => ['booking_services.manage', 'manage booking services', 'manage booking service', 'manage services'],
+            'bookings.submit' => ['bookings.submit', 'submit bookings', 'submit booking'],
+            'bookings.confirm' => ['bookings.confirm', 'confirm bookings', 'confirm booking'],
+            'bookings.cancel' => ['bookings.cancel', 'cancel bookings', 'cancel booking'],
+            'sales_invoices.create' => ['sales_invoices.create', 'create sales invoices', 'create sales invoice'],
+        ];
+
+        $normalize = static function (string $value): string {
+            $value = strtolower(trim($value));
+            $value = preg_replace('/[^a-z0-9]+/', ' ', $value) ?? '';
+            return trim(preg_replace('/\s+/', ' ', $value) ?? '');
+        };
+
+        $wanted = [];
+        foreach ($keys as $key) {
+            $key = strtolower(trim((string) $key));
+            foreach (($aliases[$key] ?? [$key]) as $alias) {
+                $wanted[$normalize($alias)] = true;
+            }
+        }
+
+        foreach ($this->effectivePermissions($user) as $permission) {
+            foreach (['code', 'name'] as $field) {
+                $candidate = $normalize((string) ($permission[$field] ?? ''));
+                if ($candidate !== '' && isset($wanted[$candidate])) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public function hasCapability(
         mixed $user,
         array $moduleTerms,

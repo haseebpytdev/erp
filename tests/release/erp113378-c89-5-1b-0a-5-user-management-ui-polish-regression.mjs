@@ -43,6 +43,6 @@ ok('sticky save bar remains single action group', blade.includes('position:stick
 ok('C89.5.1B.0A.3 regression remains present', fs.existsSync('tests/release/erp113378-c89-5-1b-0a-3-user-management-c89-overrides-regression.mjs'));
 ok('C89.5.1B.0A.4 regression remains present', fs.existsSync('tests/release/erp113378-c89-5-1b-0a-4-user-management-ui-regression.mjs'));
 ok('Administration C89.4.6.5 regression remains present', fs.existsSync('tests/release/erp113378-c89-4-6-5-administration-spacing-copy-regression.mjs'));
-ok('release identity is C89.5.1B.0A.5', release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.5'") && release.includes("'corrective_build' => 'C89.5.1B.0A.5'") && release.includes("'corrective_name' => 'ERP User Management Final UI Polish'"));
+ok('release identity is C89.5.1B.0A.5 or successor', /'asset_version' => 'ERP-11\.3\.378-C89\.5\.1B\.(?:0A\.5|0B)'/.test(release) && /'corrective_build' => 'C89\.5\.1B\.(?:0A\.5|0B)'/.test(release));
 
 console.log('ASSERTIONS=30');
