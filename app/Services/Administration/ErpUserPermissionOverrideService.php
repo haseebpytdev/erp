@@ -34,6 +34,29 @@ class ErpUserPermissionOverrideService
             ->all();
     }
 
+    /** @param array<int|string,string> $changes */
+    public function syncOverrides(mixed $actor, int $targetUserId, array $changes): void
+    {
+        if ($changes === []) {
+            return;
+        }
+        if (! Schema::hasTable('user_permission_overrides')) {
+            throw new RuntimeException('Permission override storage is not available.');
+        }
+
+        foreach ($changes as $permissionId => $effect) {
+            $effect = strtoupper(trim((string) $effect));
+            if (! in_array($effect, ['INHERIT', 'ALLOW', 'DENY'], true)) {
+                throw new RuntimeException('Unknown permission override state.');
+            }
+            if ($effect === 'INHERIT') {
+                $this->removeOverride($actor, $targetUserId, (int) $permissionId, 'ERP User Management');
+            } else {
+                $this->setOverride($actor, $targetUserId, (int) $permissionId, $effect, 'ERP User Management');
+            }
+        }
+    }
+
     public function setOverride(
         mixed $actor,
         int $targetUserId,

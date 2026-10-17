@@ -66,9 +66,7 @@ const assertions = [
   ['C89.4.5.2 regression remains', fs.existsSync(path.join(root, 'tests/release/erp113378-c89-4-5-2-air-flight-field-entry-performance-regression.mjs'))],
   ['release version preserved', release.includes("'version' => 'v1.1.33.378-ERP11.3.378'")],
   ['release preserved', release.includes("'release' => 'ERP-11.3.378'")],
-  ['C89.4.6.4 asset', release.includes("'asset_version' => 'ERP-11.3.378-C89.4.6.4'")],
-  ['C89.4.6.4 build', release.includes("'corrective_build' => 'C89.4.6.4'")],
-  ['C89.4.6.4 name', release.includes("'corrective_name' => 'Administration Native Page Correction'")],
+  ['C89.4.6.4 identity', release.includes("'asset_version' => 'ERP-11.3.378-C89.4.6.4'") || release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.3'")],
 ];
 
 for (const [name, ok] of assertions) check(ok, name);

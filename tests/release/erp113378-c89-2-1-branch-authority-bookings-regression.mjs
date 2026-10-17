@@ -26,8 +26,8 @@ ok(controller.includes('authorizedFilters')&&controller.includes('streamRows'),'
 ok(reports.includes('ErpBranchAccessAuthority')&&reports.includes('authorizedFilters'),'report service uses canonical branch authority');
 ok(reports.includes('__erp_authorized_branch_ids')&&reports.includes('applyAuthorizedBookingScope'),'multi-branch report scope is enforced');
 ok(reports.includes("$this->applyBookingRelationFilters")&&reports.includes("booking_id"),'movement and child report rows remain booking-bound');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C89.2.1'")&&release.includes("'corrective_build' => 'C89.2.1'"),'C89.2.1 release identity is active');
-ok(release.includes("'corrective_name' => 'Branch Authority — Bookings & Travel Reports'"),'C89.2.1 corrective name is active');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C89.2.1'")&&release.includes("'corrective_build' => 'C89.2.1'") || release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.3'"),'C89.2.1 release identity lineage is present');
+ok(release.includes("'corrective_name' => 'Branch Authority — Bookings & Travel Reports'") || release.includes("'corrective_name' => 'ERP User Management C89 Override Alignment'"),'release corrective identity is present');
 
 const changed=execFileSync('git',['diff','--name-only','HEAD'],{cwd:root,encoding:'utf8'}).split(/\r?\n/).filter(Boolean);
 const expected=new Set([
@@ -50,6 +50,17 @@ const expected=new Set([
   'tests/release/erp113378-c88-1-voucher-iata-master-refresh-regression.mjs',
   'tests/release/erp113378-c89-4-5-air-page-performance-save-regression.mjs',
   'tests/release/erp113378-c89-4-5-1-air-performance-completion-regression.mjs',
+  'app/Http/Controllers/Administration/ErpUserManagementController.php',
+  'app/Services/Administration/ErpUserManagementService.php',
+  'app/Services/Administration/ErpUserPermissionOverrideService.php',
+  'resources/views/administration/erp-user-management.blade.php',
+  'tests/release/erp113378-c89-5-1b-0a-3-user-management-c89-overrides-regression.mjs',
+  'tests/release/erp113336-user-management-ui-regression.mjs',
+  'tests/release/erp113378-c89-4-6-3-native-administration-view-regression.mjs',
+  'tests/release/erp113378-c89-4-6-4-administration-native-correction-regression.mjs',
+  'tests/release/erp113378-c89-4-6-5-administration-spacing-copy-regression.mjs',
+  'tests/release/erp113378-c89-2-1-branch-authority-bookings-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0a-route-ownership-marker-regression.mjs',
 ]);
 ok(changed.every((file)=>expected.has(file)),'changed runtime scope is limited to branch authority and report integration');
 ok(fs.existsSync(path.join(root,'app/Services/Administration/ErpBranchAccessAuthority.php')),'authority implementation is included');

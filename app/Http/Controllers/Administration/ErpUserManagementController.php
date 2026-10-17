@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\Administration\ErpUserManagementAuthority;
 use App\Services\Administration\ErpUserManagementService;
 use App\Services\Administration\ErpPermissionMatrixService;
+use App\Services\Administration\ErpUserPermissionOverrideService;
 use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class ErpUserManagementController extends Controller
         private readonly ErpUserManagementAuthority $authority,
         private readonly ErpUserManagementService $users,
         private readonly ErpPermissionMatrixService $permissions,
+        private readonly ErpUserPermissionOverrideService $overrides,
         private readonly NativeErpLayoutResolver $layoutResolver,
     ) {}
 
@@ -37,6 +39,10 @@ class ErpUserManagementController extends Controller
         }
 
         $layout = $this->layoutResolver->resolve();
+        if ($selected) {
+            $selected['permission_override_details'] = $this->permissions->permissionOverrideDetails((object) ['id' => $selected['id']]);
+            $selected['effective_permission_ids'] = array_values(array_map('intval', array_column($this->permissions->effectivePermissions((object) ['id' => $selected['id']]), 'id')));
+        }
 
         return view('administration.erp-user-management', [
             'users' => $allUsers,
@@ -46,7 +52,7 @@ class ErpUserManagementController extends Controller
             'branches' => $this->users->branches(),
             'schema' => $this->users->schema(),
             'permissions' => $this->permissions->groupedPermissions(),
-            'permissionStorageAvailable' => $this->users->directPermissionStorageAvailable(),
+            'permissionStorageAvailable' => $this->users->userPermissionOverrideStorageAvailable(),
             'roleTemplates' => $this->roleTemplates(),
             'currentUserId' => (int) ($request->user()?->getAuthIdentifier() ?? 0),
             'erpLayout' => $layout['layout'],
@@ -71,11 +77,13 @@ class ErpUserManagementController extends Controller
                     'primary_branch_id' => $request->input('primary_branch_id'),
                     'role_ids' => $request->input('role_ids', []),
                     'branch_ids' => $request->input('branch_ids', []),
-                    'permission_ids' => $request->input('permission_ids', []),
+                    'permission_overrides' => $request->input('permission_overrides', []),
                     'password' => $request->input('password'),
                     'password_confirmation' => $request->input('password_confirmation'),
                 ],
-                (int) ($request->user()?->getAuthIdentifier() ?? 0)
+                (int) ($request->user()?->getAuthIdentifier() ?? 0),
+                $request->user(),
+                $this->overrides
             );
         } catch (Throwable $e) {
             return redirect()

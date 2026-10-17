@@ -316,6 +316,19 @@ class ErpUserManagementService
         return (bool) ($this->schema()['permission_storage']['user_link'] ?? null);
     }
 
+    public function userPermissionOverrideStorageAvailable(): bool
+    {
+        try {
+            if (! Schema::hasTable('user_permission_overrides')) {
+                return false;
+            }
+            $columns = Schema::getColumnListing('user_permission_overrides');
+            return count(array_diff(['user_id', 'permission_id', 'effect'], $columns)) === 0;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     /** @param array<int,mixed> $permissionIds */
     public function syncPermissions(int $userId, array $permissionIds): void
     {
@@ -345,7 +358,7 @@ class ErpUserManagementService
         }
     }
 
-    public function updateUser(int $id, array $input, int $actorId): array
+    public function updateUser(int $id, array $input, int $actorId, mixed $actor = null, ?ErpUserPermissionOverrideService $overrides = null): array
     {
         $schema = $this->schema();
         $current = DB::table('users')->where('id', $id)->first();
@@ -426,7 +439,12 @@ class ErpUserManagementService
             $updates[$schema['password_column']] = Hash::make($password);
         }
 
-        DB::transaction(function () use ($id, $updates, $input, $actorId): void {
+        $overrideChanges = (array) ($input['permission_overrides'] ?? []);
+        if ($overrideChanges !== [] && (! $overrides || ! $this->userPermissionOverrideStorageAvailable())) {
+            throw new RuntimeException('Permission override storage is not available.');
+        }
+
+        DB::transaction(function () use ($id, $updates, $input, $actorId, $actor, $overrides, $overrideChanges): void {
             if ($updates !== []) {
                 DB::table('users')->where('id', $id)->update($updates);
             }
@@ -440,8 +458,8 @@ class ErpUserManagementService
                 'branch_ids' => $input['branch_ids'] ?? [],
                 'sync_roles' => $id !== $actorId,
             ]);
-            if ($this->directPermissionStorageAvailable()) {
-                $this->syncPermissions($id, (array) ($input['permission_ids'] ?? []));
+            if ($overrideChanges !== []) {
+                $overrides?->syncOverrides($actor, $id, $overrideChanges);
             }
         });
 

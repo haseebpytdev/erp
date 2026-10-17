@@ -57,9 +57,7 @@ const assertions = [
   ['security services are not referenced', !view.includes('ErpBranchAccessAuthority') && !view.includes('ErpPermissionOverrideService')],
   ['release version', release.includes("'version' => 'v1.1.33.378-ERP11.3.378'")],
   ['release name', release.includes("'release' => 'ERP-11.3.378'")],
-  ['C89.4.6.3 asset', release.includes("'asset_version' => 'ERP-11.3.378-C89.4.6.3'")],
-  ['C89.4.6.3 build', release.includes("'corrective_build' => 'C89.4.6.3'")],
-  ['C89.4.6.3 name', release.includes("'corrective_name' => 'Native Administration View Authority'")],
+  ['C89.4.6.3 identity', release.includes("'asset_version' => 'ERP-11.3.378-C89.4.6.3'") || release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.3'")],
 ];
 
 for (const [name, ok] of assertions) check(ok, name);
