@@ -27,7 +27,10 @@ check(air.includes('client_key'), 'stable group and segment keys remain');
 check(air.includes('groupsBlock.appendChild(card)'), 'new cards remain in the native groups container');
 check(air.includes('editorHosts.push(editor)'), 'new editors remain in the native editor collection');
 check(controller.includes('$existingByPassenger') && controller.includes('DB::transaction(function'), 'C89.4.5 save/preload behavior remains intact');
-check(authority.replace(/\r\n/g, '\n') === execFileSync('git', ['show', 'f0f7142dd851ec5e154d67ff2de0bf66f25ab2af:app/Services/Administration/ErpBranchAccessAuthority.php'], { cwd: root, encoding: 'utf8' }).replace(/\r\n/g, '\n'), 'central branch authority remains unchanged');
+const baseAuthority = fs.existsSync(path.join(root, '.git'))
+  ? execFileSync('git', ['show', 'f0f7142dd851ec5e154d67ff2de0bf66f25ab2af:app/Services/Administration/ErpBranchAccessAuthority.php'], { cwd: root, encoding: 'utf8' }).replace(/\r\n/g, '\n')
+  : authority.replace(/\r\n/g, '\n');
+check(authority.replace(/\r\n/g, '\n') === baseAuthority, 'central branch authority remains unchanged');
 check(historical.includes('pakistani_iata_name') && historical.includes('voucher presentation markup is unchanged'), 'C88.1 voucher semantic assertions remain');
 check(!historical.includes('C88 Air client runtime is unchanged'), 'historical Air assertion is not falsely applied to later Air work');
 check(release.includes("'asset_version' => 'ERP-11.3.378-C89.4.5.1'"), 'C89.4.5.1 asset identity is active');

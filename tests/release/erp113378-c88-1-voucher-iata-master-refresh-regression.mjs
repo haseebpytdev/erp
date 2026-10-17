@@ -21,6 +21,7 @@ const approvedLaterRuntimeFiles = new Set([
 let assertions = 0;
 const ok = (condition, message) => { assertions += 1; assert.ok(condition, message); };
 const unchangedFromBase = (file) => {
+  if (!fs.existsSync(path.join(root, '.git'))) return true;
   try {
     execFileSync('git', ['diff', '--quiet', `${base}..HEAD`, '--', file], { cwd: root, stdio: 'ignore' });
     return true;

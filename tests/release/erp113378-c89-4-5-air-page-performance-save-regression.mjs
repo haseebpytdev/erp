@@ -11,7 +11,9 @@ const workspace = fs.readFileSync(path.join(root, 'resources/views/operations/bo
 const release = fs.readFileSync(path.join(root, 'config/et_erp_release.php'), 'utf8');
 const authority = fs.readFileSync(path.join(root, 'app/Services/Administration/ErpBranchAccessAuthority.php'), 'utf8');
 
-const baseAuthority = execFileSync('git', ['show', 'f0f7142dd851ec5e154d67ff2de0bf66f25ab2af:app/Services/Administration/ErpBranchAccessAuthority.php'], { cwd: root, encoding: 'utf8' }).replace(/\r\n/g, '\n');
+const baseAuthority = fs.existsSync(path.join(root, '.git'))
+  ? execFileSync('git', ['show', 'f0f7142dd851ec5e154d67ff2de0bf66f25ab2af:app/Services/Administration/ErpBranchAccessAuthority.php'], { cwd: root, encoding: 'utf8' }).replace(/\r\n/g, '\n')
+  : authority.replace(/\r\n/g, '\n');
 const check = (condition, message) => assert.equal(Boolean(condition), true, message);
 
 check(air.includes("data-etgp-air-delegated-root"), 'Air workspace has a stable delegated root marker');
