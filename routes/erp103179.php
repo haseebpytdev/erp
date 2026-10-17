@@ -65,6 +65,7 @@ use App\Http\Controllers\Accounting\ChartOfAccountsWorkspaceController;
 use App\Http\Controllers\Accounting\ManagementAccountingReportController;
 use App\Http\Controllers\Accounting\PartyStatementController;
 use App\Http\Controllers\Accounting\PartyBalanceLifecycleController;
+use App\Http\Controllers\Accounting\MobileAccountsController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentPassengerOperationsLink;
@@ -83,6 +84,7 @@ use App\Http\Middleware\C89ManagedBusinessRoute;
 use App\Http\Middleware\C89AuthenticatedSupportAssetRoute;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Events\RouteMatched;
 
 Route::get('/voucher/{token}', [GeneralBookingVoucherPreviewController::class, 'publicShow'])
@@ -494,6 +496,25 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
     Route::get('/accounting/customer-advance-returns/{id}', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnShow'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.show');
     Route::post('/accounting/customer-advance-returns/{id}/workflow/{action}', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnWorkflow'])->whereNumber('id')->where('action','submit|approve|post')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.workflow');
     Route::post('/accounting/customer-advance-returns/{id}/reverse', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnReverse'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.reverse');
+
+    // ERP-11.3.378 mobile accounts is a thin responsive web surface over the
+    // native cash-voucher, advance and return authorities.
+    Route::middleware(['auth', C89ManagedBusinessRoute::class])->prefix('mobile/accounts')->name('mobile.accounts.')->group(function (): void {
+        Route::get('/', [MobileAccountsController::class, 'index'])->name('index');
+        Route::get('/payment', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'payment'))->name('payment');
+        Route::post('/payment', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'payment'))->name('payment.store');
+        Route::get('/receipt', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'receipt'))->name('receipt');
+        Route::post('/receipt', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'receipt'))->name('receipt.store');
+        Route::get('/advance', [MobileAccountsController::class, 'advanceChoice'])->name('advance');
+        Route::get('/customer-advance', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'customer-advance'))->name('customer-advance');
+        Route::post('/customer-advance', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'customer-advance'))->name('customer-advance.store');
+        Route::get('/supplier-advance', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'supplier-advance'))->name('supplier-advance');
+        Route::post('/supplier-advance', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'supplier-advance'))->name('supplier-advance.store');
+        Route::get('/advance-adjustment', [MobileAccountsController::class, 'adjustment'])->name('adjustment');
+        Route::post('/advance-adjustment', [MobileAccountsController::class, 'storeAdjustment'])->name('adjustment.store');
+        Route::get('/customer-advance-return', [MobileAccountsController::class, 'customerReturn'])->name('customer-return');
+        Route::post('/customer-advance-return', [MobileAccountsController::class, 'storeCustomerReturn'])->name('customer-return.store');
+    });
 
     Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.index');
     Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.create');

@@ -52,10 +52,10 @@ return [
     // 'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.4', 'corrective_build' => 'C89.5.1B.0A.4', 'corrective_name' => 'ERP User Management UI Refinement'
     // 'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.5', 'corrective_build' => 'C89.5.1B.0A.5', 'corrective_name' => 'ERP User Management Final UI Polish'
     // 'asset_version' => 'ERP-11.3.378-C89.5.1B.0B', 'corrective_build' => 'C89.5.1B.0B', 'corrective_name' => 'Scoped Fail-Closed Route Authority'
-    'asset_version' => 'ERP-11.3.378-C89.4.5.3',
+    'asset_version' => 'ERP-11.3.378-C90.1',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C89.4.5.3',
-    'corrective_name' => 'Air Final Field Entry Performance',
+    'corrective_build' => 'C90.1',
+    'corrective_name' => 'Mobile Accounts Quick Posting',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];

@@ -260,6 +260,10 @@ class ErpRoleAccessPolicy
             return 'additional_services';
         }
 
+        if (preg_match('#^/mobile/accounts(?:/|$)#', $path) === 1 || str_contains($routeName, 'mobile.accounts.')) {
+            return 'mobile_accounts';
+        }
+
         /* C89.1: keep critical system and reporting families inside the
          * canonical resolver instead of allowing them to fall through as
          * unknown routes. */
@@ -356,6 +360,20 @@ class ErpRoleAccessPolicy
          * because those words appear in unrelated accounting permissions.
          */
         return [
+            'mobile_accounts' => [
+                'labels' => ['Accounts Quick Posting'],
+                'hrefs' => ['/mobile/accounts'],
+                'paths' => ['/mobile/accounts', 'mobile.accounts.'],
+                'capability_phrases' => [
+                    'view payments', 'create payments', 'manage payments',
+                    'view receipts', 'create receipts', 'manage receipts',
+                    'customer advances', 'manage customer advances',
+                    'supplier advances', 'manage supplier advances',
+                    'customer advance returns', 'manage customer advance returns',
+                    'view payment vouchers', 'create payment vouchers',
+                    'view receipt vouchers', 'create receipt vouchers',
+                ],
+            ],
             'additional_services' => [
                 'labels' => ['Additional Services'],
                 'hrefs' => ['/additional-services'],
