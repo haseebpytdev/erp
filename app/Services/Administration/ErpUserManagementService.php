@@ -135,6 +135,7 @@ class ErpUserManagementService
 
             $result[] = [
                 'id' => $id,
+                'updated_at' => $array['updated_at'] ?? null,
                 'username' => $this->value($array, $schema['username_column']),
                 'login_email' => $this->value($array, $schema['email_column']),
                 'active' => $this->activeValue($array, $schema['active_column']),
@@ -451,6 +452,70 @@ class ErpUserManagementService
                 $this->syncPermissions($id, (array) ($input['permission_ids'] ?? []));
             }
         });
+
+        return $this->user($id) ?? [];
+    }
+
+    /**
+     * Access-only synchronization used by Staff Access. Identity, password,
+     * staff linkage, status and legacy direct permissions are deliberately out
+     * of this method; the caller owns the surrounding transaction.
+     */
+    public function updateAccessAssignments(int $id, array $input): array
+    {
+        $schema = $this->schema();
+        $current = DB::table('users')->where('id', $id)->first();
+        if (! $current) {
+            throw new RuntimeException('ERP user account was not found.');
+        }
+
+        $currentArray = (array) $current;
+        $scope = strtoupper(trim((string) ($input['access_scope'] ?? '')));
+        if (! in_array($scope, ['PRIMARY_BRANCH', 'ASSIGNED_BRANCHES', 'COMPANY_WIDE'], true)) {
+            throw new RuntimeException('A valid branch access scope is required.');
+        }
+
+        $primary = (int) ($input['primary_branch_id'] ?? 0);
+        $branches = array_values(array_unique(array_filter(array_map('intval', (array) ($input['branch_ids'] ?? [])), fn (int $value): bool => $value > 0)));
+        if ($scope === 'PRIMARY_BRANCH' && $primary <= 0) {
+            throw new RuntimeException('Primary Branch scope requires a primary branch.');
+        }
+        if ($scope === 'ASSIGNED_BRANCHES' && $branches === []) {
+            throw new RuntimeException('Assigned Branches scope requires at least one branch.');
+        }
+        if ($scope === 'ASSIGNED_BRANCHES' && $primary > 0 && ! in_array($primary, $branches, true)) {
+            throw new RuntimeException('The primary branch must be one of the assigned branches.');
+        }
+
+        $userColumns = $schema['user_columns'];
+        $companyColumn = collect(['company_id', 'company', 'organization_id'])
+            ->first(fn (string $column): bool => in_array($column, $userColumns, true));
+        $companyId = $companyColumn ? ($currentArray[$companyColumn] ?? null) : null;
+        $branchTable = $schema['branches_table'];
+        if ($branchTable && $schema['branch_id_column']) {
+            $ids = array_values(array_unique(array_filter(array_merge($branches, [$primary]), fn (int $value): bool => $value > 0)));
+            if ($ids !== []) {
+                $query = DB::table($branchTable)->whereIn($schema['branch_id_column'], $ids);
+                $branchColumns = Schema::getColumnListing($branchTable);
+                if ($companyId !== null && in_array('company_id', $branchColumns, true)) {
+                    $query->where('company_id', $companyId);
+                }
+                if ($query->count() !== count($ids)) {
+                    throw new RuntimeException('Branch assignments must belong to the target user company.');
+                }
+            }
+        }
+
+        if ($schema['access_scope_column']) {
+            DB::table('users')->where('id', $id)->update([$schema['access_scope_column'] => $scope]);
+        }
+        if ($schema['primary_branch_column']) {
+            DB::table('users')->where('id', $id)->update([
+                $schema['primary_branch_column'] => $primary > 0 ? $primary : null,
+            ]);
+        }
+        $this->syncRoles($id, array_map('intval', (array) ($input['role_ids'] ?? [])));
+        $this->syncBranches($id, $branches);
 
         return $this->user($id) ?? [];
     }

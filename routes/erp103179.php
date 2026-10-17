@@ -56,6 +56,7 @@ use App\Http\Controllers\System\TransportRateResolutionDiagnosticController;
 use App\Http\Controllers\System\SalesInvoiceWorkflowCompareController;
 use App\Http\Controllers\System\CashVoucherNativeJournalRepairController;
 use App\Http\Controllers\Administration\ErpUserManagementController;
+use App\Http\Controllers\Administration\ErpStaffAccessController;
 use App\Http\Controllers\Purchase\SupplierCostingController;
 use App\Http\Controllers\Accounting\CashVoucherController;
 use App\Http\Controllers\Accounting\CashVoucherLegacyBranchReconciliationController;
@@ -507,6 +508,13 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         '/administration/erp-user-management/{user}/status',
         [ErpUserManagementController::class, 'status']
     )->whereNumber('user')->name('administration.erp-user-management.status');
+
+    Route::get('/administration/staff-access', [ErpStaffAccessController::class, 'index'])
+        ->middleware(EnforceErpRoleScopedAccess::class)->name('administration.staff-access.index');
+    Route::get('/administration/staff-access/{user}', [ErpStaffAccessController::class, 'show'])
+        ->whereNumber('user')->middleware(EnforceErpRoleScopedAccess::class)->name('administration.staff-access.show');
+    Route::put('/administration/staff-access/{user}', [ErpStaffAccessController::class, 'update'])
+        ->whereNumber('user')->middleware(EnforceErpRoleScopedAccess::class)->name('administration.staff-access.update');
 
     Route::get(
         '/system/erp-diagnostics/accounting-journal',
