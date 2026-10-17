@@ -69,7 +69,7 @@ expect('et-section-count-103336', 'section count element');
 expect('count.textContent', 'section count refresh');
 expect('boxes().forEach(box=>box.addEventListener', 'checkbox refresh handler');
 expect('section.querySelectorAll', 'section select-all refresh');
-expect('et-select-all-103336', 'section toolbar handler');
+expect('et-visible-allow-103336', 'visible permission toolbar handler');
 expect('scrollIntoView', 'in-page navigation behavior');
 expect('et-identity-section-103336', 'identity navigation target');
 expect('et-effective-access-section-103336', 'effective navigation target');
