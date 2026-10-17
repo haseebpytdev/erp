@@ -5,6 +5,7 @@ use App\Http\Controllers\Operations\BookingTransportController;
 use App\Http\Controllers\Operations\GeneralBookingPassengerRemoveController;
 use App\Http\Middleware\EnforceErpRoleScopedAccess;
 use App\Http\Middleware\EnforceGeneralBookingEditLock;
+use App\Http\Middleware\C89ManagedBusinessRoute;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth'])->group(function (): void {
+Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function (): void {
     Route::post('/operations/bookings/{booking}/itinerary-segments', [BookingItineraryController::class, 'store'])
         ->name('operations.bookings.itinerary-segments.store');
 

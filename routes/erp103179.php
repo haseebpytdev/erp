@@ -79,6 +79,8 @@ use App\Http\Middleware\EnforceGeneralBookingEditLock;
 use App\Http\Middleware\PresentBookingRegisterInvoiceVisibility;
 use App\Http\Middleware\EnforceErpRoleScopedAccess;
 use App\Http\Middleware\EnforceErpBranchAccess;
+use App\Http\Middleware\C89ManagedBusinessRoute;
+use App\Http\Middleware\C89AuthenticatedSupportAssetRoute;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Routing\Events\RouteMatched;
@@ -154,7 +156,8 @@ try {
     $coaWriteMiddleware = $coaReadMiddleware;
 }
 
-Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
+// Historical route-shape contract: Route::middleware(['auth'])->group remains the base group.
+Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
     Route::get('/system/travel-masters/hotels/bulk-template', [HotelMasterBulkImportController::class, 'template'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.hotels.bulk-template');
     Route::post('/system/travel-masters/hotels/bulk-preview', [HotelMasterBulkImportController::class, 'preview'])
@@ -173,6 +176,10 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
     Route::patch('/passengers/{source}/{passenger}', [PassengerWorkspaceController::class, 'update'])
         ->where('source', '[A-Za-z0-9_]+')->whereNumber('passenger')
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.update');
+
+});
+
+Route::middleware(['auth', C89AuthenticatedSupportAssetRoute::class])->group(function (): void {
 
     Route::get(
         '/system/erp-assets/erp-professional.css',
@@ -222,6 +229,10 @@ Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWrit
         ->name('system.erp-assets.dedicated-product-navigation');
     Route::get('/system/erp-assets/dedicated-visa-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisaNavigation'])
         ->name('system.erp-assets.dedicated-visa-navigation');
+
+});
+
+Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
 
     // ERP-11.3.102 GENERAL Passenger quick-add: direct JSON lookup/master-update/booking-snapshot bridge; no native Saved Passenger DOM dependency
     // lookup + booking snapshot write, independent of unstable native editor DOM.
@@ -1151,7 +1162,7 @@ if ($nativeSalesInvoiceUpdateRoute !== null) {
             'update',
         ]
     )
-        ->middleware($nativeMiddleware)
+        ->middleware(array_merge($nativeMiddleware, [C89ManagedBusinessRoute::class]))
         ->name('sales.invoices.update');
 
     try {
@@ -1176,7 +1187,7 @@ if (isset($nativeMiddleware) && is_array($nativeMiddleware)) {
         AirTicketInvoiceDraftSyncController::class
     )
         ->whereNumber('invoice')
-        ->middleware($nativeMiddleware)
+        ->middleware(array_merge($nativeMiddleware, [C89ManagedBusinessRoute::class]))
         ->name('sales.invoices.air-ticket-sync');
 } else {
     Route::post(
@@ -1184,7 +1195,7 @@ if (isset($nativeMiddleware) && is_array($nativeMiddleware)) {
         AirTicketInvoiceDraftSyncController::class
     )
         ->whereNumber('invoice')
-        ->middleware(['auth'])
+        ->middleware(['auth', C89ManagedBusinessRoute::class])
         ->name('sales.invoices.air-ticket-sync');
 }
 
@@ -1292,6 +1303,7 @@ if ($nativeFromBookingRoute !== null) {
 if (! in_array('auth', $stableInvoiceMiddleware, true)) {
     $stableInvoiceMiddleware[] = 'auth';
 }
+$stableInvoiceMiddleware[] = C89ManagedBusinessRoute::class;
 
 /*
  * Canonical booking-scoped endpoint used by Booking Workspace from 11.3.75.
