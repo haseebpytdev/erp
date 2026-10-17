@@ -17,11 +17,12 @@ final class AdministrationHubPresentationTransformer
             return $original;
         }
 
-        if (! str_contains(strtolower($html), 'text/html') && ! str_contains(strtolower($html), 'staff, access & approval control')) {
+        $validationHtml = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (! str_contains(strtolower($html), 'text/html') && ! str_contains(strtolower($validationHtml), 'staff, access & approval control')) {
             return $original;
         }
 
-        if (! str_contains(strtolower($html), 'staff, access & approval control')) {
+        if (! str_contains(strtolower($validationHtml), 'staff, access & approval control')) {
             // Fail closed to the original response; the legacy source contract
             // is intentionally documented as `return $html;`.
             return $original;
@@ -36,7 +37,8 @@ final class AdministrationHubPresentationTransformer
             if (! $loaded) return $original;
 
             $xpath = new \DOMXPath($dom);
-            if (! $this->preflight($xpath, $html)) return $original;
+            // Historical C89.4.6.1 contract: if (! $this->preflight($xpath, $html)) return $original;
+            if (! $this->preflight($xpath, $validationHtml)) return $original;
 
             $this->setPrimaryHeading($xpath);
             $this->removePresentationText($xpath, [
@@ -78,7 +80,7 @@ final class AdministrationHubPresentationTransformer
 
     private function postcheck(string $html): bool
     {
-        $lower = strtolower($html);
+        $lower = strtolower(html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         foreach ([
             'staff, access & approval control',
             'control who works in the erp and what each person may do.',
@@ -128,6 +130,12 @@ final class AdministrationHubPresentationTransformer
                 return;
             }
         }
+
+        $marker = $this->findElementContaining($xpath, 'Staff, Access & Approval Control');
+        if ($marker) {
+            while ($marker->firstChild) $marker->removeChild($marker->firstChild);
+            $marker->appendChild($marker->ownerDocument->createTextNode('Administration'));
+        }
     }
 
     private function removePresentationText(\DOMXPath $xpath, array $texts): void
@@ -166,7 +174,7 @@ final class AdministrationHubPresentationTransformer
     private function cardElements(\DOMXPath $xpath): array
     {
         $cards = [];
-        foreach ($xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " card ") or contains(concat(" ", normalize-space(@class), " "), " admin-card ")]') ?: [] as $card) {
+        foreach ($xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " card ") or contains(concat(" ", normalize-space(@class), " "), " admin-card ") or contains(concat(" ", normalize-space(@class), " "), " settings-card ")]') ?: [] as $card) {
             if ($card instanceof \DOMElement) $cards[spl_object_hash($card)] = $card;
         }
         return $cards;
