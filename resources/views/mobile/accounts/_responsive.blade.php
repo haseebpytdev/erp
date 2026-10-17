@@ -21,6 +21,7 @@
     .mobile-accounts-page .mobile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
     .mobile-accounts-page .mobile-actions button { min-width: 0; min-height: 44px; padding: 10px 16px; border: 0; border-radius: 7px; background: #1769d2; color: #fff; font-weight: 800; }
     .mobile-accounts-page .mobile-actions button.secondary { background: #eef3f8; color: #24344b; }
+    .mobile-accounts-page .mobile-validation-error { margin: 12px 0; padding: 10px 12px; border: 1px solid #f0b6b6; border-radius: 7px; background: #fff5f5; color: #a12626; font-weight: 700; }
     @media (max-width: 760px) {
         body:has(.mobile-accounts-page) .sidebar, body:has(.mobile-accounts-page) .sidebar-menu,
         body:has(.mobile-accounts-page) .side-nav, body:has(.mobile-accounts-page) .navbar-vertical { display: none !important; }
