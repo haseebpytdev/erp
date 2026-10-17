@@ -24,8 +24,15 @@
     @media (max-width: 760px) {
         body:has(.mobile-accounts-page) .sidebar, body:has(.mobile-accounts-page) .sidebar-menu,
         body:has(.mobile-accounts-page) .side-nav, body:has(.mobile-accounts-page) .navbar-vertical { display: none !important; }
+        body:has(.mobile-accounts-page) header,
+        body:has(.mobile-accounts-page) .topbar,
+        body:has(.mobile-accounts-page) [class*="topbar"],
+        body:has(.mobile-accounts-page) [class*="top-bar"],
+        body:has(.mobile-accounts-page) .app-header,
+        body:has(.mobile-accounts-page) .desktop-header,
+        body:has(.mobile-accounts-page) .navbar:not(.navbar-vertical) { display: none !important; }
         body:has(.mobile-accounts-page) .app-shell, body:has(.mobile-accounts-page) .app-shell > main,
-        body:has(.mobile-accounts-page) main.main, body:has(.mobile-accounts-page) .main-content { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin-left: 0 !important; padding-left: 0 !important; padding-right: 0 !important; grid-template-columns: 1fr !important; }
+        body:has(.mobile-accounts-page) main.main, body:has(.mobile-accounts-page) .main-content { width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin-left: 0 !important; margin-top: 0 !important; padding-left: 0 !important; padding-right: 0 !important; padding-top: 0 !important; grid-template-columns: 1fr !important; }
         .mobile-accounts-page { width: 100%; max-width: 100%; padding: 12px; }
         .mobile-accounts-page .mobile-grid { grid-template-columns: 1fr; }
         .mobile-accounts-page .mobile-card { min-height: 92px; }
