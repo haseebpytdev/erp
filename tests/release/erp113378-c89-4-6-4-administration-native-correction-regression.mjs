@@ -73,13 +73,16 @@ const assertions = [
 
 for (const [name, ok] of assertions) check(ok, name);
 
-const status = spawnSync('git', ['status', '--short'], { cwd: root, encoding: 'utf8' });
-const diff = spawnSync('git', ['diff', '--name-only', 'HEAD^', 'HEAD'], { cwd: root, encoding: 'utf8' });
-if (status.status === 0 && diff.status === 0 && !status.stdout.trim() && release.includes("'corrective_build' => 'C89.4.6.4'")) {
-  const changed = diff.stdout.trim().split(/\r?\n/).filter(Boolean);
-  check(changed.length === 3, 'exact three-file committed scope');
-  check(changed.includes('resources/views/administration/index.blade.php'), 'native view is tracked change');
-  check(!changed.some((file) => /^(routes\/|app\/Http\/Controllers\/|app\/Http\/Middleware\/|app\/Services\/)/.test(file)), 'protected runtime files unchanged');
-}
+const historicalCommit = '95a7fcf1552a00aacf56e19ceef771862b4e398a';
+const historicalParent = '803fcd0956e1980d981d3d412f884b484155de5f';
+const historicalDiff = spawnSync('git', ['diff', '--name-only', historicalParent, historicalCommit], { cwd: root, encoding: 'utf8' });
+const historicalParents = spawnSync('git', ['show', '-s', '--format=%P', historicalCommit], { cwd: root, encoding: 'utf8' });
+check(historicalDiff.status === 0 && historicalParents.status === 0, 'historical corrective commit is available');
+const parents = historicalParents.stdout.trim().split(/\s+/).filter(Boolean);
+check(parents.length === 1 && parents[0] === historicalParent, 'historical corrective parent is exact');
+const changed = historicalDiff.stdout.trim().split(/\r?\n/).filter(Boolean);
+check(changed.length === 3, 'historical exact three-file committed scope');
+check(changed.includes('resources/views/administration/index.blade.php'), 'historical native view is tracked change');
+check(!changed.some((file) => /^(routes\/|app\/Http\/Controllers\/|app\/Http\/Middleware\/|app\/Services\/)/.test(file)), 'historical protected runtime files unchanged');
 
-console.log(`C89.4.6.4 native Administration correction regression: ${assertions.length + (status.status === 0 && diff.status === 0 && !status.stdout.trim() ? 3 : 0)} assertions passed`);
+console.log(`C89.4.6.4 native Administration correction regression: ${assertions.length + 5} assertions passed`);

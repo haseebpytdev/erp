@@ -64,13 +64,16 @@ const assertions = [
 
 for (const [name, ok] of assertions) check(ok, name);
 
-const gitCheck = spawnSync('git', ['diff', '--name-only', 'HEAD^', 'HEAD'], { cwd: root, encoding: 'utf8' });
-const statusCheck = spawnSync('git', ['status', '--short'], { cwd: root, encoding: 'utf8' });
-if (gitCheck.status === 0 && statusCheck.status === 0 && !statusCheck.stdout.trim() && release.includes("'corrective_build' => 'C89.4.6.3'")) {
-  const changed = gitCheck.stdout.trim().split(/\r?\n/).filter(Boolean);
-  check(changed.length === 3, 'committed change boundary is three files');
-  check(changed.includes('resources/views/administration/index.blade.php'), 'native view is the only runtime view change');
-  check(!changed.some((file) => /^(routes\/|app\/Http\/Controllers\/|app\/Http\/Middleware\/|app\/Services\/Administration\/)/.test(file)), 'routes/controllers/middleware/security unchanged');
-}
+const historicalCommit = '803fcd0956e1980d981d3d412f884b484155de5f';
+const historicalParent = '812b61902126bbd326a4d60a63c55ecc5b2f9f4e';
+const historicalDiff = spawnSync('git', ['diff', '--name-only', historicalParent, historicalCommit], { cwd: root, encoding: 'utf8' });
+const historicalParents = spawnSync('git', ['show', '-s', '--format=%P', historicalCommit], { cwd: root, encoding: 'utf8' });
+check(historicalDiff.status === 0 && historicalParents.status === 0, 'historical corrective commit is available');
+const parents = historicalParents.stdout.trim().split(/\s+/).filter(Boolean);
+check(parents.length === 1 && parents[0] === historicalParent, 'historical corrective parent is exact');
+const changed = historicalDiff.stdout.trim().split(/\r?\n/).filter(Boolean);
+check(changed.length === 3, 'historical committed change boundary is three files');
+check(changed.includes('resources/views/administration/index.blade.php'), 'historical native view is the only runtime view change');
+check(!changed.some((file) => /^(routes\/|app\/Http\/Controllers\/|app\/Http\/Middleware\/|app\/Services\/Administration\/)/.test(file)), 'historical routes/controllers/middleware/security unchanged');
 
-console.log(`C89.4.6.3 native Administration view regression: ${assertions.length + (gitCheck.status === 0 ? 3 : 0)} assertions passed`);
+console.log(`C89.4.6.3 native Administration view regression: ${assertions.length + 5} assertions passed`);
