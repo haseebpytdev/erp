@@ -21,6 +21,7 @@ ok('compact permission row list', blade.includes('.um-perm-row{display:grid') &&
 ok('Inherited state preserved', blade.includes('value="INHERIT"') && blade.includes('>Inherited</option>'));
 ok('Allow state preserved', blade.includes('value="ALLOW"') && blade.includes('>Allow</option>'));
 ok('Deny state preserved', blade.includes('value="DENY"') && blade.includes('>Deny</option>'));
+ok('tri-state presentation is segmented', blade.includes('um-tristate') && blade.includes('aria-pressed') && blade.includes('data-value=INHERIT'));
 ok('permission_overrides contract preserved', blade.includes('name="permission_overrides[') && controller.includes('permission_overrides'));
 ok('legacy permission editor absent', !blade.includes('permission_ids['));
 ok('direct permission editor absent', !blade.includes('direct_permission_ids'));
