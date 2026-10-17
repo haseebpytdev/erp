@@ -48,9 +48,9 @@ ok(supportEndpoints.length === 12, 'support asset count is 12');
 ok(routes.includes("['auth', C89AuthenticatedSupportAssetRoute::class]"), 'support assets remain authenticated');
 ok(routes.includes("['auth', C89ManagedBusinessRoute::class]"), 'business routes remain authenticated');
 ok(!routes.includes('C89ManagedBusinessRoute::class, C89AuthenticatedSupportAssetRoute::class'), 'no double marker declaration');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A'"), 'release asset identity');
-ok(release.includes("'corrective_build' => 'C89.5.1B.0A'"), 'corrective build identity');
-ok(release.includes("'corrective_name' => 'C89 Route Ownership Markers'"), 'corrective name identity');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.2'"), 'release asset identity remains on C89.5.1B.0A lineage');
+ok(release.includes("'corrective_build' => 'C89.5.1B.0A.2'"), 'corrective build identity remains on C89.5.1B.0A lineage');
+ok(release.includes("'corrective_name' => 'ERP User Override Storage Detection'"), 'corrective name identity is current');
 ok(!routes.includes('supplementary.*'), 'no new permission key');
 ok(!execFileSync('git', ['diff', '--name-only', 'HEAD'], { cwd: root, encoding: 'utf8' }).split(/\r?\n/).filter(Boolean).some((file) => file.startsWith('database/') || file.startsWith('migrations/')), 'no migration scope added');
 

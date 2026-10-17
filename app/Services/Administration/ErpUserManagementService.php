@@ -316,6 +316,26 @@ class ErpUserManagementService
         return (bool) ($this->schema()['permission_storage']['user_link'] ?? null);
     }
 
+    public function userPermissionOverrideStorageAvailable(): bool
+    {
+        try {
+            if (! Schema::hasTable('user_permission_overrides')) {
+                return false;
+            }
+
+            $columns = Schema::getColumnListing('user_permission_overrides');
+            foreach (['user_id', 'permission_id', 'effect', 'reason', 'created_by', 'updated_by', 'created_at', 'updated_at'] as $column) {
+                if (! in_array($column, $columns, true)) {
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     /** @param array<int,mixed> $permissionIds */
     public function syncPermissions(int $userId, array $permissionIds): void
     {

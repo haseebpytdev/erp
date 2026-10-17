@@ -46,7 +46,7 @@ class ErpUserManagementController extends Controller
             'branches' => $this->users->branches(),
             'schema' => $this->users->schema(),
             'permissions' => $this->permissions->groupedPermissions(),
-            'permissionStorageAvailable' => $this->users->directPermissionStorageAvailable(),
+            'permissionStorageAvailable' => $this->users->userPermissionOverrideStorageAvailable(),
             'roleTemplates' => $this->roleTemplates(),
             'currentUserId' => (int) ($request->user()?->getAuthIdentifier() ?? 0),
             'erpLayout' => $layout['layout'],
