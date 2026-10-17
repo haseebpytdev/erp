@@ -52,6 +52,12 @@ class ErpStaffAccessService
         $this->authority->authorize($actor);
         $target = $this->users->user($targetId);
         abort_unless($target && $this->sameCompany($this->actorId($actor), $targetId), 404);
+        // A blank legacy scope is interpreted by the branch authority as the
+        // compatibility PRIMARY_BRANCH fallback; expose that same authority
+        // state in the edit model instead of displaying an empty selection.
+        if (trim((string) ($target['access_scope'] ?? '')) === '') {
+            $target['access_scope'] = ErpBranchAccessAuthority::PRIMARY_BRANCH;
+        }
         $targetObject = (object) ['id' => $targetId];
         $details = $this->permissions->permissionOverrideDetails($targetObject);
         $canDelegate = $this->permissions->isSuperAdmin($actor)

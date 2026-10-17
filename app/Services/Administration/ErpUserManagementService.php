@@ -356,7 +356,6 @@ class ErpUserManagementService
 
         $currentArray = (array) $current;
         $updates = [];
-        $this->validateBranchAssignments($currentArray, (int) ($input['primary_branch_id'] ?? 0), array_map('intval', (array) ($input['branch_ids'] ?? [])));
 
         $username = trim((string) ($input['username'] ?? ''));
         $email = trim((string) ($input['login_email'] ?? ''));
@@ -393,15 +392,6 @@ class ErpUserManagementService
             }
 
             $updates[$schema['email_column']] = $email;
-        }
-
-        if ($schema['access_scope_column']) {
-            $updates[$schema['access_scope_column']] = trim((string) ($input['access_scope'] ?? ''));
-        }
-
-        if ($schema['primary_branch_column']) {
-            $primaryBranchId = (int) ($input['primary_branch_id'] ?? 0);
-            $updates[$schema['primary_branch_column']] = $primaryBranchId > 0 ? $primaryBranchId : null;
         }
 
         if ($schema['active_column']) {
@@ -443,11 +433,13 @@ class ErpUserManagementService
 
             $this->syncStaffLink($id, (int) ($input['staff_id'] ?? 0));
 
-            if ($id !== $actorId) {
-                $this->syncRoles($id, array_map('intval', (array) ($input['role_ids'] ?? [])));
-            }
-
-            $this->syncBranches($id, array_map('intval', (array) ($input['branch_ids'] ?? [])));
+            $this->persistAccessAuthority($id, [
+                'role_ids' => $input['role_ids'] ?? [],
+                'access_scope' => $input['access_scope'] ?? '',
+                'primary_branch_id' => $input['primary_branch_id'] ?? 0,
+                'branch_ids' => $input['branch_ids'] ?? [],
+                'sync_roles' => $id !== $actorId,
+            ]);
             if ($this->directPermissionStorageAvailable()) {
                 $this->syncPermissions($id, (array) ($input['permission_ids'] ?? []));
             }
@@ -463,6 +455,16 @@ class ErpUserManagementService
      */
     public function updateAccessAssignments(int $id, array $input): array
     {
+        return $this->persistAccessAuthority($id, $input);
+    }
+
+    /**
+     * Canonical access authority persistence shared by ERP User Management and
+     * Staff Access. Callers own the surrounding transaction so account fields,
+     * roles, branches and permission overrides remain atomic together.
+     */
+    public function persistAccessAuthority(int $id, array $input): array
+    {
         $schema = $this->schema();
         $current = DB::table('users')->where('id', $id)->first();
         if (! $current) {
@@ -471,6 +473,7 @@ class ErpUserManagementService
 
         $currentArray = (array) $current;
         $scope = strtoupper(trim((string) ($input['access_scope'] ?? '')));
+        if ($scope === '') $scope = 'PRIMARY_BRANCH';
         if (! in_array($scope, ['PRIMARY_BRANCH', 'ASSIGNED_BRANCHES', 'COMPANY_WIDE'], true)) {
             throw new RuntimeException('A valid branch access scope is required.');
         }
@@ -479,6 +482,13 @@ class ErpUserManagementService
         $branches = array_values(array_unique(array_filter(array_map('intval', (array) ($input['branch_ids'] ?? [])), fn (int $value): bool => $value > 0)));
         if ($scope === 'PRIMARY_BRANCH' && $primary <= 0) {
             throw new RuntimeException('Primary Branch scope requires a primary branch.');
+        }
+        if ($scope === 'PRIMARY_BRANCH') {
+            $branches = [$primary];
+        }
+        if ($scope === 'COMPANY_WIDE') {
+            $primary = 0;
+            $branches = [];
         }
         if ($scope === 'ASSIGNED_BRANCHES' && $branches === []) {
             throw new RuntimeException('Assigned Branches scope requires at least one branch.');
@@ -499,6 +509,8 @@ class ErpUserManagementService
                 $branchColumns = Schema::getColumnListing($branchTable);
                 if ($companyId !== null && in_array('company_id', $branchColumns, true)) {
                     $query->where('company_id', $companyId);
+                } elseif (in_array('company_id', $branchColumns, true)) {
+                    throw new RuntimeException('Target user company context is required for branch assignments.');
                 }
                 if ($query->count() !== count($ids)) {
                     throw new RuntimeException('Branch assignments must belong to the target user company.');
@@ -514,8 +526,10 @@ class ErpUserManagementService
                 $schema['primary_branch_column'] => $primary > 0 ? $primary : null,
             ]);
         }
-        $this->syncRoles($id, array_map('intval', (array) ($input['role_ids'] ?? [])));
-        $this->syncBranches($id, $branches);
+        if (($input['sync_roles'] ?? true) === true) {
+            $this->syncRoles($id, array_map('intval', (array) ($input['role_ids'] ?? [])));
+        }
+        $this->syncBranches($id, $branches, $primary);
 
         return $this->user($id) ?? [];
     }
@@ -817,7 +831,7 @@ class ErpUserManagementService
         }
     }
 
-    private function syncBranches(int $userId, array $branchIds): void
+    private function syncBranches(int $userId, array $branchIds, int $primaryBranchId = 0): void
     {
         $schema = $this->schema();
         $link = $schema['branch_link'];
@@ -838,12 +852,14 @@ class ErpUserManagementService
 
         DB::table($link['table'])->where($link['user_column'], $userId)->delete();
 
+        $columns = Schema::getColumnListing($link['table']);
+        $primaryColumn = $this->firstColumn($columns, ['is_primary', 'primary', 'is_default', 'default']);
         foreach ($branchIds as $branchId) {
             $row = [
                 $link['user_column'] => $userId,
                 $link['branch_column'] => $branchId,
             ];
-            $columns = Schema::getColumnListing($link['table']);
+            if ($primaryColumn) $row[$primaryColumn] = $primaryBranchId > 0 && $branchId === $primaryBranchId ? 1 : 0;
             if (in_array('created_at', $columns, true)) {
                 $row['created_at'] = now();
             }
