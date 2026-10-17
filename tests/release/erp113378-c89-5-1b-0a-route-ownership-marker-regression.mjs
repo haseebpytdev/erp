@@ -48,9 +48,9 @@ ok(supportEndpoints.length === 12, 'support asset count is 12');
 ok(routes.includes("['auth', C89AuthenticatedSupportAssetRoute::class]"), 'support assets remain authenticated');
 ok(routes.includes("['auth', C89ManagedBusinessRoute::class]"), 'business routes remain authenticated');
 ok(!routes.includes('C89ManagedBusinessRoute::class, C89AuthenticatedSupportAssetRoute::class'), 'no double marker declaration');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A'") || release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.3'") || release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.4'"), 'release asset identity lineage');
-ok(release.includes("'corrective_build' => 'C89.5.1B.0A'") || release.includes("'corrective_build' => 'C89.5.1B.0A.3'") || release.includes("'corrective_build' => 'C89.5.1B.0A.4'"), 'corrective build identity lineage');
-ok(release.includes("'corrective_name' => 'C89 Route Ownership Markers'") || release.includes("'corrective_name' => 'ERP User Management C89 Override Alignment'") || release.includes("'corrective_name' => 'ERP User Management UI Refinement'"), 'corrective name identity lineage');
+ok(/'asset_version' => 'ERP-11.3.378-C89.5.1B.0A(?:\.3|\.4|\.5)?'/.test(release), 'release asset identity lineage');
+ok(/'corrective_build' => 'C89.5.1B.0A(?:\.3|\.4|\.5)?'/.test(release), 'corrective build identity lineage');
+ok(/'corrective_name' => '(?:C89 Route Ownership Markers|ERP User Management C89 Override Alignment|ERP User Management UI Refinement|ERP User Management Final UI Polish)'/.test(release), 'corrective name identity lineage');
 ok(!routes.includes('supplementary.*'), 'no new permission key');
 ok(!execFileSync('git', ['diff', '--name-only', 'HEAD'], { cwd: root, encoding: 'utf8' }).split(/\r?\n/).filter(Boolean).some((file) => file.startsWith('database/') || file.startsWith('migrations/')), 'no migration scope added');
 

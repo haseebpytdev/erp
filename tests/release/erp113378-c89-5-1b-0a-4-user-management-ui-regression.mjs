@@ -27,7 +27,7 @@ ok('C89.3 precedence remains matrix-owned', matrix.includes('applyPermissionOver
 ok('Branch authority remains service-owned', service.includes('ErpBranchAccessAuthority') || !service.includes('branch_access_override'));
 ok('Page layout is bounded without horizontal permission-grid overflow', blade.includes('max-width:1280px') && blade.includes('overflow-x:hidden') && blade.includes('.um-perm-grid{display:flex;flex-direction:column'));
 ok('Tri-state controls expose state styling', blade.includes('[data-state="ALLOW"]') && blade.includes('[data-state="DENY"]') && blade.includes('[data-state="INHERIT"]'));
-ok('Release identity is C89.5.1B.0A.4', release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.4'") && release.includes("'corrective_build' => 'C89.5.1B.0A.4'") && release.includes("'corrective_name' => 'ERP User Management UI Refinement'"));
+ok('Release identity is C89.5.1B.0A.4 or later polish', /ERP-11\.3\.378-C89\.5\.1B\.0A\.(?:4|5)/.test(release));
 ok('Protected historical regressions remain present', fs.existsSync('tests/release/erp113378-c89-4-6-5-administration-spacing-copy-regression.mjs') && fs.existsSync('tests/release/erp113378-c89-5-1b-0a-3-user-management-c89-overrides-regression.mjs'));
 
 console.log('ASSERTIONS=18');

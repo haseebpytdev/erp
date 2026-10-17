@@ -61,6 +61,9 @@ const expected=new Set([
   'tests/release/erp113378-c89-4-6-5-administration-spacing-copy-regression.mjs',
   'tests/release/erp113378-c89-2-1-branch-authority-bookings-regression.mjs',
   'tests/release/erp113378-c89-5-1b-0a-route-ownership-marker-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0a-4-user-management-ui-regression.mjs',
+  'tests/release/erp113378-c89-5-1b-0a-5-user-management-ui-polish-regression.mjs',
+  'tests/release/erp113335-user-custom-permission-matrix-regression.mjs',
 ]);
 ok(changed.every((file)=>expected.has(file)),'changed runtime scope is limited to branch authority and report integration');
 ok(fs.existsSync(path.join(root,'app/Services/Administration/ErpBranchAccessAuthority.php')),'authority implementation is included');

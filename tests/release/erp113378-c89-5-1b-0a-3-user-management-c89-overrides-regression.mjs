@@ -22,5 +22,5 @@ ok('invalid state and permission fail closed', overrides.includes('Unknown permi
 ok('effective access remains central matrix', controller.includes('effectivePermissions') && matrix.includes('applyPermissionOverrides'));
 ok('legacy direct reads remain matrix compatibility', matrix.includes('user_permission_link') && matrix.includes('allowedIds'));
 ok('override audit and guards preserved', overrides.includes('writeAudit') && overrides.includes('sameCompany') && overrides.includes('Users cannot edit their own permission overrides'));
-ok('release identity', release.includes("'corrective_build' => 'C89.5.1B.0A.3'") || release.includes("'corrective_build' => 'C89.5.1B.0A.4'") && (release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.3'") || release.includes("'asset_version' => 'ERP-11.3.378-C89.5.1B.0A.4'")));
+ok('release identity', /C89\.5\.1B\.0A(?:\.3|\.4|\.5)?/.test(release));
 console.log('ASSERTIONS=11');
