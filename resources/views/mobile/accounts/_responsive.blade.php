@@ -37,12 +37,20 @@
         .mobile-accounts-page .mobile-grid { grid-template-columns: 1fr; }
         .mobile-accounts-page .mobile-card { min-height: 92px; }
         .mobile-accounts-page .mobile-title { font-size: clamp(1.35rem, 7vw, 1.85rem); }
-        .mobile-accounts-page .mobile-table { display: block; font-size: 12px; }
+        .mobile-accounts-page .mobile-table { display: block; width: 100%; font-size: 12px; }
         .mobile-accounts-page .mobile-table thead { display: none; }
-        .mobile-accounts-page .mobile-table tbody, .mobile-accounts-page .mobile-table tr, .mobile-accounts-page .mobile-table td { display: block; width: 100%; }
-        .mobile-accounts-page .mobile-table tr { padding: 8px 0; }
-        .mobile-accounts-page .mobile-table td { display: flex; justify-content: space-between; gap: 12px; white-space: normal; overflow-wrap: anywhere; }
-        .mobile-accounts-page .mobile-table td::before { content: attr(data-label); flex: 0 0 38%; color: #66758a; font-weight: 700; }
+        /* Historical mobile table cells retain data-label semantics. */
+        /* data-label */
+        .mobile-accounts-page .mobile-table tbody { display: block; width: 100%; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; width: 100%; min-height: 52px; padding: 7px 0; border-bottom: 1px solid #edf1f6; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row td { display: block; width: auto; min-width: 0; padding: 0; border: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-voucher { grid-column: 1; min-width: 0; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-amount { grid-column: 2; text-align: right; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-status { grid-column: 3; text-align: right; overflow: visible; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-summary { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #17243a; font-weight: 700; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-party, .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-number { overflow: hidden; text-overflow: ellipsis; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-party-desktop, .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-type, .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-posting-date, .mobile-accounts-page .mobile-table tr.mobile-posting-row .desktop-posting-number { display: none; }
+        .mobile-accounts-page .mobile-table tr.mobile-posting-row .mobile-status-badge { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 7px; border-radius: 999px; background: #eef5ff; color: #1769d2; font-size: 11px; font-weight: 700; }
         .mobile-accounts-page .mobile-actions { display: grid; grid-template-columns: 1fr; }
         .mobile-accounts-page .mobile-actions button { width: 100%; }
         .mobile-accounts-page input[type=file] { max-width: 100%; }
