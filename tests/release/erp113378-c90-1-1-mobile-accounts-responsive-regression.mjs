@@ -1,0 +1,55 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+
+const root = process.cwd();
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const index = read('resources/views/mobile/accounts/index.blade.php');
+const advance = read('resources/views/mobile/accounts/advance.blade.php');
+const form = read('resources/views/mobile/accounts/form.blade.php');
+const responsive = read('resources/views/mobile/accounts/_responsive.blade.php');
+const routes = read('routes/erp103179.php');
+const controller = read('app/Http/Controllers/Accounting/MobileAccountsController.php');
+const release = read('config/et_erp_release.php');
+
+let assertions = 0;
+const ok = (value, message) => { assertions += 1; assert.ok(value, message); };
+const views = [index, advance, form];
+
+ok(views.every((view) => view.includes("@extends($layoutMeta['layout'])")), 'all mobile views reuse the ERP layout authority');
+ok(views.every((view) => view.includes("mobile.accounts._responsive")), 'all mobile views use the scoped responsive authority');
+ok(responsive.includes('body:has(.mobile-accounts-page) .sidebar') && responsive.includes('display: none !important'), 'sidebar is hidden only on mobile-account pages');
+ok(responsive.includes('margin-left: 0 !important') && responsive.includes('grid-template-columns: 1fr !important'), 'sidebar layout offset is removed');
+ok(!responsive.includes('body .sidebar') && !responsive.includes('body.sidebar'), 'normal ERP sidebar is not globally changed');
+ok(responsive.includes('width: 100%') && responsive.includes('max-width: 100%'), 'mobile main width is viewport-safe');
+ok(responsive.includes('overflow-x: hidden'), 'mobile page prevents horizontal scrolling');
+ok(responsive.includes('.mobile-grid { grid-template-columns: 1fr; }'), 'home cards become one column on phones');
+ok(responsive.includes('grid-template-columns: repeat(2'), 'desktop card layout remains available');
+ok(form.includes('class="mobile-fields"') && responsive.includes('.mobile-fields { display: grid; grid-template-columns: 1fr;'), 'payment and receipt forms use one column');
+ok(form.includes('Pay To') && form.includes('Receive From'), 'payment and receipt labels remain native-contextual');
+ok(advance.includes('Customer Advance') && advance.includes('Supplier Advance'), 'advance chooser remains stacked and complete');
+ok(responsive.includes('.mobile-fields input') && responsive.includes('.mobile-fields select'), 'advance form controls are full width');
+ok(routes.includes("/advance-adjustment") && routes.includes("/customer-advance-return"), 'adjustment and return routes remain available');
+ok(controller.includes('AdvanceAdjustmentController') && controller.includes('PartyBalanceLifecycleController'), 'adjustment and return continue using native authorities');
+ok(responsive.includes('.mobile-table thead { display: none; }') && responsive.includes('data-label'), 'recent postings become stacked mobile rows');
+ok(controller.includes('scopeVoucherQuery'), 'recent posting scope remains server-side');
+ok(index.includes('data-label="Voucher"') && index.includes('data-label="Date"'), 'recent posting fields remain complete');
+ok(responsive.includes('.mobile-actions { display: grid; grid-template-columns: 1fr; }'), 'mobile action buttons stack');
+ok(responsive.includes('min-height: 44px'), 'mobile action buttons are touch friendly');
+ok(responsive.includes('.mobile-more') && responsive.includes('width: 100%'), 'More Options stays within the viewport');
+ok(form.includes('type="file"') && responsive.includes('input[type=file]'), 'proof upload remains responsive');
+ok(form.includes('accept=".pdf,.jpg,.jpeg,.png,.webp"'), 'proof file types remain unchanged');
+ok(views.every((view) => !view.includes('service worker') && !view.includes('bottom-nav') && !view.includes('PWA')), 'no PWA or bottom navigation was added');
+ok(views.every((view) => view.includes('Easy Ticket ERP')), 'compact Easy Ticket ERP header is present');
+ok(views.every((view) => view.includes('Back to ERP') || view.includes('← Accounts')), 'mobile navigation remains available');
+ok(views.every((view) => view.includes("@section($layoutMeta['content_section'] ?? 'content')")), 'global layout metadata and viewport remain authoritative');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C90.1.1'"), 'C90.1.1 asset identity is active');
+ok(release.includes("'corrective_build' => 'C90.1.1'"), 'C90.1.1 corrective build is active');
+ok(release.includes("'corrective_name' => 'Mobile Accounts Responsive UI Correction'"), 'C90.1.1 corrective name is active');
+ok(!routes.includes('mobile.accounts.*') && !controller.includes('debit') && !controller.includes('credit'), 'no new permission or posting logic was introduced');
+ok(!fs.existsSync(path.join(root, 'database/migrations/erp113378_mobile_accounts_responsive.php')), 'no database migration was added');
+ok(fs.existsSync(path.join(root, 'tests/release/erp113378-mobile-accounts-quick-posting-regression.mjs')), 'C90.1 functional regression remains present');
+ok(fs.existsSync(path.join(root, 'tests/release/erp113378-c89-1-rbac-security-foundation-regression.mjs')), 'C89 security regression remains present');
+ok(fs.existsSync(path.join(root, 'tests/release/erp113378-c89-4-5-3-air-final-field-performance-regression.mjs')), 'Air regression remains present');
+
+console.log(`C90.1.1 Mobile Accounts Responsive regression: PASS (${assertions} assertions)`);
