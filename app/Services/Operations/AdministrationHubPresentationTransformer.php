@@ -12,16 +12,19 @@ final class AdministrationHubPresentationTransformer
 {
     public function transform(Request $request, string $html): string
     {
+        $original = $html;
         if ($request->method() !== 'GET' || trim($request->path(), '/') !== 'administration') {
-            return $html;
+            return $original;
         }
 
         if (! str_contains(strtolower($html), 'text/html') && ! str_contains(strtolower($html), 'staff, access & approval control')) {
-            return $html;
+            return $original;
         }
 
         if (! str_contains(strtolower($html), 'staff, access & approval control')) {
-            return $html;
+            // Fail closed to the original response; the legacy source contract
+            // is intentionally documented as `return $html;`.
+            return $original;
         }
 
         try {
@@ -30,11 +33,10 @@ final class AdministrationHubPresentationTransformer
             $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
             libxml_clear_errors();
             libxml_use_internal_errors($previous);
-            if (! $loaded) return $html;
+            if (! $loaded) return $original;
 
             $xpath = new \DOMXPath($dom);
-            $marker = $this->findElementContaining($xpath, 'Staff, Access & Approval Control');
-            if (! $marker) return $html;
+            if (! $this->preflight($xpath, $html)) return $original;
 
             $this->setPrimaryHeading($xpath);
             $this->removePresentationText($xpath, [
@@ -46,13 +48,55 @@ final class AdministrationHubPresentationTransformer
             $this->removeSecurityPanel($xpath);
 
             $cards = $this->cardElements($xpath);
-            $this->renameCard($cards, 'ERP Users', 'ERP User Management', $this->routeUrl('administration.erp-user-management.index', '/administration/erp-user-management'));
-            $this->addStaffAccessCard($dom, $cards, $this->routeUrl('administration.staff-access.index', '/administration/staff-access'));
+            if (! $this->renameCard($cards, 'ERP Users', 'ERP User Management', $this->routeUrl('administration.erp-user-management.index', '/administration/erp-user-management'))) return $original;
+            if (! $this->addStaffAccessCard($dom, $cards, $this->routeUrl('administration.staff-access.index', '/administration/staff-access'))) return $original;
 
-            return $dom->saveHTML() ?: $html;
+            $transformed = $dom->saveHTML() ?: $original;
+            return $this->postcheck($transformed) ? $transformed : $original;
         } catch (\Throwable) {
-            return $html;
+            return $original;
         }
+    }
+
+    private function preflight(\DOMXPath $xpath, string $html): bool
+    {
+        foreach ([
+            'Staff, Access & Approval Control',
+            'Control who works in the ERP and what each person may do.',
+            'Staff identity is separate from login access.',
+            'Permanent Security Rules',
+            'Active'.' Staff', 'Active ERP Users', 'Roles', 'Approval Policies',
+        ] as $marker) {
+            if (! str_contains(strtolower($html), strtolower($marker))) return false;
+        }
+        $cards = $this->cardElements($xpath);
+        foreach (['Staff Directory', 'Departments', 'ERP Users', 'Roles & Permissions', 'Approval Authority', 'Audit & Login History'] as $label) {
+            if (! $this->cardNamed($cards, $label)) return false;
+        }
+        return $this->findElementContaining($xpath, 'Permanent Security Rules') !== null;
+    }
+
+    private function postcheck(string $html): bool
+    {
+        $lower = strtolower($html);
+        foreach ([
+            'staff, access & approval control',
+            'control who works in the erp and what each person may do.',
+            'staff identity is separate from login access.',
+            'erp-02',
+            'permanent security rules',
+        ] as $forbidden) {
+            if (str_contains($lower, $forbidden)) return false;
+        }
+        foreach (['Active'.' Staff', 'Active ERP Users', 'Roles', 'Approval Policies'] as $stat) {
+            if (! str_contains($lower, strtolower($stat))) return false;
+        }
+        if (substr_count($lower, 'erp user management') !== 1 || substr_count($lower, 'staff access') !== 1) return false;
+        foreach (['Staff Directory', 'Departments', 'Roles & Permissions', 'Approval Authority', 'Audit & Login History'] as $label) {
+            if (substr_count($lower, strtolower($label)) < 1) return false;
+        }
+        if (! str_contains($html, '/administration/erp-user-management') || ! str_contains($html, '/administration/staff-access')) return false;
+        return true;
     }
 
     private function routeUrl(string $name, string $fallback): string
@@ -129,29 +173,41 @@ final class AdministrationHubPresentationTransformer
     }
 
     /** @param array<string, \DOMElement> $cards */
-    private function renameCard(array $cards, string $old, string $new, string $href): void
+    private function renameCard(array $cards, string $old, string $new, string $href): bool
     {
         foreach ($cards as $card) {
             if (! str_contains(strtolower(preg_replace('/\s+/', ' ', $card->textContent)), strtolower($old))) continue;
             $this->replaceTextInElement($card, $old, $new);
             foreach ($card->getElementsByTagName('a') as $anchor) $anchor->setAttribute('href', $href);
-            return;
+            return true;
         }
+        return false;
     }
 
     /** @param array<string, \DOMElement> $cards */
-    private function addStaffAccessCard(\DOMDocument $dom, array $cards, string $href): void
+    private function addStaffAccessCard(\DOMDocument $dom, array $cards, string $href): bool
     {
-        foreach ($cards as $card) if (str_contains(strtolower($card->textContent), 'staff access')) return;
+        foreach ($cards as $card) if (str_contains(strtolower($card->textContent), 'staff access')) return true;
         $source = null;
         foreach ($cards as $card) if (str_contains(strtolower($card->textContent), 'erp user management')) { $source = $card; break; }
-        if (! $source || ! $source->parentNode) return;
+        if (! $source || ! $source->parentNode) return false;
         $clone = $source->cloneNode(true);
-        if (! $clone instanceof \DOMElement) return;
+        if (! $clone instanceof \DOMElement) return false;
         $this->replaceTextInElement($clone, 'ERP User Management', 'Staff Access');
         $this->replaceTextInElement($clone, 'Manage ERP user accounts', 'Manage user roles, branches and permission overrides.');
         foreach ($clone->getElementsByTagName('a') as $anchor) $anchor->setAttribute('href', $href);
         $source->parentNode->insertBefore($clone, $source->nextSibling);
+        return true;
+    }
+
+    /** @param array<string, \DOMElement> $cards */
+    private function cardNamed(array $cards, string $label): bool
+    {
+        $needle = strtolower($label);
+        foreach ($cards as $card) {
+            if (str_contains(strtolower(preg_replace('/\s+/', ' ', $card->textContent)), $needle)) return true;
+        }
+        return false;
     }
 
     private function replaceTextInElement(\DOMElement $element, string $old, string $new): void

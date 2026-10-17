@@ -33,15 +33,16 @@ return [
     // Historical C89.4.2 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.4.2', 'corrective_build' => 'C89.4.2', 'corrective_name' => 'User Access Persistence Authority'
     // Historical C89.4.3 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.4.3', 'corrective_build' => 'C89.4.3', 'corrective_name' => 'Target User Company Context Resolution'
     // Historical C89.4.5.2 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.4.5.2', 'corrective_build' => 'C89.4.5.2', 'corrective_name' => 'Air Flight Field Entry Performance'
+    // Historical C89.4.6 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.4.6', 'corrective_build' => 'C89.4.6', 'corrective_name' => 'Administration Hub Integration'
     // Historical C89.2.2A assertions retain prior alias: C89.2.2A
     // Historical C89.2.2B1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.2.2B1', 'corrective_build' => 'C89.2.2B1', 'corrective_name' => 'Cash Voucher Branch Ownership'
     // Historical C89.2.2B2 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.2.2B2', 'corrective_build' => 'C89.2.2B2', 'corrective_name' => 'Cash Voucher Legacy Reconciliation Preview'
     // Historical C89.2.3A assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.2.3A', 'corrective_build' => 'C89.2.3A', 'corrective_name' => 'Source-Proven Final Branch Closure'
     // Historical C89.2.1 assertions retain prior aliases: 'asset_version' => 'ERP-11.3.378-C89.2.1', 'corrective_build' => 'C89.2.1', 'corrective_name' => 'Branch Authority — Bookings & Travel Reports'
-    'asset_version' => 'ERP-11.3.378-C89.4.6',
+    'asset_version' => 'ERP-11.3.378-C89.4.6.1',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C89.4.6',
-    'corrective_name' => 'Administration Hub Integration',
+    'corrective_build' => 'C89.4.6.1',
+    'corrective_name' => 'Administration Hub Fail-Safe Completion',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];
