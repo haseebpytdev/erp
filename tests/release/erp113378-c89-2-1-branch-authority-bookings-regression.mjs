@@ -41,6 +41,9 @@ const expected=new Set([
   'app/Services/Administration/ErpUserManagementService.php',
   'config/et_erp_release.php',
   'tests/release/erp113378-c89-4-3-company-context-resolution-regression.mjs',
+  'app/Services/Administration/ErpBranchAccessAuthority.php',
+  'config/et_erp_release.php',
+  'tests/release/erp113378-c89-4-4-booking-direct-access-parity-regression.mjs',
 ]);
 ok(changed.every((file)=>expected.has(file)),'changed runtime scope is limited to branch authority and report integration');
 ok(fs.existsSync(path.join(root,'app/Services/Administration/ErpBranchAccessAuthority.php')),'authority implementation is included');

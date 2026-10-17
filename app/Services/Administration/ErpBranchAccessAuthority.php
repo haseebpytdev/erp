@@ -176,7 +176,7 @@ final class ErpBranchAccessAuthority
     private function companyBranches(array $ids, mixed $user): array
     {
         $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
-        $companyId = $this->positive($this->attribute($user, 'company_id'));
+        $companyId = $this->resolvedCompanyId($user);
         $table = $this->branchTable();
         if (! $table || ! $ids || ! $companyId) {
             return [];
@@ -192,6 +192,27 @@ final class ErpBranchAccessAuthority
     private function branchBelongsToUserCompany(int $branchId, mixed $user): bool
     {
         return in_array($branchId, $this->companyBranches([$branchId], $user), true);
+    }
+
+    /**
+     * Resolve company ownership without trusting request data or a branch.
+     * Linked ERP users inherit company ownership from their authoritative
+     * staff record when the user row has no direct company attribute.
+     */
+    private function resolvedCompanyId(mixed $user): ?int
+    {
+        $direct = $this->positive($this->attribute($user, 'company_id'));
+        if ($direct) {
+            return $direct;
+        }
+
+        $staffId = $this->positive($this->attribute($user, 'staff_id'));
+        if (! $staffId || ! Schema::hasTable('staff') || ! Schema::hasColumn('staff', 'company_id')) {
+            return null;
+        }
+
+        $companyId = $this->positive(DB::table('staff')->where('id', $staffId)->value('company_id'));
+        return $companyId ?: null;
     }
 
     private function branchTable(): ?string
