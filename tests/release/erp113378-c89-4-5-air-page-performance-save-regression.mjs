@@ -42,8 +42,8 @@ check(controller.includes('$prototypeCache'), 'Prototype discovery is request-ca
 check(controller.includes('$supplierOptionsCache'), 'Supplier master discovery is request-cached');
 check(authority.replace(/\r\n/g, '\n') === baseAuthority, 'C89.4.4 branch authority is unchanged');
 check(!controller.includes('SalesInvoiceService::create'), 'No invoice creation path was added');
-check(release.includes("'asset_version' => 'ERP-11.3.378-C89.4.5'"), 'C89.4.5 asset identity is present');
-check(release.includes("'corrective_build' => 'C89.4.5'"), 'C89.4.5 corrective build is present');
-check(release.includes("'corrective_name' => 'Air Product Performance and Save Reliability'"), 'C89.4.5 name is present');
+check(release.includes("'asset_version' => 'ERP-11.3.378-C89.4.5.1'"), 'C89.4.5.1 asset identity is present');
+check(release.includes("'corrective_build' => 'C89.4.5.1'"), 'C89.4.5.1 corrective build is present');
+check(release.includes("'corrective_name' => 'Air Product Performance Completion'"), 'C89.4.5.1 name is present');
 
 console.log('C89.4.5 Air performance/save regression: PASS (30 assertions)');

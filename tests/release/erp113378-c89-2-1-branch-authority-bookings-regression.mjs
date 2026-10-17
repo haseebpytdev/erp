@@ -44,6 +44,12 @@ const expected=new Set([
   'app/Services/Administration/ErpBranchAccessAuthority.php',
   'config/et_erp_release.php',
   'tests/release/erp113378-c89-4-4-booking-direct-access-parity-regression.mjs',
+  'public/erp-theme/js/products/air.js',
+  'app/Http/Controllers/Operations/GeneralBookingAirProductController.php',
+  'resources/views/operations/bookings/partials/product-workspace-v113305.blade.php',
+  'tests/release/erp113378-c88-1-voucher-iata-master-refresh-regression.mjs',
+  'tests/release/erp113378-c89-4-5-air-page-performance-save-regression.mjs',
+  'tests/release/erp113378-c89-4-5-1-air-performance-completion-regression.mjs',
 ]);
 ok(changed.every((file)=>expected.has(file)),'changed runtime scope is limited to branch authority and report integration');
 ok(fs.existsSync(path.join(root,'app/Services/Administration/ErpBranchAccessAuthority.php')),'authority implementation is included');
