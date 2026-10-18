@@ -70,10 +70,12 @@ return [
     // Historical C90.6A.2 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.6A.2', 'corrective_build' => 'C90.6A.2', 'corrective_name' => 'Our Bank Accounts Navigation + UI Polish'
     // Historical C90.6A.3 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.6A.3', 'corrective_build' => 'C90.6A.3', 'corrective_name' => 'Our Bank Accounts Organization Hub Card'
     // Historical C90.6B regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.6B', 'corrective_build' => 'C90.6B', 'corrective_name' => 'AI Receipt Local Matching + Professional Review UI'
-    'asset_version' => 'ERP-11.3.378-C90.7',
+    // Historical C90.7 regression identity remains discoverable to immutable tests:
+    // 'asset_version' => 'ERP-11.3.378-C90.7', 'corrective_build' => 'C90.7', 'corrective_name' => 'Mobile Movements & Reports'
+    'asset_version' => 'ERP-11.3.378-C90.7.1',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C90.7',
-    'corrective_name' => 'Mobile Movements & Reports',
+    'corrective_build' => 'C90.7.1',
+    'corrective_name' => 'Mobile Movement Count + Display Hardening',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];

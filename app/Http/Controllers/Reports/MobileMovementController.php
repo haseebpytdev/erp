@@ -33,10 +33,16 @@ final class MobileMovementController extends Controller
         $threeDays = $today->addDays(3);
         $todayCounts = [];
         $upcoming = [];
+        $tomorrowCount = 0;
+        $nextThreeDaysCount = 0;
 
         foreach (array_keys(self::MOVEMENTS) as $movement) {
             $todayCounts[$movement] = $this->rows($request, $movement, $today, $today)->total();
-            foreach ($this->rows($request, $movement, $tomorrow, $threeDays) as $row) {
+            $tomorrowRows = $this->rows($request, $movement, $tomorrow, $tomorrow);
+            $nextThreeDaysRows = $this->rows($request, $movement, $tomorrow, $threeDays);
+            $tomorrowCount += $tomorrowRows->total();
+            $nextThreeDaysCount += $nextThreeDaysRows->total();
+            foreach ($nextThreeDaysRows as $row) {
                 $upcoming[] = $this->card($movement, $row);
             }
         }
@@ -50,8 +56,8 @@ final class MobileMovementController extends Controller
             'layoutMeta' => $this->layout->resolve(),
             'movements' => self::MOVEMENTS,
             'todayCounts' => $todayCounts,
-            'tomorrowCount' => count(array_filter($upcoming, fn (array $row): bool => ($row['date'] ?? '') === $tomorrow->toDateString())),
-            'nextThreeDaysCount' => count($upcoming),
+            'tomorrowCount' => $tomorrowCount,
+            'nextThreeDaysCount' => $nextThreeDaysCount,
             'upcoming' => array_slice($upcoming, 0, 20),
         ]);
     }
@@ -103,7 +109,12 @@ final class MobileMovementController extends Controller
     private function date(mixed $value): ?CarbonImmutable
     {
         if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) return null;
-        return CarbonImmutable::createFromFormat('Y-m-d', $value)->startOfDay();
+        try {
+            $date = CarbonImmutable::createFromFormat('!Y-m-d', $value);
+        } catch (\Throwable) {
+            return null;
+        }
+        return $date && $date->format('Y-m-d') === $value ? $date : null;
     }
 
     private function card(string $movement, array $row): array
