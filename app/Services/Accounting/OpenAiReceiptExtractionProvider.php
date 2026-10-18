@@ -5,11 +5,15 @@ namespace App\Services\Accounting;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 final class OpenAiReceiptExtractionProvider implements ReceiptExtractionProvider
 {
     public function extract(UploadedFile $file): array
     {
+        $started = microtime(true);
+        $correlationId = (string) Str::uuid();
         $key = (string) config('services.receipt_ai.key', '');
         $model = (string) config('services.receipt_ai.model', '');
         if ((string) config('services.receipt_ai.provider', 'openai') !== 'openai' || $key === '' || $model === '') {
@@ -41,9 +45,10 @@ final class OpenAiReceiptExtractionProvider implements ReceiptExtractionProvider
                 ]);
 
             if (! $response->successful()) {
+                $this->logFailure($correlationId, $response->status(), $started, $response->json('error.type'), $response->json('error.code'), $response->header('x-request-id'));
                 return ['configured' => true, 'error' => 'AI receipt capture is temporarily unavailable.'];
             }
-            $json = $response->json('output_text');
+            $json = $this->responseText($response->json());
             $decoded = is_string($json) ? json_decode($json, true) : $json;
             return is_array($decoded) ? ['configured' => true, 'data' => $decoded] : ['configured' => true, 'error' => 'Receipt data could not be read.'];
         } catch (ConnectionException) {
@@ -51,6 +56,35 @@ final class OpenAiReceiptExtractionProvider implements ReceiptExtractionProvider
         } catch (\Throwable) {
             return ['configured' => true, 'error' => 'Receipt data could not be read.'];
         }
+    }
+
+    /** @param array<string,mixed> $payload */
+    private function responseText(array $payload): ?string
+    {
+        foreach ((array) ($payload['output'] ?? []) as $item) {
+            foreach ((array) ($item['content'] ?? []) as $content) {
+                if (($content['type'] ?? null) === 'output_text' && is_string($content['text'] ?? null) && trim($content['text']) !== '') {
+                    return $content['text'];
+                }
+            }
+        }
+        $fallback = $payload['output_text'] ?? null;
+        return is_string($fallback) && trim($fallback) !== '' ? $fallback : null;
+    }
+
+    private function logFailure(string $correlationId, int $status, float $started, mixed $errorType, mixed $errorCode, ?string $requestId): void
+    {
+        $category = $status === 429 ? 'rate_limited' : ($status >= 500 ? 'provider_server_error' : ($status >= 400 ? 'provider_request_error' : 'provider_error'));
+        Log::warning('receipt_ai provider failure', array_filter([
+            'correlation_id' => $correlationId,
+            'provider' => 'openai',
+            'http_status' => $status,
+            'failure_category' => $category,
+            'duration_ms' => (int) round((microtime(true) - $started) * 1000),
+            'provider_error_type' => is_string($errorType) ? $errorType : null,
+            'provider_error_code' => is_string($errorCode) ? $errorCode : null,
+            'provider_request_id' => $requestId,
+        ], static fn ($value): bool => $value !== null && $value !== ''));
     }
 
     private function instructions(): string
@@ -63,7 +97,7 @@ final class OpenAiReceiptExtractionProvider implements ReceiptExtractionProvider
     {
         $field = ['type' => ['string', 'null']];
         $confidence = ['type' => 'number', 'minimum' => 0, 'maximum' => 1];
-        return ['type' => 'object', 'additionalProperties' => false, 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration','warnings'], 'properties' => [
+        return ['type' => 'object', 'additionalProperties' => false, 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration','warnings','confidence'], 'properties' => [
             'receipt_date' => ['type' => ['string','null']], 'receipt_time' => $field,
             'amount' => ['type' => ['number','null']], 'currency' => $field,
             'transaction_reference' => $field, 'counterparty_name' => $field, 'bank_name' => $field,

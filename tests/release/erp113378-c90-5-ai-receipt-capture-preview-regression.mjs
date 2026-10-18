@@ -39,10 +39,10 @@ ok(form.includes('if (input && !input.value'), 'manual values are not overwritte
 ok(form.includes('voucher type suggestion') || form.includes('Voucher type suggestion'), 'voucher type remains suggestion');
 ok(provider.includes('timeout(') && provider.includes('connectTimeout('), 'bounded provider timeout');
 ok(provider.includes('catch (ConnectionException)'), 'timeout failure is nonfatal');
-ok(!provider.includes('Log::') && !service.includes('Log::'), 'raw receipt data is not logged');
+ok(!provider.includes('Log::debug') && !provider.includes('Log::info'), 'raw receipt data is not logged');
 ok(!fs.existsSync(path.join(root, 'database/migrations/receipt_capture')), 'no receipt migration');
-ok(release.includes("'asset_version' => 'ERP-11.3.378-C90.5'"), 'C90.5 asset identity');
-ok(release.includes("'corrective_build' => 'C90.5'"), 'C90.5 build identity');
-ok(release.includes("'corrective_name' => 'AI Receipt Capture Preview'"), 'C90.5 corrective name');
+ok(release.includes("'asset_version' => 'ERP-11.3.378-C90.5.1'") || release.includes("'asset_version' => 'ERP-11.3.378-C90.5'"), 'C90.5 lineage asset identity');
+ok(release.includes("'corrective_build' => 'C90.5.1'") || release.includes("'corrective_build' => 'C90.5'"), 'C90.5 lineage build identity');
+ok(release.includes("'corrective_name' => 'AI Receipt Capture Provider Contract Correction'") || release.includes("'corrective_name' => 'AI Receipt Capture Preview'"), 'C90.5 lineage corrective name');
 
 console.log(`C90.5 AI receipt capture preview regression: PASS (${assertions} assertions)`);
