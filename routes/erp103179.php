@@ -66,6 +66,7 @@ use App\Http\Controllers\Accounting\ManagementAccountingReportController;
 use App\Http\Controllers\Accounting\PartyStatementController;
 use App\Http\Controllers\Accounting\PartyBalanceLifecycleController;
 use App\Http\Controllers\Accounting\MobileAccountsController;
+use App\Http\Controllers\Accounting\MobileReceiptCaptureController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentPassengerOperationsLink;
@@ -501,6 +502,7 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
     // native cash-voucher, advance and return authorities.
     Route::middleware(['auth', C89ManagedBusinessRoute::class])->prefix('mobile/accounts')->name('mobile.accounts.')->group(function (): void {
         Route::get('/', [MobileAccountsController::class, 'index'])->name('index');
+        Route::post('/receipt-capture/preview', [MobileReceiptCaptureController::class, 'preview'])->name('receipt-capture.preview');
         Route::get('/payment', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'payment'))->name('payment');
         Route::post('/payment', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'payment'))->name('payment.store');
         Route::get('/receipt', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'receipt'))->name('receipt');
