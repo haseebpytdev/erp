@@ -194,8 +194,10 @@ final class MobileAccountsController
     {
         if (! method_exists($response, 'getTargetUrl')) return $response;
         $url = $response->getTargetUrl();
-        $patterns = ['voucher' => ['/cash-vouchers/(\d+)/?(?:\?.*)?$/', 'vouchers.show'], 'adjustment' => ['/advance-adjustments/(\d+)/?(?:\?.*)?$/', 'adjustments.show'], 'return' => ['/customer-advance-returns/(\d+)/?(?:\?.*)?$/', 'customer-returns.show']];
-        if (! preg_match($patterns[$kind][0], $url, $m)) return $response;
+        $path = parse_url($url, PHP_URL_PATH);
+        if (! is_string($path)) return $response;
+        $patterns = ['voucher' => ['#/cash-vouchers/(\d+)/?$#', 'vouchers.show'], 'adjustment' => ['#/advance-adjustments/(\d+)/?$#', 'adjustments.show'], 'return' => ['#/customer-advance-returns/(\d+)/?$#', 'customer-returns.show']];
+        if (! preg_match($patterns[$kind][0], $path, $m)) return $response;
         return redirect()->route('mobile.accounts.'.$patterns[$kind][1], (int) $m[1]);
     }
 
