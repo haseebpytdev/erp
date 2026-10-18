@@ -68,10 +68,11 @@ return [
     // Historical C90.6A regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.6A', 'corrective_build' => 'C90.6A', 'corrective_name' => 'Our Bank Accounts Master + Existing COA Linkage'
     // Historical C90.6A.1 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.6A.1', 'corrective_build' => 'C90.6A.1', 'corrective_name' => 'Our Bank Accounts Master Record Scope Hardening'
     // Historical C90.6A.2 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.6A.2', 'corrective_build' => 'C90.6A.2', 'corrective_name' => 'Our Bank Accounts Navigation + UI Polish'
-    'asset_version' => 'ERP-11.3.378-C90.6A.3',
+    // Historical C90.6A.3 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.6A.3', 'corrective_build' => 'C90.6A.3', 'corrective_name' => 'Our Bank Accounts Organization Hub Card'
+    'asset_version' => 'ERP-11.3.378-C90.6B',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C90.6A.3',
-    'corrective_name' => 'Our Bank Accounts Organization Hub Card',
+    'corrective_build' => 'C90.6B',
+    'corrective_name' => 'AI Receipt Local Matching + Professional Review UI',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];

@@ -2,6 +2,7 @@
 @section($layoutMeta['title_section'] ?? 'title', $definition['label'])
 @section($layoutMeta['content_section'] ?? 'content')
 @include('mobile.accounts._responsive')
+<style>.mobile-ai-review{margin-top:12px;padding:16px;border:1px solid #dce7f4;border-radius:12px;background:#fff;box-shadow:0 8px 24px rgba(28,55,90,.06);color:#24344b}.mobile-ai-review h2{margin:8px 0;color:#1769d2}.mobile-ai-review hr{border:0;border-top:1px solid #edf1f6;margin:12px 0}.mobile-ai-review button{margin:6px 6px 0 0}.mobile-ai-arrow{text-align:center;color:#1769d2;font-size:20px}.mobile-ai-review pre{white-space:pre-wrap;font-size:11px;overflow:auto}</style>
 <main class="mobile-accounts-page mobile-form">
     <div class="mobile-brand"><span>Easy Ticket ERP</span><a href="{{ route('mobile.accounts.index') }}">← Accounts</a></div>
     <h1 class="mobile-title">{{ $definition['label'] }}</h1>
@@ -49,7 +50,7 @@
     const panel = document.querySelector('[data-ai-panel]');
     if (!form || !file || !scan || !status || !panel) return;
     const endpoint = @json(route('mobile.accounts.receipt-capture.preview'));
-    const fields = { receipt_date: 'voucher_date', amount: 'amount', currency: 'currency_code', transaction_reference: 'transaction_reference', bank_name: 'bank_name', payment_method: 'payment_method', narration: 'narration' };
+    const fields = { receipt_date: 'voucher_date', amount: 'amount', currency: 'currency_code', transaction_reference: 'transaction_reference', narration: 'narration' };
     const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
     const apply = (name, value) => { const input = form.elements[name]; if (input && !input.value && value !== null && value !== '') input.value = value; };
     scan.addEventListener('click', async () => {
@@ -61,9 +62,13 @@
             const result = await response.json();
             if (!result.ok) { status.textContent = result.message || 'AI could not read this receipt. You can continue manually.'; return; }
             const suggestions = result.suggestions || {};
-            panel.innerHTML = '<strong>AI Receipt Suggestions</strong><p>Review each value before applying.</p>' + Object.entries(fields).map(([key, target]) => { const item = suggestions[key] || {}; return `<div class="mobile-ai-suggestion"><span>${esc(key.replaceAll('_',' '))}: ${esc(item.value ?? '—')} (${esc(item.level || 'Low')})</span><button type="button" data-ai-apply="${esc(target)}" data-ai-value="${esc(item.value ?? '')}">Apply</button></div>`; }).join('') + `<p>Voucher type suggestion: ${esc(suggestions.voucher_type_suggestion?.value || 'UNKNOWN')} — choose the route/type yourself.</p>`;
+            const match = suggestions.local_match || {}; const from = match.from || {}; const to = match.to || {}; const bank = match.our_bank_match || {}; const party = match.party_match || {};
+            const direction = match.direction || 'REVIEW REQUIRED';
+            panel.innerHTML = `<section class="mobile-ai-review"><strong>✓ RECEIPT DETECTED</strong><p>${esc(direction)} · voucher type suggestion: ${esc(suggestions.voucher_type_suggestion?.value || 'UNKNOWN')}</p><h2>${esc(suggestions.currency?.value || 'PKR')} ${esc(suggestions.amount?.value ?? '—')}</h2><p>${esc(suggestions.receipt_date?.value || 'Date unavailable')} · ${esc(suggestions.receipt_time?.value || '')}</p><p>Reference ${esc(suggestions.transaction_reference?.value || '—')} · Bank transaction: ${esc(suggestions.bank_transaction_type?.value || '—')}</p><hr><b>FROM</b><p>${esc(from.name || '—')}<br>${esc(from.bank || '')} · ${from.last_digits ? '••••'+esc(from.last_digits) : '—'}</p><div class="mobile-ai-arrow">↓</div><b>TO</b><p>${esc(to.name || '—')}<br>${esc(to.bank || '')} · ${to.last_digits ? '••••'+esc(to.last_digits) : '—'}</p><p><strong>${bank.id ? '✓ Matched locally' : 'Review required'}</strong><br>${bank.id ? esc(bank.bank_name+' - '+bank.account_title) : 'No authorized Our Bank Account match'}</p><hr><b>ERP MATCHES</b><p>PARTY<br>${party.party_id ? '✓ '+esc(party.display_name)+' · Auto matched' : 'Not matched · Review required'}</p><button type="button" class="secondary" data-ai-review>Review Details</button><button type="button" data-ai-safe>Apply Safe Fields</button><div data-ai-details hidden><pre>${esc(JSON.stringify(suggestions, null, 2))}</pre></div></section>`;
             panel.hidden = false; status.textContent = 'AI suggestions ready. No voucher was saved.';
-            panel.querySelectorAll('[data-ai-apply]').forEach(button => button.addEventListener('click', () => apply(button.dataset.aiApply, button.dataset.aiValue)));
+            const suggestedType = direction === 'RECEIPT' ? 'receipt' : (direction === 'PAYMENT' ? 'payment' : null);
+            panel.querySelector('[data-ai-safe]')?.addEventListener('click', () => { if(suggestedType) form.elements.voucher_type.value=suggestedType; Object.entries(fields).forEach(([key,target]) => apply(target, suggestions[key]?.value)); if(party.party_id) form.elements.party_id.value=party.party_id; if(bank.linked_ledger_code) form.elements.cash_bank_account.value=bank.linked_ledger_code; status.textContent='Safe fields applied. Save Draft remains a separate action.'; });
+            panel.querySelector('[data-ai-review]')?.addEventListener('click', () => { const d=panel.querySelector('[data-ai-details]'); if(d)d.hidden=!d.hidden; });
         } catch (error) { status.textContent = 'AI could not read this receipt. You can continue manually.'; }
         finally { scan.disabled = false; }
     });

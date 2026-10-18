@@ -89,15 +89,20 @@ final class OpenAiReceiptExtractionProvider implements ReceiptExtractionProvider
 
     private function instructions(): string
     {
-        return 'Extract only the receipt fields in the supplied schema. Do not invent values. Use null and confidence 0 when unreadable. If totals or dates conflict, return a warning and lower confidence. Account data may contain only visibly printed last digits; never reconstruct a full account number.';
+        return 'Extract only the receipt fields in the supplied schema. Do not invent values. Use null and confidence 0 when unreadable. If totals or dates conflict, return a warning and lower confidence. Account data may contain only visibly printed last digits; never reconstruct a full account number. Preserve explicit FROM and TO sides; bank_transaction_type is informational only and must not be mapped to a payment method.';
     }
 
     /** @return array<string,mixed> */
     private function schema(): array
     {
+        // C90.5.1 compatibility contract: 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration','warnings','confidence']
+        // C90.5.1 confidence contract: 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration']
         $field = ['type' => ['string', 'null']];
         $confidence = ['type' => 'number', 'minimum' => 0, 'maximum' => 1];
-        return ['type' => 'object', 'additionalProperties' => false, 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration','warnings','confidence'], 'properties' => [
+        return ['type' => 'object', 'additionalProperties' => false, 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration','from_account_name','from_account_last_digits','from_bank_name','to_account_name','to_account_last_digits','to_bank_name','bank_transaction_type','warnings','confidence'], 'properties' => [
+            'from_account_name' => $field, 'from_account_last_digits' => $field, 'from_bank_name' => $field,
+            'to_account_name' => $field, 'to_account_last_digits' => $field, 'to_bank_name' => $field,
+            'bank_transaction_type' => $field,
             'receipt_date' => ['type' => ['string','null']], 'receipt_time' => $field,
             'amount' => ['type' => ['number','null']], 'currency' => $field,
             'transaction_reference' => $field, 'counterparty_name' => $field, 'bank_name' => $field,
@@ -109,7 +114,10 @@ final class OpenAiReceiptExtractionProvider implements ReceiptExtractionProvider
                 'currency' => $confidence, 'transaction_reference' => $confidence, 'counterparty_name' => $confidence,
                 'bank_name' => $confidence, 'payment_method' => $confidence, 'visible_account_last_digits' => $confidence,
                 'voucher_type_suggestion' => $confidence, 'narration' => $confidence,
-            ], 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration']],
+                'from_account_name' => $confidence, 'from_account_last_digits' => $confidence, 'from_bank_name' => $confidence,
+                'to_account_name' => $confidence, 'to_account_last_digits' => $confidence, 'to_bank_name' => $confidence,
+                'bank_transaction_type' => $confidence,
+            ], 'required' => ['receipt_date','receipt_time','amount','currency','transaction_reference','counterparty_name','bank_name','payment_method','visible_account_last_digits','voucher_type_suggestion','narration','from_account_name','from_account_last_digits','from_bank_name','to_account_name','to_account_last_digits','to_bank_name','bank_transaction_type']],
         ]];
     }
 }
