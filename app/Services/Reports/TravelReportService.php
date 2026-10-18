@@ -115,7 +115,10 @@ final class TravelReportService
         usort($upcoming, static fn (array $a, array $b): int => strcmp($a['date'].' '.$a['time'], $b['date'].' '.$b['time']));
         $cards = [];
         foreach (array_slice($upcoming, 0, 20) as $entry) {
-            $cards[] = $this->movementEventRow($entry['event'], $entry['key']) + ['key' => $entry['key']];
+            $cards[] = $this->movementEventRow($entry['event'], $entry['key']) + [
+                'key' => $entry['key'],
+                'movement' => self::MOVEMENTS[$entry['key']],
+            ];
         }
         return compact('todayCounts', 'tomorrowCount', 'nextThreeDaysCount') + ['upcoming' => $cards];
     }
