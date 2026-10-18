@@ -8,11 +8,29 @@
     <div class="mobile-brand"><span>Easy Ticket ERP</span><a href="{{ route('mobile.accounts.index') }}">← Accounts</a></div>
     <h1>Movements &amp; Reports</h1><p class="sub">Today and upcoming travel movements from the existing operational reports.</p>
     <section class="movement-section"><h2>Today</h2><div class="movement-grid">
-        @foreach($movements as $key => $label)<a class="movement-card" href="{{ route('mobile.movements.'.$key, ['from'=>now()->toDateString(),'to'=>now()->toDateString()]) }}"><strong>{{ $label }}</strong><span>Today</span><span class="count">{{ $todayCounts[$key] ?? 0 }}</span></a>@endforeach
+        @foreach($movements as $key => $label)
+            <a class="movement-card" href="{{ route('mobile.movements.'.$key, ['from'=>now()->toDateString(),'to'=>now()->toDateString()]) }}">
+                <strong>{{ $label }}</strong><span>Today</span><span class="count">{{ $todayCounts[$key] ?? 0 }}</span>
+            </a>
+        @endforeach
     </div></section>
     <section class="movement-section"><h2>Upcoming</h2><div class="movement-summary"><div class="movement-card"><strong>Tomorrow</strong><span>Total movements</span><span class="count">{{ $tomorrowCount }}</span></div><div class="movement-card"><strong>Next 3 Days</strong><span>Tomorrow through day three</span><span class="count">{{ $nextThreeDaysCount }}</span></div></div></section>
     <section class="movement-section"><h2>Next Movements</h2><div class="movement-list">
-        @forelse($upcoming as $event)<a class="movement-event" href="{{ $event['action'] ?: route('mobile.movements.'.$event['key']) }}"><span class="badge">{{ $event['movement'] }}</span><div class="meta">{{ $event['date'] ?: 'Date unavailable' }}@if($event['time']) · {{ $event['time'] }}@endif</div><div class="booking">{{ $event['booking_no'] }}</div><div class="details">{{ $event['customer'] }} · {{ $event['pax'] }} pax@if($event['hotel'] && $event['hotel'] !== '—') · {{ $event['hotel'] }}@endif@if($event['flight']) · {{ $event['flight'] }}@endif</div></a>@empty<div class="empty">No upcoming movements in the next 3 days.</div>@endforelse
+        @forelse($upcoming as $event)
+            <a class="movement-event" href="{{ $event['action'] ?: route('mobile.movements.'.$event['key']) }}">
+                <span class="badge">{{ $event['movement'] }}</span>
+                <div class="meta">{{ $event['date'] ?: 'Date unavailable' }}
+                    @if($event['time']) · {{ $event['time'] }} @endif
+                </div>
+                <div class="booking">{{ $event['booking_no'] }}</div>
+                <div class="details">{{ $event['customer'] }} · {{ $event['pax'] }} pax
+                    @if($event['hotel'] && $event['hotel'] !== '—') · {{ $event['hotel'] }} @endif
+                    @if($event['flight']) · {{ $event['flight'] }} @endif
+                </div>
+            </a>
+        @empty
+            <div class="empty">No upcoming movements in the next 3 days.</div>
+        @endforelse
     </div></section>
 </main>
 @endsection

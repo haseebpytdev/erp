@@ -10,16 +10,52 @@
     <form class="movement-filter" method="get">
         <label>From Date<input type="date" name="from" value="{{ request('from') }}"></label>
         <label>To Date<input type="date" name="to" value="{{ request('to') }}"></label>
-        @if(in_array($movement,['arrival','departure'],true))<label>Airport<input type="text" name="{{ $movement==='arrival'?'destination':'origin' }}" value="{{ request($movement==='arrival'?'destination':'origin') }}" placeholder="Airport"></label>@else<label>Hotel Name<input type="text" name="hotel" value="{{ request('hotel') }}" placeholder="Hotel name"></label>@endif
+        @if(in_array($movement,['arrival','departure'],true))
+            <label>Airport<input type="text" name="{{ $movement==='arrival'?'destination':'origin' }}" value="{{ request($movement==='arrival'?'destination':'origin') }}" placeholder="Airport"></label>
+        @else
+            <label>Hotel Name<input type="text" name="hotel" value="{{ request('hotel') }}" placeholder="Hotel name"></label>
+        @endif
         <div class="actions"><button type="submit">Apply</button><a class="reset" href="{{ route('mobile.movements.'.$movement) }}">Reset</a></div>
     </form>
     <div class="movement-list">
         @forelse($rows as $row)
             @php($dateKey=in_array($movement,['arrival','departure'],true)?($movement==='arrival'?'arrival_date':'departure_date'):(str_contains($movement,'checkin')?'check_in':'check_out'))
             @php($hotel=$row['makkah_hotel']??$row['madinah_hotel']??'')
-            @if(($row['action']??'') && $row['action']!=='—')<a class="movement-card" href="{{ $row['action'] }}">@else<div class="movement-card">@endif<span class="badge">{{ $label }}</span><div class="date">{{ $row[$dateKey]??'—' }} @if($movement==='arrival') · {{ $row['arrival_time']??'' }} @elseif($movement==='departure') · {{ $row['departure_time']??'' }} @endif</div><div class="booking">{{ $row['booking_no']??'—' }}</div><div class="line">{{ $row['customer']??'—' }} · {{ $row['total_pax']??'—' }} pax</div>@if($hotel && $hotel!=='—')<div class="line">Hotel: {{ $hotel }}</div>@endif@if(($row['flight']??'') && $row['flight']!=='—')<div class="line">Flight: {{ $row['flight'] }} @if(($row['sector']??'') && $row['sector']!=='—') · {{ $row['sector'] }} @endif</div>@endif@if(($row['nights']??'') && $row['nights']!=='—')<div class="line">Nights: {{ $row['nights'] }}</div>@endif@if(($row['action']??'') && $row['action']!=='—')</a>@else</div>@endif
-        @empty<div class="empty">No {{ strtolower($label) }} match the selected filters.</div>@endforelse
+            @if(($row['action'] ?? '') && $row['action'] !== '—')
+                <a class="movement-card" href="{{ $row['action'] }}">
+            @else
+                <div class="movement-card">
+            @endif
+                <span class="badge">{{ $label }}</span>
+                <div class="date">{{ $row[$dateKey] ?? '—' }}
+                    @if($movement === 'arrival') · {{ $row['arrival_time'] ?? '' }}
+                    @elseif($movement === 'departure') · {{ $row['departure_time'] ?? '' }}
+                    @endif
+                </div>
+                <div class="booking">{{ $row['booking_no'] ?? '—' }}</div>
+                <div class="line">{{ $row['customer'] ?? '—' }} · {{ $row['total_pax'] ?? '—' }} pax</div>
+                @if($hotel && $hotel !== '—')
+                    <div class="line">Hotel: {{ $hotel }}</div>
+                @endif
+                @if(($row['flight'] ?? '') && $row['flight'] !== '—')
+                    <div class="line">Flight: {{ $row['flight'] }}
+                        @if(($row['sector'] ?? '') && $row['sector'] !== '—') · {{ $row['sector'] }} @endif
+                    </div>
+                @endif
+                @if(($row['nights'] ?? '') && $row['nights'] !== '—')
+                    <div class="line">Nights: {{ $row['nights'] }}</div>
+                @endif
+            @if(($row['action'] ?? '') && $row['action'] !== '—')
+                </a>
+            @else
+                </div>
+            @endif
+        @empty
+            <div class="empty">No {{ strtolower($label) }} match the selected filters.</div>
+        @endforelse
     </div>
-    @if(is_object($rows) && method_exists($rows,'links'))<div style="margin-top:14px">{{ $rows->links() }}</div>@endif
+    @if(is_object($rows) && method_exists($rows,'links'))
+        <div style="margin-top:14px">{{ $rows->links() }}</div>
+    @endif
 </main>
 @endsection
