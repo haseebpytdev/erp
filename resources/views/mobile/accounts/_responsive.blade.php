@@ -3,9 +3,17 @@
     body:has(.mobile-accounts-page) { overflow-x: hidden; }
     .mobile-accounts-page { width: 100%; max-width: 760px; min-width: 0; margin: 0 auto; padding: 16px; overflow-x: hidden; }
     .mobile-accounts-page h1 { margin: 0; color: #17243a; font-size: clamp(1.35rem, 5vw, 2rem); line-height: 1.2; }
+    .mobile-accounts-page .mobile-eyebrow { margin: 0 0 3px; color: #66758a; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .mobile-accounts-page .mobile-document-hero { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+    .mobile-accounts-page .mobile-document-hero strong { color: #17243a; font-size: clamp(1.25rem, 5vw, 1.8rem); font-variant-numeric: tabular-nums; }
     .mobile-accounts-page .mobile-sub { color: #66758a; margin: 6px 0 18px; overflow-wrap: anywhere; }
     .mobile-accounts-page .mobile-brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; color: #17243a; font-weight: 800; }
     .mobile-accounts-page .mobile-brand a { color: #315273; font-weight: 700; white-space: nowrap; }
+    .mobile-accounts-page a:not(.mobile-card) { color: #1769d2; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+    .mobile-accounts-page a:not(.mobile-card):visited { color: #5b3f8c; }
+    .mobile-accounts-page a:not(.mobile-card):hover { color: #0b4ea2; text-decoration-thickness: 2px; }
+    .mobile-accounts-page a:not(.mobile-card):focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; border-radius: 3px; }
+    .mobile-accounts-page a:not(.mobile-card):active { color: #0a3470; }
     .mobile-accounts-page .mobile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .mobile-accounts-page .mobile-card { display: block; width: 100%; min-height: 86px; padding: 18px; border: 1px solid #dce7f4; border-radius: 12px; background: #fff; color: #17243a; text-decoration: none; box-shadow: 0 5px 18px rgba(28,55,90,.06); overflow-wrap: anywhere; }
     .mobile-accounts-page .mobile-card strong { display: block; font-size: 15px; }
@@ -21,9 +29,14 @@
     .mobile-accounts-page .mobile-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
     .mobile-accounts-page .mobile-actions button { min-width: 0; min-height: 44px; padding: 10px 16px; border: 0; border-radius: 7px; background: #1769d2; color: #fff; font-weight: 800; }
     .mobile-accounts-page .mobile-actions button.secondary { background: #eef3f8; color: #24344b; }
+    .mobile-accounts-page form[data-mobile-submit-guard] button[disabled] { cursor: wait; opacity: .72; }
     .mobile-accounts-page .mobile-validation-error { margin: 12px 0; padding: 10px 12px; border: 1px solid #f0b6b6; border-radius: 7px; background: #fff5f5; color: #a12626; font-weight: 700; }
     .mobile-accounts-page .mobile-success { margin: 12px 0; padding: 10px 12px; border: 1px solid #b7dfc4; border-radius: 7px; background: #f0fff4; color: #176b36; font-weight: 700; }
     .mobile-document-page .mobile-readonly-value { display: block; font-weight: 500; color: #17243a; overflow-wrap: anywhere; }
+    .mobile-document-page .mobile-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 10px; }
+    .mobile-document-page .mobile-detail-grid > div { min-width: 0; }
+    .mobile-document-page .mobile-detail-label { display: block; color: #66758a; font-size: 11px; font-weight: 800; margin-bottom: 3px; }
+    .mobile-document-page .mobile-secondary-detail { padding-top: 4px; }
     .mobile-document-page .mobile-activity-list { display: grid; gap: 10px; margin-top: 10px; }
     .mobile-document-page .mobile-activity-list div { display: grid; gap: 3px; padding-bottom: 8px; border-bottom: 1px solid #edf1f6; }
     @media (max-width: 760px) {
@@ -59,6 +72,7 @@
         .mobile-accounts-page .mobile-actions { display: grid; grid-template-columns: 1fr; }
         .mobile-accounts-page .mobile-actions button { width: 100%; }
         .mobile-accounts-page input[type=file] { max-width: 100%; }
+        .mobile-document-page .mobile-detail-grid { grid-template-columns: 1fr; }
     }
 </style>
 <script>
@@ -88,5 +102,27 @@
         } else {
             resolveBackToErp();
         }
+        document.querySelectorAll('form[data-mobile-submit-guard]').forEach(form => {
+            form.addEventListener('submit', event => {
+                if (form.dataset.mobileSubmitting === 'true') {
+                    event.preventDefault();
+                    return;
+                }
+                form.dataset.mobileSubmitting = 'true';
+                const submitter = event.submitter;
+                if (submitter && submitter.name === 'after_save') {
+                    const selected = document.createElement('input');
+                    selected.type = 'hidden';
+                    selected.name = 'after_save';
+                    selected.value = submitter.value;
+                    form.appendChild(selected);
+                    submitter.removeAttribute('name');
+                }
+                form.querySelectorAll('button[type="submit"]').forEach(button => {
+                    button.disabled = true;
+                    button.textContent = button === submitter && button.value === 'submit' ? 'Submitting…' : 'Saving…';
+                });
+            });
+        });
     })();
 </script>

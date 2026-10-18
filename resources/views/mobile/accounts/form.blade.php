@@ -8,7 +8,7 @@
     @if(empty($branchOptions))
         <div class="mobile-validation-error" role="alert">No authorized branch is available for this transaction.</div>
     @endif
-    <form method="post" action="{{ route('mobile.accounts.'.$type.'.store') }}" enctype="multipart/form-data">
+    <form method="post" action="{{ route('mobile.accounts.'.$type.'.store') }}" enctype="multipart/form-data" data-mobile-submit-guard>
         @csrf
         <input type="hidden" name="voucher_type" value="{{ $voucherType }}">
         <div class="mobile-fields">
@@ -31,7 +31,7 @@
             <label>Proof / Receipt Image<input name="payment_proof" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></label>
         </div></details>
         @if(!empty($branchOptions))
-            <div class="mobile-actions"><button name="after_save" value="draft">Save Draft</button><button class="secondary" name="after_save" value="submit">Save &amp; Submit</button></div>
+            <div class="mobile-actions"><button type="submit" name="after_save" value="draft">Save Draft</button><button type="submit" class="secondary" name="after_save" value="submit">Save &amp; Submit</button></div>
         @endif
     </form>
 </main>

@@ -6,6 +6,7 @@ use App\Services\Accounting\CashVoucherService;
 use App\Services\Operations\NativeErpLayoutResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /** Thin responsive-web orchestration over the native accounting authorities. */
 final class MobileAccountsController
@@ -72,6 +73,7 @@ final class MobileAccountsController
         };
         abort_unless($this->cash->canUseType($request->user(), $voucherType, 'create'), 403);
         $request->merge(['voucher_type' => $voucherType]);
+        $this->assertNoDuplicateVoucherReference($request, $request->user());
         return $this->mobileRedirect(app(CashVoucherController::class)->store($request), 'voucher');
     }
 
@@ -112,6 +114,7 @@ final class MobileAccountsController
 
     public function storeCustomerReturn(Request $request)
     {
+        $this->assertNoDuplicateReturnReference($request, $request->user());
         return $this->mobileRedirect(app(PartyBalanceLifecycleController::class)->customerAdvanceReturnStore($request), 'return');
     }
 
@@ -199,6 +202,66 @@ final class MobileAccountsController
         $patterns = ['voucher' => ['#/cash-vouchers/(\d+)/?$#', 'vouchers.show'], 'adjustment' => ['#/advance-adjustments/(\d+)/?$#', 'adjustments.show'], 'return' => ['#/customer-advance-returns/(\d+)/?$#', 'customer-returns.show']];
         if (! preg_match($patterns[$kind][0], $path, $m)) return $response;
         return redirect()->route('mobile.accounts.'.$patterns[$kind][1], (int) $m[1]);
+    }
+
+    private function assertNoDuplicateVoucherReference(Request $request, mixed $user): void
+    {
+        $reference = $this->normalizeReference($request->input('transaction_reference'));
+        if ($reference === '') return;
+
+        $ownership = $this->cash->resolveVoucherOwnership(
+            $user,
+            $this->nullableInt($request->input('booking_id')),
+            $this->nullableInt($request->input('branch_id')),
+            $this->nullableInt($request->input('company_id')),
+        );
+        $existing = DB::table('cash_vouchers')
+            ->where('company_id', $ownership['company_id'])
+            ->whereNotNull('transaction_reference')
+            ->select(['voucher_no', 'transaction_reference'])
+            ->get()
+            ->first(fn (object $row): bool => $this->normalizeReference($row->transaction_reference) === $reference);
+        if ($existing) {
+            throw ValidationException::withMessages([
+                'transaction_reference' => 'This transaction reference already exists. Duplicate transaction was not saved.',
+            ]);
+        }
+    }
+
+    private function assertNoDuplicateReturnReference(Request $request, mixed $user): void
+    {
+        $reference = $this->normalizeReference($request->input('transaction_reference'));
+        if ($reference === '') return;
+        $branch = $this->nullableInt($request->input('branch_id'));
+        if (! $branch) return;
+
+        $ownership = $this->cash->resolveVoucherOwnership($user, null, $branch, null);
+        $existing = DB::table('customer_advance_returns')
+            ->where(function ($query) use ($ownership, $branch): void {
+                $query->where('company_id', $ownership['company_id'])
+                    ->orWhere(function ($fallback) use ($branch): void {
+                        $fallback->whereNull('company_id')->where('branch_id', $branch);
+                    });
+            })
+            ->whereNotNull('transaction_reference')
+            ->select(['transaction_reference'])
+            ->get()
+            ->first(fn (object $row): bool => $this->normalizeReference($row->transaction_reference) === $reference);
+        if ($existing) {
+            throw ValidationException::withMessages([
+                'transaction_reference' => 'This transaction reference already exists. Duplicate transaction was not saved.',
+            ]);
+        }
+    }
+
+    private function normalizeReference(mixed $value): string
+    {
+        return strtolower(trim((string) preg_replace('/\s+/u', ' ', (string) ($value ?? ''))));
+    }
+
+    private function nullableInt(mixed $value): ?int
+    {
+        return $value === null || trim((string) $value) === '' ? null : (int) $value;
     }
 
     private function showData(string $kind, object $row, int $id, array $extra = []): array

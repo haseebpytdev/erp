@@ -62,10 +62,11 @@ return [
     // 'asset_version' => 'ERP-11.3.378-C90.1.2.2', 'corrective_build' => 'C90.1.2.2', 'corrective_name' => 'Mobile Recent Postings Compact Rows'
     // Historical C90.1.2.3 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.1.2.3', 'corrective_build' => 'C90.1.2.3', 'corrective_name' => 'Mobile Voucher Branch Context Correction'
     // Historical C90.2 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.2', 'corrective_build' => 'C90.2', 'corrective_name' => 'Mobile Accounts End-to-End Workflow'
-    'asset_version' => 'ERP-11.3.378-C90.2.2',
+    // Historical C90.2.2 regression identity remains discoverable to immutable tests: 'asset_version' => 'ERP-11.3.378-C90.2.2', 'corrective_build' => 'C90.2.2', 'corrective_name' => 'Mobile Accounts Post Save Redirect Correction'
+    'asset_version' => 'ERP-11.3.378-C90.3',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C90.2.2',
-    'corrective_name' => 'Mobile Accounts Post Save Redirect Correction',
+    'corrective_build' => 'C90.3',
+    'corrective_name' => 'Mobile Accounts Duplicate Safety and Workflow UX',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];
