@@ -289,6 +289,10 @@ class ErpRoleAccessPolicy
             return 'travel_reports';
         }
 
+        if (preg_match('#^/mobile/movements(?:/|$)#', $path) === 1) {
+            return 'travel_reports';
+        }
+
         if (preg_match('#^/operations/group-package-bookings(?:/|$)#', $path) === 1) {
             return 'bookings';
         }

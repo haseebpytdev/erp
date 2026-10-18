@@ -39,6 +39,7 @@ final class MobileAccountsController
             'layoutMeta' => $this->layout->resolve(),
             'cards' => $cards,
             'recent' => $recent->limit(5)->get(),
+            'movementsUrl' => route('mobile.movements.index'),
         ]);
     }
 

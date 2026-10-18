@@ -7,6 +7,7 @@
     <h1 class="mobile-title">Accounts Quick Posting</h1>
     <p class="mobile-sub">Post payments, receive money and manage advances quickly.</p>
     <div class="mobile-grid">
+        <a class="mobile-card" href="{{ $movementsUrl ?? route('mobile.movements.index') }}"><strong>Movements &amp; Reports</strong><span>Today and upcoming travel movements</span></a>
         @if($cards['payment'])<a class="mobile-card" href="{{ route('mobile.accounts.payment') }}"><strong>Make Payment</strong><span>Supplier payment voucher</span></a>@endif
         @if($cards['receipt'])<a class="mobile-card" href="{{ route('mobile.accounts.receipt') }}"><strong>Receive Payment</strong><span>Customer receipt voucher</span></a>@endif
         @if($cards['advance'])<a class="mobile-card" href="{{ route('mobile.accounts.advance') }}"><strong>Advance</strong><span>Customer or supplier advance</span></a>@endif

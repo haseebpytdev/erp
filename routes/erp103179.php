@@ -66,6 +66,7 @@ use App\Http\Controllers\Accounting\ManagementAccountingReportController;
 use App\Http\Controllers\Accounting\PartyStatementController;
 use App\Http\Controllers\Accounting\PartyBalanceLifecycleController;
 use App\Http\Controllers\Accounting\MobileAccountsController;
+use App\Http\Controllers\Reports\MobileMovementController;
 use App\Http\Controllers\Accounting\MobileReceiptCaptureController;
 use App\Http\Controllers\Accounting\OurBankAccountController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
@@ -535,6 +536,17 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         Route::post('/customer-advance-returns/{id}/workflow/{action}', [MobileAccountsController::class, 'customerReturnWorkflow'])->whereNumber('id')->where('action', 'submit|approve|post')->name('customer-returns.workflow');
         Route::post('/customer-advance-returns/{id}/reverse', [MobileAccountsController::class, 'customerReturnReverse'])->whereNumber('id')->name('customer-returns.reverse');
     });
+
+    // C90.7: responsive movement views over the authoritative TravelReportService.
+    Route::middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])
+        ->prefix('mobile/movements')->name('mobile.movements.')
+        ->group(function (): void {
+            Route::get('/', [MobileMovementController::class, 'index'])->name('index');
+            foreach (array_keys(\App\Services\Reports\TravelReportService::MOVEMENTS) as $movement) {
+                Route::get('/'.$movement, [MobileMovementController::class, 'report'])
+                    ->defaults('movement', $movement)->name($movement);
+            }
+        });
 
     Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.index');
     Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.create');
