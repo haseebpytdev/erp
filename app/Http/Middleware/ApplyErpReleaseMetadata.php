@@ -6,6 +6,7 @@ use App\Support\Release\Erp11310ObsoleteFileCleaner;
 use App\Support\Release\Erp11330StabilizationCleaner;
 use App\Services\Operations\ServerSidebarComposer;
 use App\Services\Operations\AdministrationHubPresentationTransformer;
+use App\Services\Operations\OrganizationHubBankAccountCardTransformer;
 use App\Services\Operations\NativeErpLayoutResolver;
 use Closure;
 use Illuminate\Http\Request;
@@ -98,6 +99,7 @@ class ApplyErpReleaseMetadata
         }
 
         $html = app(AdministrationHubPresentationTransformer::class)->transform($request, $html);
+        $html = app(OrganizationHubBankAccountCardTransformer::class)->transform($request, $html);
 
         $release = config('et_erp_release', []);
         $version = (string) ($release['version'] ?? 'v1.1.33.0-ERP11.3');
