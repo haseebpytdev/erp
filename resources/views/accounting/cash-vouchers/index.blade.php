@@ -164,6 +164,7 @@
 
   <div class="et-fin-actions">
     @if(in_array('receipt',$allowedTypes,true))
+      <a class="et-fin-btn" href="{{ route('accounting.our-bank-accounts.index') }}">Our Bank Accounts</a>
       <a class="et-fin-btn primary" href="{{ route('accounting.cash-vouchers.create',['type'=>'receipt']) }}">＋ Receipt Voucher</a>
     @endif
     @if(in_array('payment',$allowedTypes,true))

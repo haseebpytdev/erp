@@ -67,6 +67,7 @@ use App\Http\Controllers\Accounting\PartyStatementController;
 use App\Http\Controllers\Accounting\PartyBalanceLifecycleController;
 use App\Http\Controllers\Accounting\MobileAccountsController;
 use App\Http\Controllers\Accounting\MobileReceiptCaptureController;
+use App\Http\Controllers\Accounting\OurBankAccountController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentPassengerOperationsLink;
@@ -460,6 +461,14 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
     Route::post('/accounting/chart-of-accounts/auto-create', [ChartOfAccountsWorkspaceController::class, 'store'])
         ->middleware($coaWriteMiddleware)
         ->name('accounting.chart-of-accounts.auto-store');
+
+    // C90.6A: isolated OUR bank metadata, linked only to existing eligible COA ledgers.
+    Route::get('/accounting/our-bank-accounts', [OurBankAccountController::class, 'index'])->middleware($coaReadMiddleware)->name('accounting.our-bank-accounts.index');
+    Route::get('/accounting/our-bank-accounts/create', [OurBankAccountController::class, 'create'])->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.create');
+    Route::post('/accounting/our-bank-accounts', [OurBankAccountController::class, 'store'])->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.store');
+    Route::get('/accounting/our-bank-accounts/{id}/edit', [OurBankAccountController::class, 'edit'])->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.edit');
+    Route::put('/accounting/our-bank-accounts/{id}', [OurBankAccountController::class, 'update'])->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.update');
+    Route::post('/accounting/our-bank-accounts/{id}/deactivate', [OurBankAccountController::class, 'deactivate'])->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.deactivate');
 
     // ERP-11.3 Payments, Receipts & Advance Adjustments Core
     Route::get('/accounting/cash-vouchers', [CashVoucherController::class, 'index'])->name('accounting.cash-vouchers.index');
