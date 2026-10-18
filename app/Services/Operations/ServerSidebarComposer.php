@@ -14,6 +14,7 @@ final class ServerSidebarComposer
             'TRAVEL REPORTS' => ['travel reports'],
             'MASTER DATA' => ['party master', 'travel masters', 'products & services'],
             'ADMINISTRATION' => ['organization', 'currency rates', 'financial years', 'health & updates', 'administration', 'foundation'],
+            'ORGANIZATION' => ['our bank accounts'],
         ];
         if (!class_exists(\DOMDocument::class)) return $html;
         $dom = new \DOMDocument('1.0', 'UTF-8');
@@ -98,12 +99,21 @@ final class ServerSidebarComposer
         // Travel Reports are repo-owned operational links. Authorization is
         // still enforced by EnforceErpRoleScopedAccess; this layer only adds
         // presentation links so direct URLs and sidebar share the same policy.
-        foreach ([['Travel Reports','/travel-reports']] as [$label,$href]) {
+        foreach ([['Travel Reports','/travel-reports'], ['Our Bank Accounts','/accounting/our-bank-accounts']] as [$label,$href]) {
             $key = strtolower($label);
             if (isset($known[$key])) continue;
             $row = $dom->createElement('li');
             $anchor = $dom->createElement('a', $label);
+            $anchor->setAttribute('class', 'nav-item');
             $anchor->setAttribute('href', $href);
+            if ($label === 'Our Bank Accounts') {
+                $anchor->textContent = '';
+                $icon = $dom->createElement('span', '▣');
+                $icon->setAttribute('class', 'et-ui-nav-icon');
+                $text = $dom->createElement('span', $label);
+                $anchor->appendChild($icon);
+                $anchor->appendChild($text);
+            }
             $row->appendChild($anchor);
             $known[$key] = $row;
         }
