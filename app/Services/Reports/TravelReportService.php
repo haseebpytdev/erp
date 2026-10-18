@@ -91,6 +91,46 @@ final class TravelReportService
         return ['key'=>$key,'title'=>self::REPORTS[$key]??self::MOVEMENTS[$key]??'Travel Report','description'=>'Operational travel activity; no financial data.','columns'=>array_map(fn($c)=>['key'=>$c,'label'=>$labels[$c]??$c],$columns),'filters'=>$filters];
     }
     public function rows(string $key,array $filters=[],int $perPage=50): LengthAwarePaginator { $perPage=max(25,min(100,$perPage));$page=max(1,(int)($filters['page']??request()->integer('page',1)));if($this->isDimension($key))return $this->dimensionPage($key,$filters,$perPage,$page);if($key==='passengers')return $this->passengerPage($filters,$perPage,$page);if(isset(self::MOVEMENTS[$key]))return $this->movementPage($key,$filters,$perPage,$page);$query=$this->baseQuery($key,$filters);$p=$query?$query->paginate($perPage,['*'],'page',$page):new Paginator([],0,$perPage,$page);$items=collect();foreach($p->items() as $record)foreach($this->recordsFor($key,$record,$filters) as $row)$items->push($row);return new Paginator($items,$p->total(),$perPage,$page,['path'=>request()->url(),'query'=>$filters]); }
+    /** Build the mobile dashboard's bounded movement snapshot once per request. */
+    public function mobileMovementSnapshot(array $filters, string $today, string $through): array
+    {
+        $todayCounts = [];
+        $tomorrow = date('Y-m-d', strtotime($today.' +1 day'));
+        $tomorrowCount = 0;
+        $nextThreeDaysCount = 0;
+        $upcoming = [];
+        foreach (array_keys(self::MOVEMENTS) as $key) {
+            $window = $filters;
+            $window['from'] = $today;
+            $window['to'] = $through;
+            $events = $this->movementEvents($key, $window);
+            $dateEvents = $events->map(fn ($event): array => ['event' => $event, 'date' => $this->mobileMovementDate($event, $key)]);
+            $todayCounts[$key] = $dateEvents->where('date', $today)->count();
+            $tomorrowCount += $dateEvents->where('date', $tomorrow)->count();
+            $nextThreeDaysCount += $dateEvents->filter(fn (array $entry): bool => $entry['date'] >= $tomorrow && $entry['date'] <= $through)->count();
+            foreach ($dateEvents as $entry) {
+                $upcoming[] = ['key' => $key, 'event' => $entry['event'], 'date' => $entry['date'], 'time' => $this->mobileMovementTime($entry['event'], $key)];
+            }
+        }
+        usort($upcoming, static fn (array $a, array $b): int => strcmp($a['date'].' '.$a['time'], $b['date'].' '.$b['time']));
+        $cards = [];
+        foreach (array_slice($upcoming, 0, 20) as $entry) {
+            $cards[] = $this->movementEventRow($entry['event'], $entry['key']) + ['key' => $entry['key']];
+        }
+        return compact('todayCounts', 'tomorrowCount', 'nextThreeDaysCount') + ['upcoming' => $cards];
+    }
+
+    private function mobileMovementDate(object $event, string $key): string
+    {
+        $field = in_array($key, ['makkah-checkin', 'madinah-checkin'], true) ? 'check_in' : (in_array($key, ['makkah-checkout', 'madinah-checkout'], true) ? 'check_out' : ($key === 'arrival' ? 'arrival' : 'departure'));
+        if (in_array($key, ['arrival', 'departure'], true)) return $this->movementDisplayDate($event, $field);
+        return substr(trim((string) ($event->{$field} ?? '')), 0, 10);
+    }
+
+    private function mobileMovementTime(object $event, string $key): string
+    {
+        return in_array($key, ['arrival', 'departure'], true) ? $this->movementTime($event, $key) : '';
+    }
     public function streamRows(string $key,array $filters=[]): iterable { if($this->isDimension($key)){foreach($this->dimensionAggregate($key,$filters) as $row)yield$row;return;}if(isset(self::MOVEMENTS[$key])){foreach($this->movementEvents($key,$filters) as $event)yield$this->movementEventRow($event,$key);return;}if($key==='passengers'){$table=$this->passengerTable();if(!$table)return;foreach($this->passengerQuery($filters)->cursor() as $record)yield$this->mapPassenger($record,(int)($record->booking_id??0));return;}if($key==='group-umrah'){$query=$this->groupUmrahQuery($filters);if(!$query)return;foreach($query->cursor() as $record)yield$this->groupRow($record);return;}$query=$this->baseQuery($key,$filters);if(!$query)return;foreach($query->cursor() as $record)foreach($this->recordsFor($key,$record,$filters) as $row)yield$row; }
     public function counts(): array { $p=$this->passengerTable();$h=$this->hotelTable();$t=$this->transportTable();return ['bookings'=>$this->countTable('bookings'),'passengers'=>$p?$this->activePassengerCount($p):0,'air'=>$this->countTable('booking_services'),'hotels'=>$h?$this->countTable($h):0,'visas'=>$this->countTable('booking_visa_services'),'transport'=>$t?$this->countTable($t):0,'group-umrah'=>$this->countTable('booking_group_package_unified')]; }
     public function movementAirportOptions(string $movement): array { $aliases=$movement==='arrival'?['to_code','destination_code','to','destination']:['from_code','origin_code','from','origin'];$values=[];foreach(['booking_itinerary_segments','booking_group_package_flights'] as $table){if(!Schema::hasTable($table))continue;foreach($aliases as $column){if(!Schema::hasColumn($table,$column))continue;foreach(DB::table($table)->whereNotNull($column)->pluck($column) as $value){$value=strtoupper(trim((string)$value));if($value!=='')$values[$value]=true;}}}$out=array_keys($values);sort($out,SORT_STRING);return$out; }

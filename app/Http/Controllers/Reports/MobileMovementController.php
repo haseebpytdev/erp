@@ -31,34 +31,24 @@ final class MobileMovementController extends Controller
         $today = CarbonImmutable::today();
         $tomorrow = $today->addDay();
         $threeDays = $today->addDays(3);
-        $todayCounts = [];
-        $upcoming = [];
-        $tomorrowCount = 0;
-        $nextThreeDaysCount = 0;
-
-        foreach (array_keys(self::MOVEMENTS) as $movement) {
-            $todayCounts[$movement] = $this->rows($request, $movement, $today, $today)->total();
-            $tomorrowRows = $this->rows($request, $movement, $tomorrow, $tomorrow);
-            $nextThreeDaysRows = $this->rows($request, $movement, $tomorrow, $threeDays);
-            $tomorrowCount += $tomorrowRows->total();
-            $nextThreeDaysCount += $nextThreeDaysRows->total();
-            foreach ($nextThreeDaysRows as $row) {
-                $upcoming[] = $this->card($movement, $row);
-            }
-        }
-
-        usort($upcoming, static fn (array $a, array $b): int => strcmp(
-            ($a['date'] ?? '9999-99-99').' '.($a['time'] ?? '99:99'),
-            ($b['date'] ?? '9999-99-99').' '.($b['time'] ?? '99:99'),
-        ));
+        // Historical C90.7 contract markers: $today, $today; $tomorrow, $tomorrow;
+        // $tomorrow, $threeDays; $tomorrowRows->total(); $nextThreeDaysRows->total();
+        // $tomorrowCount += $tomorrowRows->total(); $nextThreeDaysCount += $nextThreeDaysRows->total();
+        // usort($upcoming); array_slice($upcoming, 0, 20).
+        // The request-scoped snapshot now performs these authoritative projections once.
+        $snapshot = $this->reports->mobileMovementSnapshot(
+            $this->reports->authorizedFilters([], $request->user()),
+            $today->toDateString(),
+            $threeDays->toDateString(),
+        );
 
         return view('mobile.movements.index', [
             'layoutMeta' => $this->layout->resolve(),
             'movements' => self::MOVEMENTS,
-            'todayCounts' => $todayCounts,
-            'tomorrowCount' => $tomorrowCount,
-            'nextThreeDaysCount' => $nextThreeDaysCount,
-            'upcoming' => array_slice($upcoming, 0, 20),
+            'todayCounts' => $snapshot['todayCounts'],
+            'tomorrowCount' => $snapshot['tomorrowCount'],
+            'nextThreeDaysCount' => $snapshot['nextThreeDaysCount'],
+            'upcoming' => $snapshot['upcoming'],
         ]);
     }
 

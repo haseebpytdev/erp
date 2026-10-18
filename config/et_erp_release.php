@@ -74,10 +74,12 @@ return [
     // 'asset_version' => 'ERP-11.3.378-C90.7', 'corrective_build' => 'C90.7', 'corrective_name' => 'Mobile Movements & Reports'
     // Historical C90.7.1 regression identity remains discoverable to immutable tests:
     // 'asset_version' => 'ERP-11.3.378-C90.7.1', 'corrective_build' => 'C90.7.1', 'corrective_name' => 'Mobile Movement Count + Display Hardening'
-    'asset_version' => 'ERP-11.3.378-C90.7.2',
+    // Historical C90.7.2 regression identity remains discoverable to immutable tests:
+    // 'asset_version' => 'ERP-11.3.378-C90.7.2', 'corrective_build' => 'C90.7.2', 'corrective_name' => 'Mobile Movements View Syntax Repair'
+    'asset_version' => 'ERP-11.3.378-C90.7.3',
     'release' => 'ERP-11.3.378',
-    'corrective_build' => 'C90.7.2',
-    'corrective_name' => 'Mobile Movements View Syntax Repair',
+    'corrective_build' => 'C90.7.3',
+    'corrective_name' => 'Mobile Movements Performance and UI Consistency',
     'package' => 'ERP-11.3.378 Party Balance Lifecycle',
     'package_detail' => 'ERP-11.3.378 adds controlled party opening balances, a parent-driven Opening Balance Clearing account, customer advance source authority and a dedicated customer advance return lifecycle with idempotent native journal posting and reversal. Existing accounting formulas and journal authority remain unchanged. DATABASE_SCHEMA_CHANGED=YES. NEW_MIGRATION_REQUIRED=YES.',
 ];
