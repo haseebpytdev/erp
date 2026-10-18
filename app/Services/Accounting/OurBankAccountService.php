@@ -20,13 +20,19 @@ final class OurBankAccountService
         return $this->cash->cashBankAccounts();
     }
 
-    public function companyOptions(): array
+    public function companyOptions(mixed $user): array
     {
         if (!Schema::hasTable('companies')) return [];
         $columns = Schema::getColumnListing('companies');
         $name = $this->first($columns, ['name', 'company_name', 'title', 'legal_name']);
         if (!$name) return [];
-        return DB::table('companies')->select(['id', $name.' as name'])->orderBy($name)->get()->map(fn ($r): array => ['id'=>(int)$r->id,'name'=>(string)$r->name])->all();
+        $q = DB::table('companies')->select(['id', $name.' as name'])->orderBy($name);
+        if (!$this->branches->isSuperAdmin($user)) {
+            $companyId = $this->branches->companyIdForUser($user);
+            if (!$companyId) return [];
+            $q->where('id', $companyId);
+        }
+        return $q->get()->map(fn ($r): array => ['id'=>(int)$r->id,'name'=>(string)$r->name])->all();
     }
 
     public function branchOptions(mixed $user): array
@@ -38,11 +44,21 @@ final class OurBankAccountService
     {
         if (!Schema::hasTable('our_bank_accounts')) return [];
         $q = DB::table('our_bank_accounts')->orderBy('bank_name')->orderBy('account_title');
-        $allowed = $this->branches->allowedBranchIds($user);
-        if (!$this->branches->isSuperAdmin($user) && $allowed !== null) {
-            $q->where(function ($w) use ($allowed): void { $w->whereIn('branch_id', $allowed ?: [-1])->orWhereNull('branch_id'); });
+        if (!$this->branches->isSuperAdmin($user)) {
+            $companyId = $this->branches->companyIdForUser($user);
+            $allowed = $this->branches->allowedBranchIds($user);
+            if (!$companyId) return [];
+            $q->where('company_id', $companyId)->where(function ($w) use ($allowed): void { $w->whereIn('branch_id', $allowed ?: [-1])->orWhereNull('branch_id'); });
         }
         return $q->get()->map(fn ($r): array => (array)$r)->all();
+    }
+
+    public function findAuthorized(int $id, mixed $user): object
+    {
+        $row = DB::table('our_bank_accounts')->where('id', $id)->first();
+        abort_unless($row, 404);
+        $this->assertRowScope($row, $user);
+        return $row;
     }
 
     public function create(array $input, mixed $user): int
@@ -57,9 +73,7 @@ final class OurBankAccountService
 
     public function deactivate(int $id, mixed $user): void
     {
-        $row = DB::table('our_bank_accounts')->where('id', $id)->first();
-        if (!$row) throw new RuntimeException('Bank account not found.');
-        $this->assertCompanyBranch((int)$row->company_id, $row->branch_id === null ? null : (int)$row->branch_id, $user);
+        $this->findAuthorized($id, $user);
         DB::table('our_bank_accounts')->where('id', $id)->update(['is_active'=>false,'updated_at'=>now()]);
     }
 
@@ -77,6 +91,10 @@ final class OurBankAccountService
 
     private function persist(array $input, mixed $user, ?int $id): int
     {
+        if ($id !== null) {
+            // Ownership is checked before any submitted destination scope is trusted.
+            $this->findAuthorized($id, $user);
+        }
         $bank = trim((string)($input['bank_name'] ?? '')); $title = trim((string)($input['account_title'] ?? ''));
         $suffix = trim((string)($input['account_last_digits'] ?? '')); $currency = strtoupper(trim((string)($input['currency_code'] ?? '')));
         $ledgerId = (int)($input['linked_ledger_id'] ?? 0); $companyId = (int)($input['company_id'] ?? 0); $branchId = ($input['branch_id'] ?? '') === '' ? null : (int)$input['branch_id'];
@@ -105,6 +123,14 @@ final class OurBankAccountService
         }
         if (!$this->branches->mayAccessBranch($user, $branchId)) throw new RuntimeException('Selected branch is outside your authorized scope.');
         if (!Schema::hasTable('branches') || !DB::table('branches')->where('id',$branchId)->where('company_id',$companyId)->exists()) throw new RuntimeException('Selected branch does not belong to the company.');
+    }
+
+    private function assertRowScope(object $row, mixed $user): void
+    {
+        if ($this->branches->isSuperAdmin($user)) return;
+        $companyId = $this->branches->companyIdForUser($user);
+        $allowed = $this->branches->allowedBranchIds($user) ?? [];
+        if (!$companyId || (int)$row->company_id !== $companyId || ($row->branch_id !== null && !in_array((int)$row->branch_id, $allowed, true))) abort(403, 'The requested bank account is outside your authorized scope.');
     }
 
     private function first(array $columns, array $names): ?string { foreach ($names as $name) if (in_array($name,$columns,true)) return $name; return null; }

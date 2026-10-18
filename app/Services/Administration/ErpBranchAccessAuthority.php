@@ -136,6 +136,12 @@ final class ErpBranchAccessAuthority
         return $branchId > 0 && is_array($allowed) && in_array($branchId, $allowed, true);
     }
 
+    /** Canonical authenticated-user company ownership for scoped master data. */
+    public function companyIdForUser(mixed $user): ?int
+    {
+        return $this->resolvedCompanyId($user);
+    }
+
     public function assertMayAccessBranch(mixed $user, ?int $branchId): void
     {
         abort_unless($this->mayAccessBranch($user, $branchId), 403, 'The requested branch is outside your authorized scope.');
