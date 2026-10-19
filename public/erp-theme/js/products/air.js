@@ -144,15 +144,10 @@ var etgpAirRequest113106=function(bookingId,method,payload){
   return request;
 };
 
-var etgpAirDraftKey113119=function(bookingId){var root=core.getBookingRoot&&core.getBookingRoot(),userId=root&&root.getAttribute('data-etgp-user-id');var supplementary=core.getBillingContext&&core.getBillingContext()==='SUPPLEMENTARY';var scope=supplementary&&core.getDraftScopeKey?core.getDraftScopeKey('air',bookingId):String(bookingId||'');return userId?'etgp-air-product-draft-v113119:'+String(scope)+':user:'+String(userId):'etgp-air-product-draft-v113119:'+String(scope);};
+var etgpAirDraftKey113119=function(bookingId){var root=core.getBookingRoot&&core.getBookingRoot(),userId=root&&root.getAttribute('data-etgp-user-id');if(!userId)return null;var supplementary=core.getBillingContext&&core.getBillingContext()==='SUPPLEMENTARY';var scope=supplementary&&core.getDraftScopeKey?core.getDraftScopeKey('air',bookingId):String(bookingId||'');return 'etgp-air-product-draft-v113119:'+String(scope)+':user:'+String(userId);};
 var etgpAirDraftRead113119=function(bookingId){
   try{
     var raw=localStorage.getItem(etgpAirDraftKey113119(bookingId));
-    /* Older isolated test shells had no authenticated actor attribute. Keep
-       their fixture compatibility only; authenticated pages never consult
-       the unsafe global namespace. */
-    var root=core.getBookingRoot&&core.getBookingRoot();
-    if(!raw&&root&&!root.getAttribute('data-etgp-user-id'))raw=localStorage.getItem('etgp-air-product-draft-v113119:'+String(bookingId||''));
     if(!raw)return null;
     var parsed=JSON.parse(raw);
     return parsed&&parsed.payload&&typeof parsed.payload==='object'?parsed:null;
@@ -242,9 +237,9 @@ var etgpAirTicketMap113106=function(rows){
 };
 
 
-var etgpAirDedicatedIntegration113314={getBookingId:function(){return core.getBookingId();},applyPassengerFareOverrides:function(data){return data;},updateMetrics:function(){},updateSummaryMetrics:function(){},refreshBookingState:function(){return Promise.resolve(null);},getLockState:function(){return core.getLockState();},applyLock:function(workspaceRoot){return core.applyReadOnly(workspaceRoot);},setResponse:function(data){return core.setProductResponse('air',core.getBookingId(),data);},markMounted:function(){return core.markMounted(core.getBookingRoot());},markFailed:function(workspaceHost,message){return core.markFailed(core.getBookingRoot(),message);}};
+var etgpAirDedicatedIntegration113314={getBookingId:function(){return core.getBookingId();},applyPassengerFareOverrides:function(data){return data;},updateMetrics:function(){},updateSummaryMetrics:function(){},refreshBookingState:function(bookingId){return core.refreshBookingState(bookingId,'air');},getLockState:function(){return core.getLockState();},applyLock:function(workspaceRoot){return core.applyReadOnly(workspaceRoot);},setResponse:function(data){return core.setProductResponse('air',core.getBookingId(),data);},markMounted:function(){return core.markMounted(core.getBookingRoot());},markFailed:function(workspaceHost,message){return core.markFailed(core.getBookingRoot(),message);}};
 var etgpAirHostIntegration113314=function(){return etgpAirDedicatedIntegration113314;};
-var etgpAirData113314={load:function(bookingId){var cached=core.getProductResponse('air',bookingId);if(cached)return Promise.resolve(cached);var pending=core.getProductPromise('air',bookingId);if(pending)return pending;pending=etgpAirLoad113106(bookingId).then(function(data){core.setProductResponse('air',bookingId,data);core.setPassengerData(Array.isArray(data.passengers)?data.passengers:[]);return data;}).catch(function(error){core.setProductPromise('air',bookingId,null);throw error;});core.setProductPromise('air',bookingId,pending);return pending;},refresh:function(bookingId){core.setProductPromise('air',bookingId,null);var fresh=etgpAirLoad113106(bookingId).then(function(data){core.setProductResponse('air',bookingId,data);core.setPassengerData(Array.isArray(data.passengers)?data.passengers:[]);return data;}).catch(function(error){core.setProductPromise('air',bookingId,null);throw error;});core.setProductPromise('air',bookingId,fresh);return fresh;}};
+var etgpAirData113314={load:function(bookingId){var cached=core.getProductResponse('air',bookingId);if(cached)return Promise.resolve(cached);var pending=core.getProductPromise('air',bookingId);if(pending)return pending;var token=core.getProductCacheToken?core.getProductCacheToken('air',bookingId):null;if(!token)return etgpAirLoad113106(bookingId);pending=etgpAirLoad113106(bookingId).then(function(data){if(!core.setProductResponse('air',bookingId,data,token))return data;core.setPassengerData(Array.isArray(data.passengers)?data.passengers:[]);return data;}).catch(function(error){core.setProductPromise('air',bookingId,null,token);throw error;});core.setProductPromise('air',bookingId,pending,token);return pending;},refresh:function(bookingId){if(core.invalidateBookingCaches)core.invalidateBookingCaches(bookingId);var token=core.getProductCacheToken?core.getProductCacheToken('air',bookingId):null;if(!token)return etgpAirLoad113106(bookingId);var fresh=etgpAirLoad113106(bookingId).then(function(data){if(!core.setProductResponse('air',bookingId,data,token))return data;core.setPassengerData(Array.isArray(data.passengers)?data.passengers:[]);return data;}).catch(function(error){core.setProductPromise('air',bookingId,null,token);throw error;});core.setProductPromise('air',bookingId,fresh,token);return fresh;}};
 var etgpAirDraft113314={apply:function(data,bookingId){return data&&data._etgpPreparedData113119?data:etgpAirApplyDraft113119(data,bookingId);},write:function(bookingId,payload){return etgpAirDraftWrite113119(bookingId,payload);},clear:function(bookingId){return etgpAirDraftClear113119(bookingId);}};
 var etgpAirSave113314=function(bookingId,payload){
   cancelAirMultiDraft113119();
@@ -260,7 +255,6 @@ var etgpAirSave113314=function(bookingId,payload){
       var refreshTimer=setTimeout(function(){
         if(settled)return;
         settled=true;
-        if(core.setProductPromise)core.setProductPromise('air',bookingId,null);
         var refreshTimeout=new Error('Air data was saved, but refresh confirmation timed out. Reload before editing.');
         refreshTimeout.kind='saved-refresh-unknown';refreshTimeout.saveConfirmed=true;refreshTimeout.timedOut=true;
         reject(refreshTimeout);
@@ -272,7 +266,6 @@ var etgpAirSave113314=function(bookingId,payload){
       }).catch(function(error){
         if(settled)return;
         settled=true;clearTimeout(refreshTimer);
-        if(core.setProductPromise)core.setProductPromise('air',bookingId,null);
         var refreshError=new Error('Air data was saved, but the confirmation refresh failed. Reload before editing.');
         refreshError.kind='saved-refresh-failed';refreshError.saveConfirmed=true;refreshError.cause=error;
         reject(refreshError);
@@ -768,7 +761,7 @@ var renderTicketGroupEditor113106=function(host,data,bookingId){
       var summaryResult=result.summary||{};
       integration.updateSummaryMetrics(summaryResult,currency);
       if(result.common&&Number(result.common.supplier_id||0)>0&&suppliers.length)supplierControl.select.value=String(result.common.supplier_id);
-      if(isActiveAirLifecycle(bookingId)){airLifecycle.dirty=false;airLifecycle.draftPending=false;}integration.refreshBookingState(bookingId);
+      if(isActiveAirLifecycle(bookingId)){airLifecycle.dirty=false;airLifecycle.draftPending=false;}var bookingRefresh=integration.refreshBookingState(bookingId);if(bookingRefresh&&typeof bookingRefresh.catch==='function')bookingRefresh.catch(function(){core.showNotice('Air data was saved, but the booking summary refresh failed. Reload before editing.');});
     }).catch(function(error){
       feedback.hidden=false;feedback.classList.add('is-error');feedback.textContent=error&&error.message?error.message:'Tickets / Flight Data could not be saved.';
     }).finally(function(){if(isActiveAirLifecycle(bookingId))airLifecycle.saveInFlight=false;save.disabled=false;save.textContent='Save Tickets / Flight Data';});
