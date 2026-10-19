@@ -518,7 +518,17 @@ final class GeneralBookingAirProductController extends Controller
         $masterId = (int) ($master['id'] ?? 0);
         $columns = $this->physicalColumnListing('booking_services');
         if (! in_array('booking_id', $columns, true)) return [];
-        $rows = DB::table('booking_services')->where('booking_id', $booking)->get();
+        $query = DB::table('booking_services')->where('booking_id', $booking);
+        // Active Air workspaces must not resurrect a service that has already
+        // entered the explicit cancellation lifecycle. Historical children and
+        // financial readers remain untouched; this is only the active editor
+        // projection.
+        if (in_array('status', $columns, true)) {
+            $query->where(function ($statusQuery): void {
+                $statusQuery->whereNull('status')->orWhereNotIn('status', ['cancelled', 'canceled', 'CANCELLED', 'CANCELED']);
+            });
+        }
+        $rows = $query->get();
         $matches = [];
         foreach ($rows as $row) {
             $data = (array) $row;
@@ -582,6 +592,18 @@ final class GeneralBookingAirProductController extends Controller
 
     private function storeTicketGroups(Request $request, int $booking, object $bookingRow): JsonResponse
     {
+        // Persisted-group removal is an explicit cancellation operation, not
+        // part of the ordinary Air Save contract. Reject non-empty deletion
+        // instructions before validation, reads, or transactional writes.
+        if ($request->exists('deleted_group_service_ids')) {
+            $deletionInstruction = $request->input('deleted_group_service_ids');
+            if (! is_array($deletionInstruction) || $deletionInstruction !== []) {
+                throw ValidationException::withMessages([
+                    'deleted_group_service_ids' => 'Persisted Air Groups require the authorized cancellation workflow; ordinary Air Save cannot remove them.',
+                ]);
+            }
+        }
+
         $request->validate([
             'segments' => ['required', 'array', 'max:12'],
             'segments.*.client_key' => ['nullable', 'string', 'max:80'],
@@ -670,10 +692,9 @@ final class GeneralBookingAirProductController extends Controller
             throw ValidationException::withMessages(['segments' => 'Every submitted itinerary segment must belong to exactly one Ticket Group.']);
         }
         $claimed = [];
-        $deletedGroupServiceIds = array_values(array_filter(array_map('intval', (array) ($payload['deleted_group_service_ids'] ?? []))));
         $stage = 'Air Ticket Groups';
         try {
-            $result = DB::transaction(function () use ($booking, $bookingRow, $passengers, $allowed, $segments, $groups, $existingIds, $deletedGroupServiceIds, &$claimed, &$stage): array {
+            $result = DB::transaction(function () use ($booking, $bookingRow, $passengers, $allowed, $segments, $groups, $existingIds, &$claimed, &$stage): array {
                 $saved = [];
                 $resolvedGroupContexts = [];
                 $resolvedServiceIds = [];
@@ -721,13 +742,6 @@ final class GeneralBookingAirProductController extends Controller
                     $resolvedGroupContexts[] = ['service_id' => $serviceId, 'common' => $common, 'segment_keys' => $keys];
                 }
                 $this->syncGroupedItinerary($booking, $segments, $claimed, $resolvedGroupContexts);
-                foreach ($deletedGroupServiceIds as $deleteId) {
-                    if (! in_array($deleteId, $existingIds, true) || in_array($deleteId, array_column($saved, 'service_id'), true)) continue;
-                    $this->assertGroupDeletionSafe($deleteId);
-                    DB::table('air_ticket_details')->where('booking_service_id', $deleteId)->delete();
-                    if (Schema::hasTable('booking_service_passengers')) DB::table('booking_service_passengers')->where('booking_service_id', $deleteId)->delete();
-                    DB::table('booking_services')->where('id', $deleteId)->delete();
-                }
                 return $saved;
             });
         } catch (ValidationException $e) { throw $e; }

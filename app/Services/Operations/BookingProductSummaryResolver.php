@@ -72,6 +72,7 @@ final class BookingProductSummaryResolver
         if (! in_array('booking_id', $columns, true)) return collect();
         $query = DB::table('booking_services')->where('booking_id', $booking);
         if (in_array('deleted_at', $columns, true)) $query->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); });
+        if ($product === 'air' && in_array('status', $columns, true)) $query->where(function ($q): void { $q->whereNull('status')->orWhereNotIn('status', ['cancelled', 'canceled', 'CANCELLED', 'CANCELED']); });
         if ($master && (int) ($master['id'] ?? 0) > 0) return $query->where('product_service_id', (int) $master['id'])->get();
         if ($product !== 'visa') return collect();
         return $query->get()->filter(function (object $row): bool {
@@ -216,6 +217,11 @@ final class BookingProductSummaryResolver
         if (in_array('deleted_at', $columns, true)) {
             $query->where(function ($q): void {
                 $q->whereNull('deleted_at')->orWhere('deleted_at', '');
+            });
+        }
+        if (in_array('status', $columns, true)) {
+            $query->where(function ($q): void {
+                $q->whereNull('status')->orWhereNotIn('status', ['cancelled', 'canceled', 'CANCELLED', 'CANCELED']);
             });
         }
         if ($master && (int) ($master['id'] ?? 0) > 0) {
