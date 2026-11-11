@@ -232,9 +232,6 @@ class CashVoucherController extends Controller
         }
 
         $id = DB::transaction(function () use ($request, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof, $ownership): int {
-            $this->lockBookingRowsForFinancialWrite(
-                $data['voucher_type'] === 'contra' ? [] : [$data['booking_id'] ?? null]
-            );
             $now = now();
             $hasNoParty = in_array($data['voucher_type'], ['expense', 'contra'], true);
             $partyId = $hasNoParty
@@ -390,10 +387,6 @@ class CashVoucherController extends Controller
         } catch (RuntimeException $e) { throw ValidationException::withMessages(['branch_id' => $e->getMessage()]); }
 
         DB::transaction(function () use ($request, $voucher, $row, $data, $definition, $allocations, $expenseLines, $contraDetail, $proof, $ownership): void {
-            $this->lockBookingRowsForFinancialWrite([
-                $row->booking_id ?? null,
-                (string) $row->voucher_type === 'contra' ? null : ($data['booking_id'] ?? null),
-            ]);
             $hasNoParty = in_array((string) $row->voucher_type, ['expense', 'contra'], true);
             $partyId = $hasNoParty
                 ? null
@@ -791,22 +784,6 @@ class CashVoucherController extends Controller
         }
         DB::table('cash_voucher_allocations')->where('cash_voucher_id', $voucherId)->delete();
         DB::table('cash_voucher_allocations')->insert($rows);
-    }
-
-    /** Lock booking scopes before creating or reassigning a booking-linked voucher. */
-    private function lockBookingRowsForFinancialWrite(array $bookingIds): void
-    {
-        $ids = array_values(array_unique(array_filter(array_map(
-            static fn (mixed $id): int => (int) $id,
-            $bookingIds
-        ), static fn (int $id): bool => $id > 0)));
-        sort($ids);
-        if ($ids === []) return;
-
-        $rows = DB::table('bookings')->whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get(['id']);
-        if ($rows->count() !== count($ids)) {
-            throw ValidationException::withMessages(['booking_id' => 'A selected booking could not be locked for this financial write.']);
-        }
     }
 
     private function resolveCashBankAccount(string $code): array

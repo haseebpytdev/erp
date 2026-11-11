@@ -168,7 +168,7 @@ class SalesInvoiceService
         $grand=round($subtotal-$discountTotal,2);if($grand<=0)throw ValidationException::withMessages(['invoice'=>'Invoice grand total must be greater than zero.']);
         $old=$this->snapshot($invoice);
 
-        DB::transaction(function()use($request,$invoice,$data,$rate,$linePayload,$subtotal,$discountTotal,$grand):void{
+        DB::transaction(function()use($request,$invoice,$data,$rate,$linePayload,$subtotal,$discountTotal,$grand,$fy,$period):void{
             foreach($invoice->lines as $line){
                 $row=$linePayload->get($line->id);$qty=(float)$row['quantity'];$unit=(float)$row['unit_price'];$discount=(float)($row['discount_amount']??0);$gross=round($qty*$unit,2);
                 $line->update(['description'=>trim($row['description']),'quantity'=>$qty,'unit_price'=>$unit,'line_subtotal'=>$gross,'discount_amount'=>$discount,'line_total'=>round($gross-$discount,2)]);

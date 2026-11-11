@@ -9,20 +9,181 @@ use Throwable;
 /** Lightweight, read-only product summary authority for the booking hub. */
 final class BookingProductSummaryResolver
 {
+    /** Request-scoped native master identities; never persisted or shared. */
+    private ?array $masterCache = null;
+    /** Request-scoped schema metadata only; financial rows are never cached. */
+    private array $schemaTableCache = [];
+    private array $schemaColumnCache = [];
+    private array $schemaColumnsMetadataCache = [];
+
     public function resolve(int $booking): array
     {
-        return [
-            'air' => $this->summary($booking, 'air'),
-            'hotel' => $this->summary($booking, 'hotel'),
-            'transport' => $this->summary($booking, 'transport'),
-            'visa' => $this->summary($booking, 'visa'),
+        // Resolve the native masters once for this request. The existing
+        // summary methods already accept an optional resolved identity; using
+        // it here removes repeated master-table scans while leaving every
+        // product-specific financial query and fallback authority unchanged.
+        $masters = $this->nativeMasters();
+        $summaries = [
+            'air' => $this->summary($booking, 'air', $masters['air'] ?? null),
+            'hotel' => $this->summary($booking, 'hotel', $masters['hotel'] ?? null),
+            'transport' => $this->summary($booking, 'transport', $masters['transport'] ?? null),
+            'visa' => $this->summary($booking, 'visa', $masters['visa'] ?? null),
         ];
+        foreach ($masters as $key => $master) {
+            $summaries[$key]['eligible'] = is_array($master) && (int) ($master['id'] ?? 0) > 0;
+        }
+
+        return $summaries;
     }
 
-    private function summary(int $booking, string $product): array
+    /** Canonical sale projection for the unified Complete Package parent. */
+    public function completePackageSummary(int $booking): array
+    {
+        if (! $this->tableExists('booking_group_package_unified')) return $this->empty();
+        try {
+            $row = DB::table('booking_group_package_unified')->where('booking_id', $booking)->first();
+            if (! $row) return $this->empty();
+            $productId = (int) ($row->product_service_id ?? 0);
+            $master = app(UnifiedGroupPackageDataSource::class)->completePackageProducts()->first();
+            if (! $master || $productId !== (int) ($master['id'] ?? 0)) return $this->empty();
+            $sale = null;
+            foreach (['final_sale_total', 'final_sale_price', 'package_sale_price'] as $field) {
+                if (isset($row->{$field}) && is_numeric($row->{$field})) { $sale = (float) $row->{$field}; break; }
+            }
+            if ($sale === null) return $this->empty();
+            return ['present' => true, 'count' => 1, 'customer_total' => round($sale, 2), 'supplier_total' => 0.0, 'margin' => round($sale, 2), 'origins' => ['UNIFIED_PACKAGE_PARENT']];
+        } catch (Throwable) { return $this->empty(); }
+    }
+
+    private function nativeMasters(): array
+    {
+        if ($this->masterCache !== null) return $this->masterCache;
+
+        $resolver = app(NativeProductServiceResolver::class);
+        $this->masterCache = [];
+        foreach (['air' => 'findAir', 'hotel' => 'findHotel', 'transport' => 'findTransport', 'visa' => 'findVisa'] as $key => $method) {
+            try {
+                $this->masterCache[$key] = $resolver->{$method}();
+            } catch (Throwable) {
+                $this->masterCache[$key] = null;
+            }
+        }
+        return $this->masterCache;
+    }
+
+    /**
+     * Return the dashboard card registry for the summaries produced above.
+     *
+     * Keeping the card metadata beside the summary authority prevents the
+     * overview presenter from maintaining a second product list. Unknown
+     * summary keys are intentionally ignored until a named workspace route is
+     * registered for them; this avoids inventing navigation URLs.
+     */
+    public function dashboardCards(array $summaries): array
+    {
+        $registry = [
+            'air' => ['label' => 'Air / Tickets', 'open' => 'Open Air', 'route' => 'bookings.products.workspace'],
+            'hotel' => ['label' => 'Hotel', 'open' => 'Open Hotel', 'route' => 'bookings.products.workspace'],
+            'transport' => ['label' => 'Transport', 'open' => 'Open Transport', 'route' => 'bookings.products.workspace'],
+            'visa' => ['label' => 'Visa', 'open' => 'Open Visa', 'route' => 'bookings.products.workspace'],
+        ];
+
+        $cards = [];
+        foreach ($summaries as $key => $summary) {
+            if (! isset($registry[$key]) || ! is_array($summary) || ($summary['eligible'] ?? true) !== true) {
+                continue;
+            }
+
+            $cards[$key] = $registry[$key] + ['summary' => $summary];
+        }
+
+        $package = $this->completePackageSummary((int) ($summaries['__booking_id'] ?? 0));
+        if (($package['eligible'] ?? false) === true) {
+            $cards['umrah-complete-package'] = [
+                'label' => 'UMRAH / COMPLETE PACKAGE',
+                'open' => 'Open',
+                'route' => 'operations.bookings.group-package-unified.edit',
+                'workspace_available' => true,
+                'route_params' => ['booking' => (int) ($summaries['__booking_id'] ?? 0)],
+                'summary' => $package,
+            ];
+        }
+
+        return $cards;
+    }
+
+    /** Add eligible master products that have no dedicated workspace yet. */
+    public function appendEligibleCatalogCards(array $cards, int $booking): array
+    {
+        foreach (app(NativeProductServiceResolver::class)->activeCatalog() as $master) {
+            $workspace = $master['workspace_key'] ?? null;
+            $key = $workspace ?: (string) ($master['key'] ?? '');
+            if ($key === '' || isset($cards[$key])) continue;
+            if ($key === 'umrah-complete-package') {
+                $package = DB::table('booking_group_package_unified')->where('booking_id', $booking)->first();
+                $cards[$key] = [
+                    'label' => 'UMRAH / COMPLETE PACKAGE',
+                    'open' => 'Open',
+                    'route' => $package ? 'operations.bookings.group-package-unified.edit' : 'operations.bookings.group-package-unified.create',
+                    'route_params' => $package ? ['booking' => $booking] : [],
+                    'workspace_available' => true,
+                    'summary' => ($package ? $this->completePackageSummary($booking) : ['present'=>false,'count'=>0,'customer_total'=>null,'supplier_total'=>null,'margin'=>null,'summary_unavailable'=>true]) + ['eligible'=>true],
+                ];
+                continue;
+            }
+            $summary = $this->genericCatalogSummary($booking, (int) ($master['id'] ?? 0));
+            $label = (string) ($master['label'] ?? ('Product #'.(int) ($master['id'] ?? 0)));
+            $cards[$key] = [
+                'label' => $label,
+                'open' => $workspace ? 'Open '.$label : null,
+                'route' => $workspace ? 'bookings.products.workspace' : null,
+                'workspace_available' => $workspace !== null,
+                'summary' => $summary + ['eligible' => true],
+            ];
+        }
+        return $cards;
+    }
+
+    private function genericCatalogSummary(int $booking, int $productServiceId): array
+    {
+        if ($productServiceId <= 0 || ! $this->tableExists('booking_services')) {
+            return ['present' => false, 'count' => 0, 'customer_total' => null, 'supplier_total' => null, 'margin' => null, 'summary_unavailable' => true];
+        }
+        try {
+            $columns = $this->tableColumns('booking_services');
+            if (! in_array('booking_id', $columns, true) || ! in_array('product_service_id', $columns, true)) {
+                return ['present' => false, 'count' => 0, 'customer_total' => null, 'supplier_total' => null, 'margin' => null, 'summary_unavailable' => true];
+            }
+            $query = DB::table('booking_services')->where('booking_id', $booking)->where('product_service_id', $productServiceId);
+            if (in_array('deleted_at', $columns, true)) $query->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); });
+            if (in_array('status', $columns, true)) $query->where(function ($q): void { $q->whereNull('status')->orWhereNotIn('status', ['deleted', 'removed', 'cancelled', 'canceled']); });
+            $rows = $query->get();
+            $sale = 0.0; $cost = 0.0; $saleFound = false; $costFound = false;
+            foreach ($rows as $row) {
+                $data = (array) $row;
+                $rowSale = $this->firstMeaningful($data, ['customer_total','selling_total','sale_total','sale_amount','selling_amount','customer_amount','selling_price','sale_price','customer_price']);
+                $rowCost = $this->firstMeaningful($data, ['supplier_total','supplier_cost','supplier_cost_amount','cost_total','cost_amount','supplier_amount','purchase_price','cost_price']);
+                if ($rowSale !== null) { $sale += $rowSale; $saleFound = true; }
+                if ($rowCost !== null) { $cost += $rowCost; $costFound = true; }
+            }
+            $available = $saleFound || $costFound;
+            return [
+                'present' => $rows->isNotEmpty(),
+                'count' => $rows->count(),
+                'customer_total' => $saleFound ? round($sale, 2) : null,
+                'supplier_total' => $costFound ? round($cost, 2) : null,
+                'margin' => ($saleFound && $costFound) ? round($sale - $cost, 2) : null,
+                'summary_unavailable' => ! $available,
+            ];
+        } catch (Throwable) {
+            return ['present' => false, 'count' => 0, 'customer_total' => null, 'supplier_total' => null, 'margin' => null, 'summary_unavailable' => true];
+        }
+    }
+
+    private function summary(int $booking, string $product, ?array $resolvedMaster = null): array
     {
         try {
-            $master = app(NativeProductServiceResolver::class)->{'find'.ucfirst($product)}();
+            $master = $resolvedMaster ?? app(NativeProductServiceResolver::class)->{'find'.ucfirst($product)}();
             $serviceRows = $product === 'air'
                 ? $this->airServiceRows($booking, $master)
                 : $this->serviceRows($booking, $product, $master);
@@ -41,22 +202,29 @@ final class BookingProductSummaryResolver
                 if ((int) ($hotel['count'] ?? 0) === 0) $hotel = $this->serviceSnapshotSummary($serviceRows, 'hotel');
                 return $this->withApprovedSupplements($booking, $product, $hotel);
             }
-            if ($product === 'transport' && (! $table || ! Schema::hasTable($table))) {
+            if ($product === 'transport' && (! $table || ! $this->tableExists($table))) {
                 return $this->withApprovedSupplements($booking, $product, $this->transportSnapshotSummary($serviceRows));
             }
-            if (! $table || ! Schema::hasTable($table)) return $this->withApprovedSupplements($booking, $product, $this->empty());
-            $columns = Schema::getColumnListing($table);
+            if (! $table || ! $this->tableExists($table)) return $this->withApprovedSupplements($booking, $product, $this->empty());
+            $columns = $this->tableColumns($table);
             $query = DB::table($table);
             if (in_array('booking_id', $columns, true)) $query->where('booking_id', $booking);
             elseif (in_array('booking_service_id', $columns, true)) $query->whereIn('booking_service_id', $serviceIds ?: [-1]);
             $rows = $query->get();
-            if ($product === 'transport' && $rows->isEmpty()) return $this->withApprovedSupplements($booking, $product, $this->transportSnapshotSummary($serviceRows));
+            if ($product === 'transport' && $rows->isEmpty()) {
+                $snapshot = $this->transportSnapshotSummary($serviceRows);
+                return $this->withApprovedSupplements($booking, $product, ($snapshot['present'] ?? false) ? $snapshot : $this->serviceLineSummary($booking, $serviceRows, 'transport'));
+            }
             if ($product === 'visa') {
                 $summary = $this->visaSummary($rows, $serviceRows);
             } else {
                 $sale = $this->sum($rows, ['sale_amount','selling_total','customer_total','sale_total','total_sale','customer_amount','selling_amount','customer_price','sale_price','selling_price']);
                 $cost = $this->sum($rows, ['supplier_amount_pkr','vendor_total_pkr','cost_amount_pkr','supplier_total_pkr','supplier_amount','vendor_total','cost_total','total_cost','supplier_cost','vendor_cost','cost_amount','purchase_price','cost_price']);
                 $margin = $sale - $cost;
+            }
+            if ($product === 'transport' && abs($sale) < 0.00001) {
+                $line = $this->serviceLineSummary($booking, $serviceRows, 'transport');
+                if (($line['present'] ?? false)) return $this->withApprovedSupplements($booking, $product, $line);
             }
             if ($product !== 'visa') {
                 $summary = ['present' => $rows->isNotEmpty(), 'count' => $rows->count(), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($margin, 2)];
@@ -67,12 +235,11 @@ final class BookingProductSummaryResolver
 
     private function serviceRows(int $booking, string $product, ?array $master): iterable
     {
-        if (! Schema::hasTable('booking_services')) return collect();
-        $columns = Schema::getColumnListing('booking_services');
+        if (! $this->tableExists('booking_services')) return collect();
+        $columns = $this->tableColumns('booking_services');
         if (! in_array('booking_id', $columns, true)) return collect();
         $query = DB::table('booking_services')->where('booking_id', $booking);
         if (in_array('deleted_at', $columns, true)) $query->where(function ($q): void { $q->whereNull('deleted_at')->orWhere('deleted_at', ''); });
-        if ($product === 'air' && in_array('status', $columns, true)) $query->where(function ($q): void { $q->whereNull('status')->orWhereNotIn('status', ['cancelled', 'canceled', 'CANCELLED', 'CANCELED']); });
         if ($master && (int) ($master['id'] ?? 0) > 0) return $query->where('product_service_id', (int) $master['id'])->get();
         if ($product !== 'visa') return collect();
         return $query->get()->filter(function (object $row): bool {
@@ -130,9 +297,9 @@ final class BookingProductSummaryResolver
 
     private function approvedSupplementSummary(int $booking, string $product): array
     {
-        if (! Schema::hasTable('general_booking_billing_batches') || ! Schema::hasTable('general_booking_billing_batch_items')) return $this->empty();
-        $batchColumns = Schema::getColumnListing('general_booking_billing_batches');
-        $itemColumns = Schema::getColumnListing('general_booking_billing_batch_items');
+        if (! $this->tableExists('general_booking_billing_batches') || ! $this->tableExists('general_booking_billing_batch_items')) return $this->empty();
+        $batchColumns = $this->tableColumns('general_booking_billing_batches');
+        $itemColumns = $this->tableColumns('general_booking_billing_batch_items');
         foreach (['booking_id', 'batch_type', 'status'] as $column) if (! in_array($column, $batchColumns, true)) return $this->empty();
         foreach (['batch_id', 'product_type'] as $column) if (! in_array($column, $itemColumns, true)) return $this->empty();
         $query = DB::table('general_booking_billing_batch_items as i')
@@ -162,7 +329,7 @@ final class BookingProductSummaryResolver
     private function materializedNativeSourceRepresentsItem(object $item, int $booking, string $product): bool
     {
         $serviceId = (int) ($item->booking_service_id ?? 0);
-        if ($serviceId <= 0 || ! Schema::hasTable('booking_services')) return false;
+        if ($serviceId <= 0 || ! $this->tableExists('booking_services')) return false;
         $master = match ($product) {
             'air' => app(NativeProductServiceResolver::class)->findAir(),
             'hotel' => app(NativeProductServiceResolver::class)->findHotel(),
@@ -171,7 +338,7 @@ final class BookingProductSummaryResolver
             default => null,
         };
         if (! $master || (int) ($master['id'] ?? 0) <= 0) return false;
-        $columns = Schema::getColumnListing('booking_services');
+        $columns = $this->tableColumns('booking_services');
         if (! in_array('booking_id', $columns, true) || ! in_array('product_service_id', $columns, true)) return false;
         $query = DB::table('booking_services')
             ->where('id', $serviceId)
@@ -210,18 +377,13 @@ final class BookingProductSummaryResolver
 
     private function airServiceRows(int $booking, ?array $master): iterable
     {
-        if (! Schema::hasTable('booking_services')) return collect();
-        $columns = Schema::getColumnListing('booking_services');
+        if (! $this->tableExists('booking_services')) return collect();
+        $columns = $this->tableColumns('booking_services');
         if (! in_array('booking_id', $columns, true)) return collect();
         $query = DB::table('booking_services')->where('booking_id', $booking);
         if (in_array('deleted_at', $columns, true)) {
             $query->where(function ($q): void {
                 $q->whereNull('deleted_at')->orWhere('deleted_at', '');
-            });
-        }
-        if (in_array('status', $columns, true)) {
-            $query->where(function ($q): void {
-                $q->whereNull('status')->orWhereNotIn('status', ['cancelled', 'canceled', 'CANCELLED', 'CANCELED']);
             });
         }
         if ($master && (int) ($master['id'] ?? 0) > 0) {
@@ -253,8 +415,8 @@ final class BookingProductSummaryResolver
         // used to decide whether the Air product exists.
         $detailSale = 0.0;
         $detailCost = 0.0;
-        if (Schema::hasTable('air_ticket_details') && $serviceIds !== []) {
-            $columns = Schema::getColumnListing('air_ticket_details');
+        if ($this->tableExists('air_ticket_details') && $serviceIds !== []) {
+            $columns = $this->tableColumns('air_ticket_details');
             $query = DB::table('air_ticket_details');
             if (in_array('booking_service_id', $columns, true)) {
                 $query->whereIn('booking_service_id', $serviceIds);
@@ -291,8 +453,8 @@ final class BookingProductSummaryResolver
     {
         $authority = app(GeneralBookingHotelNativeStoreResolver::class)->resolve();
         $table = (string) ($authority['table'] ?? '');
-        if ($table === '' || ! Schema::hasTable($table)) return $this->empty();
-        $columns = Schema::getColumnListing($table);
+        if ($table === '' || ! $this->tableExists($table)) return $this->empty();
+        $columns = $this->tableColumns($table);
         $query = DB::table($table);
         $mode = (string) ($authority['ownership_mode'] ?? '');
         if ($mode === 'direct_booking') {
@@ -371,7 +533,7 @@ final class BookingProductSummaryResolver
     private function hotelColumnMetadata(string $table): array
     {
         $result = [];
-        try { foreach ((array) Schema::getColumns($table) as $meta) { $name = (string) ($meta['name'] ?? $meta['column_name'] ?? ''); if ($name !== '') $result[$name] = $meta; } } catch (Throwable) {}
+        try { foreach ($this->tableColumnMetadata($table) as $meta) { $name = (string) ($meta['name'] ?? $meta['column_name'] ?? ''); if ($name !== '') $result[$name] = $meta; } } catch (Throwable) {}
         return $result;
     }
 
@@ -394,7 +556,7 @@ final class BookingProductSummaryResolver
     {
         $fields = array_values(array_intersect(['meta','metadata','extra_data','details_json','attributes'], $columns));
         try {
-            foreach ((array) Schema::getColumns($table) as $meta) {
+            foreach ($this->tableColumnMetadata($table) as $meta) {
                 $name = (string) ($meta['name'] ?? $meta['column_name'] ?? '');
                 $type = strtolower((string) ($meta['type_name'] ?? $meta['type'] ?? ''));
                 if ($name !== '' && in_array($name, $columns, true) && (str_contains($type, 'json') || (preg_match('/meta|json|data|details|attributes/i', $name) && preg_match('/char|text|string|json/', $type)))) $fields[] = $name;
@@ -408,7 +570,7 @@ final class BookingProductSummaryResolver
         $preferred = ['notes','remarks','internal_notes','description','details','other_details','comment','comments'];
         $fields = [];
         try {
-            foreach ((array) Schema::getColumns($table) as $meta) {
+            foreach ($this->tableColumnMetadata($table) as $meta) {
                 $name = (string) ($meta['name'] ?? $meta['column_name'] ?? '');
                 $type = strtolower((string) ($meta['type_name'] ?? $meta['type'] ?? ''));
                 if ($name !== '' && in_array($name, $columns, true) && in_array($name, $preferred, true) && preg_match('/char|varchar|text|tinytext|mediumtext|longtext/', $type)) $fields[] = $name;
@@ -452,6 +614,20 @@ final class BookingProductSummaryResolver
         $sale = 0.0; $cost = 0.0;
         foreach ($rows as $row) { $sale += (float) ($row['sale_amount'] ?? 0); $cost += (float) ($row['cost_amount'] ?? ($row['cost_rate'] ?? 0)); }
         return ['present' => count($rows) > 0, 'count' => count($rows), 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2)];
+    }
+
+    private function serviceLineSummary(int $booking, iterable $serviceRows, string $product): array
+    {
+        $included = [];
+        if ($this->tableExists('booking_group_package_components')) {
+            $included = DB::table('booking_group_package_components')->where('booking_id', $booking)->where('billing_treatment', 'included_non_billable')->pluck('booking_service_id')->filter()->map(fn ($id) => (int) $id)->all();
+        }
+        $sale = 0.0; $cost = 0.0; $count = 0;
+        foreach ($serviceRows as $row) {
+            $id = (int) ($row->id ?? 0); if (in_array($id, $included, true)) continue;
+            $count++; $sale += (float) ($row->line_total ?? $row->unit_price ?? 0);
+        }
+        return ['present' => $count > 0, 'count' => $count, 'customer_total' => round($sale, 2), 'supplier_total' => round($cost, 2), 'margin' => round($sale - $cost, 2), 'origins' => ['BOOKING_SERVICE_LINE']];
     }
 
     private function sum(iterable $rows, array $fields): float
@@ -535,6 +711,47 @@ final class BookingProductSummaryResolver
             if (array_key_exists($field, $row) && $row[$field] !== null && $row[$field] !== '' && is_numeric($row[$field])) return (float) $row[$field];
         }
         return 0.0;
+    }
+
+    private function schemaCacheKey(string $table, ?string $column = null): string
+    {
+        $connection = (string) Schema::getConnection()->getName();
+        return $connection.'|'.$table.($column === null ? '' : '|'.$column);
+    }
+
+    private function tableExists(string $table): bool
+    {
+        $key = $this->schemaCacheKey($table);
+        if (array_key_exists($key, $this->schemaTableCache)) return $this->schemaTableCache[$key];
+        try {
+            return $this->schemaTableCache[$key] = Schema::hasTable($table);
+        } catch (Throwable) {
+            return $this->schemaTableCache[$key] = false;
+        }
+    }
+
+    /** @return list<string> */
+    private function tableColumns(string $table): array
+    {
+        $key = $this->schemaCacheKey($table);
+        if (array_key_exists($key, $this->schemaColumnCache)) return $this->schemaColumnCache[$key];
+        try {
+            return $this->schemaColumnCache[$key] = array_values(Schema::getColumnListing($table));
+        } catch (Throwable) {
+            return $this->schemaColumnCache[$key] = [];
+        }
+    }
+
+    /** @return list<array<string,mixed>> */
+    private function tableColumnMetadata(string $table): array
+    {
+        $key = $this->schemaCacheKey($table);
+        if (array_key_exists($key, $this->schemaColumnsMetadataCache)) return $this->schemaColumnsMetadataCache[$key];
+        try {
+            return $this->schemaColumnsMetadataCache[$key] = array_values((array) Schema::getColumns($table));
+        } catch (Throwable) {
+            return $this->schemaColumnsMetadataCache[$key] = [];
+        }
     }
 
     private function empty(): array { return ['present' => false, 'count' => 0, 'customer_total' => 0.0, 'supplier_total' => 0.0, 'margin' => 0.0]; }

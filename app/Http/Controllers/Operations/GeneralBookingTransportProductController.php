@@ -695,7 +695,10 @@ final class GeneralBookingTransportProductController extends Controller
                 $row['transport_company_id'] = $resolvedCompanyId;
                 $row['company_id'] = $resolvedCompanyId;
                 $resolvedCompanyName = $this->transportCompanyPartnerName($resolvedCompanyId);
-                if ($resolvedCompanyName !== '' && $this->isUnresolvedTransportCompanyName((string) ($row['company_name'] ?? ''))) {
+                // A valid rate-card/master relationship is authoritative for
+                // the client-facing Transport Company. Replace stale legacy
+                // snapshots (including old vendor labels) when it resolves.
+                if ($resolvedCompanyName !== '') {
                     $row['company_name'] = $resolvedCompanyName;
                 }
                 if ($resolvedCompanyName !== '') $row['transport_company_name'] = $resolvedCompanyName;
@@ -1060,7 +1063,10 @@ final class GeneralBookingTransportProductController extends Controller
                     'plate_number' => trim((string) ($this->valueFrom($row, $columns, ['plate_number','plate_no','vehicle_plate','registration_number','registration_no']) ?? '')),
                     'vendor_id' => (int) ($this->valueFrom($row, $columns, ['vendor_id','supplier_id','service_provider_id']) ?? 0),
                     'transport_company_id' => (int) ($this->valueFrom($row, $columns, ['transport_company_id']) ?? 0),
-                    'company_name' => trim((string) ($this->valueFrom($row, $columns, ['company_name','provider_name','transport_company','vendor_name','supplier_name']) ?? '')),
+                    // Transport Company is distinct from the supplier/vendor.
+                    // Never project vendor_name/supplier_name into the
+                    // client-facing company column when no company was saved.
+                    'company_name' => trim((string) ($this->valueFrom($row, $columns, ['company_name','provider_name','transport_company']) ?? '')),
                     'brn_number' => trim((string) ($this->valueFrom($row, $columns, ['brn_number','brn','provider_reference','booking_reference','reference']) ?? '')),
                     'sale_amount' => round($sale, 2),
                     'cost_rate' => round($costRate, 2),

@@ -36,12 +36,18 @@ final class EnforceErpBranchAccess
         }
 
         $booking = $request->route('booking');
-        $bookingId = is_object($booking) ? (int) ($booking->id ?? 0) : (int) $booking;
-        if ($bookingId > 0) {
+        $bookingId = $this->routeIdentityId($booking);
+        if ($booking !== null && $bookingId === null) {
+            abort(404);
+        }
+        if ($bookingId !== null) {
             $row = DB::table('bookings')->where('id', $bookingId)->first();
             abort_unless($row, 404);
             if (! $this->authority->mayAccessBranch($user, (int) ($row->branch_id ?? 0))) abort(404);
             $this->assertChildBindings($request, $bookingId);
+        } elseif ($request->route('passenger') !== null || $request->route('batch') !== null) {
+            // A child binding without a resolvable parent is ambiguous and must fail closed.
+            abort(404);
         }
 
         return $next($request);
@@ -49,8 +55,16 @@ final class EnforceErpBranchAccess
 
     private function assertChildBindings(Request $request, int $bookingId): void
     {
-        $passenger = (int) ($request->route('passenger') ?? 0);
-        if ($passenger > 0) {
+        $passengerBinding = $request->route('passenger');
+        $passenger = $this->routeIdentityId($passengerBinding);
+        if ($passengerBinding !== null && $passenger === null) {
+            abort(404);
+        }
+        if ($passenger !== null) {
+            if (is_object($passengerBinding)) {
+                $passengerBookingId = $this->routeIdentityId($passengerBinding->booking_id ?? null);
+                abort_unless($passengerBookingId !== null && $passengerBookingId === $bookingId, 404);
+            }
             $exists = false;
             foreach (['booking_passengers', 'booking_passenger', 'passengers'] as $table) {
                 if (Schema::hasTable($table) && Schema::hasColumn($table, 'booking_id')) {
@@ -61,8 +75,12 @@ final class EnforceErpBranchAccess
             abort_unless($exists, 404);
         }
 
-        $batch = (int) ($request->route('batch') ?? 0);
-        if ($batch > 0 && Schema::hasTable('general_booking_billing_batches')) {
+        $batchBinding = $request->route('batch');
+        $batch = $this->routeIdentityId($batchBinding);
+        if ($batchBinding !== null && $batch === null) {
+            abort(404);
+        }
+        if ($batch !== null && Schema::hasTable('general_booking_billing_batches')) {
             abort_unless(DB::table('general_booking_billing_batches')->where('id', $batch)->where('booking_id', $bookingId)->exists(), 404);
         }
 
@@ -76,6 +94,38 @@ final class EnforceErpBranchAccess
                 break;
             }
         }
+    }
+
+    /**
+     * Resolve a route binding without coercing an Eloquent model to an integer.
+     * Only scalar positive decimal IDs and model primary keys are accepted.
+     */
+    private function routeIdentityId(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_object($value)) {
+            if (method_exists($value, 'getKey')) {
+                $value = $value->getKey();
+            } elseif (property_exists($value, 'id')) {
+                $value = $value->id;
+            } else {
+                return null;
+            }
+        }
+
+        if (is_int($value) && $value > 0) {
+            return $value;
+        }
+
+        if (is_string($value) && preg_match('/^[1-9][0-9]*$/D', $value) === 1) {
+            $id = (int) $value;
+            return $id > 0 ? $id : null;
+        }
+
+        return null;
     }
 
     private function isBookingFamily(Request $request): bool

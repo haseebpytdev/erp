@@ -79,6 +79,68 @@
     </section>
     @endif
 
+    @if(($config['key'] ?? '') === 'bookings' && \Illuminate\Support\Facades\Route::has('operations.bookings.finder'))
+        @php($bookingFinder = (array) ($bookingFinder ?? ['active' => false, 'rows' => [], 'message' => '', 'error' => '']))
+        <style>
+            .et-booking-passenger-finder .et-booking-finder-message{margin:12px 0 0;padding:9px 11px;border-radius:7px;background:#f5f8fc;color:#40536c;font-size:12px}.et-booking-passenger-finder .et-booking-finder-error{background:#fff2f2;color:#a52626}.et-booking-finder-results{min-width:860px}.et-booking-finder-results a{color:#0d6fe8;font-weight:750;text-decoration:none;white-space:nowrap}.et-booking-finder-results a:hover{text-decoration:underline}
+        </style>
+        <section class="et-booking-ref-filter-card et-booking-passenger-finder" aria-labelledby="booking-finder-title">
+            <div class="et-booking-ref-filter-head">
+                <div class="et-booking-ref-filter-title"><span aria-hidden="true">⌕</span><strong id="booking-finder-title">Find Passenger Booking</strong></div>
+                <small>Search authorized booking records by passport or Air ticket number.</small>
+            </div>
+            <form method="post" action="{{ route('operations.bookings.finder') }}" class="et-booking-ref-filter-grid" role="search">
+                @csrf
+                <label>Search value
+                    <input type="search" name="booking_finder" value="" maxlength="80" minlength="2" autocomplete="off" placeholder="Passport or ticket number">
+                </label>
+                <label>Search mode
+                    <select name="booking_finder_mode">
+                        <option value="auto" @selected(($bookingFinder['mode'] ?? 'auto') === 'auto')>Auto Detect</option>
+                        <option value="passport" @selected(($bookingFinder['mode'] ?? '') === 'passport')>Passport Number</option>
+                        <option value="ticket" @selected(($bookingFinder['mode'] ?? '') === 'ticket')>Ticket Number</option>
+                    </select>
+                </label>
+                <div class="et-booking-ref-filter-actions"><button type="submit" class="et-booking-ref-apply"><span aria-hidden="true">⌕</span> Search</button><a class="et-booking-ref-reset" href="{{ url()->current() }}">Clear</a></div>
+            </form>
+            @if(($bookingFinder['error'] ?? '') !== '')<p role="alert" class="et-booking-finder-message et-booking-finder-error">{{ $bookingFinder['error'] }}</p>@endif
+            @if(($bookingFinder['active'] ?? false) && ($bookingFinder['message'] ?? '') !== '')<p role="status" class="et-booking-finder-message">{{ $bookingFinder['message'] }}</p>@endif
+            @if(($bookingFinder['rows'] ?? []) !== [])
+                <div class="et-booking-ref-table-scroll" aria-live="polite">
+                    <table class="et-reg-table et-booking-finder-results"><thead><tr><th>Passenger</th><th>Passport</th><th>Ticket</th><th>Booking</th><th>Date</th><th>Status</th><th>Product / Match</th><th>Action</th></tr></thead><tbody>
+                    @foreach($bookingFinder['rows'] as $match)
+                        <tr><td>{{ $match['passenger_name'] }}</td><td>{{ $match['passport'] !== '' ? $match['passport'] : '—' }}</td><td>{{ $match['ticket'] !== '' ? $match['ticket'] : '—' }}</td><td>{{ $match['booking_reference'] }}</td><td>{{ $match['booking_date'] !== '' ? $match['booking_date'] : '—' }}</td><td>{{ $match['booking_status'] !== '' ? $match['booking_status'] : '—' }}</td><td>{{ $match['product'] }} · {{ $match['match_type'] }}</td><td><a href="{{ $match['url'] }}">Open Booking</a></td></tr>
+                    @endforeach
+                    </tbody></table>
+                </div>
+                @if(($bookingFinder['last_page'] ?? 1) > 1)
+                    <nav aria-label="Passenger booking search pages" style="display:flex;justify-content:flex-end;gap:8px;padding-top:10px">
+                        <span class="et-booking-finder-message">Re-enter the search value to continue; search values are never placed in URLs.</span>
+                        @if(($bookingFinder['page'] ?? 1) > 1)
+                            <form method="post" action="{{ route('operations.bookings.finder') }}" class="et-booking-finder-page-form">
+                                @csrf
+                                <input type="hidden" name="booking_finder_page" value="{{ (int) ($bookingFinder['page'] - 1) }}">
+                                <input type="hidden" name="booking_finder_mode" value="{{ $bookingFinder['mode'] ?? 'auto' }}">
+                                <input type="search" name="booking_finder" required minlength="2" maxlength="80" placeholder="Re-enter search">
+                                <button type="submit">Previous</button>
+                            </form>
+                        @endif
+                        @if(($bookingFinder['page'] ?? 1) < ($bookingFinder['last_page'] ?? 1))
+                            <form method="post" action="{{ route('operations.bookings.finder') }}" class="et-booking-finder-page-form">
+                                @csrf
+                                <input type="hidden" name="booking_finder_page" value="{{ (int) ($bookingFinder['page'] + 1) }}">
+                                <input type="hidden" name="booking_finder_mode" value="{{ $bookingFinder['mode'] ?? 'auto' }}">
+                                <input type="search" name="booking_finder" required minlength="2" maxlength="80" placeholder="Re-enter search">
+                                <button type="submit">Next</button>
+                            </form>
+                        @endif
+                    </nav>
+                @endif
+            @endif
+        </section>
+    @endif
+
+    @php($isBookingRegister = ($config['key'] ?? '') === 'bookings')
     <section class="et-booking-ref-filter-card" data-register-filter-card>
         <div class="et-booking-ref-filter-head">
             <div class="et-booking-ref-filter-title"><span aria-hidden="true">⌕</span><strong>Search &amp; Filter</strong></div>
@@ -141,12 +203,12 @@
         </div>
 
         <div class="et-booking-ref-table-scroll">
-            <table class="et-reg-table et-register-server-table">
+                            <table class="et-reg-table et-register-server-table {{ $isBookingRegister ? 'et-booking-register-table' : '' }}">
                 <thead>
                     <tr>
                         <th class="et-booking-select-cell"><input type="checkbox" data-register-select-all aria-label="Select all visible rows"></th>
                         @foreach($headers as $header)<th>{{ $header }}</th>@endforeach
-                        @if(!$isSupplierCosting)<th class="et-booking-action-head">Action</th>@endif
+                        @if(!$isBookingRegister)<th class="et-booking-action-head">Action</th>@endif
                     </tr>
                 </thead>
                 <tbody>
@@ -168,7 +230,7 @@
                                     @endif
                                 </td>
                             @endforeach
-                            @if(!$isSupplierCosting)
+                            @if(!$isBookingRegister)
                                 <td class="et-booking-action-cell">
                                     <div class="et-booking-row-menu">
                                         <button type="button" class="et-booking-row-menu-button" data-register-row-menu aria-label="Row actions">⋮</button>
@@ -184,7 +246,7 @@
                             @endif
                         </tr>
                     @empty
-                        <tr data-register-empty><td colspan="{{ count($headers) + ($isSupplierCosting ? 1 : 2) }}">No records found.</td></tr>
+                        <tr data-register-empty><td colspan="{{ count($headers) + ($isBookingRegister ? 1 : 2) }}">No records found.</td></tr>
                     @endforelse
                 </tbody>
             </table>

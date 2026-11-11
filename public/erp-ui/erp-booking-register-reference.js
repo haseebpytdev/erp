@@ -308,91 +308,45 @@
   var theadRow = table.querySelector('thead tr:last-child');
   if (!theadRow) return;
 
-  var selectHead = document.createElement('th');
-  selectHead.className = 'et-booking-select-cell et-booking-select-head';
-  selectHead.innerHTML = '<input type="checkbox" class="et-booking-select-all" aria-label="Select visible bookings">';
-  theadRow.insertBefore(selectHead, theadRow.firstChild);
-
-  var actionHead = document.createElement('th');
-  actionHead.className = 'et-booking-action-head';
-  actionHead.textContent = 'Action';
-  theadRow.appendChild(actionHead);
+  var selectHead = theadRow.querySelector('th.et-booking-select-cell');
+  if (!selectHead) {
+    selectHead = document.createElement('th');
+    selectHead.className = 'et-booking-select-cell et-booking-select-head';
+    selectHead.innerHTML = '<input type="checkbox" class="et-booking-select-all" aria-label="Select visible bookings">';
+    theadRow.insertBefore(selectHead, theadRow.firstChild);
+  } else {
+    var existingSelectAll = selectHead.querySelector('input[type="checkbox"]');
+    if (existingSelectAll) existingSelectAll.classList.add('et-booking-select-all');
+  }
 
   var selected = new Set();
 
   items.forEach(function (item) {
-    var selectCell = document.createElement('td');
-    selectCell.className = 'et-booking-select-cell';
-    var checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'et-booking-row-select';
+    var selectCell = item.row.querySelector('td.et-booking-select-cell');
+    var checkbox = selectCell && selectCell.querySelector('input[type="checkbox"]');
+    if (!selectCell) {
+      selectCell = document.createElement('td');
+      selectCell.className = 'et-booking-select-cell';
+      checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      selectCell.appendChild(checkbox);
+      item.row.insertBefore(selectCell, item.row.firstChild);
+    }
+    checkbox.classList.add('et-booking-row-select');
     checkbox.setAttribute('aria-label', 'Select ' + item.booking);
     checkbox.addEventListener('change', function () {
       if (checkbox.checked) selected.add(item.booking);
       else selected.delete(item.booking);
       refreshSelectAll();
     });
-    selectCell.appendChild(checkbox);
-    item.row.insertBefore(selectCell, item.row.firstChild);
     item.checkbox = checkbox;
 
-    var actionCell = document.createElement('td');
-    actionCell.className = 'et-booking-action-cell';
-    var menu = document.createElement('div');
-    menu.className = 'et-booking-row-menu';
-    var menuButton = document.createElement('button');
-    menuButton.type = 'button';
-    menuButton.className = 'et-booking-row-menu-button';
-    menuButton.setAttribute('aria-label', 'Actions for ' + item.booking);
-    menuButton.setAttribute('aria-expanded', 'false');
-    menuButton.textContent = '⋮';
-    var menuPanel = document.createElement('div');
-    menuPanel.className = 'et-booking-row-menu-panel';
-
-    if (item.bookingHref) {
-      var openBooking = document.createElement('a');
-      openBooking.href = item.bookingHref;
-      openBooking.textContent = 'Open Booking';
-      menuPanel.appendChild(openBooking);
+    var bookingCell = item.row.children[headerIndex.booking];
+    if (bookingCell) {
+      bookingCell.querySelectorAll('a[href*="/sales/invoices/"]').forEach(function (link) {
+        link.classList.add('et-booking-inline-invoice-link');
+      });
     }
-    if (item.invoiceHref) {
-      var openInvoice = document.createElement('a');
-      openInvoice.href = item.invoiceHref;
-      openInvoice.textContent = 'Open Invoice';
-      menuPanel.appendChild(openInvoice);
-    }
-    if (!menuPanel.children.length) {
-      var unavailable = document.createElement('span');
-      unavailable.textContent = 'No actions available';
-      menuPanel.appendChild(unavailable);
-    }
-
-    menuButton.addEventListener('click', function (event) {
-      event.stopPropagation();
-      closeMenus(menu);
-      var open = menu.classList.toggle('open');
-      menuButton.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    menu.appendChild(menuButton);
-    menu.appendChild(menuPanel);
-    actionCell.appendChild(menu);
-    item.row.appendChild(actionCell);
-    item.menu = menu;
-  });
-
-  function closeMenus(except) {
-    items.forEach(function (item) {
-      if (!item.menu || item.menu === except) return;
-      item.menu.classList.remove('open');
-      var button = item.menu.querySelector('.et-booking-row-menu-button');
-      if (button) button.setAttribute('aria-expanded', 'false');
-    });
-  }
-
-  document.addEventListener('click', function () { closeMenus(null); });
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') closeMenus(null);
   });
 
   var cardHeader = document.createElement('div');
@@ -597,15 +551,16 @@
 
   var csvCell = function (value) {
     var text = clean(value);
+    if (/^[=+\-@]/.test(text)) text = "'" + text;
     return '"' + text.replace(/"/g, '""') + '"';
   };
 
   var exportRows = function (rows, suffix) {
     if (!rows.length) return;
-    var originalHeaderLabels = headers.map(function (th) { return clean(th.textContent); });
+    var originalHeaderLabels = headers.slice(1).map(function (th) { return clean(th.textContent); });
     var lines = [originalHeaderLabels.map(csvCell).join(',')];
     rows.forEach(function (item) {
-      var cells = Array.prototype.slice.call(item.row.children).slice(1, -1);
+      var cells = Array.prototype.slice.call(item.row.children).slice(1);
       lines.push(cells.map(function (cell) { return csvCell(cell.textContent); }).join(','));
     });
     var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });

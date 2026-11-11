@@ -10,7 +10,7 @@ namespace App\Services\Operations;
 final class BookingCommercialCompletenessResolver
 {
     /** @return array{items:array<string,array{label:string,complete:bool,reasons:list<string>}>,passed_count:int,applicable_count:int,complete:bool,reasons:list<string>} */
-    public function resolve(array $selected, array $air, array $hotel, array $transport, array $visa): array
+    public function resolve(array $selected, array $air, array $hotel, array $transport, array $visa, array $other = []): array
     {
         $items=[];$passengers=(array)($air['passengers']??$visa['passengers']??[]);
         $items['passengers']=$this->item('Passengers',$passengers?[]:['Add at least one booking passenger.']);
@@ -18,6 +18,8 @@ final class BookingCommercialCompletenessResolver
         if(in_array('hotel',$selected,true))$items['hotel']=$this->item('Hotel',$this->hotelReasons((array)($hotel['stays']??[]),$hotel));
         if(in_array('transport',$selected,true))$items['transport']=$this->item('Transport',$this->transportReasons((array)($transport['transports']??[]),$transport));
         if(in_array('visa',$selected,true))$items['visa']=$this->item('Visa Commercial',$this->visaReasons((array)($visa['visa_rows']??[]),$visa));
+        if(in_array('other',$selected,true))$items['other']=$this->item('Other Service',$this->otherReasons((array)($other['services']??[])));
+        if(in_array('unsupported',$selected,true))$items['unsupported']=$this->item('Unsupported Service Category',['One or more selected services use an unsupported product category.']);
         $passed=count(array_filter($items,fn(array $item):bool=>$item['complete']));
         $reasons=[];foreach($items as $item)foreach($item['reasons'] as $reason)$reasons[]=$item['label'].': '.$reason;
         return ['items'=>$items,'passed_count'=>$passed,'applicable_count'=>count($items),'complete'=>$passed===count($items),'reasons'=>$reasons];
@@ -59,6 +61,22 @@ final class BookingCommercialCompletenessResolver
     private function hotelReasons(array $rows,array $hotel):array{$r=[];if(!$rows||!$this->rowsHave($rows,[['hotel_name'],['city'],['check_in'],['check_out']]))$r[]='Saved Hotel stay data is incomplete.';$s=(array)($hotel['summary']??[]);if((float)($s['customer_total']??0)<=0)$r[]='Customer Sale is missing.';if((float)($s['vendor_total']??0)<=0)$r[]='Vendor Cost is missing.';return array_merge($r,$this->hotelVendorErrors($rows));}
     private function transportReasons(array $rows,array $transport):array{$r=[];if(!$rows||!$this->rowsHave($rows,[['company_name'],['route_name'],['vehicle_type']]))$r[]='Transport Company, Route or Vehicle is incomplete.';$s=(array)($transport['summary']??[]);if((float)($s['customer_total']??0)<=0)$r[]='Customer Sale is missing.';if((float)($s['vendor_total']??0)<=0)$r[]='Vendor Cost is missing.';return array_merge($r,$this->transportVendorErrors($rows));}
     private function visaReasons(array $rows,array $visa):array{$r=[];if(!$rows)$r[]='No Visa passenger rows are saved.';$s=(array)($visa['summary']??[]);if((float)($s['customer_total']??0)<=0)$r[]='Customer Sale is missing.';if((float)($s['vendor_total']??0)<=0)$r[]='Vendor Cost is missing.';return array_merge($r,$this->visaVendorErrors($rows));}
+    private function otherReasons(array $rows):array
+    {
+        if(!$rows)return ['No eligible Other service is saved.'];
+        $errors=[];
+        foreach(array_values($rows) as $index=>$row){
+            $row=(array)$row;$n=$index+1;$description=trim((string)($row['description']??''));
+            if($description===''||strlen($description)>500)$errors[]='Other service '.$n.': description is missing or exceeds the native 500-character limit.';
+            $quantity=$row['quantity']??null;$price=$row['unit_price']??null;$line=$row['line_total']??null;
+            if(!is_numeric($quantity)||!is_finite((float)$quantity)||(float)$quantity<=0||(float)$quantity>99999)$errors[]='Other service '.$n.': quantity must be greater than zero and within the native limit.';
+            if(!is_numeric($price)||!is_finite((float)$price)||(float)$price<0||(float)$price>999999999999.99)$errors[]='Other service '.$n.': unit price is invalid.';
+            if(!is_numeric($line)||!is_finite((float)$line)||is_numeric($quantity)&&is_numeric($price)&&abs(round((float)$quantity*(float)$price,2)-(float)$line)>0.005)$errors[]='Other service '.$n.': line total does not match native quantity × unit-price rounding.';
+            $mode=strtoupper(trim((string)($row['passenger_link_mode']??'')));$passengers=(int)($row['passenger_count']??0);
+            if(in_array($mode,['REQUIRED','MULTIPLE'],true)&&$passengers<1)$errors[]='Other service '.$n.': required passenger links are missing.';
+        }
+        return array_values(array_unique($errors));
+    }
     private function item(string $label,array $reasons):array{return ['label'=>$label,'complete'=>$reasons===[],'reasons'=>array_values($reasons)];}
     private function vendorMissing(array $row,array $ids,array $names):bool{foreach($ids as $k)if((int)($row[$k]??0)>0)return false;return $this->text($row,$names)==='';}
     private function rowsHave(array $rows,array $groups):bool{foreach($rows as $row)foreach($groups as $keys)if($this->text((array)$row,$keys)==='')return false;return true;}

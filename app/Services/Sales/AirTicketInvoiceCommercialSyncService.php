@@ -239,6 +239,20 @@ class AirTicketInvoiceCommercialSyncService
                 $relation->lockForUpdate()->get()->values(),
                 $columns
             );
+
+            /*
+             * Descriptions are not product identity.  A legacy Hotel service
+             * can legitimately carry an "AIR TICKETS" description.  Refuse
+             * destructive Air cleanup when any existing line cannot be
+             * classified from an authoritative product/service identity.
+             */
+            foreach ($existing as $line) {
+                if ($this->classifyInvoiceLine($line) === 'ambiguous') {
+                    throw ValidationException::withMessages([
+                        'invoice' => 'Air Ticket synchronization found an invoice line with missing or conflicting product identity; no lines were changed.',
+                    ]);
+                }
+            }
             $lineNumberField = $this->invoiceLineNumberField($columns);
             $occupiedLineNumbers = $this->occupiedInvoiceLineNumbers(
                 $existing,
@@ -260,6 +274,16 @@ class AirTicketInvoiceCommercialSyncService
 
             $template = $airLines->first()
                 ?? $existing->first();
+
+            /*
+             * Grouped Air lines are presentation groups, not independent
+             * booking services. Resolve the canonical Air booking-service
+             * identity once and never inherit a reused line's Hotel/Visa/
+             * Transport source identity or mapping.
+             */
+            $airIdentity = $this->canonicalAirServiceIdentity(
+                (int) ($snapshot['booking_id'] ?? 0)
+            );
 
             if (! $template instanceof Model) {
                 $template = $relation->make();
@@ -299,6 +323,26 @@ class AirTicketInvoiceCommercialSyncService
                     $columns,
                     $lineNo
                 );
+
+                if (in_array('source_booking_service_id', $columns, true)) {
+                    $payload['source_booking_service_id'] =
+                        $airIdentity['service_id'] ?? null;
+                }
+
+                if (in_array('product_service_id', $columns, true)) {
+                    $payload['product_service_id'] =
+                        $airIdentity['product_service_id'] ?? null;
+                }
+
+                if (in_array('category_snapshot', $columns, true)) {
+                    $payload['category_snapshot'] = 'AIR_TICKET';
+                }
+
+                if (in_array('revenue_mapping_key', $columns, true)) {
+                    $payload['revenue_mapping_key'] =
+                        $airIdentity['revenue_mapping_key']
+                        ?? 'AIR_TICKET_REVENUE';
+                }
                 $payload = $this->preserveExistingInvoiceLineNumbers(
                     $line,
                     $payload,
@@ -2309,38 +2353,61 @@ class AirTicketInvoiceCommercialSyncService
 
     private function lineLooksLikeAirTicket(Model $line): bool
     {
-        $attributes = $line->getAttributes();
-        $signals = [];
+        return $this->classifyInvoiceLine($line) === 'air';
+    }
 
-        foreach ([
-            'description',
-            'item_description',
-            'details',
-            'particulars',
-            'name',
-            'service_name',
-            'product_name',
-            'service_code',
-            'product_code',
-            'revenue_mapping_key',
-            'mapping_key',
-            'service_type',
-            'product_type',
-        ] as $field) {
-            if (array_key_exists($field, $attributes)) {
-                $signals[] = (string) $attributes[$field];
-            }
+    /**
+     * Classify an invoice line from authoritative product identity only.
+     * Descriptions are deliberately never used to authorize destructive
+     * Air-line selection or cleanup.
+     *
+     * @return 'air'|'non_air'|'ambiguous'
+     */
+    private function classifyInvoiceLine(Model $line): string
+    {
+        $attributes = $line->getAttributes();
+        $authorities = [];
+        $category = strtoupper(trim((string) ($attributes['category_snapshot'] ?? '')));
+
+        if ($category !== '') {
+            $authorities[] = $category === 'AIR_TICKET' ? 'air' : 'non_air';
         }
 
-        $text = strtolower(
-            implode(' ', $signals)
-        );
+        $productId = (int) ($attributes['product_service_id'] ?? 0);
+        if ($productId > 0 && Schema::hasTable('products_services')) {
+            $product = DB::table('products_services')->where('id', $productId)->first(['category', 'code']);
+            if ($product) {
+                $productCategory = strtoupper(trim((string) ($product->category ?? '')));
+                $productCode = strtoupper(trim((string) ($product->code ?? '')));
+                if ($productCategory !== '') $authorities[] = $productCategory === 'AIR_TICKET' ? 'air' : 'non_air';
+                elseif ($productCode !== '') $authorities[] = $productCode === 'AIRTICKET' ? 'air' : 'non_air';
+            }
+            elseif ($authorities === []) return 'ambiguous';
+        }
 
-        return (
-            str_contains($text, 'air ticket')
-            || str_contains($text, 'air_ticket')
-            || str_contains($text, 'ticket revenue')
-        );
+        $serviceId = (int) ($attributes['source_booking_service_id'] ?? 0);
+        if ($serviceId > 0 && Schema::hasTable('booking_services') && Schema::hasTable('products_services')) {
+            $service = DB::table('booking_services as bs')
+                ->join('products_services as ps', 'ps.id', '=', 'bs.product_service_id')
+                ->where('bs.id', $serviceId)
+                ->first(['ps.category', 'ps.code']);
+            if ($service) {
+                $serviceCategory = strtoupper(trim((string) ($service->category ?? '')));
+                $serviceCode = strtoupper(trim((string) ($service->code ?? '')));
+                if ($serviceCategory !== '') $authorities[] = $serviceCategory === 'AIR_TICKET' ? 'air' : 'non_air';
+                elseif ($serviceCode !== '') $authorities[] = $serviceCode === 'AIRTICKET' ? 'air' : 'non_air';
+            }
+            elseif ($authorities === []) return 'ambiguous';
+        }
+
+        $mapping = strtoupper(trim((string) ($attributes['revenue_mapping_key'] ?? $attributes['mapping_key'] ?? '')));
+        if ($mapping !== '') {
+            if ($mapping === 'AIR_TICKET_REVENUE') $authorities[] = 'air';
+            elseif (str_ends_with($mapping, '_REVENUE')) $authorities[] = 'non_air';
+        }
+
+        $authorities = array_values(array_unique($authorities));
+        return count($authorities) === 1 ? $authorities[0] : 'ambiguous';
     }
 
     /**
@@ -2881,6 +2948,60 @@ class AirTicketInvoiceCommercialSyncService
             'product_type',
             'unit_type',
         ];
+    }
+
+    /**
+     * Return one unambiguous Air booking-service identity for grouped lines.
+     * When several Air services exist, source_ticket links remain the
+     * authoritative traceability mechanism and the singular line source is
+     * cleared rather than guessed.
+     *
+     * @return array{service_id:int,product_service_id:int,revenue_mapping_key:?string}|null
+     */
+    private function canonicalAirServiceIdentity(int $bookingId): ?array
+    {
+        if (
+            $bookingId <= 0
+            || ! Schema::hasTable('air_ticket_details')
+            || ! Schema::hasTable('booking_services')
+            || ! Schema::hasTable('products_services')
+        ) {
+            return null;
+        }
+
+        try {
+            $rows = DB::table('air_ticket_details as t')
+                ->join('booking_services as s', 's.id', '=', 't.booking_service_id')
+                ->join('products_services as p', 'p.id', '=', 's.product_service_id')
+                ->where('s.booking_id', $bookingId)
+                ->where('s.status', '<>', 'CANCELLED')
+                ->where(function ($query): void {
+                    $query->where('p.category', 'AIR_TICKET')
+                        ->orWhere('p.code', 'AIRTICKET');
+                })
+                ->distinct()
+                ->get([
+                    's.id as service_id',
+                    'p.id as product_service_id',
+                    'p.revenue_mapping_key',
+                ]);
+
+            if ($rows->count() !== 1) {
+                return null;
+            }
+
+            $row = $rows->first();
+
+            return [
+                'service_id' => (int) $row->service_id,
+                'product_service_id' => (int) $row->product_service_id,
+                'revenue_mapping_key' => $row->revenue_mapping_key !== null
+                    ? (string) $row->revenue_mapping_key
+                    : null,
+            ];
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function writeTicketLinks(

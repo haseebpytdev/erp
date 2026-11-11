@@ -1,0 +1,12 @@
+@extends('layouts.app')
+@section('title','Branches')
+@section('page_title','Branches')
+@section('content')
+<div class="page-intro"><div><span class="eyebrow">ORGANIZATION</span><h1>Branch master</h1><p>Accounting documents will inherit company and branch context. Deactivate unused branches instead of deleting history.</p></div><a href="{{ route('organization.index') }}" class="btn btn-ghost">Back</a></div>
+<div class="grid-2 uneven">
+<form method="POST" action="{{ route('organization.branches.store') }}" class="panel">@csrf<div class="panel-head"><div><h3>Add Branch</h3><p>Create another operational unit.</p></div></div><div class="form-stack">
+<label><span>Branch Code</span><input name="code" required placeholder="e.g. LHE"></label><label><span>Branch Name</span><input name="name" required placeholder="Lahore Office"></label><label><span>City</span><input name="city"></label><label><span>Country Code</span><input name="country_code" value="PK" maxlength="2" required></label><label><span>Email</span><input type="email" name="email"></label><label><span>Phone</span><input name="phone"></label><label><span>Address</span><textarea name="address" rows="3"></textarea></label></div><div class="form-actions"><button class="btn btn-primary">Create Branch</button></div></form>
+<div class="panel"><div class="panel-head"><div><h3>Existing Branches</h3><p>{{ $branches->count() }} branch(es)</p></div></div>
+@foreach($branches as $branch)<form method="POST" action="{{ route('organization.branches.update',$branch) }}" class="record-card">@csrf @method('PUT')<div class="record-head"><div><strong>{{ $branch->name }}</strong><span>{{ $branch->code }}</span></div><label class="inline-check"><input type="checkbox" name="is_active" value="1" @checked($branch->is_active)> Active</label></div><div class="compact-grid"><input name="code" value="{{ $branch->code }}" required><input name="name" value="{{ $branch->name }}" required><input name="city" value="{{ $branch->city }}" placeholder="City"><input name="country_code" value="{{ $branch->country_code }}" maxlength="2" required><input type="email" name="email" value="{{ $branch->email }}" placeholder="Email"><input name="phone" value="{{ $branch->phone }}" placeholder="Phone"></div><textarea name="address" rows="2" placeholder="Address">{{ $branch->address }}</textarea><div class="record-actions"><button class="btn btn-ghost">Save</button></div></form>@endforeach
+</div></div>
+@endsection

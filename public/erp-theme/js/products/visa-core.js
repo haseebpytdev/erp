@@ -27,10 +27,16 @@
   }
   function endpoint(id, cache) {
     var core = productCore(cache);
-    if (!core || typeof core.getProductEndpoint !== 'function') throw Error('Visa endpoint authority is unavailable.');
-    var url = core.getProductEndpoint(key, id);
+    if (!core) throw Error('Visa endpoint authority is unavailable.');
+    var scope = activeScope(id, core), url = typeof core.getProductEndpoint === 'function' ? core.getProductEndpoint(key, id) : null;
+    if ((!url || typeof url !== 'string') && typeof core.getApiBase === 'function') {
+      var base = String(core.getApiBase() || '').replace(/\/+$/, '');
+      if (!base) throw Error('Visa endpoint authority returned no URL.');
+      url = scope.billing_context === 'SUPPLEMENTARY' && Number(scope.billing_batch_id || 0) > 0
+        ? base + '/' + id + '/additional-services/' + Number(scope.billing_batch_id) + '/' + key + '-product'
+        : base + '/' + id + '/' + key + '-product';
+    }
     if (typeof url !== 'string' || !url) throw Error('Visa endpoint authority returned no URL.');
-    var scope = activeScope(id, core);
     if (scope.billing_context === 'SUPPLEMENTARY') {
       var expected = '/system/erp-bookings/' + id + '/additional-services/' + scope.billing_batch_id + '/visa-product';
       if (Number(scope.billing_batch_id || 0) <= 0 || url !== expected) throw Error('Supplementary Visa endpoint scope is invalid.');

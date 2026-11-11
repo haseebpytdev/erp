@@ -31,7 +31,14 @@ final class PresentUnifiedRegisterWorkspace
 
     public function present(Request $request, Response $response): Response
     {
-        if ($request->method() !== 'GET') {
+        $isBookingFinderPost = $request->isMethod('POST')
+            && strtolower(trim($request->path(), '/')) === 'operations/bookings/finder';
+        // Finder POST has its own dedicated result page. Do not let the
+        // register presenter replace it with the ordinary Booking Register.
+        if ($isBookingFinderPost) {
+            return $response;
+        }
+        if ($request->method() !== 'GET' && ! $isBookingFinderPost) {
             return $response;
         }
 
@@ -56,7 +63,7 @@ final class PresentUnifiedRegisterWorkspace
         }
 
         try {
-            $workspace = $this->extractWorkspace($html, $config);
+            $workspace = $this->extractWorkspace($html, $config, $request);
             if ($workspace === null) {
                 return $response;
             }
@@ -80,7 +87,7 @@ final class PresentUnifiedRegisterWorkspace
     private function config(string $path): ?array
     {
         return match ($path) {
-            'operations/bookings' => [
+            'operations/bookings', 'operations/bookings/finder' => [
                 'key' => 'bookings',
                 'kicker' => 'OPERATIONS · ERP-09',
                 'title' => 'Booking Register',
@@ -200,7 +207,7 @@ final class PresentUnifiedRegisterWorkspace
         };
     }
 
-    private function extractWorkspace(string $html, array $config): ?array
+    private function extractWorkspace(string $html, array $config, ?Request $request = null): ?array
     {
         $dom = new DOMDocument('1.0', 'UTF-8');
         $previous = libxml_use_internal_errors(true);
@@ -333,6 +340,12 @@ final class PresentUnifiedRegisterWorkspace
             'createHref' => $createHref,
             'nativePaginatorHtml' => $this->nativePaginatorHtml($xpath),
         ];
+
+        if (($config['key'] ?? '') === 'bookings' && $request instanceof Request) {
+            $workspace['bookingFinder'] = app(\App\Services\Operations\BookingPassengerFinder::class)->search($request);
+        } else {
+            $workspace['bookingFinder'] = ['active' => false, 'rows' => [], 'message' => '', 'error' => ''];
+        }
 
         if ($config['key'] === 'supplier-costing') {
             $metadata = $this->structuredSupplierCostingMetadata($xpath);

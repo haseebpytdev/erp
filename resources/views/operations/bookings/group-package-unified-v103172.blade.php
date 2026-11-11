@@ -65,8 +65,8 @@ html,body{
 #gp-booking *,#gp-booking *::before,#gp-booking *::after{box-sizing:border-box}
 
 #gp-booking .gp-top{
-    display:flex;align-items:flex-start;justify-content:space-between;
-    gap:14px;margin:0 0 12px
+    display:flex;align-items:center;justify-content:space-between;
+    gap:14px;margin:0 0 9px;padding:2px 1px
 }
 #gp-booking .gp-kicker{
     font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--gp-blue);
@@ -81,16 +81,16 @@ html,body{
 
 #gp-booking .gp-card{
     width:100%;background:#fff;border:1px solid var(--gp-line);
-    border-radius:10px;margin-bottom:12px;overflow:hidden;
+    border-radius:10px;margin-bottom:14px;overflow:hidden;
     box-shadow:0 1px 2px rgba(20,35,55,.02)
 }
 #gp-booking .gp-card-head{
     display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:11px 14px;border-bottom:1px solid #e8edf3
+    padding:11px 13px 10px;border-bottom:1px solid #e8edf3
 }
 #gp-booking .gp-card-title{font-size:16px;font-weight:800;margin:0}
 #gp-booking .gp-card-note{font-size:11.5px;color:var(--gp-muted);margin-top:2px}
-#gp-booking .gp-card-body{padding:11px 14px}
+#gp-booking .gp-card-body{padding:11px 13px 10px}
 
 #gp-booking .gp-grid{
     display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:7px
@@ -409,9 +409,6 @@ html,body{
     font-size:9.5px;font-weight:850;line-height:1.1
 }
 #gp-booking.gp-editing-locked .gp-lock-pill{display:inline-flex}
-[data-gp-focus-sidebar]{transition:transform .18s ease,box-shadow .18s ease}
-
-
 @media(max-width:1250px){
     #gp-booking .gp-commercial-totals{
         grid-template-columns:repeat(4,minmax(120px,1fr))
@@ -513,15 +510,11 @@ html,body{
             </div>
         </div>
         <div class="gp-top-actions">
-            <button type="button" class="gp-btn gp-btn-outline" id="gp-focus-menu">☰ Menu</button>
-            <a class="gp-btn gp-btn-outline" href="{{ url('/operations/bookings') }}">Booking Register</a>
-            @if($bookingId && ($canViewProfitability ?? false))
-                <a
-                    class="gp-btn gp-btn-outline"
-                    href="{{ route('reports.group-umrah-profitability.show', ['booking'=>$bookingId]) }}"
-                >Profitability</a>
+            @if($bookingId)
+                <a class="gp-btn gp-btn-outline" href="{{ url('/operations/bookings/'.(int) $bookingId) }}">← Back to Booking</a>
+            @else
+                <a class="gp-btn gp-btn-outline" href="{{ url('/operations/bookings') }}">← Back to Booking</a>
             @endif
-            <a class="gp-btn gp-btn-outline" id="gp-dashboard-link" href="#" style="display:none">Dashboard</a>
         </div>
     </div>
 
@@ -840,7 +833,6 @@ html,body{
                 </div>
                 <div class="gp-info" style="margin-top:9px">Passenger, Flight, Hotel, Transport and Other Service rows save together even when incomplete. Travel Ready is calculated separately; no second operational Draft button is required.</div>
                 <div class="gp-savebar">
-                    <a class="gp-btn" href="{{ url('/operations/bookings') }}">Back to Booking Register</a>
                     <button type="button" class="gp-btn gp-btn-green" data-save-mode="complete" data-save-scope="operational">Save Operational Changes</button>
                 </div>
             </div>
@@ -1712,108 +1704,6 @@ html,body{
     }
 
     document.querySelectorAll('[data-save-scope]').forEach(btn => btn.addEventListener('click', () => save(btn.dataset.saveMode, btn.dataset.saveScope)));
-
-    function enableFocusedWorkspace(){
-        document.body.classList.add('gp-focus-mode');
-
-        const visibleRect = el => {
-            try {
-                const style = window.getComputedStyle(el);
-                const rect = el.getBoundingClientRect();
-                return style.display !== 'none'
-                    && style.visibility !== 'hidden'
-                    && rect.width > 0
-                    && rect.height > 0;
-            } catch (_) {
-                return false;
-            }
-        };
-
-        // Hide the native permanent sidebar, but keep it available through
-        // the compact title-level Menu button as an overlay drawer.
-        const sidebarCandidates = Array.from(document.querySelectorAll(
-            'aside, nav, [class*="sidebar"], [class*="navbar-vertical"], [class*="side-nav"]'
-        )).filter(el => !root.contains(el));
-
-        const sidebar = sidebarCandidates.find(el => {
-            const text = String(el.textContent || '').replace(/\s+/g,' ').toLowerCase();
-            return text.includes('dashboard') && text.includes('easy ticket');
-        });
-
-        const menuButton = document.getElementById('gp-focus-menu');
-        const dashboardButton = document.getElementById('gp-dashboard-link');
-
-        // Resolve Dashboard from the REAL native ERP sidebar instead of assuming
-        // /dashboard. This preserves the installation's actual route.
-        if (sidebar && dashboardButton) {
-            const dashboardAnchor = Array.from(sidebar.querySelectorAll('a')).find(anchor => {
-                const label = String(anchor.textContent || '').replace(/\s+/g,' ').trim().toLowerCase();
-                return label === 'dashboard' || label.startsWith('dashboard ');
-            });
-
-            if (dashboardAnchor?.href && !dashboardAnchor.href.endsWith('#')) {
-                dashboardButton.href = dashboardAnchor.href;
-                dashboardButton.style.display = '';
-            } else {
-                dashboardButton.style.display = 'none';
-            }
-        } else if (dashboardButton) {
-            dashboardButton.style.display = 'none';
-        }
-
-        let overlay = null;
-
-        if (sidebar) {
-            sidebar.setAttribute('data-gp-focus-sidebar','1');
-
-            overlay = document.createElement('div');
-            overlay.className = 'gp-focus-overlay';
-            document.body.appendChild(overlay);
-
-            const closeMenu = () => {
-                sidebar.classList.remove('gp-focus-sidebar-open');
-                overlay.classList.remove('open');
-            };
-
-            const openMenu = () => {
-                sidebar.classList.add('gp-focus-sidebar-open');
-                overlay.classList.add('open');
-            };
-
-            menuButton?.addEventListener('click', openMenu);
-            overlay.addEventListener('click', closeMenu);
-            document.addEventListener('keydown', event => {
-                if (event.key === 'Escape') closeMenu();
-            });
-        } else if (menuButton) {
-            menuButton.style.display = 'none';
-        }
-
-        // Hide the native ERP top header on this dedicated workspace.
-        const nativeHeaderCandidates = Array.from(document.querySelectorAll(
-            'header, [class*="topbar"], [class*="top-bar"], [class*="page-header"], [class*="navbar"]'
-        )).filter(el => !root.contains(el) && visibleRect(el));
-
-        const nativeHeader = nativeHeaderCandidates
-            .filter(el => {
-                const text = String(el.textContent || '').replace(/\s+/g,' ').toLowerCase();
-                const rect = el.getBoundingClientRect();
-                return rect.height <= 150
-                    && (text.includes('sign out') || text.includes('logout'))
-                    && (
-                        text.includes('dashboard')
-                        || text.includes('easy group')
-                        || text.includes('easy ticket')
-                    );
-            })
-            .sort((a,b) => a.getBoundingClientRect().height - b.getBoundingClientRect().height)[0];
-
-        if (nativeHeader) {
-            nativeHeader.setAttribute('data-gp-focus-native-header','1');
-        }
-    }
-
-    enableFocusedWorkspace();
 
     // Initial page data. Nothing below saves to the server until a save button is pressed.
     existingPassengers.forEach(addPassenger);

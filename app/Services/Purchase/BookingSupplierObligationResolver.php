@@ -31,22 +31,45 @@ final class BookingSupplierObligationResolver
         $vendors = $this->vendorMap();
         $services = $this->bookingServices($bookingId);
         $rows = array_merge(
+            $this->package($bookingId, $vendors),
             $this->air($bookingId, $services, $vendors),
             $this->hotel($bookingId, $services, $vendors),
             $this->transport($bookingId, $services, $vendors),
             $this->visa($bookingId, $vendors),
         );
 
+        $includedServiceIds = [];
+        $includedVisaIds = [];
+        if (Schema::hasTable('booking_group_package_components')) {
+            $components = DB::table('booking_group_package_components')
+                ->where('booking_id', $bookingId)
+                ->where('billing_treatment', 'included_non_billable')
+                ->get(['booking_service_id', 'booking_visa_service_id']);
+            foreach ($components as $component) {
+                if ((int) ($component->booking_service_id ?? 0) > 0) $includedServiceIds[] = (int) $component->booking_service_id;
+                if ((int) ($component->booking_visa_service_id ?? 0) > 0) $includedVisaIds[] = (int) $component->booking_visa_service_id;
+            }
+        }
+        if ($includedServiceIds || $includedVisaIds) {
+            $rows = array_values(array_filter($rows, static function (array $row) use ($includedServiceIds, $includedVisaIds): bool {
+                if (in_array((int) ($row['booking_service_id'] ?? 0), $includedServiceIds, true)) return false;
+                if (($row['source_type'] ?? '') === 'booking_visa_services' && in_array((int) ($row['source_id'] ?? 0), $includedVisaIds, true)) return false;
+                return true;
+            }));
+        }
+
         $claims = $this->claims(array_column($rows, 'source_key'), $excludeCostingId);
         $legacy = $this->legacyActiveCosting($bookingId, $excludeCostingId);
         foreach ($rows as &$row) {
             $claim = $claims[$row['source_key']] ?? null;
             if ($claim) {
+                $row['costing_status'] = (string) $claim->status;
                 $row['status'] = (string) $claim->status === 'posted' ? 'posted' : 'already_costed';
                 $row['status_label'] = ((string) $claim->status === 'posted' ? 'Posted in ' : 'Already in ').$claim->costing_no;
                 $row['costing_id'] = (int) $claim->supplier_costing_id;
                 $row['costing_no'] = (string) $claim->costing_no;
             } elseif ($legacy) {
+                $row['costing_status'] = (string) ($legacy->status ?? '');
                 $row['status'] = 'legacy_review';
                 $row['status_label'] = 'Review existing '.$legacy->costing_no;
                 $row['costing_id'] = (int) $legacy->id;
@@ -95,6 +118,41 @@ final class BookingSupplierObligationResolver
         if (! Schema::hasTable('booking_services')) return [];
         return DB::table('booking_services')->where('booking_id', $bookingId)->get()
             ->mapWithKeys(static fn (object $row): array => [(int) $row->id => (array) $row])->all();
+    }
+
+    /** @param array<int,string> $vendors @return list<array<string,mixed>> */
+    private function package(int $bookingId, array $vendors): array
+    {
+        if (! Schema::hasTable('booking_group_package_unified')) return [];
+        $row = DB::table('booking_group_package_unified')->where('booking_id', $bookingId)->first();
+        if (! $row) return [];
+        $data = (array) $row;
+        $adult = max(0, (int) ($data['booked_adult_pax'] ?? 0));
+        $child = max(0, (int) ($data['booked_child_pax'] ?? 0));
+        $infant = max(0, (int) ($data['booked_infant_pax'] ?? 0));
+        $cost = round(
+            $adult * (float) ($data['adult_supplier_cost'] ?? 0)
+            + $child * (float) ($data['child_supplier_cost'] ?? 0)
+            + $infant * (float) ($data['infant_supplier_cost'] ?? 0),
+            2
+        );
+        $vendorId = (int) ($data['vendor_id'] ?? 0);
+        $reference = trim((string) ($data['package_code'] ?? $data['package_name'] ?? ('Package #'.$row->id)));
+        return [$this->obligation(
+            $bookingId,
+            null,
+            'booking_group_package_unified',
+            (int) $row->id,
+            'Complete Package',
+            5,
+            $vendorId,
+            $vendors[$vendorId] ?? ($vendorId > 0 ? 'Vendor #'.$vendorId : 'Vendor unresolved'),
+            $cost,
+            $reference,
+            trim((string) ($data['package_name'] ?? 'Complete Umrah Package')),
+            null,
+            0
+        )];
     }
 
     /** @param array<int,array<string,mixed>> $services @param array<int,string> $vendors */
@@ -156,7 +214,7 @@ final class BookingSupplierObligationResolver
     {
         $meta = $this->embedded($row, ['et_erp_hotel_stay', 'et_erp_vendor']);
         $effective = array_merge($row, $meta);
-        $vendorId = $this->positiveInt($effective, ['vendor_id', 'supplier_id', 'service_provider_id']);
+        $vendorId = $this->positiveInt($effective, ['vendor_id', 'supplier_id', 'supplier_party_id', 'service_provider_id']);
         $total = $this->positiveNumber($effective, ['vendor_total', 'net_supplier_cost', 'supplier_total', 'cost_total', 'total_cost', 'vendor_amount', 'cost_amount', 'supplier_amount']);
         $nights = max(0, (int) ($effective['nights'] ?? $effective['total_nights'] ?? $effective['night_count'] ?? 0));
         if ($total <= 0 && $nights > 0) $total = $this->positiveNumber($effective, ['cost_rate', 'supplier_rate', 'vendor_rate', 'cost_price', 'supplier_cost', 'vendor_cost']) * $nights;
@@ -193,7 +251,7 @@ final class BookingSupplierObligationResolver
     {
         $meta = $this->embedded($row, ['et_erp_transport_row', 'et_erp_vendor']);
         $effective = array_merge($row, $meta);
-        $vendorId = $this->positiveInt($effective, ['vendor_id', 'supplier_id', 'service_provider_id']);
+        $vendorId = $this->positiveInt($effective, ['vendor_id', 'supplier_id', 'supplier_party_id', 'service_provider_id']);
         $total = $this->positiveNumber($effective, ['supplier_amount_pkr', 'vendor_total_pkr', 'cost_amount_pkr', 'supplier_total_pkr', 'cost_amount', 'vendor_total', 'cost_total', 'total_cost']);
         $id = (int) ($row['id'] ?? 0);
         $reference = $this->text($effective, ['supplier_reference', 'booking_reference', 'reference', 'voucher_no']);
@@ -302,11 +360,27 @@ final class BookingSupplierObligationResolver
     {
         if (! Schema::hasTable($table)) return null;
         $columns = Schema::getColumnListing($table);
-        if (! in_array('booking_id', $columns, true)) return null;
-        $query = DB::table($table)->where('booking_id', $bookingId);
-        foreach (['booking_service_id', 'service_id'] as $field) if (in_array($field, $columns, true)) { $query->where($field, $serviceId); break; }
+        $query = DB::table($table);
+        if (in_array('booking_id', $columns, true)) {
+            $query->where('booking_id', $bookingId);
+            foreach (['booking_service_id', 'service_id'] as $serviceField) {
+                if (in_array($serviceField, $columns, true)) {
+                    $query->where($serviceField, $serviceId);
+                    break;
+                }
+            }
+        } elseif (in_array('booking_service_id', $columns, true) || in_array('service_id', $columns, true)) {
+            // Legacy detail tables may be related only through the native
+            // booking service. Resolve that relation instead of discarding
+            // an otherwise authoritative legacy source.
+            $field = in_array('booking_service_id', $columns, true) ? 'booking_service_id' : 'service_id';
+            $query->where($field, $serviceId);
+        } else {
+            return null;
+        }
         if (in_array('deleted_at', $columns, true)) $query->whereNull('deleted_at');
-        return $query->orderBy(in_array('id', $columns, true) ? 'id' : 'booking_id')->get()->map(static fn (object $row): array => (array) $row)->all();
+        $order = in_array('id', $columns, true) ? 'id' : (in_array('booking_id', $columns, true) ? 'booking_id' : (in_array('booking_service_id', $columns, true) ? 'booking_service_id' : 'service_id'));
+        return $query->orderBy($order)->get()->map(static fn (object $row): array => (array) $row)->all();
     }
 
     /** @return list<array<string,mixed>> */

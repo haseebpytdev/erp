@@ -33,6 +33,35 @@ class UnifiedGroupPackageDataSource
         return $this->allParties();
     }
 
+    /** Canonical Complete Package product only; ordinary products remain separate. */
+    public function completePackageProducts(): Collection
+    {
+        if (! Schema::hasTable('products_services')) {
+            return collect();
+        }
+
+        return DB::table('products_services')
+            ->where('is_active', 1)
+            ->where(function ($query): void {
+                $query->where('code', 'UMRAH_COMPLETE_PACKAGE')
+                    ->orWhere(function ($nested): void {
+                        $nested->whereRaw('UPPER(category) = ?', ['UMRAH_PACKAGE'])
+                            ->whereRaw('UPPER(name) = ?', ['UMRAH / COMPLETE PACKAGE']);
+                    });
+            })
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($row): array => [
+                'id' => (int) $row->id,
+                'code' => (string) $row->code,
+                'name' => (string) $row->name,
+                'category' => (string) $row->category,
+                'pricing_basis' => (string) ($row->pricing_basis ?? 'PER_PERSON'),
+                'currency_code' => (string) ($row->default_currency_code ?? 'PKR'),
+            ])
+            ->values();
+    }
+
     public function branches(): Collection
     {
         if (! Schema::hasTable('branches')) {

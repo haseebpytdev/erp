@@ -55,6 +55,16 @@ class ErpRoleAccessPolicy
             return true;
         }
 
+        // Voucher reissue has a dedicated canonical capability. Keep this
+        // exception route-scoped; the controller still enforces company/branch
+        // scope and the route middleware still requires service_details.manage.
+        if (
+            preg_match('#^operations/bookings/\d+/travel-voucher/issue$#', $path) === 1
+            && $this->permissions->hasExactPermission($user, ['travel_vouchers.release'])
+        ) {
+            return true;
+        }
+
         $module = $this->moduleForRequest($request);
         if ($businessMarked && $module === null) {
             return false;
@@ -324,6 +334,13 @@ class ErpRoleAccessPolicy
     {
         $path = strtolower('/'.trim($request->path(), '/').'/');
         $method = strtoupper($request->method());
+
+        /* The authenticated Booking Finder is a read-only POST transport.
+         * Keep it under the native bookings role policy without treating the
+         * transport method as a booking mutation. */
+        if ($path === '/operations/bookings/finder/') {
+            return ['view', 'list', 'read', 'access'];
+        }
 
         $special = [
             'approve' => ['approve', 'authorize', 'manage'],

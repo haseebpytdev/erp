@@ -146,8 +146,9 @@ final class PartyStatementService
         $select[] = $ref ? 'je.'.$ref.' as reference' : DB::raw("'' as reference");
         $select[] = $type ? 'je.'.$type.' as source_type' : DB::raw("'' as source_type");
         $select[] = $sourceId ? 'je.'.$sourceId.' as source_id' : DB::raw('NULL as source_id');
+        $partyTypes = $filters['type'] === 'vendor' ? ['vendor', 'supplier'] : ['customer'];
         $query = DB::table('journal_lines as jl')->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')
-            ->where('je.status', 'posted')->where('jl.party_type', $filters['type'])->where('jl.party_id', $filters['partyId']);
+            ->where('je.status', 'posted')->whereIn('jl.party_type', $partyTypes)->where('jl.party_id', $filters['partyId']);
         if (is_array($filters['branchIds'] ?? null)) {
             if ($filters['branchIds'] === []) return [];
             $query->whereIn('je.branch_id', $filters['branchIds']);
@@ -221,8 +222,9 @@ final class PartyStatementService
             $columns = Schema::getColumnListing('journal_lines');
             $dateColumn = Schema::hasColumn('journal_entries', 'journal_date') ? 'journal_date' : 'date';
             if ($scope === [] || ! in_array('party_type', $columns, true) || ! in_array('party_id', $columns, true)) return $this->financialYearStart($asOf);
+            $partyTypes = $type === 'vendor' ? ['vendor', 'supplier'] : ['customer'];
             $date = DB::table('journal_lines as jl')->join('journal_entries as je', 'je.id', '=', 'jl.journal_entry_id')
-                ->where('je.status', 'posted')->whereDate('je.'.$dateColumn, '<=', $asOf)->where('jl.party_type', $type)->where('jl.party_id', $partyId)
+                ->where('je.status', 'posted')->whereDate('je.'.$dateColumn, '<=', $asOf)->whereIn('jl.party_type', $partyTypes)->where('jl.party_id', $partyId)
                 ->whereIn('jl.account_id', array_keys($scope))->min('je.'.$dateColumn);
             return $date ? Carbon::parse($date)->toDateString() : $this->financialYearStart($asOf);
         } catch (Throwable) { return $this->financialYearStart($asOf); }

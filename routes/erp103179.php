@@ -11,11 +11,10 @@ use App\Http\Controllers\Operations\GeneralBookingOperationalSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingInvoiceSummaryController;
 use App\Http\Controllers\Operations\GeneralBookingReviewController;
 use App\Http\Controllers\Operations\BookingProductsHubController;
-use App\Http\Controllers\Operations\GeneralBookingAdditionalServiceController;
-use App\Http\Controllers\Operations\GeneralBookingAdditionalServiceProductController;
 use App\Http\Controllers\Operations\ProductWorkspaceController;
 use App\Http\Controllers\Operations\VisaMasterController;
 use App\Http\Controllers\Operations\GeneralBookingVoucherPreviewController;
+use App\Http\Controllers\Operations\EtCvVoucherController;
 use App\Http\Controllers\Operations\HotelMasterBulkImportController;
 use App\Http\Controllers\Operations\TravelMasterFlightRoutesController;
 use App\Http\Controllers\Operations\GroupUmrahWorkflowController;
@@ -38,11 +37,10 @@ use App\Http\Middleware\DedicatedProductEarlyTiming;
 use App\Http\Controllers\Sales\SalesInvoiceDraftUpdateBridgeController;
 use App\Http\Controllers\Sales\AirTicketInvoiceDraftSyncController;
 use App\Http\Controllers\Sales\StableBookingSalesInvoiceController;
+use App\Http\Controllers\Sales\BookingQuotationController;
 use App\Http\Middleware\PresentAirTicketSalesInvoice;
 use App\Http\Middleware\EnsureAirTicketCommercialIntegrityBeforeNativeWorkflow;
-use App\Http\Middleware\EnforceCommercialBranchAuthority;
 use App\Http\Middleware\PresentSalesInvoiceFocusedWorkspace;
-use App\Http\Middleware\PresentSalesInvoicePrintV2;
 use App\Http\Controllers\System\ProductionDataResetController;
 use App\Http\Controllers\System\PostResetFinancialCleanupController;
 use App\Http\Controllers\System\ReportsFilterAssetController;
@@ -56,19 +54,13 @@ use App\Http\Controllers\System\TransportRateResolutionDiagnosticController;
 use App\Http\Controllers\System\SalesInvoiceWorkflowCompareController;
 use App\Http\Controllers\System\CashVoucherNativeJournalRepairController;
 use App\Http\Controllers\Administration\ErpUserManagementController;
-use App\Http\Controllers\Administration\ErpStaffAccessController;
 use App\Http\Controllers\Purchase\SupplierCostingController;
 use App\Http\Controllers\Accounting\CashVoucherController;
-use App\Http\Controllers\Accounting\CashVoucherLegacyBranchReconciliationController;
 use App\Http\Controllers\Accounting\AdvanceAdjustmentController;
+use App\Http\Controllers\Accounting\OurBankAccountController;
 use App\Http\Controllers\Accounting\ChartOfAccountsWorkspaceController;
 use App\Http\Controllers\Accounting\ManagementAccountingReportController;
-use App\Http\Controllers\Accounting\PartyStatementController;
-use App\Http\Controllers\Accounting\PartyBalanceLifecycleController;
 use App\Http\Controllers\Accounting\MobileAccountsController;
-use App\Http\Controllers\Reports\MobileMovementController;
-use App\Http\Controllers\Accounting\MobileReceiptCaptureController;
-use App\Http\Controllers\Accounting\OurBankAccountController;
 use App\Http\Middleware\PresentErpUserManagementLinks;
 use App\Http\Middleware\PresentCashVoucherLinks;
 use App\Http\Middleware\PresentPassengerOperationsLink;
@@ -83,16 +75,14 @@ use App\Http\Middleware\EnforceGeneralBookingEditLock;
 use App\Http\Middleware\PresentBookingRegisterInvoiceVisibility;
 use App\Http\Middleware\EnforceErpRoleScopedAccess;
 use App\Http\Middleware\EnforceErpBranchAccess;
-use App\Http\Middleware\C89ManagedBusinessRoute;
-use App\Http\Middleware\C89AuthenticatedSupportAssetRoute;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Events\RouteMatched;
 
 Route::get('/voucher/{token}', [GeneralBookingVoucherPreviewController::class, 'publicShow'])
     ->where('token', '[a-f0-9]{48}')
     ->name('public.voucher.show');
+
 
 // Tesseract worker/core/language assets are static browser runtime resources.
 // They must be independently readable by a Blob Worker without an ERP session.
@@ -161,8 +151,14 @@ try {
     $coaWriteMiddleware = $coaReadMiddleware;
 }
 
-// Historical route-shape contract: Route::middleware(['auth'])->group remains the base group.
-Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
+Route::middleware(['auth'])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
+    Route::prefix('m/accounts')->middleware(EnforceErpRoleScopedAccess::class)->group(function (): void {
+        Route::get('/', [MobileAccountsController::class, 'home'])->name('mobile.accounts.home');
+        Route::get('/entries', [MobileAccountsController::class, 'entries'])->name('mobile.accounts.entries');
+        Route::get('/approvals', [MobileAccountsController::class, 'approvals'])->name('mobile.accounts.approvals');
+        Route::get('/reports', [MobileAccountsController::class, 'reports'])->name('mobile.accounts.reports');
+        Route::get('/more', [MobileAccountsController::class, 'more'])->name('mobile.accounts.more');
+    });
     Route::get('/system/travel-masters/hotels/bulk-template', [HotelMasterBulkImportController::class, 'template'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('travel-masters.hotels.bulk-template');
     Route::post('/system/travel-masters/hotels/bulk-preview', [HotelMasterBulkImportController::class, 'preview'])
@@ -181,10 +177,6 @@ Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function () u
     Route::patch('/passengers/{source}/{passenger}', [PassengerWorkspaceController::class, 'update'])
         ->where('source', '[A-Za-z0-9_]+')->whereNumber('passenger')
         ->middleware(EnforceErpRoleScopedAccess::class)->name('passengers.update');
-
-});
-
-Route::middleware(['auth', C89AuthenticatedSupportAssetRoute::class])->group(function (): void {
 
     Route::get(
         '/system/erp-assets/erp-professional.css',
@@ -224,20 +216,17 @@ Route::middleware(['auth', C89AuthenticatedSupportAssetRoute::class])->group(fun
     Route::get('/system/erp-assets/dedicated-product-core.js', [ErpProfessionalUiAssetController::class, 'dedicatedCore'])
         ->name('system.erp-assets.dedicated-product-core');
 
-    Route::get('/system/erp-assets/products-air.js', [ErpProfessionalUiAssetController::class, 'dedicatedAir'])
-        ->name('system.erp-assets.products-air');
-    Route::get('/system/erp-assets/products-visa.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisa'])
-        ->name('system.erp-assets.products-visa');
     Route::get('/system/erp-assets/products-visa-core.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisaCore'])
         ->name('system.erp-assets.products-visa-core');
-    Route::get('/system/erp-assets/dedicated-product-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedNavigation'])
-        ->name('system.erp-assets.dedicated-product-navigation');
+    Route::get('/system/erp-assets/products-visa.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisa'])
+        ->name('system.erp-assets.products-visa');
     Route::get('/system/erp-assets/dedicated-visa-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedVisaNavigation'])
         ->name('system.erp-assets.dedicated-visa-navigation');
 
-});
-
-Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function () use ($coaReadMiddleware, $coaWriteMiddleware): void {
+    Route::get('/system/erp-assets/products-air.js', [ErpProfessionalUiAssetController::class, 'dedicatedAir'])
+        ->name('system.erp-assets.products-air');
+    Route::get('/system/erp-assets/dedicated-product-navigation.js', [ErpProfessionalUiAssetController::class, 'dedicatedNavigation'])
+        ->name('system.erp-assets.dedicated-product-navigation');
 
     // ERP-11.3.102 GENERAL Passenger quick-add: direct JSON lookup/master-update/booking-snapshot bridge; no native Saved Passenger DOM dependency
     // lookup + booking snapshot write, independent of unstable native editor DOM.
@@ -331,10 +320,6 @@ Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function () u
         [GeneralBookingVisaProductController::class, 'store']
     )->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.visa-product.store');
 
-    Route::get('/operations/bookings/{booking}/products/visa/fragment', [ProductWorkspaceController::class, 'visaFragment'])
-        ->whereNumber('booking')->middleware([DedicatedProductEarlyTiming::class, EnforceErpRoleScopedAccess::class])
-        ->name('bookings.products.visa.fragment');
-
     // ERP-11.3.153: one persisted commercial/readiness summary for every product workspace.
     Route::get(
         '/system/erp-bookings/{booking}/operational-summary',
@@ -346,36 +331,6 @@ Route::middleware(['auth', C89ManagedBusinessRoute::class])->group(function () u
 
     Route::get('/operations/bookings/{booking}/products', [BookingProductsHubController::class, 'show'])
         ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.products.show');
-
-Route::get('/operations/bookings/{booking}/additional-services', [GeneralBookingAdditionalServiceController::class, 'index'])
-    ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.index');
-Route::post('/operations/bookings/{booking}/additional-services/start', [GeneralBookingAdditionalServiceController::class, 'start'])
-    ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.start');
-Route::get('/operations/bookings/{booking}/additional-services/{batch}', [GeneralBookingAdditionalServiceController::class, 'show'])
-    ->whereNumber('booking')->whereNumber('batch')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.show');
-Route::post('/operations/bookings/{booking}/additional-services/{batch}/sales-invoice', [GeneralBookingAdditionalServiceController::class, 'invoice'])
-    ->whereNumber('booking')->whereNumber('batch')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.invoice');
-Route::get('/operations/bookings/{booking}/additional-services/{batch}/products/{product}', [GeneralBookingAdditionalServiceProductController::class, 'edit'])
-    ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.products.edit');
-// Bind product as a route parameter so Laravel supplies apiShow/apiStore's
-// required argument.  The controller repeats the allow-list fail-closed;
-// the public suffixes remain /{product}-product for native renderer parity.
-Route::get('/system/erp-bookings/{booking}/additional-services/{batch}/{product}-product', [GeneralBookingAdditionalServiceProductController::class, 'apiShow'])
-    ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])
-    ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.product.show');
-Route::put('/system/erp-bookings/{booking}/additional-services/{batch}/{product}-product', [GeneralBookingAdditionalServiceProductController::class, 'apiStore'])
-    ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])
-    ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.product.store');
-Route::post('/system/erp-bookings/{booking}/additional-services/{batch}/transport-product/selection', [GeneralBookingAdditionalServiceProductController::class, 'apiTransportSelection'])
-    ->whereNumber('booking')->whereNumber('batch')->middleware([EnforceErpRoleScopedAccess::class, GuardApprovedGeneralBookingCommercials::class])->name('bookings.additional-services.transport.activate');
-Route::post('/operations/bookings/{booking}/additional-services/{batch}/products/{product}/items', [GeneralBookingAdditionalServiceProductController::class, 'store'])
-    ->whereNumber('booking')->whereNumber('batch')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.items.store');
-Route::patch('/operations/bookings/{booking}/additional-services/{batch}/products/{product}/items/{item}', [GeneralBookingAdditionalServiceProductController::class, 'update'])
-    ->whereNumber('booking')->whereNumber('batch')->whereNumber('item')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.items.update');
-Route::delete('/operations/bookings/{booking}/additional-services/{batch}/products/{product}/items/{item}', [GeneralBookingAdditionalServiceProductController::class, 'destroy'])
-    ->whereNumber('booking')->whereNumber('batch')->whereNumber('item')->whereIn('product', ['air','hotel','transport','visa'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.items.destroy');
-Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow/{action}', [GeneralBookingAdditionalServiceController::class, 'workflow'])
-    ->whereNumber('booking')->whereNumber('batch')->whereIn('action', ['submit','approve','reject'])->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.additional-services.workflow');
 
     Route::get('/operations/bookings/{booking}/products/air/fragment', [ProductWorkspaceController::class, 'fragment'])
         ->whereNumber('booking')
@@ -425,13 +380,29 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         [GeneralBookingVoucherPreviewController::class, 'show']
     )->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.client-voucher-preview');
 
+    // C91.34: isolated ET-CV amendment layer; never creates/uses ET-TV records.
+    Route::get('/operations/bookings/{booking}/client-voucher/manage', [EtCvVoucherController::class, 'manage'])
+        ->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.et-cv-voucher.manage');
+    Route::post('/operations/bookings/{booking}/client-voucher/draft', [EtCvVoucherController::class, 'saveDraft'])
+        ->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.et-cv-voucher.draft');
+    Route::post('/operations/bookings/{booking}/client-voucher/operational-correction', [EtCvVoucherController::class, 'operationalCorrection'])
+        ->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.et-cv-voucher.operational-correction');
+    Route::post('/operations/bookings/{booking}/client-voucher/reissue', [EtCvVoucherController::class, 'reissue'])
+        ->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.et-cv-voucher.reissue');
+    Route::get('/operations/bookings/{booking}/client-voucher/history', [EtCvVoucherController::class, 'history'])
+        ->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.et-cv-voucher.history');
+    Route::get('/operations/bookings/{booking}/client-voucher/history/{revision}', [EtCvVoucherController::class, 'revision'])
+        ->whereNumber('booking')->whereNumber('revision')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.et-cv-voucher.revision');
+
     // GENERAL / MULTI-SERVICE Booking Review uses saved product, workflow,
     // accounting and Company Profile authorities; it creates no parallel store.
     Route::get('/operations/bookings/{booking}/review', [GeneralBookingReviewController::class, 'show'])
-        ->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.review.show');
+        ->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.review.show');
+    Route::get('/operations/bookings/{booking}/quotation', [BookingQuotationController::class, 'print'])
+        ->whereNumber('booking')->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.quotation.print');
     Route::post('/operations/bookings/{booking}/review/{action}', [GeneralBookingReviewController::class, 'action'])
-        ->whereNumber('booking')->where('action', 'submit|approve|reopen|notes|ready')
-        ->middleware(EnforceErpRoleScopedAccess::class)->name('bookings.review.action');
+        ->whereNumber('booking')->where('action', 'submit|approve|reopen|notes|ready|hotel-confirmation')
+        ->middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])->name('bookings.review.action');
     Route::get('/system/diagnostics/air-link-db/{booking}', AirLinkDbDiagnosticController::class)->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class);
     Route::get('/system/diagnostics/transport-rate-resolution/{booking}', TransportRateResolutionDiagnosticController::class)->whereNumber('booking')->middleware(EnforceErpRoleScopedAccess::class);
 
@@ -450,10 +421,6 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.balance-sheet');
     Route::get('/accounting/reports/trial-balance', [ManagementAccountingReportController::class, 'trialBalance'])
         ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.management-reports.trial-balance');
-    Route::get('/accounting/reports/party-statement', [PartyStatementController::class, 'index'])
-        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-statement.index');
-    Route::get('/accounting/reports/party-statement/print', [PartyStatementController::class, 'print'])
-        ->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-statement.print');
 
     // ERP-11.3.1 Chart of Accounts UX / Performance Completion
     Route::get('/accounting/chart-of-accounts/next-code', [ChartOfAccountsWorkspaceController::class, 'nextCode'])
@@ -463,19 +430,27 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         ->middleware($coaWriteMiddleware)
         ->name('accounting.chart-of-accounts.auto-store');
 
-    // C90.6A: isolated OUR bank metadata, linked only to existing eligible COA ledgers.
-    Route::get('/accounting/our-bank-accounts', [OurBankAccountController::class, 'index'])->middleware($coaReadMiddleware)->name('accounting.our-bank-accounts.index');
-    Route::get('/accounting/our-bank-accounts/create', [OurBankAccountController::class, 'create'])->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.create');
-    Route::post('/accounting/our-bank-accounts', [OurBankAccountController::class, 'store'])->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.store');
-    Route::get('/accounting/our-bank-accounts/{id}/edit', [OurBankAccountController::class, 'edit'])->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.edit');
-    Route::put('/accounting/our-bank-accounts/{id}', [OurBankAccountController::class, 'update'])->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.update');
-    Route::post('/accounting/our-bank-accounts/{id}/deactivate', [OurBankAccountController::class, 'deactivate'])->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.deactivate');
+    // Canonical Our Bank Accounts workspace; required by the cash-voucher index link.
+    Route::get('/accounting/our-bank-accounts', [OurBankAccountController::class, 'index'])
+        ->middleware($coaReadMiddleware)->name('accounting.our-bank-accounts.index');
+    Route::get('/accounting/our-bank-accounts/create', [OurBankAccountController::class, 'create'])
+        ->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.create');
+    Route::post('/accounting/our-bank-accounts', [OurBankAccountController::class, 'store'])
+        ->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.store');
+    Route::get('/accounting/our-bank-accounts/{id}/edit', [OurBankAccountController::class, 'edit'])
+        ->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.edit');
+    Route::put('/accounting/our-bank-accounts/{id}', [OurBankAccountController::class, 'update'])
+        ->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.update');
+    Route::post('/accounting/our-bank-accounts/{id}/deactivate', [OurBankAccountController::class, 'deactivate'])
+        ->whereNumber('id')->middleware($coaWriteMiddleware)->name('accounting.our-bank-accounts.deactivate');
 
     // ERP-11.3 Payments, Receipts & Advance Adjustments Core
     Route::get('/accounting/cash-vouchers', [CashVoucherController::class, 'index'])->name('accounting.cash-vouchers.index');
     Route::get('/accounting/cash-vouchers/create', [CashVoucherController::class, 'create'])->name('accounting.cash-vouchers.create');
-    Route::get('/accounting/cash-vouchers/documents', [CashVoucherController::class, 'documents'])->name('accounting.cash-vouchers.documents');
-    Route::get('/accounting/cash-vouchers/bookings', [CashVoucherController::class, 'bookings'])->name('accounting.cash-vouchers.bookings');
+    Route::get('/accounting/cash-vouchers/documents', [CashVoucherController::class, 'documents'])
+        ->name('accounting.cash-vouchers.documents');
+    Route::get('/accounting/cash-vouchers/bookings', [CashVoucherController::class, 'bookings'])
+        ->name('accounting.cash-vouchers.bookings');
     Route::post('/accounting/cash-vouchers', [CashVoucherController::class, 'store'])->name('accounting.cash-vouchers.store');
     Route::get('/accounting/cash-vouchers/{voucher}', [CashVoucherController::class, 'show'])->whereNumber('voucher')->name('accounting.cash-vouchers.show');
     Route::get('/accounting/cash-vouchers/{voucher}/edit', [CashVoucherController::class, 'edit'])->whereNumber('voucher')->name('accounting.cash-vouchers.edit');
@@ -493,69 +468,14 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
     Route::post('/accounting/advance-adjustments/{adjustment}/workflow/{action}', [AdvanceAdjustmentController::class, 'workflow'])->whereNumber('adjustment')->where('action', 'submit|approve|post')->name('accounting.advance-adjustments.workflow');
     Route::post('/accounting/advance-adjustments/{adjustment}/reverse', [AdvanceAdjustmentController::class, 'reverse'])->whereNumber('adjustment')->name('accounting.advance-adjustments.reverse');
 
-    // ERP-11.3.378 controlled party-balance lifecycle.
-    Route::get('/accounting/party-opening-balances', [PartyBalanceLifecycleController::class, 'openingIndex'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.index');
-    Route::get('/accounting/party-opening-balances/create', [PartyBalanceLifecycleController::class, 'openingCreate'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.create');
-    Route::post('/accounting/party-opening-balances', [PartyBalanceLifecycleController::class, 'openingStore'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.store');
-    Route::get('/accounting/party-opening-balances/{id}', [PartyBalanceLifecycleController::class, 'openingShow'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.show');
-    Route::post('/accounting/party-opening-balances/{id}/workflow/{action}', [PartyBalanceLifecycleController::class, 'openingWorkflow'])->whereNumber('id')->where('action','submit|approve|post')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.workflow');
-    Route::post('/accounting/party-opening-balances/{id}/reverse', [PartyBalanceLifecycleController::class, 'openingReverse'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.party-opening-balances.reverse');
-    Route::get('/accounting/customer-advance-returns', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnIndex'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.index');
-    Route::get('/accounting/customer-advance-returns/create', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnCreate'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.create');
-    Route::get('/accounting/customer-advance-returns/sources', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnSources'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.sources');
-    Route::post('/accounting/customer-advance-returns', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnStore'])->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.store');
-    Route::get('/accounting/customer-advance-returns/{id}', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnShow'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.show');
-    Route::post('/accounting/customer-advance-returns/{id}/workflow/{action}', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnWorkflow'])->whereNumber('id')->where('action','submit|approve|post')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.workflow');
-    Route::post('/accounting/customer-advance-returns/{id}/reverse', [PartyBalanceLifecycleController::class, 'customerAdvanceReturnReverse'])->whereNumber('id')->middleware(EnforceErpRoleScopedAccess::class)->name('accounting.customer-advance-returns.reverse');
-
-    // ERP-11.3.378 mobile accounts is a thin responsive web surface over the
-    // native cash-voucher, advance and return authorities.
-    Route::middleware(['auth', C89ManagedBusinessRoute::class])->prefix('mobile/accounts')->name('mobile.accounts.')->group(function (): void {
-        Route::get('/', [MobileAccountsController::class, 'index'])->name('index');
-        Route::post('/receipt-capture/preview', [MobileReceiptCaptureController::class, 'preview'])->name('receipt-capture.preview');
-        Route::get('/payment', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'payment'))->name('payment');
-        Route::post('/payment', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'payment'))->name('payment.store');
-        Route::get('/receipt', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'receipt'))->name('receipt');
-        Route::post('/receipt', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'receipt'))->name('receipt.store');
-        Route::get('/advance', [MobileAccountsController::class, 'advanceChoice'])->name('advance');
-        Route::get('/customer-advance', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'customer-advance'))->name('customer-advance');
-        Route::post('/customer-advance', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'customer-advance'))->name('customer-advance.store');
-        Route::get('/supplier-advance', fn (Request $request) => app(MobileAccountsController::class)->form($request, 'supplier-advance'))->name('supplier-advance');
-        Route::post('/supplier-advance', fn (Request $request) => app(MobileAccountsController::class)->store($request, 'supplier-advance'))->name('supplier-advance.store');
-        Route::get('/advance-adjustment', [MobileAccountsController::class, 'adjustment'])->name('adjustment');
-        Route::post('/advance-adjustment', [MobileAccountsController::class, 'storeAdjustment'])->name('adjustment.store');
-        Route::get('/customer-advance-return', [MobileAccountsController::class, 'customerReturn'])->name('customer-return');
-        Route::post('/customer-advance-return', [MobileAccountsController::class, 'storeCustomerReturn'])->name('customer-return.store');
-        Route::get('/vouchers/{voucher}', [MobileAccountsController::class, 'voucherShow'])->whereNumber('voucher')->name('vouchers.show');
-        Route::post('/vouchers/{voucher}/workflow/{action}', [MobileAccountsController::class, 'voucherWorkflow'])->whereNumber('voucher')->where('action', 'submit|approve|post')->name('vouchers.workflow');
-        Route::post('/vouchers/{voucher}/reverse', [MobileAccountsController::class, 'voucherReverse'])->whereNumber('voucher')->name('vouchers.reverse');
-        Route::get('/advance-adjustments/{adjustment}', [MobileAccountsController::class, 'adjustmentShow'])->whereNumber('adjustment')->name('adjustments.show');
-        Route::post('/advance-adjustments/{adjustment}/workflow/{action}', [MobileAccountsController::class, 'adjustmentWorkflow'])->whereNumber('adjustment')->where('action', 'submit|approve|post')->name('adjustments.workflow');
-        Route::post('/advance-adjustments/{adjustment}/reverse', [MobileAccountsController::class, 'adjustmentReverse'])->whereNumber('adjustment')->name('adjustments.reverse');
-        Route::get('/customer-advance-returns/{id}', [MobileAccountsController::class, 'customerReturnShow'])->whereNumber('id')->name('customer-returns.show');
-        Route::post('/customer-advance-returns/{id}/workflow/{action}', [MobileAccountsController::class, 'customerReturnWorkflow'])->whereNumber('id')->where('action', 'submit|approve|post')->name('customer-returns.workflow');
-        Route::post('/customer-advance-returns/{id}/reverse', [MobileAccountsController::class, 'customerReturnReverse'])->whereNumber('id')->name('customer-returns.reverse');
-    });
-
-    // C90.7: responsive movement views over the authoritative TravelReportService.
-    Route::middleware([EnforceErpRoleScopedAccess::class, EnforceErpBranchAccess::class])
-        ->prefix('mobile/movements')->name('mobile.movements.')
-        ->group(function (): void {
-            Route::get('/', [MobileMovementController::class, 'index'])->name('index');
-            foreach (array_keys(\App\Services\Reports\TravelReportService::MOVEMENTS) as $movement) {
-                Route::get('/'.$movement, [MobileMovementController::class, 'report'])
-                    ->defaults('movement', $movement)->name($movement);
-            }
-        });
-
-    Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.index');
-    Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.create');
-    Route::post('/supplier-costing/booking/{booking}/supplier/{supplier}/draft', [SupplierCostingController::class, 'createDraftFromBooking'])->whereNumber('booking')->whereNumber('supplier')->middleware([EnforceErpRoleScopedAccess::class, EnforceCommercialBranchAuthority::class])->name('purchase.supplier-costing.booking-draft');
-    Route::post('/supplier-costing', [SupplierCostingController::class, 'store'])->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.store');
-    Route::get('/supplier-costing/{costing}', [SupplierCostingController::class, 'show'])->whereNumber('costing')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.show');
-    Route::get('/supplier-costing/{costing}/edit', [SupplierCostingController::class, 'edit'])->whereNumber('costing')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.edit');
-    Route::put('/supplier-costing/{costing}', [SupplierCostingController::class, 'update'])->whereNumber('costing')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.update');
-    Route::post('/supplier-costing/{costing}/workflow/{action}', [SupplierCostingController::class, 'workflow'])->whereNumber('costing')->where('action','submit|approve|post')->middleware(EnforceCommercialBranchAuthority::class)->name('purchase.supplier-costing.workflow');
+    Route::get('/supplier-costing', [SupplierCostingController::class, 'index'])->name('purchase.supplier-costing.index');
+    Route::get('/supplier-costing/create', [SupplierCostingController::class, 'create'])->name('purchase.supplier-costing.create');
+    Route::post('/supplier-costing', [SupplierCostingController::class, 'store'])->name('purchase.supplier-costing.store');
+    Route::get('/supplier-costing/{costing}', [SupplierCostingController::class, 'show'])->whereNumber('costing')->name('purchase.supplier-costing.show');
+    Route::get('/supplier-costing/{costing}/edit', [SupplierCostingController::class, 'edit'])->whereNumber('costing')->name('purchase.supplier-costing.edit');
+    Route::put('/supplier-costing/{costing}', [SupplierCostingController::class, 'update'])->whereNumber('costing')->name('purchase.supplier-costing.update');
+    Route::post('/supplier-costing/{costing}/revise-draft', [SupplierCostingController::class, 'reviseDraft'])->whereNumber('costing')->name('purchase.supplier-costing.revise-draft');
+    Route::post('/supplier-costing/{costing}/workflow/{action}', [SupplierCostingController::class, 'workflow'])->whereNumber('costing')->where('action','submit|approve|post')->name('purchase.supplier-costing.workflow');
 
 
     Route::get(
@@ -573,13 +493,6 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         [ErpUserManagementController::class, 'status']
     )->whereNumber('user')->name('administration.erp-user-management.status');
 
-    Route::get('/administration/staff-access', [ErpStaffAccessController::class, 'index'])
-        ->middleware(EnforceErpRoleScopedAccess::class)->name('administration.staff-access.index');
-    Route::get('/administration/staff-access/{user}', [ErpStaffAccessController::class, 'show'])
-        ->whereNumber('user')->middleware(EnforceErpRoleScopedAccess::class)->name('administration.staff-access.show');
-    Route::put('/administration/staff-access/{user}', [ErpStaffAccessController::class, 'update'])
-        ->whereNumber('user')->middleware(EnforceErpRoleScopedAccess::class)->name('administration.staff-access.update');
-
     Route::get(
         '/system/erp-diagnostics/accounting-journal',
         [AccountingJournalDiagnosticController::class, 'index']
@@ -595,17 +508,6 @@ Route::post('/operations/bookings/{booking}/additional-services/{batch}/workflow
         '/system/erp-diagnostics/sales-invoice-workflow-compare',
         [SalesInvoiceWorkflowCompareController::class, 'index']
     )->name('system.erp-diagnostics.sales-invoice-workflow-compare');
-
-    Route::get(
-        '/system/erp-diagnostics/cash-voucher-legacy-reconciliation',
-        [CashVoucherLegacyBranchReconciliationController::class, 'index']
-    )->middleware(EnforceErpRoleScopedAccess::class)
-        ->name('accounting.cash-vouchers.legacy-reconciliation');
-    Route::get(
-        '/system/erp-diagnostics/cash-voucher-legacy-reconciliation/export',
-        [CashVoucherLegacyBranchReconciliationController::class, 'export']
-    )->middleware(EnforceErpRoleScopedAccess::class)
-        ->name('accounting.cash-vouchers.legacy-reconciliation.export');
 
     Route::get(
         '/system/erp-repair/cash-voucher-native-journals',
@@ -760,53 +662,12 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     $route->middleware(PresentAccountingReportsWorkspace::class);
 });
 
-// C89.2.2A: protect host-native invoice direct objects without replacing the
-// native controller or its lifecycle semantics.
-Event::listen(RouteMatched::class, function (RouteMatched $event): void {
-    $route = $event->route;
-    $name = strtolower((string) $route->getName());
-    $uri = strtolower(trim((string) $route->uri(), '/'));
-    if (!str_starts_with($name, 'sales.invoices.') && !str_starts_with($uri, 'sales/invoices/')) return;
-    $route->middleware(EnforceCommercialBranchAuthority::class);
-});
-
-/* C89.2.1: add the branch dimension beside capability authorization for
- * every authenticated booking-family and travel-movement route, including
- * native host routes registered before this overlay. Public voucher tokens
- * are intentionally excluded. */
-foreach (Route::getRoutes()->getRoutes() as $branchRoute) {
-    $uri = strtolower(trim((string) $branchRoute->uri(), '/'));
-    $name = strtolower((string) $branchRoute->getName());
-    $bookingFamily = str_starts_with($uri, 'operations/bookings')
-        || str_starts_with($uri, 'system/erp-bookings')
-        || str_starts_with($uri, 'operations/group-package-bookings')
-        || str_starts_with($uri, 'passengers')
-        || str_starts_with($name, 'bookings.')
-        || str_starts_with($name, 'operations.bookings.');
-    $movementFamily = preg_match(
-        '#^travel-reports/group-umrah/(arrival|makkah-checkin|makkah-checkout|madinah-checkin|madinah-checkout|departure)(?:/|$)#',
-        $uri
-    ) === 1;
-    $travelReportFamily = str_starts_with($uri, 'travel-reports/') || str_starts_with($name, 'travel-reports.');
-    if (($bookingFamily || $movementFamily || $travelReportFamily) && $uri !== 'voucher/{token}') {
-        $branchRoute->middleware(EnforceErpBranchAccess::class);
-    }
-}
-
-// Attach the .370 print presentation to the existing native route only.
-Event::listen(RouteMatched::class, function (RouteMatched $event): void {
-    $route = $event->route;
-    $uri = strtolower(trim((string) $route->uri(), '/'));
-
-    if (
-        ! in_array('GET', $route->methods(), true)
-        || preg_match('#^sales/invoices/\{[^}]+\}/print$#', $uri) !== 1
-    ) {
-        return;
-    }
-
-    $route->middleware(PresentSalesInvoicePrintV2::class);
-});
+// Runtime-only compatibility stub: C91-27 middleware expects this legacy name,
+// while the isolated snapshot does not include its accounting route.
+Route::get('/accounting/party-opening-balances', static fn () => abort(404))
+    ->name('accounting.party-opening-balances.index');
+Route::get('/accounting/customer-advance-returns', static fn () => abort(404))
+    ->name('accounting.customer-advance-returns.index');
 
 /* The installed host may already own /voucher/{voucher}. Its different route
  * parameter name creates the same URL matcher without replacing this overlay's
@@ -826,21 +687,17 @@ foreach (Route::getRoutes()->getRoutes() as $publicVoucherCandidate) {
 }
 
 /* One authoritative hard-lock boundary for every booking mutation. Workflow
- * transitions and the accounting bridge remain separate, explicit actions.
- * Additional Services is a dedicated draft store and is deliberately outside
- * the original booking mutation lock. */
-$erpBookingEditLockRouteDecision = static function (\Illuminate\Routing\Route $route): bool {
-    $methods = array_map('strtoupper', $route->methods());
-    if (array_diff($methods, ['GET', 'HEAD']) === []) return false;
-    $name = strtolower((string) $route->getName());
-    if (str_starts_with($name, 'bookings.additional-services.')) return false;
-    $uri = strtolower(trim((string) $route->uri(), '/'));
-    $isBookingWrite = preg_match('#^(?:system/erp-bookings|operations/bookings)/\{[^}]+\}(?:/|$)#', $uri) === 1;
-    return $isBookingWrite && ! str_ends_with($uri, '/sales-invoice');
-};
-Event::listen(RouteMatched::class, function (RouteMatched $event) use ($erpBookingEditLockRouteDecision): void {
+ * transitions and the accounting bridge remain separate, explicit actions. */
+Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     $route = $event->route;
-    if (! $erpBookingEditLockRouteDecision($route)) return;
+    $methods = array_map('strtoupper', $route->methods());
+    if (array_diff($methods, ['GET','HEAD']) === []) return;
+    $uri = strtolower(trim((string) $route->uri(), '/'));
+    // ET-CV amendments are voucher-only snapshot writes; they must not be
+    // treated as native booking/product mutations by the billing lock.
+    if (str_contains(strtolower((string) $route->getName()), 'et-cv-voucher')) return;
+    $isBookingWrite = preg_match('#^(?:system/erp-bookings|operations/bookings)/\{[^}]+\}(?:/|$)#', $uri) === 1;
+    if (! $isBookingWrite || str_ends_with($uri, '/sales-invoice')) return;
     $route->middleware(EnforceGeneralBookingEditLock::class);
 });
 
@@ -939,6 +796,21 @@ foreach (Route::getRoutes()->getRoutes() as $registeredRoute) {
 
     $registeredRoute->middleware(ApplyErpReleaseMetadata::class);
 }
+
+/* C92.85: narrowly recover the Register presentation when a late/cached
+ * route collection omits the normal registration-time attachment. */
+Event::listen(RouteMatched::class, function (RouteMatched $event): void {
+    $route = $event->route;
+    if ($route->uri() !== 'operations/bookings'
+        || ! in_array('GET', $route->methods(), true)) {
+        return;
+    }
+
+    $middleware = array_map('strval', $route->middleware());
+    if (! in_array(ApplyErpReleaseMetadata::class, $middleware, true)) {
+        $route->middleware(ApplyErpReleaseMetadata::class);
+    }
+});
 
 
 /*
@@ -1101,13 +973,6 @@ Event::listen(RouteMatched::class, function (RouteMatched $event): void {
     $action = strtolower((string) $route->getActionName());
     $uri = strtolower(trim((string) $route->uri(), '/'));
 
-    // Additional Services is a separate supplementary draft workflow and
-    // must retain the permanent ERP shell rather than the focused booking
-    // canvas used by native booking/product routes.
-    if (str_starts_with($name, 'bookings.additional-services.') && $name !== 'bookings.additional-services.products.edit') {
-        return;
-    }
-
     $isNativeBookingEntry = (
         in_array($name, [
             'operations.bookings.create',
@@ -1215,7 +1080,7 @@ if ($nativeSalesInvoiceUpdateRoute !== null) {
             'update',
         ]
     )
-        ->middleware(array_merge($nativeMiddleware, [C89ManagedBusinessRoute::class]))
+        ->middleware($nativeMiddleware)
         ->name('sales.invoices.update');
 
     try {
@@ -1240,7 +1105,7 @@ if (isset($nativeMiddleware) && is_array($nativeMiddleware)) {
         AirTicketInvoiceDraftSyncController::class
     )
         ->whereNumber('invoice')
-        ->middleware(array_merge($nativeMiddleware, [C89ManagedBusinessRoute::class]))
+        ->middleware($nativeMiddleware)
         ->name('sales.invoices.air-ticket-sync');
 } else {
     Route::post(
@@ -1248,7 +1113,7 @@ if (isset($nativeMiddleware) && is_array($nativeMiddleware)) {
         AirTicketInvoiceDraftSyncController::class
     )
         ->whereNumber('invoice')
-        ->middleware(['auth', C89ManagedBusinessRoute::class])
+        ->middleware(['auth'])
         ->name('sales.invoices.air-ticket-sync');
 }
 
@@ -1356,7 +1221,6 @@ if ($nativeFromBookingRoute !== null) {
 if (! in_array('auth', $stableInvoiceMiddleware, true)) {
     $stableInvoiceMiddleware[] = 'auth';
 }
-$stableInvoiceMiddleware[] = C89ManagedBusinessRoute::class;
 
 /*
  * Canonical booking-scoped endpoint used by Booking Workspace from 11.3.75.

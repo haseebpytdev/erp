@@ -19,7 +19,9 @@ final class EnforceCommercialBranchAuthority
             if (($id = (int) ($route?->parameter('costing') ?? 0)) > 0) $this->authority->assertSupplierCosting($user, $id);
             elseif (($id = (int) ($route?->parameter('booking') ?? 0)) > 0) $this->authority->assertBooking($user, $id);
         } elseif (str_starts_with($name, 'sales.invoices.')) {
-            if (($id = (int) ($route?->parameter('invoice') ?? 0)) > 0) $this->authority->assertInvoice($user, $id);
+            $invoice = $route?->parameter('invoice');
+            if ($invoice instanceof \Illuminate\Database\Eloquent\Model) $invoice = $invoice->getKey();
+            if (($id = (int) ($invoice ?? 0)) > 0) $this->authority->assertInvoice($user, $id);
             elseif (($id = (int) ($route?->parameter('booking') ?? 0)) > 0) $this->authority->assertBooking($user, $id);
         }
         return $next($request);

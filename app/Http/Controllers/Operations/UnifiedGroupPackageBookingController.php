@@ -348,6 +348,11 @@ class UnifiedGroupPackageBookingController extends Controller
         }
 
         $layout = $this->layoutResolver->resolve();
+        // Group Umrah is a dedicated full-width workspace. Reuse the native
+        // application header/content contract, but render no sidebar shell.
+        $layout['layout'] = 'layouts.group-package-no-sidebar';
+        $layout['content_section'] = 'content';
+        $layout['title_section'] = 'title';
 
         return view('operations.bookings.group-package-unified-v103172', [
             'customers' => $this->source->customers(),

@@ -18,7 +18,7 @@ final class EnforceGeneralBookingEditLock
     public function handle(Request $request, Closure $next): Response
     {
         $reviewAction = strtolower((string) $request->route('action'));
-        if (in_array($reviewAction, ['submit','approve','reopen','ready'], true)) return $next($request);
+        if (in_array($reviewAction, ['submit','approve','reopen','ready','hotel-confirmation','notes'], true)) return $next($request);
         $routeBooking = $request->route('booking') ?? $request->route('id') ?? 0;
         $bookingId = $this->bookingId($routeBooking);
         $billing = $this->billingLocks->resolve($bookingId);
@@ -28,6 +28,16 @@ final class EnforceGeneralBookingEditLock
                 return new JsonResponse(['message' => $message, 'error' => 'booking_billing_locked', 'billing_state' => $billing['code'] ?? 'locked'], 423);
             }
             return redirect()->route('bookings.review.show', ['booking' => $bookingId])->withErrors(['booking' => $message]);
+        }
+        // Ticket number/status issuance is an operational action, not a
+        // commercial booking edit.  Keep billing locks above, while allowing
+        // the existing controller to enforce permission, scope, ownership,
+        // uniqueness, status validation and audit logging.
+        if (
+            $request->route()?->getName() === 'operations.bookings.air-tickets.bulk-numbers'
+            && $this->isOperationalTicketPayload($request)
+        ) {
+            return $next($request);
         }
         $state = $this->locks->resolve($bookingId);
         if (! $state['locked']) {
@@ -48,11 +58,10 @@ final class EnforceGeneralBookingEditLock
             ], 423);
         }
 
-        return new RedirectResponse(
-            route('bookings.review.show', ['booking'=>$bookingId]),
-            302,
-            ['X-Booking-Lock'=>'locked']
-        )->withErrors(['booking'=>$message]);
+        return redirect()
+            ->route('bookings.review.show', ['booking' => $bookingId])
+            ->withHeaders(['X-Booking-Lock' => 'locked'])
+            ->withErrors(['booking' => $message]);
     }
 
     private function bookingId(mixed $routeBooking): int
@@ -62,5 +71,11 @@ final class EnforceGeneralBookingEditLock
         }
 
         return (int) $routeBooking;
+    }
+
+    private function isOperationalTicketPayload(Request $request): bool
+    {
+        $keys = array_diff(array_keys($request->all()), ['_token', '_method', 'ticket_number', 'ticket_status']);
+        return $keys === [] && ($request->has('ticket_number') || $request->has('ticket_status'));
     }
 }

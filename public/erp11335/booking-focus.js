@@ -126,8 +126,13 @@ var visible=function(el){
   }catch(e){return false;}
 };
 
+/* Prefer the application-shell navigation used by the working General
+ * Booking page. Broad substring matches can select a nested/non-navigation
+ * element on the Group Umrah workspace, leaving the real sidebar hidden and
+ * unreachable after focus initialization. */
 var candidates=Array.prototype.slice.call(document.querySelectorAll(
-  '.sidebar,aside.sidebar,.navbar-vertical,.side-nav,[class*="sidebar"],[class*="navbar-vertical"]'
+  '.app-shell > .sidebar,body > .sidebar,aside.sidebar,.navbar-vertical,.side-nav,'
+  +'.sidebar,[class*="navbar-vertical"],[class*="side-nav"]'
 ));
 
 var sidebar=candidates.find(function(el){
@@ -146,6 +151,15 @@ if(sidebar){
     Math.max(210,Math.round(sidebar.getBoundingClientRect().width||240))+'px'
   );
   sidebar.style.setProperty('display','none','important');
+
+  /* Focus mode uses the sidebar as an overlay. Keep the page content in the
+   * full shell track after hiding the sidebar instead of leaving <main> in
+   * the hidden sidebar column. */
+  var focusShell=sidebar.closest('.app-shell');
+  var focusMain=focusShell&&focusShell.querySelector(':scope > main');
+  if(focusMain){
+    focusMain.style.setProperty('grid-column','1 / -1','important');
+  }
 }
 etBookingFocusState.sidebar=sidebar;
 
@@ -170,14 +184,28 @@ overlay.setAttribute('data-et-booking-focus-owned','1');
 overlay.setAttribute('aria-hidden','true');
 etBookingFocusState.overlay=overlay;
 
+var pageRegisterLink=Array.prototype.slice.call(
+  document.querySelectorAll('a[href],button,[role="button"]')
+).find(function(a){
+  if(sidebar && sidebar.contains(a))return false;
+  var t=norm(a.textContent);
+  return t==='booking register'||t==='back to booking register';
+});
+var nativeActionHost=pageRegisterLink&&pageRegisterLink.parentNode&&
+  pageRegisterLink.parentNode.matches&&
+  pageRegisterLink.parentNode.matches('.booking-actions,.etgp-toolbar-actions')
+  ? pageRegisterLink.parentNode : null;
+
 var toolbar=document.querySelector('[data-et-booking-focus-toolbar="1"]');
+var nativeToolbarHost=!!nativeActionHost&&!toolbar;
+if(nativeToolbarHost)toolbar=nativeActionHost;
 if(!toolbar||!toolbar.parentNode){
   toolbar=document.createElement('div');
   toolbar.className='et-booking-focus-fallback';
 }
-toolbar.classList.add('et-booking-focus-fallback');
+if(!nativeToolbarHost)toolbar.classList.add('et-booking-focus-fallback');
 toolbar.setAttribute('data-et-booking-focus-toolbar','1');
-toolbar.setAttribute('data-et-booking-focus-fallback','ERP-11.3.55');
+if(!nativeToolbarHost)toolbar.setAttribute('data-et-booking-focus-fallback','ERP-11.3.55');
 
 var menu=toolbar.querySelector('[data-et-booking-focus-menu="1"]');
 if(!menu){
@@ -209,14 +237,6 @@ var registerLink=Array.prototype.slice.call(sidebar.querySelectorAll('a[href]'))
  * This avoids a duplicate Booking Register button and removes the standalone
  * toolbar above the booking header.
  */
-var pageRegisterLink=Array.prototype.slice.call(
-  document.querySelectorAll('a[href],button,[role="button"]')
-).find(function(a){
-  if(sidebar && sidebar.contains(a))return false;
-  var t=norm(a.textContent);
-  return t==='booking register'||t==='back to booking register';
-});
-
 /* C36: keep one focused booking identity and canonicalize only explicitly
  * identified Visa service links. Unknown service details remain native. */
 var etC36NormalizeBookingIdentityAndProductLinks=function(){
@@ -252,25 +272,32 @@ if(reviewHeaderActions){
     var nativeSubtitle=nativePageHeader&&nativePageHeader.querySelector('.text-muted,.page-pretitle,small');
     if(nativeSubtitle)nativeSubtitle.textContent=[bookingCompany,bookingBranch].filter(Boolean).join(' · ');
   }
-  /* Move the existing shared Menu and native Booking Register destination into
-   * the Review title row; do not recreate menu contents or route authority. */
-  toolbar.classList.add('et-booking-focus-fallback-inline');
-  var reviewRegister=document.createElement('a');
-  reviewRegister.className='et-booking-focus-btn';
-  reviewRegister.textContent='Booking Register';
-  reviewRegister.href=registerLink&&registerLink.href
-    ? registerLink.href
-    : (window.location.origin+'/operations/bookings');
-  toolbar.appendChild(reviewRegister);
-  reviewHeaderActions.appendChild(toolbar);
+  /* Booking Review renders Menu and Booking Register server-side so the
+   * complete header is present in the first HTML response. Keep this branch
+   * only for legacy pages that do not yet provide the toolbar. */
+  if(!reviewHeaderActions.querySelector('[data-et-booking-focus-toolbar="1"]')){
+    toolbar.classList.add('et-booking-focus-fallback-inline');
+    var reviewRegister=document.createElement('a');
+    reviewRegister.className='et-booking-focus-btn';
+    reviewRegister.textContent='Booking Register';
+    reviewRegister.href=registerLink&&registerLink.href
+      ? registerLink.href
+      : (window.location.origin+'/operations/bookings');
+    toolbar.appendChild(reviewRegister);
+    reviewHeaderActions.appendChild(toolbar);
+  }
 }else if(pageRegisterLink && pageRegisterLink.parentNode){
   /*
    * Main native Booking Workspace: there is already a Booking Register action.
    * Reuse its action row and add Menu only. This guarantees the short-menu
    * treatment instead of creating a second toolbar.
    */
-  toolbar.classList.add('et-booking-focus-fallback-inline');
-  pageRegisterLink.parentNode.insertBefore(toolbar,pageRegisterLink);
+   if(nativeToolbarHost){
+     pageRegisterLink.parentNode.insertBefore(menu,pageRegisterLink);
+   }else{
+     toolbar.classList.add('et-booking-focus-fallback-inline');
+     pageRegisterLink.parentNode.insertBefore(toolbar,pageRegisterLink);
+   }
 
   /* C58 corrective: expose the supplementary workflow from the exact
    * booking dashboard while keeping the native product cards BASE-scoped.

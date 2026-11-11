@@ -30,12 +30,6 @@ final class GeneralBookingAirProductController extends Controller
 {
     private const AIR_VENDOR_COLUMN = 'vendor_id';
 
-    /** Request-local caches keep adaptive schema/master discovery out of the
-     * passenger/group hot loops without changing the native write contract. */
-    private array $physicalColumnsCache = [];
-    private array $prototypeCache = [];
-    private ?array $supplierOptionsCache = null;
-
     public function __construct(
         private readonly GenericServicePassengerLinkSynchronizer $passengerLinks,
         private readonly ActiveBookingPassengerResolver $activePassengers,
@@ -44,9 +38,7 @@ final class GeneralBookingAirProductController extends Controller
     public function show(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
-        $airReconciliation = $request->attributes->get('supplementary_product_read_only') === true
-            ? ['blockers' => [], 'deleted' => 0, 'skipped' => true]
-            : $this->reconcileRemovedPassengerAirRows($booking);
+        $airReconciliation = $this->reconcileRemovedPassengerAirRows($booking);
         $passengers = $this->bookingPassengers($booking);
         $services = $this->findAirServices($booking);
         $groups = $this->ticketGroupsSnapshot($booking, $services, $passengers);
@@ -68,11 +60,19 @@ final class GeneralBookingAirProductController extends Controller
             'ticket_groups' => $groups,
             'summary' => $summary,
             'air_reconciliation_blockers' => $airReconciliation['blockers'],
+            // The dedicated Air workspace uses this capability only to render
+            // the existing operational number/status action. The endpoint's
+            // native permission, scope, ownership and validation checks remain
+            // authoritative on every write.
             'capabilities' => [
                 'booking_services' => Schema::hasTable('booking_services'),
                 'air_ticket_details' => Schema::hasTable('air_ticket_details'),
                 'booking_itinerary_segments' => Schema::hasTable('booking_itinerary_segments'),
                 'booking_currency' => $this->bookingCurrency($bookingRow),
+                // Align UI capability with the native permission middleware:
+                // Super Admins are authorized by User::hasPermission even when
+                // the generic Gate::can() check has no explicit ability.
+                'operational_ticket_issuance' => (bool) ($request->user()?->is_super_admin || $request->user()?->hasPermission('ticket_commercial.manage')),
             ],
         ]);
     }
@@ -178,16 +178,7 @@ final class GeneralBookingAirProductController extends Controller
                 'common.supplier_id' => 'Select Vendor / Supplier before saving Air commercial data.',
             ]);
         }
-        $fareCommercials = array_key_exists('fare_commercials', $data)
-            ? $this->normalizeFareCommercials((array) ($data['fare_commercials'] ?? []), $passengers)
-            : $this->fareCommercialsSnapshot(
-                $this->ticketRows((int) (($this->findAirService($booking)['id'] ?? 0)), $passengers)
-            );
-        $ticketPayloads = $this->commercialPassengerPayloads(
-            (array) ($data['tickets'] ?? []),
-            $passengers,
-            $fareCommercials,
-        );
+        $fareCommercials = $this->normalizeFareCommercials((array) ($data['fare_commercials'] ?? []), $passengers);
         $supplierId = (int) ($common['supplier_id'] ?? 0);
         $hasVendorCost = collect($fareCommercials)->contains(
             static fn (array $row): bool => (float) ($row['cost_price'] ?? 0) > 0
@@ -218,7 +209,6 @@ final class GeneralBookingAirProductController extends Controller
                 $data,
                 $common,
                 $fareCommercials,
-                $ticketPayloads,
                 &$nativeStage,
             ): array {
                 $nativeStage = 'Air service';
@@ -240,6 +230,7 @@ final class GeneralBookingAirProductController extends Controller
                 // assertion referenced an undefined variable, which caused the
                 // transaction to roll back after a successful native write and
                 // surfaced as the generic native-store failure.
+                $ticketPayloads = (array) ($data['tickets'] ?? []);
                 $this->syncTickets(
                     (int) $service['id'],
                     $booking,
@@ -251,7 +242,6 @@ final class GeneralBookingAirProductController extends Controller
                 );
 
                 $freshTickets = $this->ticketRows((int) $service['id'], $passengers);
-                $this->assertCommercialReadback($fareCommercials, $freshTickets);
                 $submittedPassengerIds = array_values(array_filter(array_map(
                     static fn (array $ticket): int => (int) ($ticket['booking_passenger_id'] ?? 0),
                     $ticketPayloads
@@ -518,17 +508,7 @@ final class GeneralBookingAirProductController extends Controller
         $masterId = (int) ($master['id'] ?? 0);
         $columns = $this->physicalColumnListing('booking_services');
         if (! in_array('booking_id', $columns, true)) return [];
-        $query = DB::table('booking_services')->where('booking_id', $booking);
-        // Active Air workspaces must not resurrect a service that has already
-        // entered the explicit cancellation lifecycle. Historical children and
-        // financial readers remain untouched; this is only the active editor
-        // projection.
-        if (in_array('status', $columns, true)) {
-            $query->where(function ($statusQuery): void {
-                $statusQuery->whereNull('status')->orWhereNotIn('status', ['cancelled', 'canceled', 'CANCELLED', 'CANCELED']);
-            });
-        }
-        $rows = $query->get();
+        $rows = DB::table('booking_services')->where('booking_id', $booking)->get();
         $matches = [];
         foreach ($rows as $row) {
             $data = (array) $row;
@@ -592,18 +572,6 @@ final class GeneralBookingAirProductController extends Controller
 
     private function storeTicketGroups(Request $request, int $booking, object $bookingRow): JsonResponse
     {
-        // Persisted-group removal is an explicit cancellation operation, not
-        // part of the ordinary Air Save contract. Reject non-empty deletion
-        // instructions before validation, reads, or transactional writes.
-        if ($request->exists('deleted_group_service_ids')) {
-            $deletionInstruction = $request->input('deleted_group_service_ids');
-            if (! is_array($deletionInstruction) || $deletionInstruction !== []) {
-                throw ValidationException::withMessages([
-                    'deleted_group_service_ids' => 'Persisted Air Groups require the authorized cancellation workflow; ordinary Air Save cannot remove them.',
-                ]);
-            }
-        }
-
         $request->validate([
             'segments' => ['required', 'array', 'max:12'],
             'segments.*.client_key' => ['nullable', 'string', 'max:80'],
@@ -692,9 +660,10 @@ final class GeneralBookingAirProductController extends Controller
             throw ValidationException::withMessages(['segments' => 'Every submitted itinerary segment must belong to exactly one Ticket Group.']);
         }
         $claimed = [];
+        $deletedGroupServiceIds = array_values(array_filter(array_map('intval', (array) ($payload['deleted_group_service_ids'] ?? []))));
         $stage = 'Air Ticket Groups';
         try {
-            $result = DB::transaction(function () use ($booking, $bookingRow, $passengers, $allowed, $segments, $groups, $existingIds, &$claimed, &$stage): array {
+            $result = DB::transaction(function () use ($booking, $bookingRow, $passengers, $allowed, $segments, $groups, $existingIds, $deletedGroupServiceIds, &$claimed, &$stage): array {
                 $saved = [];
                 $resolvedGroupContexts = [];
                 $resolvedServiceIds = [];
@@ -728,12 +697,10 @@ final class GeneralBookingAirProductController extends Controller
                         $seenPassengers[$pid] = true;
                     }
                     $fare = $this->normalizeFareCommercials((array) ($group['fare_commercials'] ?? []), $passengers);
-                    $ticketPayloads = $this->commercialPassengerPayloads($ticketPayloads, $passengers, $fare);
                     $this->syncAirServiceContext($serviceId, $common);
                     $stage = 'Passenger Tickets / PNR Commercials';
                     $this->syncTickets($serviceId, $booking, $bookingRow, $passengers, $ticketPayloads, $common, $fare);
                     $fresh = $this->ticketRows($serviceId, $passengers);
-                    $this->assertCommercialReadback($fare, $fresh);
                     if ($fresh !== []) {
                         $this->passengerLinks->syncAirFromNative($booking, $serviceId);
                     }
@@ -742,6 +709,13 @@ final class GeneralBookingAirProductController extends Controller
                     $resolvedGroupContexts[] = ['service_id' => $serviceId, 'common' => $common, 'segment_keys' => $keys];
                 }
                 $this->syncGroupedItinerary($booking, $segments, $claimed, $resolvedGroupContexts);
+                foreach ($deletedGroupServiceIds as $deleteId) {
+                    if (! in_array($deleteId, $existingIds, true) || in_array($deleteId, array_column($saved, 'service_id'), true)) continue;
+                    $this->assertGroupDeletionSafe($deleteId);
+                    DB::table('air_ticket_details')->where('booking_service_id', $deleteId)->delete();
+                    if (Schema::hasTable('booking_service_passengers')) DB::table('booking_service_passengers')->where('booking_service_id', $deleteId)->delete();
+                    DB::table('booking_services')->where('id', $deleteId)->delete();
+                }
                 return $saved;
             });
         } catch (ValidationException $e) { throw $e; }
@@ -1128,11 +1102,6 @@ final class GeneralBookingAirProductController extends Controller
         $ticketStatus = strtoupper((string) ($common['ticket_status'] ?? 'BOOKED'));
         $fareCounts = $this->fareTypeCounts($passengers);
         $fareSeen = ['ADULT' => 0, 'CHILD' => 0, 'INFANT' => 0];
-        $existingByPassenger = [];
-        $existingQuery = DB::table($table)->where('booking_service_id', $serviceId)->orderByDesc(in_array('id', $columns, true) ? 'id' : 'booking_service_id');
-        foreach ($existingQuery->get() as $existingRow) {
-            $existingByPassenger[(string) ($existingRow->{$passengerColumn} ?? '')] = $existingRow;
-        }
 
         foreach ($ticketPayloads as $index => $payload) {
             $bookingPassengerId = (int) ($payload['booking_passenger_id'] ?? 0);
@@ -1169,7 +1138,11 @@ final class GeneralBookingAirProductController extends Controller
                 ]);
             }
 
-            $existing = $existingByPassenger[(string) $passengerValue] ?? null;
+            $existing = DB::table($table)
+                ->where('booking_service_id', $serviceId)
+                ->where($passengerColumn, $passengerValue)
+                ->orderByDesc(in_array('id', $columns, true) ? 'id' : 'booking_service_id')
+                ->first();
 
             $ticketNumber = trim((string) ($payload['ticket_number'] ?? ''));
             $hasCommercial = $customerTotal > 0.0 || $supplierTotal > 0.0;
@@ -1374,84 +1347,6 @@ final class GeneralBookingAirProductController extends Controller
         }
     }
 
-    /**
-     * Commercial input is persisted on native passenger rows, even when no
-     * ticket number has been issued yet.  Complete the submitted payload from
-     * the active booking passenger authority; never invent ticket numbers.
-     *
-     * @return list<array<string,mixed>>
-     */
-    private function commercialPassengerPayloads(array $payloads, array $passengers, array $fareCommercials): array
-    {
-        $meaningful = false;
-        foreach ($fareCommercials as $commercial) {
-            foreach (['sale_price', 'cost_price', 'basic_rate', 'vendor_minus_value', 'customer_minus_value', 'vendor_other_cost'] as $field) {
-                if ($this->money($commercial[$field] ?? 0) > 0) {
-                    $meaningful = true;
-                    break 2;
-                }
-            }
-        }
-        if (! $meaningful) return array_values($payloads);
-
-        $result = array_values($payloads);
-        $seen = [];
-        foreach ($result as $payload) {
-            $id = (int) ($payload['booking_passenger_id'] ?? 0);
-            if ($id > 0) $seen[$id] = true;
-        }
-        foreach ($passengers as $passenger) {
-            $id = (int) ($passenger['id'] ?? 0);
-            if ($id > 0 && ! isset($seen[$id])) {
-                $result[] = [
-                    'booking_passenger_id' => $id,
-                    'ticket_number' => '',
-                    'booking_class' => '',
-                    'baggage' => '',
-                ];
-                $seen[$id] = true;
-            }
-        }
-        if ($meaningful && $passengers !== [] && $result === []) {
-            throw ValidationException::withMessages([
-                'air' => 'Air commercial values could not be linked to the booking passengers. Please reload and save again.',
-            ]);
-        }
-        return $result;
-    }
-
-    private function assertCommercialReadback(array $fareCommercials, array $freshTickets): void
-    {
-        $expectedCustomer = 0.0;
-        $expectedSupplier = 0.0;
-        $meaningful = false;
-        foreach ($fareCommercials as $commercial) {
-            $paxCount = max(1, (int) ($commercial['pax_count'] ?? 1));
-            $expectedCustomer += array_key_exists('customer_row_total', $commercial)
-                ? $this->money($commercial['customer_row_total'])
-                : round($this->money($commercial['customer_total'] ?? 0) * $paxCount, 2);
-            $expectedSupplier += array_key_exists('vendor_row_total', $commercial)
-                ? $this->money($commercial['vendor_row_total'])
-                : round($this->money($commercial['supplier_total'] ?? ($commercial['vendor_net'] ?? 0)) * $paxCount, 2);
-            foreach (['sale_price', 'cost_price', 'basic_rate', 'vendor_minus_value', 'customer_minus_value', 'vendor_other_cost'] as $field) {
-                if ($this->money($commercial[$field] ?? 0) > 0) $meaningful = true;
-            }
-        }
-        if (! $meaningful) return;
-        if ($freshTickets === []) {
-            throw ValidationException::withMessages([
-                'air' => 'Air commercial values could not be linked to the booking passengers. Please reload and save again.',
-            ]);
-        }
-        $actualCustomer = round(array_sum(array_map(static fn (array $row): float => (float) ($row['customer_total'] ?? 0), $freshTickets)), 2);
-        $actualSupplier = round(array_sum(array_map(static fn (array $row): float => (float) ($row['supplier_total'] ?? 0), $freshTickets)), 2);
-        if (abs(round($expectedCustomer, 2) - $actualCustomer) > 0.01 || abs(round($expectedSupplier, 2) - $actualSupplier) > 0.01) {
-            throw ValidationException::withMessages([
-                'air' => 'Air commercial values could not be verified after saving. Please reload and save again.',
-            ]);
-        }
-    }
-
     /** @return array<string,mixed> */
     private function commonSnapshot(array $tickets, array $serviceRow = []): array
     {
@@ -1624,7 +1519,6 @@ final class GeneralBookingAirProductController extends Controller
                 'vendor_other_cost' => $vendorOtherCost,
                 'customer_net' => $customerNet,
                 'vendor_net' => $vendorNet,
-                'pax_count' => count($matching),
                 'margin' => $margin,
                 // Legacy aliases keep downstream/native integrations stable.
                 'customer_total_sale_value' => $salePrice,
@@ -2046,7 +1940,6 @@ final class GeneralBookingAirProductController extends Controller
     /** @return list<array{id:int,name:string}> */
     private function supplierOptions(): array
     {
-        if ($this->supplierOptionsCache !== null) return $this->supplierOptionsCache;
         // ERP-11.3.116: use the same authoritative Vendor / Supplier source as
         // Group Umrah instead of looking only at standalone suppliers/vendors
         // tables. Most production installs keep vendors in the shared parties
@@ -2054,7 +1947,7 @@ final class GeneralBookingAirProductController extends Controller
         try {
             $vendors = app(UnifiedGroupPackageDataSource::class)->vendors();
             if ($vendors->isNotEmpty()) {
-                return $this->supplierOptionsCache = $vendors->map(static function (array $row): array {
+                return $vendors->map(static function (array $row): array {
                     return [
                         'id' => (int) ($row['id'] ?? 0),
                         'name' => trim((string) ($row['name'] ?? '')),
@@ -2095,7 +1988,7 @@ final class GeneralBookingAirProductController extends Controller
 
                 $rows = $query->orderBy($nameColumn)->limit(1500)->get();
                 if ($rows->isNotEmpty()) {
-                    return $this->supplierOptionsCache = $rows->map(static function (object $row) use ($idColumn, $nameColumn): array {
+                    return $rows->map(static function (object $row) use ($idColumn, $nameColumn): array {
                         return ['id' => (int) $row->{$idColumn}, 'name' => trim((string) $row->{$nameColumn})];
                     })->filter(static fn (array $row): bool => $row['id'] > 0 && $row['name'] !== '')
                         ->unique('id')
@@ -2105,7 +1998,7 @@ final class GeneralBookingAirProductController extends Controller
             } catch (Throwable) {
             }
         }
-        return $this->supplierOptionsCache = [];
+        return [];
     }
 
     private function airTicketPrototype(): array
@@ -2117,10 +2010,9 @@ final class GeneralBookingAirProductController extends Controller
 
     private function prototypeFor(string $table): array
     {
-        if (array_key_exists($table, $this->prototypeCache)) return $this->prototypeCache[$table];
-        if (! Schema::hasTable($table) || ! in_array('id', Schema::getColumnListing($table), true)) return $this->prototypeCache[$table] = [];
+        if (! Schema::hasTable($table) || ! in_array('id', Schema::getColumnListing($table), true)) return [];
         $row = DB::table($table)->orderByDesc('id')->first();
-        return $this->prototypeCache[$table] = ($row ? (array) $row : []);
+        return $row ? (array) $row : [];
     }
 
     private function scrubTicketPrototype(array &$row): void
@@ -2851,7 +2743,6 @@ final class GeneralBookingAirProductController extends Controller
     /** @return list<string> */
     private function physicalColumnListing(string $table): array
     {
-        if (array_key_exists($table, $this->physicalColumnsCache)) return $this->physicalColumnsCache[$table];
         if (! preg_match('/^[A-Za-z0-9_]+$/', $table)) return [];
         $names = [];
         try {
@@ -2875,7 +2766,7 @@ final class GeneralBookingAirProductController extends Controller
             }
         } catch (Throwable) {
         }
-        return $this->physicalColumnsCache[$table] = array_values(array_keys($names));
+        return array_values(array_keys($names));
     }
 
     private function assertRequiredNativeContract(string $table, array $row): void

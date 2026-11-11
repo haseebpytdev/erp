@@ -863,30 +863,6 @@ var etgpBookingCommercialDisplay113302=function(data){
   var rawMargin=data.gross_margin,margin=validRaw(rawMargin)?Number(rawMargin):(validBooking&&validSupplier?bookingValue-supplierCost:NaN);
   return {products:products,bookingValue:validBooking?bookingValue:null,supplierCost:validSupplier?supplierCost:null,margin:Number.isFinite(margin)?margin:null};
 };
-var etgpRenderBookingCommercialSummary113302=function(root){
-  if(!root)return;
-  var c45=etgpIsMainBookingDashboardC45();
-  var card=root.querySelector('[data-etgp-booking-commercial-summary]');
-  if(!card){
-    card=create('section','etgp-card etgp-booking-commercial-summary');
-    card.setAttribute('data-etgp-booking-commercial-summary','1');
-    var head=create('div','etgp-card-head etgp-booking-commercial-head');
-    head.appendChild(create('div','etgp-card-copy'));
-    head.firstChild.appendChild(create('h2','etgp-card-title','Booking Commercial Summary'));
-    if(!c45)head.firstChild.appendChild(create('p','etgp-card-note','Read-only booking-wide totals from saved product authorities. Detailed commercials remain within each product workspace.'));
-
-    card.appendChild(head);card.appendChild(create('div','etgp-booking-commercial-grid'));
-    var footer=create('div','etgp-booking-commercial-footer');footer.appendChild(create('span','','Final Booking Value'));footer.appendChild(create('strong','etgp-booking-commercial-final','Unavailable'));card.appendChild(footer);
-    var cost=create('div','etgp-booking-commercial-footer');cost.appendChild(create('span','','Supplier Cost Total'));cost.appendChild(create('strong','etgp-booking-commercial-supplier','Unavailable'));card.appendChild(cost);
-    var margin=create('div','etgp-booking-commercial-footer');margin.appendChild(create('span','','Margin / Answer'));margin.appendChild(create('strong','etgp-booking-commercial-margin','Unavailable'));card.appendChild(margin);root.appendChild(card);
-  }
-  var authority=etgpBookingCommercialAuthority113302||{},totals=authority.products||etgpProductCustomerTotals113127||{},currency=authority.currency||etgpProductCurrency113127||'PKR',grid=card.querySelector('.etgp-booking-commercial-grid');
-  if(grid){grid.innerHTML='';[['air','Air'],['hotel','Hotel'],['transport','Transport'],['visa','Visa']].forEach(function(item){var row=create('div','etgp-booking-commercial-row');row.appendChild(create('span','',item[1]));row.appendChild(create('strong','',currency+' '+Math.max(0,Number(totals[item[0]]||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})));grid.appendChild(row);});}
-  var format=function(value){var numeric=Number(value);return value===null||value===undefined||value===''||!Number.isFinite(numeric)?'Unavailable':currency+' '+numeric.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});};
-  var target=card.querySelector('.etgp-booking-commercial-final');if(target)target.textContent=format(authority.bookingValue);
-  var supplier=card.querySelector('.etgp-booking-commercial-supplier');if(supplier)supplier.textContent=format(authority.supplierCost);
-  var margin=card.querySelector('.etgp-booking-commercial-margin');if(margin)margin.textContent=format(authority.margin);
-};
 var etgpNormalizeBookingLockState113162=function(value){
   var key=String(value||'').trim().toLowerCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
   return key==='pending approval'||key==='approved'||key==='travel ready';
@@ -942,7 +918,6 @@ var etgpRefreshPersistedBookingState113153=function(bookingId,selectedProducts){
       etgpProductCustomerTotals113127=Object.assign({},data.product_customer_totals||{});
       etgpProductCurrency113127=currency;
       etgpBookingCommercialAuthority113302={products:commercial.products,bookingValue:commercial.bookingValue,supplierCost:commercial.supplierCost,margin:commercial.margin,currency:currency};
-      etgpRenderBookingCommercialSummary113302(document.querySelector('.etgp-step1'));
       var passengerCountAuthority=Number(data.passenger_count);
       if(Number.isFinite(passengerCountAuthority)&&passengerCountAuthority>=0){
         var fareMix=data.passenger_fare_mix||{};
@@ -1016,11 +991,12 @@ var etgpApplyBookingLock113162=function(data){
   var serverBanner=document.querySelector('[data-et-server-booking-lock="1"]');
   if(serverBanner&&serverBanner.parentNode!==root){
     var toolbar=root.querySelector('.etgp-toolbar,.et-booking-workspace-header,[data-et-booking-workspace-header="1"]');
-    if(toolbar&&toolbar.parentNode===root)toolbar.insertAdjacentElement('afterend',serverBanner);else root.insertBefore(serverBanner,root.firstChild);
+    var hero=root.querySelector('.booking-hero')||document.querySelector('.booking-hero');
+    if(toolbar&&toolbar.parentNode===root)toolbar.insertAdjacentElement('afterend',serverBanner);else if(hero)hero.insertAdjacentElement('afterend',serverBanner);
   }
   var banner=root.querySelector('[data-etgp-booking-lock]');
   if(serverBanner&&banner)banner.remove();
-  if(!serverBanner&&!banner){banner=document.createElement('div');banner.setAttribute('data-etgp-booking-lock','1');banner.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font-size:11px;font-weight:700';root.insertBefore(banner,root.firstChild);}
+  if(!serverBanner&&!banner){banner=document.createElement('div');banner.setAttribute('data-etgp-booking-lock','1');banner.style.cssText='margin:8px 0;padding:10px 13px;border:1px solid #f0c777;border-radius:8px;background:#fff8e7;color:#704d0e;font-size:11px;font-weight:700';var dynamicHero=root.querySelector('.booking-hero')||document.querySelector('.booking-hero');if(dynamicHero)dynamicHero.insertAdjacentElement('afterend',banner);else root.appendChild(banner);}
   if(banner)banner.textContent=String(data&&data.booking_lock_reason||'Booking is locked after approval. Reopen the booking before making changes.');
   if(c45)Array.prototype.slice.call(root.querySelectorAll('[data-etgp-lock-invoice]')).forEach(function(el){el.remove();});
   if(c45&&invoice&&data&&data.sales_invoice_url&&(serverBanner||banner)){
@@ -1809,9 +1785,16 @@ var etgpHotelMoneyText113127=function(value,currency){
 };
 var etgpHotelDateNights113127=function(checkIn,checkOut){
   if(!checkIn||!checkOut)return 0;
-  var a=new Date(String(checkIn)+'T00:00:00'),b=new Date(String(checkOut)+'T00:00:00');
-  if(!Number.isFinite(a.getTime())||!Number.isFinite(b.getTime()))return 0;
-  return Math.max(0,Math.round((b.getTime()-a.getTime())/86400000));
+  var parse=function(value){var m=String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return null;var y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]),date=new Date(Date.UTC(y,mo-1,d));return date.getUTCFullYear()===y&&date.getUTCMonth()===mo-1&&date.getUTCDate()===d?date:null;};
+  var a=parse(checkIn),b=parse(checkOut);if(!a||!b)return 0;
+  return Math.max(0,Math.floor((Date.UTC(b.getUTCFullYear(),b.getUTCMonth(),b.getUTCDate())-Date.UTC(a.getUTCFullYear(),a.getUTCMonth(),a.getUTCDate()))/86400000));
+};
+var etgpHotelDateAddDays113127=function(checkIn,nights){
+  var m=String(checkIn||'').match(/^(\d{4})-(\d{2})-(\d{2})$/),n=Number(nights);if(!m||!Number.isInteger(n)||n<0)return '';
+  var y=Number(m[1]),mo=Number(m[2]),d=Number(m[3]),date=new Date(Date.UTC(y,mo-1,d));if(date.getUTCFullYear()!==y||date.getUTCMonth()!==mo-1||date.getUTCDate()!==d)return '';
+  date.setUTCDate(date.getUTCDate()+n);var pad=function(v){return String(v).padStart(2,'0');};return date.getUTCFullYear()+'-'+pad(date.getUTCMonth()+1)+'-'+pad(date.getUTCDate());
+};
+var etgpHotelWeekday113127=function(value){var m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return '';var date=new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3])));if(date.getUTCFullYear()!==Number(m[1])||date.getUTCMonth()!==Number(m[2])-1||date.getUTCDate()!==Number(m[3]))return '';return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][date.getUTCDay()];
 };
 var etgpHotelError113127=function(data,fallback){
   if(data&&data.errors){var keys=Object.keys(data.errors);if(keys.length&&data.errors[keys[0]]&&data.errors[keys[0]][0])return data.errors[keys[0]][0];}
@@ -1876,12 +1859,14 @@ var etgpHotelRender113127=function(host,data,bookingId){
   var hotels=Array.isArray(data.hotels)?data.hotels:[];
   var roomTypes=Array.isArray(data.room_types)&&data.room_types.length?data.room_types:['Single','Double','Triple','Quad','Quint','Sharing'];
   var boards=Array.isArray(data.boards)&&data.boards.length?data.boards:['RO','BB'];
-  var rows=[];
+  var rows=[],chainActive=false,chainUpdating=false,continuityWarning=false;
   var block=create('div','etgp-hotel-block-113127');
   var head=create('div','etgp-hotel-head-113127');
-  var headCopy=create('div','etgp-product-subsection-161');headCopy.appendChild(create('h4','etgp-hotel-title-113127','Hotel Stays'));headCopy.appendChild(create('p','etgp-hotel-note-113127','One line per hotel. City filters Hotel Name; Nights and Answer calculate automatically.'));
+  var headCopy=create('div','etgp-product-subsection-161');headCopy.appendChild(create('h4','etgp-hotel-title-113127','Hotel Stays'));
   var add=create('button','btn btn-light etgp-hotel-add-113127','+ Add Hotel Stay');add.type='button';
   head.appendChild(headCopy);head.appendChild(add);block.appendChild(head);
+  var travelReferences={outboundArrival:'',returnDeparture:'',segments:[]};
+  var travelPanel=create('section','etgp-hotel-travel-reference-113127');var travelHead=create('h4','etgp-hotel-travel-reference-title-113127','Travel Dates — Air Tickets');var travelBody=create('div','etgp-hotel-travel-reference-body-113127','Loading saved Air itinerary…');var travelWarning=create('div','etgp-hotel-travel-conflict-warning-113127');travelWarning.hidden=true;travelPanel.appendChild(travelHead);travelPanel.appendChild(travelBody);travelPanel.appendChild(travelWarning);block.appendChild(travelPanel);
   var scroll=create('div','etgp-hotel-grid-scroll-113127');
   var header=create('div','etgp-hotel-grid-113127 etgp-hotel-grid-head-113127');
   ['#','City','Vendor *','Hotel Name','C Number','R Type','Board','Check In','Check Out','Nights','Sale','Cost','Answer','Action'].forEach(function(label){header.appendChild(create('div','',label));});
@@ -1898,19 +1883,34 @@ var etgpHotelRender113127=function(host,data,bookingId){
 
   var makeInput=function(value,type,placeholder){var input=create('input','form-control');input.type=type||'text';input.value=value===undefined||value===null?'':String(value);if(placeholder)input.placeholder=placeholder;input.autocomplete='off';return input;};
   var makeSelect=function(options,value){var select=create('select','form-select');(options||[]).forEach(function(item){var o=create('option','',typeof item==='string'?item:String(item.name||item.label||''));o.value=typeof item==='string'?item:String(item.id||'');if(String(o.value)===String(value===undefined||value===null?'':value))o.selected=true;select.appendChild(o);});return select;};
+  var summary=create('div','etgp-hotel-summary-113127');var summaryNights=create('div','etgp-hotel-summary-item-113127'),summaryCustomer=create('div','etgp-hotel-summary-item-113127'),summaryVendor=create('div','etgp-hotel-summary-item-113127'),summaryMargin=create('div','etgp-hotel-summary-item-113127');summary.appendChild(summaryNights);summary.appendChild(summaryCustomer);summary.appendChild(summaryVendor);summary.appendChild(summaryMargin);
+  var fridayAdvisory=create('aside','etgp-hotel-friday-advisory-113127');var fridayTitle=create('strong','etgp-hotel-friday-advisory-title-113127','⚠ Important — Friday Intercity Transport Advisory');var fridayCopy=create('p','etgp-hotel-friday-advisory-copy-113127','Shared intercity transport is not available for Friday hotel check-outs involving travel between cities.');var fridayInstruction=create('p','etgp-hotel-friday-advisory-copy-113127','If the client specifically requests a Friday check-out, staff must inform the client about this restriction and confirm their choice before finalizing the hotel arrangement.');var fridayDetail=create('p','etgp-hotel-friday-advisory-detail-113127');fridayDetail.hidden=true;fridayAdvisory.appendChild(fridayTitle);fridayAdvisory.appendChild(fridayCopy);fridayAdvisory.appendChild(fridayInstruction);fridayAdvisory.appendChild(fridayDetail);
+  var travelDatePart=function(value){var match=String(value||'').match(/^(\d{4}-\d{2}-\d{2})/);return match?match[1]:'';};
+  var travelDisplayDate=function(value){var text=String(value||'').replace('T',' ');return text?text.slice(0,16):'Date unavailable';};
+  var updateFridayAdvisory=function(){var affected=[];rows.forEach(function(c,index){var next=rows[index+1],checkout=travelDatePart(c.checkOut.value),city=norm(c.city.value),nextCity=next?norm(next.city.value):'';if(next&&checkout&&etgpHotelWeekday113127(checkout)==='Friday'&&city&&nextCity&&city!==nextCity)affected.push('Hotel '+String(index+1)+' ('+checkout+')');});var active=affected.length>0;fridayAdvisory.classList.toggle('is-active',active);fridayDetail.hidden=!active;fridayDetail.textContent=active?'Affected: '+affected.join(', ')+'. Shared intercity transport will not be available.':'';};
+  var updateTravelConflictWarnings=function(){var messages=[],first=rows[0]&&rows[0].checkIn?travelDatePart(rows[0].checkIn.value):'',last=rows.length?travelDatePart(rows[rows.length-1].checkOut.value):'',outbound=travelDatePart(travelReferences.outboundArrival),returnDate=travelDatePart(travelReferences.returnDeparture);if(first&&outbound&&first<outbound)messages.push('⚠ Hotel Check-In is earlier than the saved outbound arrival.');if(last&&returnDate&&last>returnDate)messages.push('⚠ Hotel Check-Out is later than the saved return departure.');travelWarning.hidden=!messages.length;travelWarning.textContent=messages.join(' ');};
+  var renderTravelReferences=function(data){var segments=Array.isArray(data&&data.itinerary)?data.itinerary:[],returnIndex=segments.findIndex(function(segment){return String(segment&&segment.segment_type||'').toLowerCase()==='return';}),outboundLeg=returnIndex>=0?segments.slice(0,returnIndex):segments.filter(function(segment){return String(segment&&segment.segment_type||'').toLowerCase()==='outbound';}),returnLeg=returnIndex>=0?segments.slice(returnIndex):[];travelReferences.segments=segments;travelReferences.outboundArrival=outboundLeg.length?(outboundLeg[outboundLeg.length-1].arrival_at||''):'';travelReferences.returnDeparture=returnLeg.length?(returnLeg[0].departure_at||''):'';travelBody.innerHTML='';if(!segments.length){travelBody.textContent='No saved Air itinerary dates are available.';updateTravelConflictWarnings();return;}var summaryRows=[];if(travelReferences.outboundArrival)summaryRows.push(['Outbound arrival',travelReferences.outboundArrival]);if(travelReferences.returnDeparture)summaryRows.push(['Return departure',travelReferences.returnDeparture]);summaryRows.forEach(function(item){var line=create('div','etgp-hotel-travel-reference-line-113127');line.appendChild(create('strong','',item[0]));line.appendChild(create('span','',travelDisplayDate(item[1])));travelBody.appendChild(line);});segments.forEach(function(segment,index){var type=String(segment&&segment.segment_type||'').toLowerCase(),label=type==='outbound'?'Outbound':type==='return'?'Return':type==='connection'?'Connection':'Saved segment',route=[String(segment&&segment.from||''),String(segment&&segment.to||'')].filter(Boolean).join(' → ')||'Route unavailable',flight=String(segment&&segment.flight_number||'');var text=route+(flight?' · '+flight:'')+' · '+travelDisplayDate(segment&&segment.departure_at)+(segment&&segment.arrival_at?' → '+travelDisplayDate(segment.arrival_at):'');var line=create('div','etgp-hotel-travel-segment-113127');line.appendChild(create('span','',label+' '+(index+1)));line.appendChild(create('span','',text));travelBody.appendChild(line);});updateTravelConflictWarnings();};
+  var updateCheckoutWarning=function(c){var day=etgpHotelWeekday113127(c.checkOut.value),warn=day==='Thursday'||day==='Friday';c.checkOut.classList.toggle('etgp-hotel-checkout-warning-113127',warn);c.checkOut.title=warn?'Check-out falls on '+day+'.': '';if(c.checkoutWarning){c.checkoutWarning.hidden=!warn;c.checkoutWarning.textContent=warn?'Warning: '+day+' check-out':'';}};
+  var recalculateChain=function(start){if(!chainActive||chainUpdating)return;chainUpdating=true;var from=Math.max(0,Number(start)||0);for(var i=from;i<rows.length;i++){var c=rows[i],n=Number(c.nights.value);if(!Number.isInteger(n)||n<0)n=0;c.nights.value=String(n);if(i>from){var previous=rows[i-1].checkOut.value;if(previous){c.checkIn.value=previous;}else{c.checkIn.value='';c.checkOut.value='';continue;}}var next=etgpHotelDateAddDays113127(c.checkIn.value,n);if(next)c.checkOut.value=next;else if(i>=from)c.checkOut.value='';}chainUpdating=false;};
   var recalcAll=function(){
     var customer=0,vendor=0;
     rows.forEach(function(c){
-      var nights=etgpHotelDateNights113127(c.checkIn.value,c.checkOut.value);c.nights.value=String(nights||0);
+      var nights=Number(c.nights.value);if(!Number.isInteger(nights)||nights<0)nights=0;c.nights.value=String(nights);
       c.checkOut.classList.toggle('is-invalid',!!c.checkIn.value&&!!c.checkOut.value&&nights<1);
       var sale=Math.max(0,etgpHotelMoney113127(c.sale.value)),cost=Math.max(0,etgpHotelMoney113127(c.cost.value));
       var ct=sale*nights,vt=cost*nights,margin=ct-vt;
-      c.answer.innerHTML='<span>C '+ct.toFixed(2)+'</span><span>V '+vt.toFixed(2)+'</span><strong'+(margin<0?' class="is-negative"':'')+'>M '+margin.toFixed(2)+'</strong>';
+      // Keep the margin calculation for the authoritative bottom summary,
+      // but the per-stay Answer box intentionally exposes only C and V.
+      c.answer.innerHTML='<span>C '+ct.toFixed(2)+'</span><span>V '+vt.toFixed(2)+'</span>';
+      updateCheckoutWarning(c);
       customer+=ct;vendor+=vt;
     });
+    summaryNights.innerHTML='<span>Total Nights</span><strong>'+String(rows.reduce(function(total,c){var n=Number(c.nights.value);return total+(Number.isInteger(n)&&n>0?n:0);},0))+'</strong>';
     summaryCustomer.innerHTML='<span>Hotel Customer Total</span><strong>'+etgpHotelMoneyText113127(customer,currency)+'</strong>';
     summaryVendor.innerHTML='<span>Hotel Vendor Total</span><strong>'+etgpHotelMoneyText113127(vendor,currency)+'</strong>';
     summaryMargin.innerHTML='<span>Gross Margin</span><strong>'+etgpHotelMoneyText113127(customer-vendor,currency)+'</strong>';
+    updateFridayAdvisory();
+    updateTravelConflictWarnings();
   };
   var refreshHotelList=function(c){
     c.hotelList.innerHTML='';hotelsForCity(c.city.value).forEach(function(h){var o=document.createElement('option');o.value=String(h.name||'');c.hotelList.appendChild(o);});
@@ -1926,29 +1926,34 @@ var etgpHotelRender113127=function(host,data,bookingId){
     var room=makeInput(stay.room_type||'','text','Double');room.setAttribute('list',roomList.id);row.appendChild(room);
     var board=makeSelect(boards,stay.board||'RO');row.appendChild(board);
     var checkIn=makeInput(stay.check_in||'','date');row.appendChild(checkIn);
-    var checkOut=makeInput(stay.check_out||'','date');row.appendChild(checkOut);
-    var nights=makeInput(stay.nights||0,'number');nights.readOnly=true;nights.tabIndex=-1;nights.classList.add('is-auto');row.appendChild(nights);
+    var checkOut=makeInput(stay.check_out||'','date');checkOut.readOnly=true;checkOut.tabIndex=-1;checkOut.classList.add('is-auto');var checkoutWrap=create('div','etgp-hotel-checkout-wrap-113127');var checkoutWarning=create('small','etgp-hotel-checkout-warning-text-113127');checkoutWarning.hidden=true;checkoutWrap.appendChild(checkOut);checkoutWrap.appendChild(checkoutWarning);row.appendChild(checkoutWrap);
+    var nights=makeInput(stay.nights||((stay.check_in&&stay.check_out)?etgpHotelDateNights113127(stay.check_in,stay.check_out):0),'number');nights.min='0';nights.step='1';nights.inputMode='numeric';nights.classList.add('is-auto');row.appendChild(nights);
     var sale=makeInput(stay.sale_rate||0,'number');sale.min='0';sale.step='0.01';row.appendChild(sale);
     var cost=makeInput(stay.cost_rate||0,'number');cost.min='0';cost.step='0.01';row.appendChild(cost);
     var answer=create('div','etgp-hotel-answer-113127');row.appendChild(answer);
     var remove=create('button','etgp-hotel-remove-113127','×');remove.type='button';remove.title='Remove Hotel Stay';row.appendChild(remove);
     body.appendChild(row);
-    var controls={row:row,id:Number(stay.id||0)||0,booking_service_id:Number(stay.booking_service_id||0)||0,city:city,vendor:vendor,hotel:hotel,hotelList:hotelList,confirmation:confirmation,room:room,board:board,checkIn:checkIn,checkOut:checkOut,nights:nights,sale:sale,cost:cost,answer:answer};rows.push(controls);refreshHotelList(controls);
+    var controls={row:row,id:Number(stay.id||0)||0,booking_service_id:Number(stay.booking_service_id||0)||0,city:city,vendor:vendor,hotel:hotel,hotelList:hotelList,confirmation:confirmation,room:room,board:board,checkIn:checkIn,checkOut:checkOut,checkoutWarning:checkoutWarning,nights:nights,sale:sale,cost:cost,answer:answer};rows.push(controls);refreshHotelList(controls);
     city.addEventListener('input',function(){refreshHotelList(controls);});
     city.addEventListener('change',function(){refreshHotelList(controls);var h=findHotel(city.value,hotel.value);if(h&&norm(h.city)!==norm(city.value))hotel.value='';});
     hotel.addEventListener('change',function(){var h=findHotel(city.value,hotel.value);if(h&&h.city&&!city.value){city.value=h.city;refreshHotelList(controls);}});
-    [checkIn,checkOut,sale,cost].forEach(function(input){input.addEventListener('input',recalcAll);input.addEventListener('change',recalcAll);});
-    remove.addEventListener('click',function(){if(rows.length<=1){[city,hotel,confirmation,room,checkIn,checkOut,sale,cost].forEach(function(input){input.value='';});vendor.value='';board.value='RO';recalcAll();return;}var pos=rows.indexOf(controls);if(pos!==-1)rows.splice(pos,1);row.remove();rows.forEach(function(item,i){item.row.querySelector('.etgp-hotel-chip-113127').textContent='Hotel '+(i+1);});recalcAll();});
+    checkIn.addEventListener('input',function(){chainActive=true;recalculateChain(rows.indexOf(controls));recalcAll();});checkIn.addEventListener('change',function(){chainActive=true;recalculateChain(rows.indexOf(controls));recalcAll();});
+    nights.addEventListener('input',function(){chainActive=true;recalculateChain(rows.indexOf(controls));recalcAll();});nights.addEventListener('change',function(){chainActive=true;recalculateChain(rows.indexOf(controls));recalcAll();});
+    [checkOut,sale,cost].forEach(function(input){input.addEventListener('input',recalcAll);input.addEventListener('change',recalcAll);});
+    remove.addEventListener('click',function(){if(rows.length<=1){[city,hotel,confirmation,room,checkIn,checkOut,nights,sale,cost].forEach(function(input){input.value='';});vendor.value='';board.value='RO';recalcAll();return;}var pos=rows.indexOf(controls);if(pos!==-1)rows.splice(pos,1);row.remove();rows.forEach(function(item,i){item.row.querySelector('.etgp-hotel-chip-113127').textContent='Hotel '+(i+1);});if(chainActive)recalculateChain(Math.max(0,pos-1));recalcAll();});
     recalcAll();
   };
 
-  var summary=create('div','etgp-hotel-summary-113127');var summaryCustomer=create('div','etgp-hotel-summary-item-113127'),summaryVendor=create('div','etgp-hotel-summary-item-113127'),summaryMargin=create('div','etgp-hotel-summary-item-113127');summary.appendChild(summaryCustomer);summary.appendChild(summaryVendor);summary.appendChild(summaryMargin);block.appendChild(summary);
+  var continuityNotice=create('div','etgp-hotel-continuity-warning-113127');continuityNotice.hidden=true;continuityNotice.textContent='Saved hotel dates are non-contiguous. Edit a Check In or Nights value to activate sequential chaining.';block.appendChild(continuityNotice);block.appendChild(summary);block.appendChild(fridayAdvisory);
   var actions=create('div','etgp-hotel-actions-113127');var feedback=create('div','etgp-hotel-feedback-113127');feedback.hidden=true;var save=create('button','btn btn-primary etgp-hotel-save-113127','Save Hotel Data');save.type='button';actions.appendChild(feedback);actions.appendChild(save);block.appendChild(actions);host.appendChild(block);
 
-  (Array.isArray(data.stays)&&data.stays.length?data.stays:[{}]).forEach(addRow);
-  add.addEventListener('click',function(){addRow({});rows[rows.length-1].city.focus();});
+  var loadedStays=Array.isArray(data.stays)&&data.stays.length?data.stays:[{}];loadedStays.forEach(addRow);
+  for(var continuityIndex=1;continuityIndex<loadedStays.length;continuityIndex++){var previousOut=String(loadedStays[continuityIndex-1]&&loadedStays[continuityIndex-1].check_out||''),nextIn=String(loadedStays[continuityIndex]&&loadedStays[continuityIndex].check_in||'');if(previousOut&&nextIn&&previousOut!==nextIn)continuityWarning=true;}
+  continuityNotice.hidden=!continuityWarning;
+  etgpAirLoad113106(bookingId).then(renderTravelReferences).catch(function(){travelBody.textContent='Air itinerary references could not be loaded.';travelWarning.hidden=true;});
+  add.addEventListener('click',function(){var finalRow=rows[rows.length-1],inherited=finalRow&&finalRow.checkOut.value?finalRow.checkOut.value:'';addRow({check_in:inherited});rows[rows.length-1].city.focus();});
   var payload=function(){
-    return {stays:rows.map(function(c){var cityMatch=findCity(c.city.value),hotelMatch=findHotel(c.city.value,c.hotel.value),vendorMatch=suppliers.find(function(v){return String(v.id)===String(c.vendor.value);});return {id:c.id||null,booking_service_id:c.booking_service_id||null,vendor_id:Number(c.vendor.value||0)||null,vendor_name:vendorMatch?String(vendorMatch.name||''):'',city_id:cityMatch?Number(cityMatch.id||0)||null:null,city:plain(c.city.value),hotel_id:hotelMatch?Number(hotelMatch.id||0)||null:null,hotel_name:plain(c.hotel.value),confirmation_no:plain(c.confirmation.value),room_type:plain(c.room.value),board:String(c.board.value||'RO').toUpperCase(),check_in:c.checkIn.value||null,check_out:c.checkOut.value||null,sale_rate:etgpHotelMoney113127(c.sale.value),cost_rate:etgpHotelMoney113127(c.cost.value)};}).filter(function(row){return row.city||row.hotel_name||row.check_in||row.check_out||row.sale_rate||row.cost_rate;})};
+    return {stays:rows.map(function(c){var cityMatch=findCity(c.city.value),hotelMatch=findHotel(c.city.value,c.hotel.value),vendorMatch=suppliers.find(function(v){return String(v.id)===String(c.vendor.value);});return {id:c.id||null,booking_service_id:c.booking_service_id||null,vendor_id:Number(c.vendor.value||0)||null,vendor_name:vendorMatch?String(vendorMatch.name||''):'',city_id:cityMatch?Number(cityMatch.id||0)||null:null,city:plain(c.city.value),hotel_id:hotelMatch?Number(hotelMatch.id||0)||null:null,hotel_name:plain(c.hotel.value),confirmation_no:plain(c.confirmation.value),room_type:plain(c.room.value),board:String(c.board.value||'RO').toUpperCase(),check_in:c.checkIn.value||null,check_out:c.checkOut.value||null,nights:Number.isInteger(Number(c.nights.value))&&Number(c.nights.value)>=0?Number(c.nights.value):0,sale_rate:etgpHotelMoney113127(c.sale.value),cost_rate:etgpHotelMoney113127(c.cost.value)};}).filter(function(row){return row.city||row.hotel_name||row.check_in||row.check_out||row.sale_rate||row.cost_rate;})};
   };
   host._etgpHotelPayload113127=payload;
   host._etgpHotelDirty113138=!!data._draftRestored;
@@ -2690,7 +2695,6 @@ var renderProducts=function(
       etgpAirFlushVisibleDraft113126();
       etgpHotelFlushVisibleDraft113127();
       etgpTransportFlushVisibleDraft113139();
-      etgpVisaFlushVisibleDraft113142();
       var next=etBookingWorkspaceContext113305.getProductSelection(reference),index=next.indexOf(product.key);
       if(index===-1)next.push(product.key);else next.splice(index,1);
       etBookingWorkspaceContext113305.saveProductSelection(reference,next);
@@ -2727,7 +2731,6 @@ var renderProducts=function(
       remove.type='submit';remove.setAttribute('form',etgpEnsureTransportSelectionForm113179(etBookingWorkspaceContext113305.getBookingId(),true));
     }else remove.addEventListener('click',function(){
       etgpAirFlushVisibleDraft113126();etgpHotelFlushVisibleDraft113127();etgpTransportFlushVisibleDraft113139();
-      etgpVisaFlushVisibleDraft113142();
       var next=etBookingWorkspaceContext113305.getProductSelection(reference).filter(function(key){return key!==product.key;});
       etBookingWorkspaceContext113305.saveProductSelection(reference,next);renderProducts(root,reference,paxCount);
     });
@@ -4898,7 +4901,6 @@ var etgpBuildQuickPassenger11397=function(passengerCard,editorHost){
       etgpAirFlushVisibleDraft113126();
       etgpHotelFlushVisibleDraft113127();
       etgpTransportFlushVisibleDraft113139();
-      etgpVisaFlushVisibleDraft113142();
       renderProducts(root,root.dataset.bookingReference,count);
     }
   };
@@ -5459,7 +5461,6 @@ var build=function(){
     passengerCard
   );
   etgpApplyPassengerTableKpi113332(passengerCard);
-  etgpRenderBookingCommercialSummary113302(root);
 
   /* Add Product controls */
   var products=create(

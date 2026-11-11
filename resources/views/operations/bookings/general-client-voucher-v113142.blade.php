@@ -17,8 +17,10 @@ body{margin:0;background:#edf1f5;color:#111;font-family:Arial,Helvetica,sans-ser
 .company{font-size:21px;font-weight:800;color:#075aa8;line-height:1.05;margin-top:2px}
 .company-sub{font-size:9px;color:#374151;margin-top:3px;font-style:italic}
 .header-meta{font-size:9px;margin-top:4px;line-height:1.45}.header-meta strong{display:inline-block;min-width:74px}
-.header-right{text-align:right;font-size:8.5px;color:#374151;min-width:170px;line-height:1.4}.header-right strong{color:#17233b}.only-accommodation{display:inline-block;border:1px solid #17396c;color:#17396c;padding:4px 7px;font-size:9px;font-weight:800;text-transform:uppercase;margin-bottom:5px}
+.header-right{text-align:right;font-size:8.5px;color:#374151;min-width:170px;line-height:1.4}.header-right strong{color:#17233b}.only-accommodation{display:inline-block;border:1px solid #17396c;color:#17396c;padding:4px 7px;font-size:9px;font-weight:800;text-transform:uppercase;margin-bottom:5px}.header-doc-title{font-size:16px;font-weight:800;line-height:1.1;margin-top:6px;color:#111}.header-workflow-status{font-size:9px;font-weight:800;letter-spacing:.08em;color:#9b1c1c;margin-top:3px;text-transform:uppercase}
 .title{text-align:center;font-size:16px;font-weight:800;margin:4px 0 7px}
+.workflow-status{text-align:center;font-size:9px;font-weight:800;letter-spacing:.08em;color:#9b1c1c;margin:0 0 7px;text-transform:uppercase}
+.sheet{position:relative;overflow:visible}.voucher-content{position:relative;overflow:visible;isolation:isolate}.voucher-content>.watermark{position:absolute;z-index:0;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:visible}.voucher-content>.watermark span{position:absolute;left:50%;top:50%;z-index:0;transform:translate(-50%,-50%) rotate(-32deg);font-size:clamp(34px,5vw,40px);line-height:1;font-weight:900;letter-spacing:.08em;white-space:nowrap;opacity:.14}.watermark .draft{color:#64748b}.watermark .pending{color:#b7791f}.watermark .approved{color:#3c8c57}.voucher-content>*{position:relative;z-index:1}
 .summary{display:grid;grid-template-columns:1.2fr 1.25fr .8fr;border:1px solid #111;font-size:8.5px;margin-bottom:7px}.summary>div{padding:4px 6px;border-right:1px solid #111}.summary>div:last-child{border-right:0}
 .section-title{background:#dedede;border:1px solid #111;border-bottom:0;text-align:center;font-size:9px;font-weight:800;padding:3px 5px;color:#111}
 .section-title.blue{color:#25457b;font-size:10px}
@@ -30,8 +32,8 @@ th,td{border:1px solid #111;padding:3px 4px;vertical-align:middle}th{background:
 .transport-table{table-layout:fixed}.transport-table th,.transport-table td{font-size:7px;line-height:1.16}.transport-table td{vertical-align:top}.transport-table th:nth-child(1){width:16%}.transport-table th:nth-child(2){width:17%}.transport-table th:nth-child(3){width:12%}.transport-table th:nth-child(4){width:10%}.transport-table th:nth-child(5){width:14%}.transport-table th:nth-child(6){width:13%}.transport-table th:nth-child(7){width:18%}
 .voucher-lower{display:grid;grid-template-columns:minmax(0,1fr) 86px;gap:12px;align-items:start;margin-top:7px}.voucher-lower-copy{min-width:0}.qr-box{width:86px;height:86px;display:flex;align-items:center;justify-content:center}.qr-box img{display:block;width:82px;height:82px;object-fit:contain}.qr-placeholder{width:82px;height:82px;border:1px solid #111;display:flex;align-items:center;justify-content:center;text-align:center;font-size:7.5px;color:#667085;background:#fff;padding:5px}.qr-placeholder[hidden]{display:none!important}.instructions{min-height:34px;border-bottom:1px dashed #cbd5e1;padding:5px 0;font-size:8px}.instructions strong{color:#203d75;font-style:italic;font-size:9px;margin-right:18px}.voucher-footer-text{padding:6px 0 2px;font-size:7.8px;line-height:1.35;color:#334155;white-space:normal;overflow-wrap:anywhere}.footer{margin-top:6px;padding-top:4px;border-top:1px dotted #d1d5db;font-size:7.5px;color:#475569;display:flex;justify-content:flex-end;gap:10px}
 @page{size:A4 portrait;margin:0}
-@media(max-width:760px){body{background:#fff}.sheet{width:100%;min-height:0;margin:0;border:0;box-shadow:none;padding:12px}.header{grid-template-columns:84px 1fr}.header-right{grid-column:1/-1;text-align:left}.summary{grid-template-columns:1fr}.summary>div{border-right:0;border-bottom:1px solid #111}.summary>div:last-child{border-bottom:0}.scroll{overflow:auto}.scroll table{min-width:680px}.flight-pair,.flight-pair.single{grid-template-columns:1fr}.flight-pair .scroll table{min-width:520px}.voucher-lower{grid-template-columns:minmax(0,1fr) 76px}.qr-box{width:76px}.qr-box img,.qr-placeholder{width:72px;height:72px}}
-@media print{body{background:#fff}.toolbar{display:none}.sheet{margin:0;border:0;box-shadow:none;width:210mm;min-height:297mm;padding:8mm 9mm 10mm}.section-block{break-inside:avoid}thead{display:table-header-group}tr{break-inside:avoid}.voucher-lower,.footer{break-inside:avoid}}
+@media(max-width:760px){body{background:#fff}.sheet{width:100%;min-height:0;margin:0;border:0;box-shadow:none;padding:12px}.header{grid-template-columns:84px 1fr}.header-right{grid-column:1/-1;text-align:right}.summary{grid-template-columns:1fr}.summary>div{border-right:0;border-bottom:1px solid #111}.summary>div:last-child{border-bottom:0}.scroll{overflow:auto}.scroll table{min-width:680px}.flight-pair,.flight-pair.single{grid-template-columns:1fr}.flight-pair .scroll table{min-width:520px}.voucher-lower{grid-template-columns:minmax(0,1fr) 76px}.qr-box{width:76px}.qr-box img,.qr-placeholder{width:72px;height:72px}}
+@media print{body{background:#fff}.toolbar{display:none}.sheet{margin:0;border:0;box-shadow:none;width:210mm;min-height:297mm;padding:8mm 9mm 10mm;overflow:visible}.voucher-content>.watermark{position:absolute;left:0;right:0;top:0;bottom:0;overflow:visible}.header{grid-template-columns:84px minmax(0,1fr) auto}.header-right{grid-column:auto;text-align:right}.summary{grid-template-columns:1.2fr 1.25fr .8fr;border:1px solid #111}.summary>div{border-right:1px solid #111;border-bottom:0}.summary>div:last-child{border-right:0}.scroll{overflow:visible}.scroll table,.flight-pair .scroll table{width:100%;min-width:0}.flight-pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.flight-pair.single{grid-template-columns:1fr}.voucher-lower{grid-template-columns:minmax(0,1fr) 86px}.section-block{break-inside:avoid}thead{display:table-header-group}tr{break-inside:avoid}.voucher-lower,.footer{break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -40,6 +42,21 @@ th,td{border:1px solid #111;padding:3px 4px;vertical-align:middle}th{background:
     <button type="button" onclick="window.print()">Print / Save PDF</button>
 </div>@endif
 <div class="sheet">
+    @php
+        $displayWorkflowStatus = is_string($voucherWorkflowStatus ?? null) && trim($voucherWorkflowStatus) !== ''
+            ? trim($voucherWorkflowStatus)
+            : 'STATUS UNAVAILABLE';
+        $displayWatermarkText = is_string($voucherWatermark ?? null) && trim($voucherWatermark) !== ''
+            ? trim($voucherWatermark)
+            : null;
+        $displayWatermarkTone = in_array($voucherWatermarkTone ?? null, ['draft', 'pending', 'approved'], true)
+            ? $voucherWatermarkTone
+            : null;
+    @endphp
+    <div class="voucher-content">
+    @if($displayWatermarkText !== null && $displayWatermarkTone !== null)
+        <div class="watermark" aria-hidden="true"><span class="{{ $displayWatermarkTone }}">{{ $displayWatermarkText }}</span></div>
+    @endif
     <div class="header">
         <div class="logo-box">
             @if(!empty($company['logo']))
@@ -62,10 +79,10 @@ th,td{border:1px solid #111;padding:3px 4px;vertical-align:middle}th{background:
                 @if(!empty($relationship['saudi_company_name']))<div><strong>Saudi Company:</strong> {{ $relationship['saudi_company_name'] }}</div>@endif
                 @if(!empty($relationship['pakistani_iata_name']))<div><strong>Pakistani IATA:</strong> {{ $relationship['pakistani_iata_name'] }}</div>@endif
             @endforeach
+            <div class="header-doc-title">{{ $accommodationOnly ? 'Hotel Voucher' : 'Travel Voucher' }}</div>
+            <div class="header-workflow-status">{{ $displayWorkflowStatus }}</div>
         </div>
     </div>
-
-    <div class="title">{{ $accommodationOnly ? 'Hotel Voucher' : 'Travel Voucher' }}</div>
 
     <div class="summary">
         <div><strong>Family Head:</strong> {{ $familyHead }}</div>
@@ -211,6 +228,7 @@ th,td{border:1px solid #111;padding:3px 4px;vertical-align:middle}th{background:
 
     <div class="footer">
         <div>{{ $voucherNumber }} · {{ $bookingReference }}</div>
+    </div>
     </div>
 </div>
 </body>

@@ -79,6 +79,12 @@ final class GeneralBookingHotelProductController extends Controller
     public function store(Request $request, int $booking): JsonResponse
     {
         $bookingRow = $this->assertBooking($booking);
+        $companyId = (int) ($bookingRow->company_id ?? 0);
+        if ($companyId <= 0) {
+            throw ValidationException::withMessages([
+                'hotel' => 'Hotel data cannot be saved without an authorized booking company.',
+            ]);
+        }
         $data = $request->validate([
             'stays' => ['required', 'array', 'min:1', 'max:30'],
             'stays.*.vendor_id' => ['nullable', 'integer', 'min:0'],
@@ -116,7 +122,7 @@ final class GeneralBookingHotelProductController extends Controller
 
         $stage = 'Hotel service';
         try {
-            $result = DB::transaction(function () use ($booking, $bookingRow, $data, $stayTable, &$stage): array {
+            $result = DB::transaction(function () use ($booking, $bookingRow, $companyId, $data, $stayTable, &$stage): array {
                 $stage = 'Hotel service';
                 $resolved = app(\App\Services\Operations\GeneralBookingHotelNativeStoreResolver::class)->resolve();
                 $perService = ($resolved['ownership_mode'] ?? null) === 'service_link' && (bool) ($resolved['one_row_per_service'] ?? false);
@@ -147,7 +153,8 @@ final class GeneralBookingHotelProductController extends Controller
                     $hotel = $this->resolveOrCreateHotel(
                         trim((string) $raw['hotel_name']),
                         (int) ($raw['hotel_id'] ?? 0),
-                        $city
+                        $city,
+                        $companyId
                     );
 
                     $saleRate = round((float) $raw['sale_rate'], 2);
@@ -514,33 +521,51 @@ final class GeneralBookingHotelProductController extends Controller
     }
 
     /** @param array{id:int,name:string} $city @return array{id:int,name:string} */
-    private function resolveOrCreateHotel(string $name, int $id, array $city): array
+    private function resolveOrCreateHotel(string $name, int $id, array $city, int $companyId): array
     {
+        if ($companyId <= 0) {
+            throw ValidationException::withMessages(['hotel' => 'Hotel company context is invalid.']);
+        }
+
         foreach ($this->hotelMasterTables() as $table) {
             try {
                 $columns = $this->physicalColumnListing($table);
                 $idCol = $this->firstColumn($columns, ['id', 'hotel_id']);
                 $nameCol = $this->firstColumn($columns, ['name', 'hotel_name', 'title', 'property_name']);
                 if (! $nameCol) continue;
+                if (! in_array('company_id', $columns, true)) {
+                    throw ValidationException::withMessages(['hotel' => 'Hotel master does not expose a company scope.']);
+                }
                 $row = [];
                 $cityIdCol = $this->firstColumn($columns, ['city_id', 'travel_city_id']);
                 $cityCol = $this->firstColumn($columns, ['city', 'city_name', 'location']);
                 if ($id > 0 && $idCol) {
-                    $found = DB::table($table)->where($idCol, $id)->first();
+                    $found = DB::table($table)
+                        ->where($idCol, $id)
+                        ->where('company_id', $companyId)
+                        ->lockForUpdate()
+                        ->first();
                     $candidate = $found ? (array) $found : [];
-                    if ($candidate) {
-                        $sameCity = true;
-                        if ($cityIdCol && (int) ($city['id'] ?? 0) > 0) $sameCity = (int) ($candidate[$cityIdCol] ?? 0) === (int) $city['id'];
-                        elseif ($cityCol && trim((string) ($city['name'] ?? '')) !== '') $sameCity = strcasecmp(trim((string) ($candidate[$cityCol] ?? '')), trim((string) $city['name'])) === 0;
-                        if ($sameCity) $row = $candidate;
+                    if (! $candidate) {
+                        throw ValidationException::withMessages(['hotel' => 'The selected Hotel does not belong to the booking company.']);
                     }
+                    $sameCity = true;
+                    if ($cityIdCol && (int) ($city['id'] ?? 0) > 0) $sameCity = (int) ($candidate[$cityIdCol] ?? 0) === (int) $city['id'];
+                    elseif ($cityCol && trim((string) ($city['name'] ?? '')) !== '') $sameCity = strcasecmp(trim((string) ($candidate[$cityCol] ?? '')), trim((string) $city['name'])) === 0;
+                    if (! $sameCity) throw ValidationException::withMessages(['hotel' => 'The selected Hotel does not match the booking city.']);
+                    $row = $candidate;
                 }
                 if (! $row) {
-                    $query = DB::table($table)->whereRaw('LOWER('.$nameCol.') = ?', [strtolower($name)]);
+                    $query = DB::table($table)
+                        ->where('company_id', $companyId)
+                        ->whereRaw('LOWER('.$nameCol.') = ?', [strtolower($name)]);
                     if ($cityIdCol && (int) ($city['id'] ?? 0) > 0) $query->where($cityIdCol, (int) $city['id']);
                     elseif ($cityCol && trim((string) ($city['name'] ?? '')) !== '') $query->whereRaw('LOWER('.$cityCol.') = ?', [strtolower((string) $city['name'])]);
-                    $found = $query->first();
-                    $row = $found ? (array) $found : [];
+                    $matches = $query->lockForUpdate()->get();
+                    if ($matches->count() > 1) {
+                        throw ValidationException::withMessages(['hotel' => 'Multiple same-company Hotels match the submitted name and city.']);
+                    }
+                    $row = $matches->isNotEmpty() ? (array) $matches->first() : [];
                 }
                 if ($row) return ['id' => $idCol ? (int) ($row[$idCol] ?? 0) : 0, 'name' => (string) ($row[$nameCol] ?? $name)];
             } catch (Throwable) {
@@ -554,13 +579,16 @@ final class GeneralBookingHotelProductController extends Controller
         $nameCol = $this->firstColumn($columns, ['name', 'hotel_name', 'title', 'property_name']);
         if (! $nameCol) return ['id' => 0, 'name' => $name];
 
-        $prototypeQuery = DB::table($table);
+        if (! in_array('company_id', $columns, true)) {
+            throw ValidationException::withMessages(['hotel' => 'Hotel master does not expose a company scope.']);
+        }
+        $prototypeQuery = DB::table($table)->where('company_id', $companyId)->lockForUpdate();
         $cityIdCol = $this->firstColumn($columns, ['city_id', 'travel_city_id']);
         if ($cityIdCol && (int) ($city['id'] ?? 0) > 0) $prototypeQuery->where($cityIdCol, (int) $city['id']);
         $prototype = $prototypeQuery->orderByDesc($idCol ?: $nameCol)->first();
-        if (! $prototype) $prototype = DB::table($table)->orderByDesc($idCol ?: $nameCol)->first();
+        if (! $prototype) $prototype = DB::table($table)->where('company_id', $companyId)->lockForUpdate()->orderByDesc($idCol ?: $nameCol)->first();
 
-        $row = [$nameCol => $name];
+        $row = [$nameCol => $name, 'company_id' => $companyId];
         $this->put($row, $columns, ['code', 'hotel_code', 'property_code'], strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $name), 0, 12)).'-'.strtoupper(Str::random(4)));
         $this->put($row, $columns, ['city_id', 'travel_city_id'], (int) ($city['id'] ?? 0) ?: null);
         $this->put($row, $columns, ['city', 'city_name', 'location'], (string) ($city['name'] ?? ''));
@@ -876,7 +904,7 @@ final class GeneralBookingHotelProductController extends Controller
         $order = $this->firstColumn($columns, ['sort_order', 'sequence', 'sequence_no', 'id']);
         try {
             $records = $order ? $query->orderBy($order)->get() : $query->get();
-            return $records->map(function (object $record) use ($columns, $table): array {
+            return $records->map(function (object $record) use ($columns, $table, $serviceId): array {
                 $row = (array) $record;
                 $checkIn = $this->dateString($this->valueFrom($row, $columns, ['check_in', 'check_in_date', 'checkin_date']));
                 $checkOut = $this->dateString($this->valueFrom($row, $columns, ['check_out', 'check_out_date', 'checkout_date']));

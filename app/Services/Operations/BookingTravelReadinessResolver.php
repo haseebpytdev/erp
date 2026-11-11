@@ -4,14 +4,15 @@ namespace App\Services\Operations;
 
 final class BookingTravelReadinessResolver
 {
-    /** @return array{status:string,ready:bool,blockers:list<string>} */
-    public function resolve(array $booking, array $selectedProducts, array $air, array $hotel, array $transport, array $visa): array
+    /** @return array{status:string,ready:bool,blockers:list<string>,pending_information:list<string>} */
+    public function resolve(array $booking, array $selectedProducts, array $air, array $hotel, array $transport, array $visa, array $other = []): array
     {
         $selected = array_values(array_unique(array_filter(array_map(
             static fn ($value): string => strtolower(trim((string) $value)),
             $selectedProducts
         ))));
         $blockers = [];
+        $pendingInformation = [];
 
         if (! $this->bookingApproved($booking)) {
             $blockers[] = 'Booking approval/confirmation is pending.';
@@ -47,8 +48,24 @@ final class BookingTravelReadinessResolver
 
         if (in_array('hotel', $selected, true)) {
             $stays = (array) ($hotel['stays'] ?? []);
-            if (! $stays || ! $this->allRowsHave($stays, [['city'], ['hotel_name'], ['check_in'], ['check_out'], ['confirmation_number', 'confirmation_no', 'booking_reference', 'reference']])) {
+            if (! $stays) {
                 $blockers[] = 'Hotel stay or confirmation/reference is incomplete.';
+            } else {
+                foreach (array_values($stays) as $index => $stay) {
+                    $stay = (array) $stay;
+                    $label = trim((string) ($stay['hotel_name'] ?? '')) ?: 'Hotel stay #'.($index + 1);
+                    $missing = [];
+                    if ($this->firstString($stay, ['hotel_name']) === '') $missing[] = 'hotel';
+                    if ($this->firstString($stay, ['city']) === '') $missing[] = 'city';
+                    if ($this->firstString($stay, ['check_in']) === '') $missing[] = 'check-in';
+                    if ($this->firstString($stay, ['check_out']) === '') $missing[] = 'check-out';
+                    if ($this->firstString($stay, ['confirmation_number', 'confirmation_no', 'booking_reference', 'reference']) === '') {
+                        $pendingInformation[] = $label.' confirmation/reference is pending.';
+                    }
+                    if ($missing !== []) {
+                        $blockers[] = $label.' is missing '.implode(' and ', array_values(array_unique($missing))).'.';
+                    }
+                }
             }
         }
 
@@ -61,15 +78,24 @@ final class BookingTravelReadinessResolver
 
         if (in_array('visa', $selected, true)) {
             $rows = (array) ($visa['visa_rows'] ?? []);
-            // Visa readiness is scoped only to passengers who actually have a
-            // Visa service row. Other booking passengers are never blockers.
-            if ($rows && ! $this->visaRowsIssued($rows)) {
+            // A selected Visa service with no native detail rows is incomplete.
+            // Other booking passengers are never blockers unless Visa is selected.
+            if (! $rows) {
+                $blockers[] = 'Visa service details are missing.';
+            } elseif (! $this->visaRowsIssued($rows)) {
                 $blockers[] = 'One or more Visa service rows are not issued.';
             }
         }
 
+        if (in_array('other', $selected, true) && empty((array) ($other['services'] ?? []))) {
+            $blockers[] = 'Other service details are missing.';
+        }
+        if (in_array('unsupported', $selected, true)) {
+            $blockers[] = 'One or more selected services use an unsupported product category.';
+        }
+
         $ready = $blockers === [];
-        return ['status' => $ready ? 'Ready' : 'PendingTravel', 'ready' => $ready, 'blockers' => $blockers];
+        return ['status' => $ready ? 'Ready' : 'PendingTravel', 'ready' => $ready, 'blockers' => $blockers, 'pending_information' => array_values(array_unique($pendingInformation))];
     }
 
     private function bookingApproved(array $booking): bool

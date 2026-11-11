@@ -558,6 +558,15 @@ class GroupUmrahWorkflowService
         $passengerPending = max(0, $bookedPax - $passengerNames);
         $manifestComplete = $passengerNames >= $bookedPax;
 
+        // Issued ticket numbers are an operational gate for Travel Ready;
+        // commercial confirmation remains independent of this check.
+        $ticketRows = Schema::hasTable('booking_group_package_passengers')
+            ? DB::table('booking_group_package_passengers')->where('booking_id', $bookingId)->get(['ticket_number'])
+            : collect();
+        $ticketsReady = $manifestComplete
+            && $ticketRows->count() >= $bookedPax
+            && $ticketRows->every(fn ($passenger): bool => trim((string) ($passenger->ticket_number ?? '')) !== '');
+
         $flightRows = Schema::hasTable('booking_group_package_flights')
             ? DB::table('booking_group_package_flights')->where('booking_id', $bookingId)->get()
             : collect();
@@ -592,10 +601,11 @@ class GroupUmrahWorkflowService
                 ->where('vehicle_type', '<>', '')
                 ->exists();
 
-        $travelReady = $manifestComplete && $flightReady && $hotelReady && $transportReady;
+        $travelReady = $manifestComplete && $ticketsReady && $flightReady && $hotelReady && $transportReady;
 
         $parts = [];
         if (! $manifestComplete) $parts[] = $passengerPending.' passenger name(s) pending';
+        if (! $ticketsReady) $parts[] = 'issued passenger ticket(s) pending';
         if (! $flightReady) $parts[] = 'flight itinerary incomplete';
         if (! $hotelReady) $parts[] = 'hotel pending';
         if (! $transportReady) $parts[] = 'transport pending';
@@ -605,6 +615,7 @@ class GroupUmrahWorkflowService
             'passenger_names_received' => $passengerNames,
             'passenger_names_pending' => $passengerPending,
             'manifest_complete' => $manifestComplete,
+            'tickets_ready' => $ticketsReady,
             'flight_ready' => $flightReady,
             'hotel_ready' => $hotelReady,
             'transport_ready' => $transportReady,

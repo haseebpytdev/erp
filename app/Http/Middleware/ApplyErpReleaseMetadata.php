@@ -771,6 +771,7 @@ class ApplyErpReleaseMetadata
     private function uiRole(string $path, string $routeName): string
     {
         if ($path === '' || $path === 'dashboard' || str_starts_with($path, 'dashboard/')) return 'dashboard';
+        if ($path === 'operations/bookings/finder') return 'register';
         if (
             str_starts_with($path, 'operations/bookings/')
             && (

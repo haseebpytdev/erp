@@ -1,0 +1,2 @@
+@extends($layoutMeta['layout'])
+@section('content')<div class="container py-4"><h1>ET-CV Revision History</h1><table><tr><th>Revision</th><th>Status</th><th>Issued</th><th>Reason</th><th></th></tr>@foreach($revisions as $r)<tr><td>{{ $r->revision_no }}</td><td>{{ $r->status }}</td><td>{{ $r->issued_at }}</td><td>{{ $r->reason }}</td><td><a href="{{ route('bookings.et-cv-voucher.revision',['booking'=>$bookingId,'revision'=>$r->revision_no]) }}">View snapshot</a></td></tr>@endforeach</table></div>@endsection

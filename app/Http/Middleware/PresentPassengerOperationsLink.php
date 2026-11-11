@@ -23,6 +23,19 @@ final class PresentPassengerOperationsLink
             $timing?->stop('passenger_links_response');
             return $response;
         }
+        // The standalone ET-CV editor intentionally has no ERP navigation
+        // shell; do not inject the global Passengers link into it.
+        if ($request->routeIs('bookings.et-cv-voucher.manage')) {
+            $timing?->stop('passenger_links_response');
+            return $response;
+        }
+        // Group Umrah has its own Passenger Manifest inside the workspace and
+        // intentionally exposes no top-level Passenger navigation link.
+        if ($request->is('operations/group-package-bookings/create')
+            || $request->is('operations/group-package-bookings/*/edit')) {
+            $timing?->stop('passenger_links_response');
+            return $response;
+        }
         if (! method_exists($response, 'getContent') || ! method_exists($response, 'setContent') || ! $this->policy->moduleAllowed($request->user(), 'passenger operations')) { $timing?->stop('passenger_links_response'); return $response; }
         $html = (string) $response->getContent();
         if ($html === '' || str_contains($html, 'data-et-passengers-nav')) { $timing?->stop('passenger_links_response'); return $response; }

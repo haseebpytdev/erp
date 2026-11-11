@@ -9,7 +9,44 @@ use Illuminate\Validation\ValidationException;
 /** Read-only, schema-aware Product/Service Master authority. */
 final class NativeProductServiceResolver
 {
-    private array $resolved = [];
+    /** Return active masters for dashboard card resolution. */
+    public function activeCatalog(): array
+    {
+        $catalog = [];
+        foreach ($this->tables() as $table) {
+            try {
+                $columns = Schema::getColumnListing($table);
+                foreach (DB::table($table)->get() as $row) {
+                    $data = (array) $row;
+                    if (isset($data['deleted_at']) && $data['deleted_at'] !== null && $data['deleted_at'] !== '') continue;
+                    if (isset($data['active']) && ! $data['active']) continue;
+                    if (isset($data['is_active']) && ! $data['is_active']) continue;
+                    if (in_array(strtolower((string) ($data['status'] ?? '')), ['inactive','deleted','removed','cancelled','canceled'], true)) continue;
+                    $id = (int) ($data['id'] ?? $data['product_service_id'] ?? 0);
+                    if ($id <= 0) continue;
+                    $label = trim((string) ($data['name'] ?? $data['title'] ?? $data['service_name'] ?? $data['description'] ?? $data['code'] ?? '')) ?: 'Product #'.$id;
+                    $code = strtoupper(trim((string) ($data['code'] ?? $data['product_code'] ?? $data['service_code'] ?? '')));
+                    $category = strtoupper(trim((string) ($data['category'] ?? $data['type'] ?? '')));
+                    $key = strtolower(trim((string) (preg_replace('/[^a-z0-9]+/i', '-', $code !== '' ? $code : $label) ?: 'product-'.$id), '-')) ?: 'product-'.$id;
+                    $catalog[$id] = ['id'=>$id,'key'=>$key,'label'=>$label,'code'=>$code,'category'=>$category,'table'=>$table,'workspace_key'=>$this->workspaceKey($code,$category,$label),'columns'=>$columns];
+                }
+            } catch (\Throwable) { }
+        }
+        return array_values($catalog);
+    }
+
+    private function workspaceKey(string $code, string $category, string $label): ?string
+    {
+        $identity = strtoupper($code.' '.$category.' '.$label);
+        return match (true) {
+            str_contains($identity, 'UMRAH_COMPLETE_PACKAGE') || str_contains($identity, 'UMRAH / COMPLETE PACKAGE') => 'umrah-complete-package',
+            str_contains($identity, 'AIR') || str_contains($identity, 'FLIGHT') || str_contains($identity, 'TICKET') => 'air',
+            str_contains($identity, 'HOTEL') || str_contains($identity, 'ACCOMMODATION') => 'hotel',
+            str_contains($identity, 'TRANSPORT') || str_contains($identity, 'TRANSFER') => 'transport',
+            str_contains($identity, 'VISA') => 'visa',
+            default => null,
+        };
+    }
 
     public function air(): array { return $this->require($this->findAir(), 'Air'); }
     public function hotel(): array { return $this->require($this->findHotel(), 'Hotel'); }
@@ -25,8 +62,6 @@ final class NativeProductServiceResolver
 
     private function find(string $label, array $codes, array $categories, array $names): ?array
     {
-        $cacheKey = $label . ':' . implode(',', $codes);
-        if (array_key_exists($cacheKey, $this->resolved)) return $this->resolved[$cacheKey];
         $tables = $this->tables(); $matches = [];
         foreach ($tables as $table) foreach (DB::table($table)->get() as $row) {
             $a = (array) $row; if (isset($a['deleted_at']) && $a['deleted_at'] !== null) continue; if (isset($a['active']) && ! $a['active']) continue; if (isset($a['is_active']) && ! $a['is_active']) continue; if (in_array(strtolower((string) ($a['status'] ?? '')), ['inactive','deleted','removed','cancelled','canceled'], true)) continue;
@@ -36,11 +71,11 @@ final class NativeProductServiceResolver
             $score = in_array($code, $codes, true) ? 3 : (in_array($category, $categories, true) ? 2 : (in_array($name, $names, true) ? 1 : 0));
             if ($score) $matches[] = compact('table','a','code','category','name','score');
         }
-        if (! $matches) return $this->resolved[$cacheKey] = null;
+        if (! $matches) return null;
         $best = max(array_column($matches, 'score')); $matches = array_values(array_filter($matches, fn (array $m): bool => $m['score'] === $best));
         if (count($matches) !== 1) throw ValidationException::withMessages(['product' => "Multiple active native {$label} Product/Service masters matched; no Product identity was guessed."]);
         $m = $matches[0]; $r = $m['a'];
-        return $this->resolved[$cacheKey] = ['id'=>(int) ($r['id'] ?? $r['product_service_id'] ?? 0), 'table'=>$m['table'], 'row'=>$r, 'code'=>$m['code'], 'name'=>$m['name'], 'category'=>$m['category'], 'pricing_basis'=>strtoupper((string) ($r['pricing_basis'] ?? $r['pricing_basis_code'] ?? '')), 'passenger_link_mode'=>strtoupper((string) ($r['passenger_link_mode'] ?? $r['passenger_link'] ?? '')), 'customer_sale_currency'=>strtoupper((string) ($r['customer_sale_currency'] ?? $r['sale_currency'] ?? $r['currency_code'] ?? '')), 'supplier_cost_currency'=>strtoupper((string) ($r['supplier_cost_currency'] ?? $r['cost_currency'] ?? '')), 'revenue_mapping'=>(string) ($r['revenue_mapping'] ?? $r['revenue_mapping_key'] ?? ''), 'cost_mapping'=>(string) ($r['cost_mapping'] ?? $r['cost_mapping_key'] ?? '')];
+        return ['id'=>(int) ($r['id'] ?? $r['product_service_id'] ?? 0), 'table'=>$m['table'], 'row'=>$r, 'code'=>$m['code'], 'name'=>$m['name'], 'category'=>$m['category'], 'pricing_basis'=>strtoupper((string) ($r['pricing_basis'] ?? $r['pricing_basis_code'] ?? '')), 'passenger_link_mode'=>strtoupper((string) ($r['passenger_link_mode'] ?? $r['passenger_link'] ?? '')), 'customer_sale_currency'=>strtoupper((string) ($r['customer_sale_currency'] ?? $r['sale_currency'] ?? $r['currency_code'] ?? '')), 'supplier_cost_currency'=>strtoupper((string) ($r['supplier_cost_currency'] ?? $r['cost_currency'] ?? '')), 'revenue_mapping'=>(string) ($r['revenue_mapping'] ?? $r['revenue_mapping_key'] ?? ''), 'cost_mapping'=>(string) ($r['cost_mapping'] ?? $r['cost_mapping_key'] ?? '')];
     }
 
     private function tables(): array
@@ -48,7 +83,7 @@ final class NativeProductServiceResolver
         $tables = [];
         $foreign = $this->bookingServicesForeignKeyTarget();
         if ($foreign && Schema::hasTable($foreign)) return [$foreign];
-        foreach (['product_services','product_service_master','product_service_masters','travel_product_services','service_products'] as $table) if (Schema::hasTable($table)) $tables[] = $table;
+        foreach (['product_services','products_services','product_service_master','product_service_masters','travel_product_services','service_products'] as $table) if (Schema::hasTable($table)) $tables[] = $table;
         return array_values(array_unique($tables));
     }
 

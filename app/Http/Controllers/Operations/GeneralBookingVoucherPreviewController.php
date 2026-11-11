@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\Operations;
 
 use App\Http\Controllers\Controller;
+use App\Models\TravelVoucher;
 use App\Services\Operations\UnifiedGroupPackageDataSource;
-use App\Services\Operations\GeneralBookingHotelOperationalReader;
 use App\Services\Operations\ClientVoucherFooterResolver;
 use App\Services\Operations\ClientVoucherPassengerVisaMap;
+use App\Services\Operations\CompletePackageOperationalResolver;
+use App\Services\Administration\ErpBranchAccessAuthority;
 use App\Services\Organization\CompanyProfileSnapshotService;
+use App\Support\QrCodeSvg;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
+use Carbon\Carbon;
 use Throwable;
 
 /**
@@ -23,6 +28,11 @@ use Throwable;
  */
 final class GeneralBookingVoucherPreviewController extends Controller
 {
+    public function __construct(
+        private readonly ErpBranchAccessAuthority $branchAuthority,
+    ) {
+    }
+
     public function show(
         Request $request,
         int $booking,
@@ -30,11 +40,48 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ClientVoucherFooterResolver $footerResolver,
         ClientVoucherPassengerVisaMap $passengerVisaMap,
         UnifiedGroupPackageDataSource $source,
-        GeneralBookingHotelOperationalReader $hotelReader,
+        CompletePackageOperationalResolver $packageOperational,
     ): View {
         abort_unless(Schema::hasTable('bookings'), 404);
         $bookingRow = DB::table('bookings')->where('id', $booking)->first();
         abort_unless($bookingRow, 404);
+
+        /* Employee previews remain inside company/branch authority. Public
+         * bearer-token requests are marked only after exact token lookup. */
+        if (! (bool) $request->attributes->get('public_voucher', false)) {
+            $user = $request->user();
+            abort_unless($user, 401);
+            if (! $this->branchAuthority->isSuperAdmin($user)) {
+                $bookingCompany = (int) ($bookingRow->company_id ?? 0);
+                $userCompany = $this->branchAuthority->companyIdForUser($user);
+                abort_unless($bookingCompany > 0 && $userCompany !== null && $bookingCompany === $userCompany, 404);
+                $this->branchAuthority->assertMayAccessBranch($user, (int) ($bookingRow->branch_id ?? 0));
+            }
+        }
+        // ET-CV revisions are immutable published document snapshots. When an
+        // issued snapshot exists, the authenticated preview must render that
+        // snapshot instead of falling back to live booking/product projections.
+        // The amendment editor marks its internal projection request so draft
+        // editing continues to read the native booking data.
+        if (! (bool) $request->attributes->get('et_cv_amendment_snapshot', false)
+            && Schema::hasTable('et_cv_voucher_revisions')) {
+            $issued = DB::table('et_cv_voucher_revisions')
+                ->where('booking_id', $booking)
+                ->where('status', 'issued')
+                ->orderByDesc('revision_no')
+                ->first();
+            if ($issued) {
+                $snapshot = json_decode((string) $issued->snapshot_json, true) ?: [];
+                if (isset($snapshot['generatedAt']) && is_string($snapshot['generatedAt'])) {
+                    $snapshot['generatedAt'] = Carbon::parse($snapshot['generatedAt']);
+                }
+                $snapshot['voucherNumber'] = (string) ($issued->voucher_number ?: ($snapshot['voucherNumber'] ?? ''));
+                return view('operations.bookings.general-client-voucher-v113142', $snapshot + [
+                    'publicMode' => false,
+                    'historicalRevision' => (int) $issued->revision_no,
+                ]);
+            }
+        }
         $bookingData = (array) $bookingRow;
 
         $air = $this->safeProductSnapshot(
@@ -42,10 +89,10 @@ final class GeneralBookingVoucherPreviewController extends Controller
                 ->show($request, $booking)
                 ->getData(true)
         );
-        // Hotel stays are consolidated through the read-side operational
-        // authority so service-linked native rows are included together.
         $hotel = $this->safeProductSnapshot(
-            fn (): array => ['stays' => $hotelReader->staysForBooking($booking)]
+            fn (): array => app(GeneralBookingHotelProductController::class)
+                ->show($request, $booking)
+                ->getData(true)
         );
         $transport = $this->safeProductSnapshot(
             fn (): array => app(GeneralBookingTransportProductController::class)
@@ -58,6 +105,34 @@ final class GeneralBookingVoucherPreviewController extends Controller
                 ->show($request, $booking)
                 ->getData(true)
         );
+
+        // Normalize package-owned operational rows into the existing C91.16
+        // data contract. Existing native rows remain authoritative and are
+        // de-duplicated by their canonical row id; no voucher Blade changes
+        // or additional financial data are introduced.
+        try {
+            $package = $packageOperational->snapshot($booking);
+            foreach (['itinerary', 'tickets'] as $field) {
+                $existing = (array) ($air[$field] ?? []);
+                $ids = array_map(static fn($row): int => is_array($row) ? (int) ($row['id'] ?? 0) : (int) ($row->id ?? 0), $existing);
+                $extra = array_filter((array) ($package['air'][$field] ?? []), static fn($row): bool => !in_array(is_array($row) ? (int) ($row['id'] ?? 0) : (int) ($row->id ?? 0), $ids, true));
+                if ($extra !== []) $air[$field] = array_values(array_merge($existing, $extra));
+            }
+            foreach ([['target'=>'stays','source'=>'hotel'], ['target'=>'transports','source'=>'transport'], ['target'=>'visa_rows','source'=>'visa']] as $merge) {
+                $target = $merge['source'] === 'hotel' ? $hotel : ($merge['source'] === 'transport' ? $transport : $visa);
+                $existing = (array) ($target[$merge['target']] ?? []);
+                $ids = array_map(static fn($row): int => is_array($row) ? (int) ($row['id'] ?? 0) : (int) ($row->id ?? 0), $existing);
+                $extra = array_filter((array) ($package[$merge['source']][$merge['target']] ?? []), static fn($row): bool => !in_array(is_array($row) ? (int) ($row['id'] ?? 0) : (int) ($row->id ?? 0), $ids, true));
+                if ($extra !== []) {
+                    $target[$merge['target']] = array_values(array_merge($existing, $extra));
+                    if ($merge['source'] === 'hotel') $hotel = $target;
+                    elseif ($merge['source'] === 'transport') $transport = $target;
+                    else $visa = $target;
+                }
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
 
         $passengers = (array) ($air['passengers'] ?? []);
         if (! $passengers) {
@@ -186,7 +261,17 @@ final class GeneralBookingVoucherPreviewController extends Controller
             ->filter()->take(2)->map(static fn (string $word): string => strtoupper(substr($word, 0, 1)))->implode('');
         if ($companyInitials === '') $companyInitials = 'CO';
 
-        $visaRelationships = $this->voucherVisaRelationships($visaRows);
+        $visaRelationships = [];
+        foreach ($visaRows as $visaRow) {
+            $visaRow = (array) $visaRow;
+            $saudi = trim((string) ($visaRow['saudi_company_name'] ?? ''));
+            $iata = trim((string) ($visaRow['pakistani_iata_name'] ?? ''));
+            if ($saudi === '' && $iata === '') continue;
+            $visaRelationships[strtolower($saudi).'|'.strtolower($iata)] = [
+                'saudi_company_name' => $saudi,
+                'pakistani_iata_name' => $iata,
+            ];
+        }
         $resolvedVoucherFooter = $footerResolver->resolve($visaRows, (string) ($companyProfile['footer'] ?? ''));
         $publicToken = $this->publicVoucherToken($booking, $bookingData);
         /* Do not use a named route here. Installed hosts can already contain
@@ -196,9 +281,43 @@ final class GeneralBookingVoucherPreviewController extends Controller
         $publicVoucherUrl = $publicToken !== ''
             ? url('/voucher/'.$publicToken)
             : '';
-        $voucherQrImage = $publicVoucherUrl !== ''
-            ? 'https://api.qrserver.com/v1/create-qr-code/?size=164x164&margin=8&format=png&data='.rawurlencode($publicVoucherUrl)
-            : '';
+        $voucherQrImage = '';
+        if ($publicVoucherUrl !== '') {
+            try {
+                $voucherQrImage = QrCodeSvg::dataUri($publicVoucherUrl);
+            } catch (Throwable) {
+                // Keep the existing safe placeholder when the local encoder
+                // cannot represent the URL.
+                $voucherQrImage = '';
+            }
+        }
+
+        $bookingStatusKey = preg_replace('/[^A-Z]/', '', strtoupper($this->firstString($bookingData, [
+            'status', 'approval_status', 'workflow_status', 'booking_status',
+        ]))) ?: '';
+        $travelStatusKey = preg_replace('/[^A-Z]/', '', strtoupper($this->firstString($bookingData, [
+            'travel_status', 'readiness_status', 'travel_readiness_status',
+        ]))) ?: '';
+        $voucherWorkflowStatus = match (true) {
+            $bookingStatusKey === 'DRAFT' && $travelStatusKey === 'PENDINGTRAVEL' => 'DRAFT',
+            in_array($bookingStatusKey, ['PENDING', 'PENDINGAPPROVAL', 'SUBMITTED'], true)
+                && $travelStatusKey === 'PENDINGTRAVEL' => 'PENDING APPROVAL',
+            $bookingStatusKey === 'CONFIRMED'
+                && in_array($travelStatusKey, ['READY', 'TRAVELREADY'], true) => 'TRAVEL READY',
+            default => 'NOT TRAVEL READY',
+        };
+        $voucherWatermark = match ($voucherWorkflowStatus) {
+            'DRAFT' => 'DRAFT',
+            'PENDING APPROVAL' => 'PENDING APPROVAL',
+            'NOT TRAVEL READY', 'TRAVEL READY' => 'APPROVED',
+            default => null,
+        };
+        $voucherWatermarkTone = match ($voucherWorkflowStatus) {
+            'DRAFT' => 'draft',
+            'PENDING APPROVAL' => 'pending',
+            'NOT TRAVEL READY', 'TRAVEL READY' => 'approved',
+            default => null,
+        };
 
         return view('operations.bookings.general-client-voucher-v113142', [
             'company' => $companyProfile,
@@ -208,6 +327,9 @@ final class GeneralBookingVoucherPreviewController extends Controller
             'booking' => $bookingData,
             'bookingReference' => $bookingReference,
             'voucherNumber' => $voucherNumber,
+            'voucherWorkflowStatus' => $voucherWorkflowStatus,
+            'voucherWatermark' => $voucherWatermark,
+            'voucherWatermarkTone' => $voucherWatermarkTone,
             'customerName' => $customerName,
             'branchName' => $branchName,
             'currency' => $currency,
@@ -239,87 +361,6 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ]);
     }
 
-    /**
-     * Build the voucher's relationship summary from booking snapshots while
-     * preferring the current names for the stable Travel Voucher Partner IDs.
-     * The source-name key remains snapshot-based so relationship cardinality,
-     * order and deduplication do not change when a master is renamed.
-     *
-     * @param list<array<string,mixed>|object> $visaRows
-     * @return array<string,array{saudi_company_name:string,pakistani_iata_name:string}>
-     */
-    private function voucherVisaRelationships(array $visaRows): array
-    {
-        $partnerIds = [];
-        foreach ($visaRows as $rawRow) {
-            $row = (array) $rawRow;
-            foreach (['saudi_company' => 'saudi_company_id', 'pakistani_iata' => 'pakistani_iata_id'] as $prefix => $legacyField) {
-                $table = strtolower(trim((string) ($row[$prefix.'_master_table'] ?? '')));
-                $masterId = (int) ($row[$prefix.'_master_id'] ?? 0);
-                if ($table === 'travel_voucher_partners' && $masterId > 0) {
-                    $partnerIds[$masterId] = true;
-                } elseif ($table === '' && (int) ($row[$legacyField] ?? 0) > 0) {
-                    // Legacy rows predate the explicit table/id contract; the
-                    // established Visa master stores these IDs in this table.
-                    $partnerIds[(int) $row[$legacyField]] = true;
-                }
-            }
-        }
-
-        $currentNames = [];
-        if ($partnerIds !== [] && Schema::hasTable('travel_voucher_partners')) {
-            try {
-                $currentNames = DB::table('travel_voucher_partners')
-                    ->whereIn('id', array_keys($partnerIds))
-                    ->pluck('name', 'id')
-                    ->map(static fn ($name): string => trim((string) $name))
-                    ->filter(static fn (string $name): bool => $name !== '')
-                    ->all();
-            } catch (Throwable) {
-                $currentNames = [];
-            }
-        }
-
-        $relationships = [];
-        foreach ($visaRows as $rawRow) {
-            $row = (array) $rawRow;
-            $snapshotSaudi = trim((string) ($row['saudi_company_name'] ?? ''));
-            $snapshotIata = trim((string) ($row['pakistani_iata_name'] ?? ''));
-            if ($snapshotSaudi === '' && $snapshotIata === '') continue;
-
-            $saudi = $this->voucherCurrentPartnerName($row, 'saudi_company', 'saudi_company_id', $snapshotSaudi, $currentNames);
-            $iata = $this->voucherCurrentPartnerName($row, 'pakistani_iata', 'pakistani_iata_id', $snapshotIata, $currentNames);
-
-            // Keep the pre-existing source key to preserve relationship
-            // cardinality/order even when a master display name changes.
-            $key = strtolower($snapshotSaudi).'|'.strtolower($snapshotIata);
-            $relationships[$key] = [
-                'saudi_company_name' => $saudi,
-                'pakistani_iata_name' => $iata,
-            ];
-        }
-
-        return $relationships;
-    }
-
-    /** @param array<string,mixed> $row @param array<int,string> $currentNames */
-    private function voucherCurrentPartnerName(
-        array $row,
-        string $prefix,
-        string $legacyField,
-        string $fallback,
-        array $currentNames,
-    ): string {
-        $table = strtolower(trim((string) ($row[$prefix.'_master_table'] ?? '')));
-        $masterId = (int) ($row[$prefix.'_master_id'] ?? 0);
-        $id = $table === 'travel_voucher_partners' && $masterId > 0
-            ? $masterId
-            : ($table === '' ? (int) ($row[$legacyField] ?? 0) : 0);
-        return $id > 0 && isset($currentNames[$id]) && $currentNames[$id] !== ''
-            ? $currentNames[$id]
-            : $fallback;
-    }
-
     public function publicShow(
         Request $request,
         string $token,
@@ -327,8 +368,24 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ClientVoucherFooterResolver $footerResolver,
         ClientVoucherPassengerVisaMap $passengerVisaMap,
         UnifiedGroupPackageDataSource $source,
-        GeneralBookingHotelOperationalReader $hotelReader,
+        CompletePackageOperationalResolver $packageOperational,
     ): View {
+        if (Schema::hasTable('et_cv_voucher_tokens')) {
+            $tokenRow = DB::table('et_cv_voucher_tokens')->where('token', $token)->first();
+            if ($tokenRow) {
+                abort_unless($tokenRow->status === 'current' && $tokenRow->revision_id, 404, 'Voucher not found.');
+                $revision = DB::table('et_cv_voucher_revisions')
+                    ->where('id', $tokenRow->revision_id)
+                    ->where('status', 'issued')
+                    ->first();
+                abort_unless($revision, 404, 'Voucher not found.');
+                $snapshot = json_decode((string) $revision->snapshot_json, true) ?: [];
+                if (isset($snapshot['generatedAt']) && is_string($snapshot['generatedAt'])) {
+                    $snapshot['generatedAt'] = Carbon::parse($snapshot['generatedAt']);
+                }
+                return view('operations.bookings.general-client-voucher-v113142', $snapshot + ['publicMode' => true]);
+            }
+        }
         abort_unless(
             preg_match('/^[a-f0-9]{48}$/', $token) === 1
             && Schema::hasTable('bookings')
@@ -340,7 +397,7 @@ final class GeneralBookingVoucherPreviewController extends Controller
         abort_unless($booking > 0, 404, 'Voucher not found.');
         $request->attributes->set('public_voucher', true);
 
-        return $this->show($request, $booking, $company, $footerResolver, $passengerVisaMap, $source, $hotelReader);
+        return $this->show($request, $booking, $company, $footerResolver, $passengerVisaMap, $source, $packageOperational);
     }
 
     /** Collision-safe adapter for an installed host route using another parameter name. */
@@ -350,11 +407,18 @@ final class GeneralBookingVoucherPreviewController extends Controller
         ClientVoucherFooterResolver $footerResolver,
         ClientVoucherPassengerVisaMap $passengerVisaMap,
         UnifiedGroupPackageDataSource $source,
-        GeneralBookingHotelOperationalReader $hotelReader,
-    ): View {
+        CompletePackageOperationalResolver $packageOperational,
+    ): View|Response {
         $parameters=$request->route()?->parameters() ?? [];
         $token=trim((string)reset($parameters));
-        return $this->publicShow($request,$token,$company,$footerResolver,$passengerVisaMap,$source,$hotelReader);
+        if (Schema::hasTable('travel_vouchers')) {
+            $nativeExists = TravelVoucher::query()
+                ->where('public_token', $token)
+                ->orWhere('voucher_no', $token)
+                ->exists();
+            if ($nativeExists) return app(TravelVoucherController::class)->publicShow($token);
+        }
+        return $this->publicShow($request,$token,$company,$footerResolver,$passengerVisaMap,$source,$packageOperational);
     }
 
     private function publicVoucherToken(int $booking, array $bookingData): string

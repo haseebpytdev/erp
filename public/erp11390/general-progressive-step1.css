@@ -3109,7 +3109,7 @@ html.et-c45-booking-dashboard .etgp-booking-lock-invoice a{
   display:grid;
   grid-template-columns:1fr;
   gap:1px;
-  min-height:30px;
+  min-height:0;
   padding:3px 5px;
   border:1px solid #d6e0eb;
   border-radius:6px;
@@ -3139,7 +3139,7 @@ html.et-c45-booking-dashboard .etgp-booking-lock-invoice a{
 }
 .etgp-hotel-summary-113127{
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:7px;
   margin-top:9px;
 }
@@ -3156,6 +3156,29 @@ html.et-c45-booking-dashboard .etgp-booking-lock-invoice a{
 }
 .etgp-hotel-summary-item-113127 span{color:#68778c;font-size:8.5px;font-weight:800}
 .etgp-hotel-summary-item-113127 strong{color:#17243a;font-size:10px;font-weight:900;white-space:nowrap}
+.etgp-hotel-checkout-wrap-113127{min-width:0}
+.etgp-hotel-checkout-warning-text-113127{display:block;color:#b42318;font-size:8px;font-weight:800;line-height:1.1;margin-top:2px}
+.etgp-hotel-checkout-warning-text-113127[hidden]{display:none!important}
+.etgp-hotel-checkout-warning-113127{border-color:#e5484d!important;background:#fff1f1!important}
+.etgp-hotel-continuity-warning-113127{margin-top:8px;padding:6px 8px;border:1px solid #efdca8;border-radius:6px;background:#fffaeb;color:#8a6116;font-size:9px;font-weight:800}
+.etgp-hotel-continuity-warning-113127[hidden]{display:none!important}
+.etgp-hotel-friday-advisory-113127{margin-top:9px;padding:10px 12px;border:1px solid #e6c15a;border-radius:8px;background:#fff8df;color:#6f4d09;font-size:9px;line-height:1.35}
+.etgp-hotel-friday-advisory-title-113127{display:block;color:#604200;font-size:10px;font-weight:900}
+.etgp-hotel-friday-advisory-copy-113127{margin:5px 0 0}
+.etgp-hotel-friday-advisory-detail-113127{display:none;margin:7px 0 0;padding-top:6px;border-top:1px solid #e6c15a;color:#553900;font-weight:900}
+.etgp-hotel-friday-advisory-detail-113127[hidden]{display:none!important}
+.etgp-hotel-friday-advisory-113127.is-active{border-color:#c99316;background:#ffefb5;box-shadow:0 0 0 2px rgba(201,147,22,.14)}
+.etgp-hotel-friday-advisory-113127.is-active .etgp-hotel-friday-advisory-detail-113127{display:block}
+.etgp-hotel-travel-reference-113127{margin:8px 0 9px;padding:10px 12px;border:1px solid #d7e3ef;border-radius:8px;background:#fbfdff;box-shadow:0 1px 2px rgba(28,55,86,.04)}
+.etgp-hotel-travel-reference-title-113127{margin:0 0 7px;color:#17243a;font-size:11px;font-weight:900;letter-spacing:.01em}
+.etgp-hotel-travel-reference-body-113127{display:grid;gap:4px;color:#526176;font-size:9.5px}
+.etgp-hotel-travel-reference-line-113127{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px;align-items:baseline;padding:4px 6px;border-radius:5px;background:#f2f7fc}
+.etgp-hotel-travel-reference-line-113127 strong{color:#17243a;font-weight:900}
+.etgp-hotel-travel-segment-113127{display:grid;grid-template-columns:90px minmax(0,1fr);gap:8px;align-items:baseline;padding:4px 6px;border-top:1px dashed #dce6f1}
+.etgp-hotel-travel-segment-113127>span:first-child{color:#68778c;font-weight:900}
+.etgp-hotel-travel-segment-113127>span:last-child{min-width:0;overflow-wrap:anywhere}
+.etgp-hotel-travel-conflict-warning-113127{margin-top:7px;padding:7px 9px;border:1px solid #e8c36a;border-radius:6px;background:#fff8e6;color:#7a5310;font-size:9px;font-weight:850;line-height:1.3}
+.etgp-hotel-travel-conflict-warning-113127[hidden]{display:none!important}
 .etgp-hotel-actions-113127{
   display:flex;
   align-items:center;
@@ -3176,9 +3199,9 @@ html.et-c45-booking-dashboard .etgp-booking-lock-invoice a{
 .etgp-hotel-feedback-113127.is-error{border:1px solid #f0c9c9;background:#fff4f4;color:#b42318}
 .etgp-hotel-feedback-113127.is-draft{border:1px solid #efdca8;background:#fffaeb;color:#8a6116}
 
-@media(max-width:1220px){
+@media(max-width:1100px){
   .etgp-hotel-grid-scroll-113127{overflow-x:auto}
-  .etgp-hotel-grid-113127{min-width:1160px}
+  .etgp-hotel-grid-113127{min-width:1000px}
 }
 
 /* Final Air/Transport/Visa column-fit contract. */
@@ -3215,6 +3238,7 @@ html.et-c45-booking-dashboard .etgp-booking-lock-invoice a{
   .etgp-hotel-head-113127{flex-direction:column;align-items:stretch}
   .etgp-hotel-add-113127{align-self:flex-start}
   .etgp-hotel-summary-113127{grid-template-columns:1fr}
+  .etgp-hotel-travel-reference-line-113127,.etgp-hotel-travel-segment-113127{grid-template-columns:1fr;gap:2px}
   .etgp-hotel-actions-113127{flex-direction:column;align-items:stretch}
   .etgp-hotel-save-113127{width:100%}
 }
@@ -3613,15 +3637,16 @@ html.et-c45-booking-dashboard .etgp-booking-lock-invoice a{
 
 /* Hotel row: reserve the final action cell inside the normal 1280px canvas. */
 .etgp-hotel-grid-113127{
-  grid-template-columns:40px 72px 100px minmax(112px,1fr) 82px 72px 50px 92px 92px 46px 70px 70px 100px 48px!important;
-  gap:5px!important;min-width:0!important;
+  grid-template-columns:40px 64px 88px minmax(100px,1fr) 70px 62px 44px 100px 100px 42px 64px 64px 78px 44px!important;
+  gap:3px!important;min-width:0!important;
 }
-.etgp-hotel-grid-scroll-113127{overflow-x:hidden!important}
-.etgp-hotel-answer-113127{white-space:normal!important;width:100%;min-width:0}
-.etgp-hotel-remove-113127{width:38px!important;min-width:38px!important;height:35px!important;justify-self:center}
-@media(max-width:1220px){
+.etgp-hotel-grid-scroll-113127{overflow-x:auto!important;max-width:100%}
+.etgp-hotel-row-113127 input[type="date"].is-auto{font-weight:400!important}
+.etgp-hotel-answer-113127{white-space:normal!important;width:100%;min-width:0;padding-left:3px!important;padding-right:3px!important;overflow:visible!important}
+.etgp-hotel-remove-113127{display:flex!important;align-items:center;justify-content:center;width:40px!important;min-width:40px!important;height:35px!important;justify-self:center;overflow:visible!important}
+@media(max-width:1100px){
   .etgp-hotel-grid-scroll-113127{overflow-x:auto!important}
-  .etgp-hotel-grid-113127{min-width:1120px!important}
+  .etgp-hotel-grid-113127{min-width:1000px!important}
 }
 html.et-booking-locked-113162 .etgp-readonly-value-113164{display:inline-block;min-height:28px;padding:6px 2px;color:#26384e;font-size:11px;line-height:1.35;overflow-wrap:anywhere}
 html.et-booking-locked-113162 [data-etgp-readonly-rendered="1"][hidden]{display:none!important}
